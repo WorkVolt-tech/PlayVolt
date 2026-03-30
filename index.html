@@ -1,1077 +1,1263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GameHub - Multi-Game Platform</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <style>
-        :root {
-            --primary: #6b2fa0;
-            --accent: #feca57;
-            --danger: #ff4757;
-            --fire: #ff6b6b;
-            --success: #2ecc71;
-            --dark: #0f0f1a;
-            --dark2: #16213e;
-            --dark3: #1a1a2e;
-            --muted: #8a8a9a;
-            --text-primary: #ffffff;
-            --glass: rgba(255,255,255,0.05);
-            --border: rgba(255,255,255,0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(135deg, var(--dark) 0%, var(--dark2) 100%);
-            min-height: 100vh;
-            color: #fff;
-            overflow-x: hidden;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 80% 60% at 20% 10%, rgba(255,107,107,0.08) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 80% at 80% 90%, rgba(254,202,87,0.06) 0%, transparent 60%);
-            animation: bgShift 12s ease-in-out infinite alternate;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        @keyframes bgShift {
-            0% { background-position: 0% 0%, 100% 100%; }
-            100% { background-position: 30% 20%, 70% 80%; }
-        }
-
-        .page {
-            display: none;
-            min-height: 100vh;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .page.active {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* ===== AUTH PAGE ===== */
-        .auth-container {
-            width: 100%;
-            max-width: 480px;
-            padding: 20px;
-        }
-
-        .auth-card {
-            background: var(--glass);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid var(--border);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-
-        .logo-section {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo-emoji {
-            font-size: 3rem;
-            margin-bottom: 12px;
-            display: block;
-            animation: logoBounce 2s ease-in-out infinite;
-        }
-
-        @keyframes logoBounce {
-            0%, 100% { transform: translateY(0) rotate(-5deg); }
-            50% { transform: translateY(-12px) rotate(5deg); }
-        }
-
-        h1 {
-            font-size: 2rem;
-            background: linear-gradient(45deg, var(--fire), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 8px;
-            font-weight: 800;
-        }
-
-        .tagline {
-            font-size: 0.9rem;
-            color: var(--muted);
-            margin-bottom: 8px;
-        }
-
-        .auth-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 24px;
-            background: rgba(0,0,0,0.25);
-            border-radius: 12px;
-            padding: 5px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 12px;
-            background: none;
-            border: none;
-            color: var(--muted);
-            cursor: pointer;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.2s;
-            margin: 0;
-        }
-
-        .tab-btn.active {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        label {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="password"],
-        input[type="date"],
-        select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            background: rgba(0,0,0,0.35);
-            color: #fff;
-            font-size: 1rem;
-            transition: all 0.25s;
-            font-family: inherit;
-        }
-
-        input:focus,
-        select:focus {
-            outline: none;
-            border-color: var(--fire);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(255,107,107,0.2);
-        }
-
-        input::placeholder {
-            color: rgba(255,255,255,0.4);
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.18s cubic-bezier(0.34,1.56,0.64,1);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-        }
-
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-        }
-
-        button:active:not(:disabled) {
-            transform: scale(0.96);
-        }
-
-        button:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, var(--fire), var(--accent));
-            color: var(--dark);
-            box-shadow: 0 4px 20px rgba(255,107,107,0.35);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            box-shadow: 0 6px 28px rgba(255,107,107,0.55);
-        }
-
-        .btn-secondary {
-            background: var(--glass);
-            color: #fff;
-            border: 2px solid var(--border);
-            margin: 0;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            border-color: rgba(255,255,255,0.3);
-        }
-
-        .error {
-            color: var(--fire);
-            text-align: center;
-            margin-top: 10px;
-            font-size: 0.88rem;
-            padding: 10px;
-            background: rgba(255,107,107,0.1);
-            border-radius: 8px;
-            display: none;
-        }
-
-        .error.show {
-            display: block;
-        }
-
-        .success {
-            color: var(--success);
-            text-align: center;
-            margin-top: 10px;
-            font-size: 0.88rem;
-            padding: 10px;
-            background: rgba(46,204,113,0.1);
-            border-radius: 8px;
-            display: none;
-        }
-
-        .success.show {
-            display: block;
-        }
-
-        .form-tabs {
-            display: none;
-            width: 100%;
-        }
-
-        .form-tabs.active {
-            display: block;
-        }
-
-        .age-warning {
-            background: rgba(255,107,107,0.15);
-            border: 1px solid rgba(255,107,107,0.3);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 16px;
-            font-size: 0.85rem;
-            line-height: 1.5;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 50%;
-            border-top-color: var(--fire);
-            animation: spin 0.8s linear infinite;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* ===== DASHBOARD PAGE ===== */
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            max-width: 1200px;
-            margin-bottom: 30px;
-            background: var(--glass);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px 30px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--fire), var(--accent));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        .user-details h2 {
-            font-size: 1.2rem;
-            margin-bottom: 4px;
-        }
-
-        .user-details p {
-            font-size: 0.85rem;
-            color: var(--muted);
-        }
-
-        .age-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .age-badge.adult {
-            background: rgba(255,107,107,0.2);
-            color: var(--fire);
-            border: 1px solid rgba(255,107,107,0.3);
-        }
-
-        .age-badge.kid {
-            background: rgba(72,219,251,0.2);
-            color: #48dbfb;
-            border: 1px solid rgba(72,219,251,0.3);
-        }
-
-        .logout-btn {
-            padding: 8px 20px;
-            background: rgba(255,71,87,0.15);
-            border: 1px solid rgba(255,71,87,0.3);
-            color: var(--danger);
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255,71,87,0.25);
-        }
-
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            width: 100%;
-            max-width: 1200px;
-        }
-
-        .game-card {
-            background: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-card:hover {
-            transform: translateY(-8px);
-            border-color: var(--accent);
-            box-shadow: 0 12px 40px rgba(254,202,87,0.2);
-        }
-
-        .game-header {
-            aspect-ratio: 16/9;
-            background: linear-gradient(135deg, var(--primary), var(--fire));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-        }
-
-        .game-content {
-            padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .game-desc {
-            font-size: 0.9rem;
-            color: var(--muted);
-            margin-bottom: 12px;
-            flex: 1;
-            line-height: 1.5;
-        }
-
-        .game-meta {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            padding: 4px 10px;
-            background: rgba(254,202,87,0.15);
-            color: var(--accent);
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        .badge.adult {
-            background: rgba(255,107,107,0.15);
-            color: var(--fire);
-        }
-
-        .badge.kid {
-            background: rgba(72,219,251,0.15);
-            color: #48dbfb;
-        }
-
-        .badge.locked {
-            background: rgba(138,138,154,0.15);
-            color: var(--muted);
-        }
-
-        .game-button {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(45deg, var(--fire), var(--accent));
-            border: none;
-            border-radius: 10px;
-            color: var(--dark);
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.9rem;
-            transition: all 0.2s;
-        }
-
-        .game-button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255,107,107,0.3);
-        }
-
-        .game-button:disabled {
-            background: rgba(138,138,154,0.2);
-            color: var(--muted);
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .lock-icon {
-            margin-right: 6px;
-        }
-
-        .connection-status {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(46,204,113,0.15);
-            color: var(--success);
-            border: 1px solid rgba(46,204,113,0.3);
-        }
-
-        .pulse-dot {
-            width: 8px;
-            height: 8px;
-            background: currentColor;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(110px);
-            background: rgba(10,10,20,0.95);
-            color: #fff;
-            padding: 14px 24px;
-            border-radius: 14px;
-            z-index: 2000;
-            transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
-            border: 1px solid rgba(255,255,255,0.12);
-            text-align: center;
-            max-width: 90%;
-            font-weight: 600;
-            font-size: 0.92rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-        }
-
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .no-games {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--muted);
-        }
-
-        .no-games-emoji {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .auth-card {
-                padding: 24px;
-            }
-
-            h1 {
-                font-size: 1.6rem;
-            }
-
-            .dashboard-header {
-                flex-direction: column;
-                gap: 20px;
-                text-align: center;
-                padding: 20px;
-            }
-
-            .user-info {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .games-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .logout-btn {
-                width: 100%;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PlayVolt — Game Hub</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   PLAYVOLT — DESIGN TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --volt:       #d4ff00;    /* signature electric lime */
+  --volt-dim:   #a8cc00;
+  --volt-glow:  rgba(212,255,0,0.35);
+  --ink:        #08080f;
+  --ink2:       #12121e;
+  --ink3:       #1c1c2e;
+  --surface:    rgba(255,255,255,0.04);
+  --surface2:   rgba(255,255,255,0.08);
+  --border:     rgba(255,255,255,0.09);
+  --border-hot: rgba(212,255,0,0.4);
+  --text:       #f0f0ff;
+  --muted:      #6b6b88;
+  --danger:     #ff4d6d;
+  --danger-dim: rgba(255,77,109,0.15);
+  --success:    #39d98a;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  font-family: 'Nunito', sans-serif;
+  background: var(--ink);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── ANIMATED MESH BACKGROUND ── */
+.bg-mesh {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 15% 20%, rgba(212,255,0,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 70% at 85% 80%, rgba(100,0,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 90% 40% at 50% 50%, rgba(0,200,255,0.03) 0%, transparent 70%);
+  animation: meshShift 14s ease-in-out infinite alternate;
+  z-index: 0;
+}
+@keyframes meshShift {
+  0%   { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.04); }
+}
+
+/* ── GRID LINES ── */
+.bg-grid {
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(212,255,0,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,255,0,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: 0;
+}
+
+/* ─────────────────────────────────────────
+   LAYOUT
+───────────────────────────────────────── */
+.shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px 40px;
+}
+
+/* ─────────────────────────────────────────
+   LOGO
+───────────────────────────────────────── */
+.logo-wrap {
+  text-align: center;
+  margin-bottom: 32px;
+  animation: logoIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes logoIn {
+  from { opacity: 0; transform: translateY(-24px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.logo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.logo-bolt {
+  font-size: 2.4rem;
+  filter: drop-shadow(0 0 16px var(--volt));
+  animation: boltFlicker 3s ease-in-out infinite;
+}
+@keyframes boltFlicker {
+  0%,90%,100% { filter: drop-shadow(0 0 16px var(--volt)); }
+  93% { filter: drop-shadow(0 0 4px var(--volt)); opacity: 0.7; }
+  96% { filter: drop-shadow(0 0 20px var(--volt)); }
+}
+.logo-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3rem;
+  letter-spacing: 3px;
+  color: var(--volt);
+  text-shadow: 0 0 30px var(--volt-glow), 0 0 60px rgba(212,255,0,0.15);
+  line-height: 1;
+}
+.logo-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────
+   CARD
+───────────────────────────────────────── */
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--ink2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px 28px;
+  box-shadow:
+    0 0 0 1px rgba(212,255,0,0.05),
+    0 24px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  animation: cardIn 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.15s both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(28px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  background: var(--ink3);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+}
+.tab {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-radius: 9px;
+  color: var(--muted);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  text-transform: uppercase;
+}
+.tab.active {
+  background: var(--volt);
+  color: var(--ink);
+  box-shadow: 0 2px 12px rgba(212,255,0,0.35);
+}
+
+/* ── PANELS ── */
+.panel { display: none; }
+.panel.active {
+  display: block;
+  animation: panelFade 0.3s ease both;
+}
+@keyframes panelFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SECTION LABEL ── */
+.field-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+/* ── INPUTS ── */
+.field-group { margin-bottom: 16px; position: relative; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+select {
+  width: 100%;
+  padding: 13px 16px;
+  background: var(--ink3);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--volt);
+  box-shadow: 0 0 0 3px rgba(212,255,0,0.12);
+}
+input::placeholder { color: var(--muted); font-weight: 600; }
+
+/* date input calendar icon color */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.4);
+  cursor: pointer;
+}
+
+/* ── PASSWORD STRENGTH ── */
+.pw-strength-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.pw-strength-fill {
+  height: 100%;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+/* ── DOB AGE BADGE ── */
+.age-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  margin-top: 6px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.25s ease;
+}
+.age-badge.show { opacity: 1; transform: translateY(0); }
+.age-badge.adult { background: rgba(57,217,138,0.15); color: var(--success); border: 1px solid rgba(57,217,138,0.3); }
+.age-badge.minor { background: rgba(255,77,109,0.12); color: #ff8fa3; border: 1px solid rgba(255,77,109,0.25); }
+
+/* ── ACCESS INFO BOX ── */
+.access-info {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+  display: none;
+}
+.access-info.show { display: block; animation: panelFade 0.3s ease both; }
+.access-info.adult-info { border-color: rgba(57,217,138,0.2); }
+.access-info.minor-info { border-color: rgba(255,165,0,0.2); }
+.access-info strong { color: var(--text); }
+
+/* ── TERMS CHECKBOX ── */
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.check-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--volt);
+  cursor: pointer;
+  border-radius: 4px;
+}
+.check-row label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.check-row label a { color: var(--volt); text-decoration: none; }
+.check-row label a:hover { text-decoration: underline; }
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 13px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background 0.2s;
+  border-radius: inherit;
+}
+.btn:hover::after { background: rgba(255,255,255,0.07); }
+.btn:active { transform: scale(0.96) !important; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+.btn-volt {
+  background: var(--volt);
+  color: var(--ink);
+  box-shadow: 0 4px 20px rgba(212,255,0,0.3);
+}
+.btn-volt:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(212,255,0,0.5);
+}
+.btn-ghost {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover:not(:disabled) { border-color: rgba(255,255,255,0.22); }
+
+/* Shimmer on volt button */
+.btn-volt::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -60%;
+  width: 40%; height: 100%;
+  background: rgba(255,255,255,0.3);
+  transform: skewX(-20deg);
+  animation: btnShine 3s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes btnShine {
+  0%,65%,100% { left: -60%; opacity: 0; }
+  45% { left: 130%; opacity: 1; }
+}
+
+/* ── DIVIDER ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── ERROR / SUCCESS MESSAGES ── */
+.msg {
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: none;
+  animation: panelFade 0.25s ease;
+}
+.msg.show { display: block; }
+.msg.error { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,77,109,0.3); }
+.msg.success { background: rgba(57,217,138,0.1); color: var(--success); border: 1px solid rgba(57,217,138,0.3); }
+
+/* ── FORGOT LINK ── */
+.forgot-link {
+  text-align: right;
+  margin-bottom: 16px;
+}
+.forgot-link a {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.forgot-link a:hover { color: var(--volt); }
+
+/* ── LOADING SPINNER ── */
+.spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── FOOTER ── */
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.6;
+  animation: cardIn 0.55s cubic-bezier(0.34,1.56,0.64,1) 0.25s both;
+}
+.footer a { color: var(--volt-dim); text-decoration: none; }
+.footer a:hover { color: var(--volt); }
+
+/* ── GAME HUB (shown after login) ── */
+#hubView {
+  display: none;
+  width: 100%;
+  max-width: 520px;
+}
+#hubView.active { display: block; animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+.hub-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.hub-greeting {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 2px;
+  color: var(--volt);
+  text-shadow: 0 0 20px var(--volt-glow);
+}
+.hub-sub { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+.hub-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+}
+.hub-badge.adult { background: rgba(57,217,138,0.15); color: var(--success); border: 1px solid rgba(57,217,138,0.3); }
+.hub-badge.minor { background: rgba(255,165,0,0.12); color: #ffb347; border: 1px solid rgba(255,165,0,0.3); }
+
+.games-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.game-card {
+  background: var(--ink2);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+  overflow: hidden;
+}
+.game-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--volt-glow) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: inherit;
+}
+.game-card:hover { transform: translateY(-5px); border-color: var(--border-hot); }
+.game-card:hover::before { opacity: 1; }
+.game-card:active { transform: scale(0.96); }
+.game-card.locked { cursor: not-allowed; opacity: 0.5; }
+.game-card.locked:hover { transform: none; border-color: var(--border); }
+.game-card.locked:hover::before { opacity: 0; }
+
+.game-icon { font-size: 2.4rem; margin-bottom: 8px; display: block; }
+.game-name { font-size: 0.88rem; font-weight: 900; margin-bottom: 3px; }
+.game-desc { font-size: 0.68rem; color: var(--muted); line-height: 1.3; }
+.lock-chip {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: rgba(255,77,109,0.2);
+  border: 1px solid rgba(255,77,109,0.35);
+  border-radius: 8px;
+  padding: 2px 6px;
+  font-size: 0.58rem;
+  font-weight: 900;
+  color: var(--danger);
+  letter-spacing: 0.5px;
+}
+.age-chip {
+  position: absolute;
+  top: 8px; right: 8px;
+  border-radius: 8px;
+  padding: 2px 6px;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+.age-chip.adults-only {
+  background: rgba(255,77,109,0.15);
+  color: var(--danger);
+  border: 1px solid rgba(255,77,109,0.3);
+}
+.age-chip.all-ages {
+  background: rgba(57,217,138,0.12);
+  color: var(--success);
+  border: 1px solid rgba(57,217,138,0.25);
+}
+
+.hub-actions {
+  display: flex;
+  gap: 10px;
+}
+.hub-actions .btn { margin-bottom: 0; flex: 1; }
+
+/* ── ACCESS TIER BADGE ── */
+.tier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+}
+.tier-label { font-size: 0.72rem; color: var(--muted); font-weight: 700; }
+.tier-value { font-size: 0.8rem; font-weight: 900; color: var(--volt); }
+
+/* ── FORGOT PASSWORD PANEL ── */
+#forgotPanel {
+  display: none;
+  width: 100%;
+  max-width: 420px;
+  animation: cardIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+#forgotPanel.active { display: block; }
+
+/* Responsive */
+@media (max-width: 420px) {
+  .card { padding: 24px 18px; border-radius: 18px; }
+  .field-row { grid-template-columns: 1fr; gap: 0; }
+  .games-grid { grid-template-columns: 1fr; }
+}
+</style>
 </head>
 <body>
-    <div id="connectionStatus" class="connection-status">
-        <div class="pulse-dot"></div>
-        <span>Connecting...</span>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<div class="shell">
+
+  <!-- LOGO -->
+  <div class="logo-wrap">
+    <div class="logo-mark">
+      <span class="logo-bolt">⚡</span>
+      <span class="logo-text">PlayVolt</span>
+    </div>
+    <div class="logo-tag">Your Game Hub</div>
+  </div>
+
+  <!-- ══════════════════════════════
+       AUTH CARD (Login / Register)
+  ══════════════════════════════ -->
+  <div class="card" id="authCard">
+    <div class="tabs">
+      <button class="tab active" id="tabLogin" onclick="switchTab('login')">Log In</button>
+      <button class="tab" id="tabRegister" onclick="switchTab('register')">Register</button>
     </div>
 
-    <!-- ===== AUTH PAGE ===== -->
-    <div id="authPage" class="page active">
-        <div class="auth-container">
-            <div class="auth-card">
-                <div class="logo-section">
-                    <span class="logo-emoji">🎮</span>
-                    <h1>GameHub</h1>
-                    <p class="tagline">Multi-Game Platform</p>
-                </div>
+    <!-- ── LOGIN PANEL ── -->
+    <div class="panel active" id="loginPanel">
+      <div class="msg" id="loginMsg"></div>
 
-                <div class="auth-tabs">
-                    <button class="tab-btn active" onclick="switchAuthTab('login')">Sign In</button>
-                    <button class="tab-btn" onclick="switchAuthTab('register')">Sign Up</button>
-                </div>
+      <div class="field-group">
+        <label class="field-label">Email</label>
+        <input type="email" id="loginEmail" placeholder="you@email.com" autocomplete="email">
+      </div>
 
-                <!-- LOGIN FORM -->
-                <div id="loginForm" class="form-tabs active">
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email">
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
-                    </div>
-                    <button class="btn-primary" onclick="handleLogin()" id="loginBtn">Sign In</button>
-                    <button class="btn-secondary" onclick="handleGuestLogin()" style="background: rgba(255,255,255,0.02); margin-top: 8px;">Continue as Guest</button>
-                    <div id="loginError" class="error"></div>
-                    <div id="loginSuccess" class="success"></div>
-                </div>
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter') login()">
+      </div>
 
-                <!-- REGISTER FORM -->
-                <div id="registerForm" class="form-tabs">
-                    <div class="age-warning">
-                        ⚠️ <strong>Age Verification Required:</strong> Users under 18 get kid-safe games only. Adults (18+) access adult-rated games.
-                    </div>
+      <div class="forgot-link"><a href="#" onclick="showForgot(); return false;">Forgot password?</a></div>
 
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="registerUsername" placeholder="Choose a username" maxlength="20" autocomplete="off">
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="registerEmail" placeholder="your@email.com" autocomplete="email">
-                    </div>
-                    <div class="form-group">
-                        <label>Date of Birth</label>
-                        <input type="date" id="registerDOB" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="registerPassword" placeholder="••••••••" autocomplete="new-password">
-                    </div>
-                    <div class="form-group">
-                        <label>Confirm Password</label>
-                        <input type="password" id="registerConfirm" placeholder="••••••••" autocomplete="new-password">
-                    </div>
-                    <button class="btn-primary" onclick="handleRegister()" id="registerBtn">Create Account</button>
-                    <div id="registerError" class="error"></div>
-                    <div id="registerSuccess" class="success"></div>
-                </div>
-            </div>
-        </div>
+      <button class="btn btn-volt" id="loginBtn" onclick="login()">Log In</button>
+      <button class="btn btn-ghost" onclick="switchTab('register')">Create Account</button>
     </div>
 
-    <!-- ===== DASHBOARD PAGE ===== -->
-    <div id="dashboardPage" class="page">
-        <div class="dashboard-header">
-            <div class="user-info">
-                <div class="user-avatar" id="userAvatar">👤</div>
-                <div class="user-details">
-                    <h2 id="userUsername">User</h2>
-                    <p id="userEmail">email@example.com</p>
-                </div>
-                <span class="age-badge" id="ageBadge">Adult</span>
-            </div>
-            <div>
-                <button class="logout-btn" onclick="handleLogout()">Logout</button>
-            </div>
-        </div>
+    <!-- ── REGISTER PANEL ── -->
+    <div class="panel" id="registerPanel">
+      <div class="msg" id="registerMsg"></div>
 
-        <div class="games-grid" id="gamesGrid">
-            <div class="no-games">
-                <div class="no-games-emoji">🎮</div>
-                <p>Loading games...</p>
-            </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">First Name</label>
+          <input type="text" id="regFirstName" placeholder="Jane" maxlength="30" autocomplete="given-name">
         </div>
+        <div class="field-group">
+          <label class="field-label">Last Name</label>
+          <input type="text" id="regLastName" placeholder="Doe" maxlength="30" autocomplete="family-name">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Username</label>
+        <input type="text" id="regUsername" placeholder="coolplayer99" maxlength="20"
+               oninput="sanitizeUsername(this)" autocomplete="username">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Email</label>
+        <input type="email" id="regEmail" placeholder="you@email.com" autocomplete="email">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <input type="password" id="regPassword" placeholder="Min 8 characters"
+               oninput="checkPasswordStrength(this.value)" autocomplete="new-password">
+        <div class="pw-strength-bar"><div class="pw-strength-fill" id="pwStrengthFill"></div></div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Date of Birth</label>
+        <input type="date" id="regDob" onchange="onDobChange(this.value)">
+        <div class="age-badge" id="ageBadge"></div>
+      </div>
+
+      <div class="access-info" id="accessInfo"></div>
+
+      <div class="check-row">
+        <input type="checkbox" id="agreeTerms">
+        <label for="agreeTerms">
+          I agree to the <a href="#" onclick="return false;">Terms of Service</a> and
+          <a href="#" onclick="return false;">Privacy Policy</a>.
+          I confirm the date of birth I entered is accurate.
+        </label>
+      </div>
+
+      <button class="btn btn-volt" id="registerBtn" onclick="register()">Create Account</button>
+      <button class="btn btn-ghost" onclick="switchTab('login')">Already have an account</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       FORGOT PASSWORD
+  ══════════════════════════════ -->
+  <div id="forgotPanel">
+    <div class="card">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-size:2rem;margin-bottom:8px;">🔑</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:2px;color:var(--volt);">Reset Password</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-top:4px;">Enter your email and we'll send a reset link</div>
+      </div>
+      <div class="msg" id="forgotMsg"></div>
+      <div class="field-group">
+        <label class="field-label">Email</label>
+        <input type="email" id="forgotEmail" placeholder="you@email.com">
+      </div>
+      <button class="btn btn-volt" id="forgotBtn" onclick="sendReset()">Send Reset Link</button>
+      <button class="btn btn-ghost" onclick="hideForgot()">← Back to Login</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       GAME HUB (after login)
+  ══════════════════════════════ -->
+  <div id="hubView">
+    <div class="hub-header">
+      <div class="hub-greeting" id="hubGreeting">Welcome!</div>
+      <div class="hub-sub" id="hubSub">Choose a game to play</div>
+      <div class="hub-badge" id="hubBadge"></div>
     </div>
 
-    <div id="toast" class="toast"></div>
+    <div class="tier-row">
+      <span class="tier-label">🎮 Access Tier</span>
+      <span class="tier-value" id="hubTier">Loading...</span>
+    </div>
 
-    <script>
-        const SUPABASE_URL = 'https://porpqvphytecuidomcgy.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcnBxdnBoeXRlY3VpZG9tY2d5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMzQwODUsImV4cCI6MjA4OTgxMDA4NX0.IFECuGpxl4HcMfFx7oqmbsVdeOLMK_4wvEi2L-NGNzI';
+    <div class="games-grid" id="gamesGrid">
+      <!-- Populated by JS based on user's age tier -->
+    </div>
 
-        let supabaseClient = null;
-        let currentUser = null;
+    <div class="hub-actions">
+      <button class="btn btn-ghost" onclick="logout()" style="margin-bottom:0;">Log Out</button>
+      <button class="btn btn-volt" onclick="showToast('🛒 Store coming soon!')" style="margin-bottom:0;">🛒 Store</button>
+    </div>
+  </div>
 
-        window.onload = async function() {
-            await initSupabase();
-            checkExistingSession();
-        };
+  <div class="footer" id="footerEl">
+    &copy; 2025 PlayVolt &nbsp;·&nbsp; <a href="#">Privacy</a> &nbsp;·&nbsp; <a href="#">Terms</a>
+  </div>
 
-        async function initSupabase() {
-            try {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                const { error } = await supabaseClient.from('users').select('count', { count: 'exact', head: true });
-                if (error && error.code !== 'PGRST116') throw error;
-                updateConnectionStatus(true);
-            } catch (error) {
-                console.error('Connection error:', error);
-                updateConnectionStatus(false);
-            }
-        }
+</div><!-- /shell -->
 
-        function switchAuthTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            document.querySelectorAll('.form-tabs').forEach(f => f.classList.remove('active'));
-            if (tab === 'login') {
-                document.getElementById('loginForm').classList.add('active');
-            } else {
-                document.getElementById('registerForm').classList.add('active');
-            }
-        }
+<!-- TOAST -->
+<div id="toast" style="
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(120px);
+  background:rgba(12,12,20,0.96);
+  color:#fff;padding:12px 22px;border-radius:50px;
+  z-index:9999;transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  border:1px solid var(--border);font-size:0.85rem;font-weight:700;
+  white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,0.4);
+  font-family:'Nunito',sans-serif;
+"></div>
 
-        function calculateAge(dob) {
-            const today = new Date();
-            const birthDate = new Date(dob);
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            return age;
-        }
+<script>
+/* ═══════════════════════════════════════════
+   PLAYVOLT — AUTH + ROUTING
+   ───────────────────────────────────────────
+   Supabase tables required (see auth.js for
+   full schema / SQL):
+     • profiles       — user profiles, dob, age_tier, username
+     • user_access    — what each user can access/buy
+   ═══════════════════════════════════════════ */
 
-        async function handleRegister() {
-            const username = document.getElementById('registerUsername').value.trim();
-            const email = document.getElementById('registerEmail').value.trim();
-            const dob = document.getElementById('registerDOB').value;
-            const password = document.getElementById('registerPassword').value;
-            const confirm = document.getElementById('registerConfirm').value;
-            const btn = document.getElementById('registerBtn');
-            const errEl = document.getElementById('registerError');
-            const sucEl = document.getElementById('registerSuccess');
+// ── CONFIGURE THESE ──
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
-            errEl.classList.remove('show');
-            sucEl.classList.remove('show');
+// ── GAME ROUTES ──
+// Point these at your actual game directories / URLs
+const GAME_ROUTES = {
+  wtw_adult: '../whos-the-worst-adult/index.html',
+  wtw_kids:  '../whos-the-worst/index.html',
+};
 
-            if (!username || !email || !dob || !password || !confirm) {
-                showError(errEl, 'All fields are required');
-                return;
-            }
+// ── GAME CATALOGUE ──
+// access: 'all' = everyone; 'adult' = 18+ only; 'kids' = under-18 only
+const GAMES = [
+  {
+    id:      'wtw_adult',
+    name:    "Who's The Worst?",
+    icon:    '🔥',
+    desc:    'The savage party voting game. Adults only.',
+    access:  'adult',
+    route:   GAME_ROUTES.wtw_adult,
+  },
+  {
+    id:      'wtw_kids',
+    name:    "Who's The Nicest?",
+    icon:    '🌟',
+    desc:    'The fun, family-friendly voting game!',
+    access:  'kids',
+    route:   GAME_ROUTES.wtw_kids,
+  },
+  // Add more games here as PlayVolt grows
+  {
+    id:      'coming_soon_1',
+    name:    'Trivia Blitz',
+    icon:    '🧠',
+    desc:    'Fast-fire trivia battles. Coming soon!',
+    access:  'all',
+    route:   null,
+    comingSoon: true,
+  },
+  {
+    id:      'coming_soon_2',
+    name:    'Card Chaos',
+    icon:    '🃏',
+    desc:    'Wild card game madness. Coming soon!',
+    access:  'all',
+    route:   null,
+    comingSoon: true,
+  },
+];
 
-            if (username.length < 3) {
-                showError(errEl, 'Username must be at least 3 characters');
-                return;
-            }
+/* ── INIT SUPABASE ── */
+let sb;
+try {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e) {
+  console.error('Supabase init failed — check your URL/Key', e);
+}
 
-            if (password.length < 6) {
-                showError(errEl, 'Password must be at least 6 characters');
-                return;
-            }
+/* ═══════════════════════════════════════
+   UI HELPERS
+═══════════════════════════════════════ */
+function showToast(msg, duration = 3200) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.transform = 'translateX(-50%) translateY(0)';
+  setTimeout(() => { el.style.transform = 'translateX(-50%) translateY(120px)'; }, duration);
+}
 
-            if (password !== confirm) {
-                showError(errEl, 'Passwords do not match');
-                return;
-            }
+function setMsg(id, text, type = 'error') {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `msg ${type} show`;
+}
+function clearMsg(id) {
+  const el = document.getElementById(id);
+  el.className = 'msg';
+  el.textContent = '';
+}
 
-            const age = calculateAge(dob);
-            if (age < 13) {
-                showError(errEl, 'You must be at least 13 years old to register');
-                return;
-            }
+function setLoading(btnId, loading, label = '') {
+  const btn = document.getElementById(btnId);
+  if (loading) {
+    btn.disabled = true;
+    btn.innerHTML = label + '<span class="spinner"></span>';
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = label || btn.innerHTML;
+  }
+}
 
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span>Creating...';
+/* ═══════════════════════════════════════
+   TABS
+═══════════════════════════════════════ */
+function switchTab(tab) {
+  document.getElementById('loginPanel').classList.toggle('active', tab === 'login');
+  document.getElementById('registerPanel').classList.toggle('active', tab === 'register');
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+  clearMsg('loginMsg'); clearMsg('registerMsg');
+}
 
-            try {
-                const { data: existing } = await supabaseClient
-                    .from('users')
-                    .select('id')
-                    .eq('email', email)
-                    .single();
+/* ═══════════════════════════════════════
+   FORGOT PASSWORD
+═══════════════════════════════════════ */
+function showForgot() {
+  document.getElementById('authCard').style.display = 'none';
+  document.getElementById('footerEl').style.display = 'none';
+  document.getElementById('forgotPanel').classList.add('active');
+}
+function hideForgot() {
+  document.getElementById('authCard').style.display = 'block';
+  document.getElementById('footerEl').style.display = 'block';
+  document.getElementById('forgotPanel').classList.remove('active');
+  clearMsg('forgotMsg');
+}
 
-                if (existing) {
-                    showError(errEl, 'Email already registered');
-                    btn.disabled = false;
-                    btn.textContent = 'Create Account';
-                    return;
-                }
+async function sendReset() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) { setMsg('forgotMsg', 'Enter your email address.'); return; }
+  setLoading('forgotBtn', true, 'Sending...');
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if (error) throw error;
+    setMsg('forgotMsg', '✅ Reset link sent! Check your inbox.', 'success');
+  } catch(e) {
+    setMsg('forgotMsg', e.message || 'Something went wrong.');
+  } finally {
+    document.getElementById('forgotBtn').disabled = false;
+    document.getElementById('forgotBtn').innerHTML = 'Send Reset Link';
+  }
+}
 
-                const hashedPwd = btoa(password);
-                const isAdult = age >= 18;
+/* ═══════════════════════════════════════
+   REGISTER HELPERS
+═══════════════════════════════════════ */
+function sanitizeUsername(input) {
+  input.value = input.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+}
 
-                const { data, error } = await supabaseClient
-                    .from('users')
-                    .insert({
-                        username,
-                        email,
-                        password_hash: hashedPwd,
-                        date_of_birth: dob,
-                        age: age,
-                        is_adult: isAdult,
-                        created_at: new Date().toISOString()
-                    })
-                    .select()
-                    .single();
+function checkPasswordStrength(pw) {
+  const fill = document.getElementById('pwStrengthFill');
+  let score = 0;
+  if (pw.length >= 8)  score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const colours = ['#ff4d6d','#ff9f43','#feca57','#39d98a'];
+  const widths   = ['25%','50%','75%','100%'];
+  fill.style.width      = pw.length === 0 ? '0%' : widths[score - 1] || '15%';
+  fill.style.background = pw.length === 0 ? '' : colours[score - 1] || '#ff4d6d';
+}
 
-                if (error) throw error;
+function calcAge(dobStr) {
+  if (!dobStr) return null;
+  const today = new Date();
+  const dob   = new Date(dobStr);
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age;
+}
 
-                // Create user inventory record
-                await supabaseClient
-                    .from('user_inventory')
-                    .insert({
-                        user_id: data.id,
-                        items_owned: [],
-                        created_at: new Date().toISOString()
-                    });
+function onDobChange(dobStr) {
+  const age    = calcAge(dobStr);
+  const badge  = document.getElementById('ageBadge');
+  const info   = document.getElementById('accessInfo');
 
-                showSuccess(sucEl, 'Account created! Signing in...');
-                localStorage.setItem('wtw_user', JSON.stringify({
-                    id: data.id,
-                    username: data.username,
-                    email: data.email,
-                    isAdult: isAdult,
-                    age: age
-                }));
+  if (age === null || age < 4) {
+    badge.className = 'age-badge'; // hide
+    info.className  = 'access-info';
+    return;
+  }
 
-                setTimeout(() => {
-                    currentUser = { id: data.id, username, email, isAdult, age };
-                    showDashboard();
-                }, 1500);
+  if (age < 0 || age > 120) {
+    badge.className   = 'age-badge'; // hide
+    info.className    = 'access-info';
+    return;
+  }
 
-            } catch (error) {
-                console.error('Register error:', error);
-                showError(errEl, error.message || 'Registration failed');
-                btn.disabled = false;
-                btn.textContent = 'Create Account';
-            }
-        }
+  const isAdult = age >= 18;
+  badge.textContent = isAdult
+    ? `✅ Age ${age} — Adult Access`
+    : `🟡 Age ${age} — Family Access`;
+  badge.className = `age-badge show ${isAdult ? 'adult' : 'minor'}`;
 
-        async function handleLogin() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const btn = document.getElementById('loginBtn');
-            const errEl = document.getElementById('loginError');
-            const sucEl = document.getElementById('loginSuccess');
+  if (isAdult) {
+    info.className   = 'access-info adult-info show';
+    info.innerHTML   = `<strong>🔥 Adult tier unlocked.</strong> You'll have access to the full versions of adult games like <em>Who's The Worst?</em> plus all family-friendly titles.`;
+  } else {
+    info.className   = 'access-info minor-info show';
+    info.innerHTML   = `<strong>🌟 Family tier.</strong> You'll have access to all age-appropriate games. Adult content is automatically filtered out — no exceptions.`;
+  }
+}
 
-            errEl.classList.remove('show');
-            sucEl.classList.remove('show');
+/* ═══════════════════════════════════════
+   REGISTER
+═══════════════════════════════════════ */
+async function register() {
+  clearMsg('registerMsg');
+  const firstName = document.getElementById('regFirstName').value.trim();
+  const lastName  = document.getElementById('regLastName').value.trim();
+  const username  = document.getElementById('regUsername').value.trim().toLowerCase();
+  const email     = document.getElementById('regEmail').value.trim();
+  const password  = document.getElementById('regPassword').value;
+  const dob       = document.getElementById('regDob').value;
+  const agreed    = document.getElementById('agreeTerms').checked;
 
-            if (!email || !password) {
-                showError(errEl, 'Email and password required');
-                return;
-            }
+  // Validation
+  if (!firstName || !lastName) return setMsg('registerMsg', 'Please enter your first and last name.');
+  if (username.length < 3)     return setMsg('registerMsg', 'Username must be at least 3 characters.');
+  if (!/^[a-z0-9_]+$/.test(username)) return setMsg('registerMsg', 'Username can only contain letters, numbers and underscores.');
+  if (!email)                  return setMsg('registerMsg', 'Please enter a valid email address.');
+  if (password.length < 8)    return setMsg('registerMsg', 'Password must be at least 8 characters.');
+  if (!dob)                    return setMsg('registerMsg', 'Please enter your date of birth.');
+  if (!agreed)                 return setMsg('registerMsg', 'Please agree to the Terms of Service to continue.');
 
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loading"></span>Signing in...';
+  const age = calcAge(dob);
+  if (age === null || age < 4) return setMsg('registerMsg', 'Please enter a valid date of birth.');
+  if (age > 120)               return setMsg('registerMsg', 'Please enter a valid date of birth.');
 
-            try {
-                const hashedPwd = btoa(password);
+  const ageTier = age >= 18 ? 'adult' : 'minor';
 
-                const { data: user, error } = await supabaseClient
-                    .from('users')
-                    .select('*')
-                    .eq('email', email)
-                    .eq('password_hash', hashedPwd)
-                    .single();
+  setLoading('registerBtn', true, 'Creating account...');
 
-                if (error || !user) {
-                    showError(errEl, 'Invalid email or password');
-                    btn.disabled = false;
-                    btn.textContent = 'Sign In';
-                    return;
-                }
+  try {
+    // 1. Check username uniqueness
+    const { data: existing } = await sb
+      .from('profiles')
+      .select('id')
+      .eq('username', username)
+      .maybeSingle();
+    if (existing) {
+      setMsg('registerMsg', 'That username is already taken. Try another.');
+      return;
+    }
 
-                showSuccess(sucEl, 'Welcome back!');
-                localStorage.setItem('wtw_user', JSON.stringify({
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    isAdult: user.is_adult,
-                    age: user.age
-                }));
+    // 2. Create auth user
+    const { data: authData, error: authErr } = await sb.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { username, first_name: firstName, last_name: lastName }
+      }
+    });
+    if (authErr) throw authErr;
+    const userId = authData.user?.id;
+    if (!userId) throw new Error('Account creation failed. Please try again.');
 
-                setTimeout(() => {
-                    currentUser = { 
-                        id: user.id, 
-                        username: user.username, 
-                        email: user.email, 
-                        isAdult: user.is_adult,
-                        age: user.age
-                    };
-                    showDashboard();
-                }, 1500);
+    // 3. Insert profile (age_tier set server-side from DOB — never trusting client input)
+    const { error: profileErr } = await sb.from('profiles').insert({
+      id:         userId,
+      username,
+      first_name: firstName,
+      last_name:  lastName,
+      dob,
+      age_tier:   ageTier,      // stored server-side, not editable by client
+      created_at: new Date().toISOString(),
+    });
+    if (profileErr) throw profileErr;
 
-            } catch (error) {
-                console.error('Login error:', error);
-                showError(errEl, error.message || 'Login failed');
-                btn.disabled = false;
-                btn.textContent = 'Sign In';
-            }
-        }
+    // 4. Insert default access record
+    await sb.from('user_access').insert({
+      user_id:    userId,
+      tier:       ageTier,
+      purchases:  [],
+      created_at: new Date().toISOString(),
+    });
 
-        function handleGuestLogin() {
-            const guestUser = {
-                id: 'guest_' + Math.random().toString(36).substring(7),
-                username: 'Guest_' + Math.floor(Math.random() * 10000),
-                email: null,
-                isAdult: false,
-                age: 0,
-                isGuest: true
-            };
+    setMsg('registerMsg',
+      '🎉 Account created! Check your email to verify, then log in.',
+      'success'
+    );
+    setTimeout(() => switchTab('login'), 2200);
 
-            localStorage.setItem('wtw_user', JSON.stringify(guestUser));
-            showToast('Continuing as guest...');
-            currentUser = guestUser;
-            setTimeout(showDashboard, 800);
-        }
+  } catch(e) {
+    console.error('Register error:', e);
+    setMsg('registerMsg', e.message || 'Registration failed. Please try again.');
+  } finally {
+    document.getElementById('registerBtn').disabled = false;
+    document.getElementById('registerBtn').innerHTML = 'Create Account';
+  }
+}
 
-        function checkExistingSession() {
-            const user = localStorage.getItem('wtw_user');
-            if (user) {
-                currentUser = JSON.parse(user);
-                showDashboard();
-            }
-        }
+/* ═══════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════ */
+async function login() {
+  clearMsg('loginMsg');
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
 
-        function showDashboard() {
-            document.getElementById('authPage').classList.remove('active');
-            document.getElementById('dashboardPage').classList.add('active');
+  if (!email)    return setMsg('loginMsg', 'Please enter your email address.');
+  if (!password) return setMsg('loginMsg', 'Please enter your password.');
 
-            document.getElementById('userUsername').textContent = currentUser.username;
-            if (currentUser.email) {
-                document.getElementById('userEmail').textContent = currentUser.email;
-            } else {
-                document.getElementById('userEmail').textContent = 'Guest Account';
-            }
+  setLoading('loginBtn', true, 'Logging in...');
 
-            const ageBadge = document.getElementById('ageBadge');
-            if (currentUser.isGuest) {
-                ageBadge.textContent = 'GUEST';
-                ageBadge.className = 'age-badge kid';
-            } else if (currentUser.isAdult) {
-                ageBadge.textContent = '18+';
-                ageBadge.className = 'age-badge adult';
-            } else {
-                ageBadge.textContent = 'KID SAFE';
-                ageBadge.className = 'age-badge kid';
-            }
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    await loadUserAndShowHub(data.user);
+  } catch(e) {
+    console.error('Login error:', e);
+    const friendly = e.message?.includes('Invalid login') || e.message?.includes('credentials')
+      ? 'Incorrect email or password.'
+      : e.message || 'Login failed.';
+    setMsg('loginMsg', friendly);
+  } finally {
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtn').innerHTML = 'Log In';
+  }
+}
 
-            loadGames();
-        }
+/* ═══════════════════════════════════════
+   LOGOUT
+═══════════════════════════════════════ */
+async function logout() {
+  await sb.auth.signOut();
+  document.getElementById('hubView').classList.remove('active');
+  document.getElementById('authCard').style.display = 'block';
+  document.getElementById('footerEl').style.display = 'block';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  switchTab('login');
+  showToast('Logged out. See you next time! 👋');
+}
 
-        async function loadGames() {
-            try {
-                const { data: games, error } = await supabaseClient
-                    .from('games')
-                    .select('*')
-                    .order('created_at', { ascending: true });
+/* ═══════════════════════════════════════
+   LOAD USER → SHOW HUB
+═══════════════════════════════════════ */
+async function loadUserAndShowHub(user) {
+  // Fetch profile
+  let { data: profile } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
 
-                if (error) throw error;
+  // Fallback if profile doesn't exist yet (e.g. email verification flow)
+  if (!profile) {
+    profile = {
+      username:   user.user_metadata?.username || user.email?.split('@')[0] || 'Player',
+      first_name: user.user_metadata?.first_name || '',
+      age_tier:   'minor', // default safe
+    };
+  }
 
-                if (!games || games.length === 0) {
-                    document.getElementById('gamesGrid').innerHTML = `
-                        <div class="no-games" style="grid-column: 1/-1;">
-                            <div class="no-games-emoji">🎮</div>
-                            <p>No games available yet</p>
-                        </div>
-                    `;
-                    return;
-                }
+  const isAdult = profile.age_tier === 'adult';
 
-                let html = '';
-                for (const game of games) {
-                    const isAdultGame = game.age_rating >= 18;
-                    const hasAccess = currentUser.isGuest 
-                        ? !isAdultGame 
-                        : currentUser.isAdult || !isAdultGame;
+  // Hide auth UI
+  document.getElementById('authCard').style.display = 'none';
+  document.getElementById('forgotPanel').classList.remove('active');
+  document.getElementById('footerEl').style.display = 'none';
 
-                    const emoji = game.emoji || '🎮';
-                    const badge = isAdultGame ? '<span class="badge adult">🔞 18+</span>' : '<span class="badge kid">👶 KID SAFE</span>';
-                    const button = hasAccess 
-                        ? `<button class="game-button" onclick="launchGame('${game.id}', '${game.slug}')">Play Now</button>`
-                        : `<button class="game-button" disabled><span class="lock-icon">🔒</span>Age Restricted</button>`;
+  // Populate hub
+  const name = profile.first_name || profile.username;
+  document.getElementById('hubGreeting').textContent = `Hey, ${name}!`;
+  document.getElementById('hubSub').textContent = 'Pick a game and jump in.';
 
-                    html += `
-                        <div class="game-card">
-                            <div class="game-header">${emoji}</div>
-                            <div class="game-content">
-                                <h3 class="game-title">${escapeHtml(game.title)}</h3>
-                                <p class="game-desc">${escapeHtml(game.description)}</p>
-                                <div class="game-meta">
-                                    ${badge}
-                                    ${game.players_online ? `<span class="badge">👥 ${game.players_online} online</span>` : ''}
-                                </div>
-                                ${button}
-                            </div>
-                        </div>
-                    `;
-                }
+  const badge = document.getElementById('hubBadge');
+  badge.textContent = isAdult ? '🔥 Adult Tier' : '🌟 Family Tier';
+  badge.className   = `hub-badge ${isAdult ? 'adult' : 'minor'}`;
 
-                document.getElementById('gamesGrid').innerHTML = html;
+  document.getElementById('hubTier').textContent = isAdult
+    ? 'Adult + Family Access'
+    : 'Family Access Only';
 
-            } catch (error) {
-                console.error('Load games error:', error);
-                document.getElementById('gamesGrid').innerHTML = `
-                    <div class="no-games" style="grid-column: 1/-1;">
-                        <div class="no-games-emoji">❌</div>
-                        <p>Failed to load games</p>
-                    </div>
-                `;
-            }
-        }
+  // Build games grid
+  buildGamesGrid(isAdult);
 
-        function launchGame(gameId, gameSlug) {
-            sessionStorage.setItem('wtw_user', JSON.stringify(currentUser));
-            sessionStorage.setItem('gameId', gameId);
-            window.location.href = `games/${gameSlug}/index.html`;
-        }
+  document.getElementById('hubView').classList.add('active');
+}
 
-        function handleLogout() {
-            localStorage.removeItem('wtw_user');
-            location.reload();
-        }
+/* ═══════════════════════════════════════
+   BUILD GAMES GRID (age-gated)
+═══════════════════════════════════════ */
+function buildGamesGrid(isAdult) {
+  const grid = document.getElementById('gamesGrid');
+  grid.innerHTML = '';
 
-        function showError(element, message) {
-            element.textContent = message;
-            element.classList.add('show');
-        }
+  GAMES.forEach(game => {
+    const card = document.createElement('div');
 
-        function showSuccess(element, message) {
-            element.textContent = message;
-            element.classList.add('show');
-        }
+    // Determine if user can access this game
+    const canAccess = (
+      game.access === 'all' ||
+      (game.access === 'adult' && isAdult) ||
+      (game.access === 'kids'  && !isAdult) ||
+      (game.access === 'kids'  && isAdult) // adults can play kids games too
+    );
 
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
+    // Locked = adult game + minor user
+    const locked = game.access === 'adult' && !isAdult;
 
-        function updateConnectionStatus(connected) {
-            const el = document.getElementById('connectionStatus');
-            if (connected) {
-                el.innerHTML = '<div class="pulse-dot"></div><span>Connected</span>';
-            } else {
-                el.innerHTML = '<div class="pulse-dot"></div><span>Offline</span>';
-            }
-        }
+    card.className = `game-card ${locked || game.comingSoon ? 'locked' : ''}`;
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+    // Age chip label
+    let chipHTML = '';
+    if (game.comingSoon) {
+      chipHTML = `<div class="lock-chip">SOON</div>`;
+    } else if (game.access === 'adult') {
+      chipHTML = `<div class="age-chip adults-only">18+</div>`;
+    } else if (game.access === 'kids') {
+      chipHTML = `<div class="age-chip all-ages">ALL AGES</div>`;
+    } else if (game.access === 'all') {
+      chipHTML = `<div class="age-chip all-ages">ALL AGES</div>`;
+    }
 
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            const now = Date.now();
-            if (now - lastTouchEnd <= 300) {
-                e.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
-    </script>
+    if (locked) {
+      chipHTML = `<div class="lock-chip">🔒 18+</div>`;
+    }
+
+    card.innerHTML = `
+      ${chipHTML}
+      <span class="game-icon">${game.icon}</span>
+      <div class="game-name">${game.name}</div>
+      <div class="game-desc">${game.desc}</div>
+    `;
+
+    if (!locked && !game.comingSoon && game.route) {
+      card.onclick = () => launchGame(game);
+    } else if (locked) {
+      card.onclick = () => showToast('🔒 This game is for players 18 and over.');
+    } else if (game.comingSoon) {
+      card.onclick = () => showToast(`🚧 ${game.name} is coming soon — stay tuned!`);
+    }
+
+    grid.appendChild(card);
+  });
+}
+
+/* ═══════════════════════════════════════
+   LAUNCH GAME
+   Passes auth token via sessionStorage so
+   the game can verify the user is logged in
+═══════════════════════════════════════ */
+async function launchGame(game) {
+  showToast(`🚀 Loading ${game.name}…`);
+
+  // Store session info so the game page can pick it up
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    sessionStorage.setItem('playvolt_session', JSON.stringify({
+      access_token:  session.access_token,
+      user_id:       session.user.id,
+      game_id:       game.id,
+      launched_at:   Date.now()
+    }));
+  }
+
+  setTimeout(() => {
+    if (game.route) {
+      window.location.href = game.route;
+    } else {
+      showToast('Game URL not configured yet.');
+    }
+  }, 600);
+}
+
+/* ═══════════════════════════════════════
+   SESSION PERSISTENCE — auto-login
+   on page load if user already has a
+   valid Supabase session cookie
+═══════════════════════════════════════ */
+async function checkExistingSession() {
+  if (!sb) return;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      await loadUserAndShowHub(session.user);
+    }
+  } catch(e) {
+    console.log('No existing session');
+  }
+}
+
+// Handle password reset redirect (Supabase sends user back with tokens)
+async function handleAuthCallback() {
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery')) {
+    // Show password reset form — simplified: just prompt in login tab
+    showToast('🔑 Enter a new password in the form below.');
+    switchTab('login');
+  }
+}
+
+/* ── BOOT ── */
+window.addEventListener('DOMContentLoaded', async () => {
+  await handleAuthCallback();
+  await checkExistingSession();
+
+  // Set max DOB to today (can't be born in the future)
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('regDob').setAttribute('max', today);
+  // Min DOB: 120 years ago
+  const minYear = new Date();
+  minYear.setFullYear(minYear.getFullYear() - 120);
+  document.getElementById('regDob').setAttribute('min', minYear.toISOString().split('T')[0]);
+});
+</script>
 </body>
 </html>
