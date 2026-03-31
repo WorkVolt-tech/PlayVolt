@@ -3,86 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Who's The Nicest? — PlayVolt</title>
+    <title>Who's The Worst?</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-    <!-- ╔══════════════════════════════════════════════════════╗
-         ║  PLAYVOLT AUTH GATE — KIDS VERSION                  ║
-         ║  Uses the PlayVolt Hub DB to verify login.          ║
-         ║  Allows both minors AND adults (adults can play     ║
-         ║  kid-friendly games too).                           ║
-         ║  The GAME itself uses KIDS_GAME_DB below.           ║
-         ╚══════════════════════════════════════════════════════╝ -->
-    <script>
-    (function() {
-        // ── PlayVolt HUB database (accounts / profiles) ──
-        // Same project your index.html login uses.
-        const HUB_SB_URL = 'YOUR_PLAYVOLT_HUB_SUPABASE_URL';
-        const HUB_SB_KEY = 'YOUR_PLAYVOLT_HUB_SUPABASE_ANON_KEY';
-
-        // ── Kids Game database (rooms / players / votes) ──
-        // A completely separate Supabase project.
-        const KIDS_GAME_SB_URL = 'YOUR_KIDS_GAME_SUPABASE_URL';
-        const KIDS_GAME_SB_KEY = 'YOUR_KIDS_GAME_SUPABASE_ANON_KEY';
-
-        const HUB_URL = '../index.html';
-
-        async function checkAuth() {
-            // Connect to the HUB database to verify the session
-            const hubSb = window.supabase.createClient(HUB_SB_URL, HUB_SB_KEY);
-            const { data: { session } } = await hubSb.auth.getSession();
-            if (!session) { redirectToHub('not_logged_in'); return; }
-
-            // Pull profile from HUB DB — check they have an account
-            const { data: profile, error } = await hubSb
-                .from('profiles')
-                .select('age_tier, username, first_name')
-                .eq('id', session.user.id)
-                .maybeSingle();
-            if (error || !profile) { redirectToHub('no_profile'); return; }
-
-            // Kids game: both minors AND adults are allowed in.
-            // Adults who try to access the kids game via hub are welcome.
-            // No age block here — everyone gets in.
-
-            // Store identity for the game to use if needed
-            window.__pvUser = {
-                id:        session.user.id,
-                email:     session.user.email,
-                username:  profile.username,
-                firstName: profile.first_name,
-                ageTier:   profile.age_tier,
-            };
-            window.__pvSession = session;
-
-            // ── Point the game at the KIDS database ──
-            // We override the game's Supabase credentials here
-            // so all rooms/players/votes go to the kids DB.
-            window.__kidsGameSbUrl = KIDS_GAME_SB_URL;
-            window.__kidsGameSbKey = KIDS_GAME_SB_KEY;
-
-            const overlay = document.getElementById('pv-auth-overlay');
-            if (overlay) overlay.remove();
-        }
-
-        function redirectToHub(reason) {
-            console.log('PlayVolt: redirecting to hub —', reason);
-            setTimeout(() => { window.location.href = HUB_URL; }, 100);
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const overlay = document.createElement('div');
-            overlay.id = 'pv-auth-overlay';
-            overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f0f1a;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,sans-serif;color:#fff;gap:16px;';
-            overlay.innerHTML = '<div style="font-size:2.5rem;animation:pvSpin 1.2s ease-in-out infinite alternate;">⚡</div>'
-                + '<div style="font-size:1.1rem;font-weight:700;color:#feca57;">PlayVolt</div>'
-                + '<div style="font-size:0.82rem;color:#6b6b88;">Verifying your account…</div>'
-                + '<style>@keyframes pvSpin{from{transform:rotate(-10deg) scale(1);filter:drop-shadow(0 0 8px #d4ff00);}to{transform:rotate(10deg) scale(1.15);filter:drop-shadow(0 0 24px #d4ff00);}}</style>';
-            document.body.appendChild(overlay);
-            checkAuth();
-        });
-    })();
-    <\/script>
     <style>
         /* ===== DESIGN TOKENS - REFINED COLOR SYSTEM ===== */
         :root {
@@ -2312,7 +2234,7 @@ button:not(#muteBtn):active:not(:disabled) {
     // ==========================================
     // SOUND SYSTEM
     // ==========================================
-    const SOUND_BASE = 'https://raw.githubusercontent.com/cheztvplus-tech/Who-s-The-Worst/main/sounds/';
+    const SOUND_BASE = 'https://raw.githubusercontent.com/WorkVolt-tech/PlayVolt/main/sounds/';
 
     const SOUNDS = {
         cardFlip:    new Audio(SOUND_BASE + 'card-flip.opus'),
@@ -2515,12 +2437,8 @@ button:not(#muteBtn):active:not(:disabled) {
     // ==========================================
     // CONFIGURATION
     // ==========================================
-    // ── Kids game uses its OWN Supabase project for rooms/players/votes ──
-    // These are set by the auth gate above (window.__kidsGameSbUrl/Key).
-    // If the gate hasn't run yet (e.g. direct URL access), the game will
-    // fail to connect and the auth gate will redirect to the hub anyway.
-    const SUPABASE_URL = window.__kidsGameSbUrl || 'YOUR_KIDS_GAME_SUPABASE_URL';
-    const SUPABASE_KEY = window.__kidsGameSbKey || 'YOUR_KIDS_GAME_SUPABASE_ANON_KEY';
+    const SUPABASE_URL = 'https://eybzbtyfafmqbkulyvog.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
     const ADMIN_PASSWORD = 'worst123';
 
     // ==========================================
