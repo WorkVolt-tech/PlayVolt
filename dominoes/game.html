@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Dominoes — Game · PlayVolt</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- PlayVolt shared auth helper -->
-<script src="../auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,25 +37,12 @@ html, body {
   user-select: none;
 }
 
-/* Auth gate */
-#auth-gate {
-  position: fixed; inset: 0;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 999;
-  font-size: 0.72rem; letter-spacing: 0.2em; color: var(--ivory-dim);
-  text-transform: uppercase;
-}
-#auth-gate.hidden { display: none; }
-
-/* ── Layout ── */
 .game-layout {
   display: grid;
   grid-template-rows: 50px 1fr 148px;
   height: 100vh;
 }
 
-/* ── Top Bar ── */
 .top-bar {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -87,16 +72,6 @@ html, body {
   color: var(--ivory-dim);
 }
 
-.pv-badge {
-  font-size: 0.55rem;
-  letter-spacing: 0.2em;
-  padding: 2px 6px;
-  background: rgba(124,92,252,0.1);
-  border: 1px solid rgba(124,92,252,0.25);
-  border-radius: 3px;
-  color: var(--pv-accent2);
-}
-
 .player-tags { display: flex; gap: 0.4rem; overflow: hidden; }
 
 .player-tag {
@@ -112,22 +87,13 @@ html, body {
   background: var(--surface2);
   white-space: nowrap;
 }
-.player-tag.active-turn {
-  border-color: var(--gold);
-  background: rgba(201,168,76,0.1);
-  color: var(--gold);
-}
+.player-tag.active-turn { border-color: var(--gold); background: rgba(201,168,76,0.1); color: var(--gold); }
 .player-tag.is-me { border-color: var(--blue); color: var(--blue); }
-.player-tag.active-turn.is-me {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(201,168,76,0.15);
-}
+.player-tag.active-turn.is-me { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
 
 .tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .tag-tiles { opacity: 0.6; font-size: 0.52rem; }
 
-/* ── Board ── */
 .board-area {
   background: var(--felt);
   background-image: radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%);
@@ -164,7 +130,6 @@ html, body {
   text-transform: uppercase;
 }
 
-/* Leave button */
 #btn-leave {
   margin-left: auto;
   border-color: var(--red);
@@ -172,7 +137,6 @@ html, body {
 }
 #btn-leave:hover { background: rgba(201,76,76,0.1); }
 
-/* Drop zones */
 .drop-zone {
   position: absolute;
   border: 2px dashed rgba(201,168,76,0.4);
@@ -194,7 +158,6 @@ html, body {
   color: var(--gold);
 }
 
-/* ── Hand ── */
 .hand-area {
   background: var(--surface);
   border-top: 1px solid var(--border);
@@ -227,7 +190,6 @@ html, body {
   justify-content: center;
 }
 
-/* Hand tile */
 .hand-tile {
   display: flex;
   flex-direction: column;
@@ -241,18 +203,9 @@ html, body {
   width: 40px;
 }
 .hand-tile:hover { transform: translateY(-8px); box-shadow: 0 12px 24px rgba(0,0,0,0.6); }
-.hand-tile.playable {
-  border-color: var(--gold);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 12px rgba(201,168,76,0.3);
-}
-.hand-tile.playable:hover {
-  box-shadow: 0 12px 24px rgba(0,0,0,0.6), 0 0 20px rgba(201,168,76,0.5);
-}
-.hand-tile.selected {
-  transform: translateY(-12px);
-  border-color: var(--gold-glow);
-  box-shadow: 0 16px 30px rgba(0,0,0,0.7), 0 0 25px rgba(201,168,76,0.6);
-}
+.hand-tile.playable { border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 12px rgba(201,168,76,0.3); }
+.hand-tile.playable:hover { box-shadow: 0 12px 24px rgba(0,0,0,0.6), 0 0 20px rgba(201,168,76,0.5); }
+.hand-tile.selected { transform: translateY(-12px); border-color: var(--gold-glow); box-shadow: 0 16px 30px rgba(0,0,0,0.7), 0 0 25px rgba(201,168,76,0.6); }
 .hand-tile.not-playable { opacity: 0.38; cursor: not-allowed; }
 
 .hand-tile .half {
@@ -262,26 +215,10 @@ html, body {
   align-items: center;
   justify-content: center;
 }
-.hand-tile .divider {
-  height: 1px;
-  background: rgba(26,24,20,0.22);
-  margin: 0 4px;
-}
+.hand-tile .divider { height: 1px; background: rgba(26,24,20,0.22); margin: 0 4px; }
 
-.pip-grid {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  padding: 4px;
-}
-.pip-grid .p {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--pip);
-  justify-self: center;
-  align-self: center;
-}
+.pip-grid { display: grid; width: 100%; height: 100%; padding: 4px; }
+.pip-grid .p { width: 5px; height: 5px; border-radius: 50%; background: var(--pip); justify-self: center; align-self: center; }
 
 .pips-0 { display: flex; }
 .pips-1 { display: grid; place-items: center; }
@@ -299,7 +236,6 @@ html, body {
 .pips-5 .p:nth-child(5) { grid-column:3; grid-row:3; }
 .pips-6 { display: grid; grid-template-columns:1fr 1fr; grid-template-rows:repeat(3,1fr); }
 
-/* ── Action Bar ── */
 .action-bar {
   display: flex;
   gap: 0.5rem;
@@ -319,22 +255,12 @@ html, body {
   cursor: pointer;
   transition: all 0.2s;
 }
-.btn-pass {
-  background: transparent;
-  color: var(--ivory-dim);
-  border: 1px solid var(--border);
-}
+.btn-pass { background: transparent; color: var(--ivory-dim); border: 1px solid var(--border); }
 .btn-pass:hover:not(:disabled) { border-color: var(--red); color: var(--red); background: rgba(201,76,76,0.05); }
 .btn-pass:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.btn-primary {
-  background: var(--gold);
-  color: var(--bg);
-  font-weight: 500;
-}
+.btn-primary { background: var(--gold); color: var(--bg); font-weight: 500; }
 .btn-primary:hover { background: var(--gold-glow); }
 
-/* ── Turn Toast ── */
 .turn-toast {
   position: fixed;
   top: 62px;
@@ -355,7 +281,6 @@ html, body {
 }
 .turn-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* ── Side Picker ── */
 .side-picker {
   position: fixed;
   bottom: 162px;
@@ -390,7 +315,6 @@ html, body {
 .side-btn-cancel { border-color: var(--border); color: var(--ivory-dim); }
 .side-btn-cancel:hover { border-color: var(--red); color: var(--red); background: rgba(201,76,76,0.05); }
 
-/* ── Game Over Overlay ── */
 .overlay {
   position: fixed;
   inset: 0;
@@ -421,42 +345,16 @@ html, body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.modal h2 {
-  font-family: 'Playfair Display', serif;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--gold);
-  margin-bottom: 0.5rem;
-}
-.modal p {
-  color: var(--ivory-dim);
-  font-size: 0.72rem;
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-}
+.modal h2 { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--gold); margin-bottom: 0.5rem; }
+.modal p { color: var(--ivory-dim); font-size: 0.72rem; margin-bottom: 1.5rem; line-height: 1.6; }
 
-.scores-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1.5rem;
-  font-size: 0.72rem;
-}
-.scores-table th {
-  font-size: 0.58rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--ivory-dim);
-  border-bottom: 1px solid var(--border);
-  padding: 0.5rem;
-}
+.scores-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.72rem; }
+.scores-table th { font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ivory-dim); border-bottom: 1px solid var(--border); padding: 0.5rem; }
 .scores-table td { padding: 0.5rem; border-bottom: 1px solid rgba(58,53,40,0.5); }
 .scores-table tr.winner td { color: var(--gold); }
 </style>
 </head>
 <body>
-
-<!-- Auth gate overlay -->
-<div id="auth-gate">⚡ Verifying session…</div>
 
 <div class="turn-toast" id="turn-toast"></div>
 
@@ -467,18 +365,15 @@ html, body {
 </div>
 
 <div class="game-layout">
-  <!-- Top Bar -->
   <div class="top-bar">
     <div class="top-bar-left">
       <span class="game-title">Dominoes</span>
       <span class="room-code-badge" id="room-code-badge">——</span>
-      <span class="pv-badge">⚡ PlayVolt</span>
     </div>
     <div class="player-tags" id="player-tags"></div>
-    <button class="btn btn-outline" id="btn-leave" onclick="leaveTable()" style="font-size:0.55rem;padding:0.4rem 0.75rem;border:1px solid var(--red);color:var(--red);">Leave Table</button>
+    <button class="btn btn-pass" id="btn-leave" onclick="leaveTable()" style="font-size:0.55rem;padding:0.4rem 0.75rem;border:1px solid var(--red);color:var(--red);">Leave Table</button>
   </div>
 
-  <!-- Board -->
   <div class="board-area" id="board-area">
     <svg id="board-svg"></svg>
     <div class="board-hint" id="board-hint">
@@ -488,7 +383,6 @@ html, body {
     <div class="drop-zone" id="drop-right" style="display:none" onclick="handleDropZone('right')">Right →</div>
   </div>
 
-  <!-- Hand -->
   <div class="hand-area">
     <div class="hand-label">Your Hand</div>
     <div class="hand-tiles" id="hand-tiles"></div>
@@ -498,7 +392,6 @@ html, body {
   </div>
 </div>
 
-<!-- Game Over -->
 <div class="overlay hidden" id="overlay-gameover">
   <div class="modal">
     <h2 id="winner-title">Victory!</h2>
@@ -512,86 +405,46 @@ html, body {
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   DOMINOES GAME — PlayVolt Module
-   PlayVolt session is loaded optionally for nav strip population.
-   Game data uses the dominoes Supabase project.
-═══════════════════════════════════════════════════════════════ */
-
-// ── Dominoes Supabase ──
 const DOMINO_URL = 'https://eybzbtyfafmqbkulyvog.supabase.co';
 const DOMINO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
 
 let db = null;
+let myInfo = null, roomData = null, players = [], boardData = null;
+let selectedTile = null, isMyTurn = false, gameOver = false, toastTimer = null;
 
-// ─── State ───────────────────────────────────────────────────────────────────
-let myInfo       = null;
-let roomData     = null;
-let players      = [];
-let boardData    = null;
-let selectedTile = null;
-let isMyTurn     = false;
-let gameOver     = false;
-let toastTimer   = null;
-
-// ─── Boot ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
-  // Init domino DB
   db = window.supabase.createClient(DOMINO_URL, DOMINO_KEY);
 
-  // Try to get PlayVolt session for the nav strip — optional, never blocks
-  try {
-    const ctx = await PlayVolt.getSession();
-    if (ctx?.profile?.username) {
-      // Could populate a profile badge here if needed
-    }
-  } catch (_) { /* auth.js unavailable or no session — that's fine */ }
-
-  // Check that we arrived here from the lobby
   const raw = sessionStorage.getItem('domino_player');
-  if (!raw) {
-    location.href = 'index.html';
-    return;
-  }
+  if (!raw) { location.href = 'index.html'; return; }
 
   myInfo = JSON.parse(raw);
   document.getElementById('room-code-badge').textContent = myInfo.roomCode || '——';
-  document.getElementById('auth-gate').classList.add('hidden');
   await loadGameState();
   subscribeToGame();
 });
 
-// ─── Load State ──────────────────────────────────────────────────────────────
 async function loadGameState() {
   const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
     db.from('rooms').select('*').eq('id', myInfo.roomId).single(),
     db.from('players').select('*').eq('room_id', myInfo.roomId).order('seat'),
     db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
   ]);
-
-  roomData  = room;
-  players   = pData || [];
-  boardData = bData;
-
+  roomData = room; players = pData || []; boardData = bData;
   renderAll();
 }
 
-// ─── Subscribe ───────────────────────────────────────────────────────────────
 function subscribeToGame() {
   db.channel('game-' + myInfo.roomId)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',       filter: `id=eq.${myInfo.roomId}` }, (payload) => {
-      if (payload.new.status === 'abandoned' && myInfo.seat !== 0) {
-        handleRoomAbandoned();
-        return;
-      }
+      if (payload.new.status === 'abandoned' && myInfo.seat !== 0) { handleRoomAbandoned(); return; }
       loadGameState();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'board',       filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
     .subscribe();
 }
 
-// ─── Render ──────────────────────────────────────────────────────────────────
 function renderAll() {
   if (!roomData || !players.length) return;
   renderPlayerTags();
@@ -612,26 +465,21 @@ function renderPlayerTags() {
     div.innerHTML = `
       <div class="tag-dot"></div>
       <span>${escHtml(p.nickname)}${isMe ? ' ★' : ''}</span>
-      <span class="tag-tiles">${Array.isArray(p.hand) ? p.hand.length : 0}</span>
-    `;
+      <span class="tag-tiles">${Array.isArray(p.hand) ? p.hand.length : 0}</span>`;
     container.appendChild(div);
   }
 }
 
-// ─── Hand ─────────────────────────────────────────────────────────────────────
 function renderHand() {
   const me = players.find(p => p.seat === myInfo.seat);
   if (!me) return;
   const hand = me.hand || [];
-
   isMyTurn = roomData.current_turn === myInfo.seat && roomData.status === 'playing';
   const playable = getPlayableTiles(hand);
-
   const container = document.getElementById('hand-tiles');
   container.innerHTML = '';
-
   hand.forEach((tile, idx) => {
-    const canPlay = isMyTurn && playable.some(t => t[0] === tile[0] && t[1] === tile[1]);
+    const canPlay   = isMyTurn && playable.some(t => t[0] === tile[0] && t[1] === tile[1]);
     const isSelected = selectedTile && selectedTile.idx === idx;
     const div = document.createElement('div');
     div.className = 'hand-tile'
@@ -640,12 +488,10 @@ function renderHand() {
     div.innerHTML = `
       <div class="half">${renderPips(tile[0])}</div>
       <div class="divider"></div>
-      <div class="half">${renderPips(tile[1])}</div>
-    `;
+      <div class="half">${renderPips(tile[1])}</div>`;
     if (canPlay) div.onclick = () => selectTile(tile, idx);
     container.appendChild(div);
   });
-
   const passBtn = document.getElementById('btn-pass');
   const hasTilesOnBoard = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
   passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
@@ -656,61 +502,40 @@ function renderPips(n) {
   return `<div class="pip-grid pips-${n}">${pips}</div>`;
 }
 
-// ─── Board ────────────────────────────────────────────────────────────────────
 function renderBoard() {
   const svg   = document.getElementById('board-svg');
   const hint  = document.getElementById('board-hint');
   const dropL = document.getElementById('drop-left');
   const dropR = document.getElementById('drop-right');
-
   svg.innerHTML = '';
-
   const hasTiles = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
-
   if (!hasTiles) {
     hint.style.display = 'block';
-    document.getElementById('board-hint-text').textContent =
-      isMyTurn ? 'Click a tile to place it' : 'Place the first tile';
-    dropL.style.display = 'none';
-    dropR.style.display = 'none';
+    document.getElementById('board-hint-text').textContent = isMyTurn ? 'Click a tile to place it' : 'Place the first tile';
+    dropL.style.display = 'none'; dropR.style.display = 'none';
     return;
   }
-
   hint.style.display = 'none';
-
   const area = document.getElementById('board-area');
-  const W = area.clientWidth  || 800;
-  const H = area.clientHeight || 300;
-
+  const W = area.clientWidth || 800, H = area.clientHeight || 300;
   layoutAndRenderTiles(svg, W, H);
-
   const canLeft  = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
   const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
-
-  if (canLeft) {
-    Object.assign(dropL.style, { display:'flex', left:'10px', top:'50%', transform:'translateY(-50%)', width:'70px', height:'50px' });
-  } else { dropL.style.display = 'none'; }
-
-  if (canRight) {
-    Object.assign(dropR.style, { display:'flex', right:'10px', left:'auto', top:'50%', transform:'translateY(-50%)', width:'70px', height:'50px' });
-  } else { dropR.style.display = 'none'; }
+  if (canLeft)  Object.assign(dropL.style, { display:'flex', left:'10px', top:'50%', transform:'translateY(-50%)', width:'70px', height:'50px' });
+  else dropL.style.display = 'none';
+  if (canRight) Object.assign(dropR.style, { display:'flex', right:'10px', left:'auto', top:'50%', transform:'translateY(-50%)', width:'70px', height:'50px' });
+  else dropR.style.display = 'none';
 }
 
 function layoutAndRenderTiles(svg, W, H) {
   const tiles = boardData.tiles;
   if (!tiles.length) return;
-
   const HW = 46, HH = 24, GAP = 2;
   const widths = tiles.map(e => isDouble(e.tile) ? HH : HW * 2 + GAP);
-  const totalW = widths.reduce((s, w) => s + w + GAP, -GAP);
-
-  let startX = Math.max(60, (W - totalW) / 2);
-  const cy   = H / 2;
-
   tiles.forEach((entry, i) => {
-    const tileW = widths[i];
-    const x     = startX + widths.slice(0, i).reduce((s, w) => s + w + GAP, 0);
-    const y     = cy - (isDouble(entry.tile) ? (HW * 2 + GAP) / 2 : HH / 2);
+    const x = Math.max(60, (W - widths.reduce((s, w) => s + w + GAP, -GAP)) / 2)
+      + widths.slice(0, i).reduce((s, w) => s + w + GAP, 0);
+    const y = H / 2 - (isDouble(entry.tile) ? (HW * 2 + GAP) / 2 : HH / 2);
     drawBoardTile(svg, entry, x, y, HW, HH);
   });
 }
@@ -722,9 +547,7 @@ function drawBoardTile(svg, entry, x, y, hw, hh) {
   const double = isDouble(tile);
   const faceA = flipped ? tile[1] : tile[0];
   const faceB = flipped ? tile[0] : tile[1];
-
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
   if (double) {
     const tw = hh, th = hw * 2 + 2;
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -732,12 +555,10 @@ function drawBoardTile(svg, entry, x, y, hw, hh) {
     rect.setAttribute('width', tw); rect.setAttribute('height', th);
     rect.setAttribute('rx', '3'); rect.setAttribute('fill', '#f0ead8');
     rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
-
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', x + 2); line.setAttribute('y1', y + hw + 1);
     line.setAttribute('x2', x + tw - 2); line.setAttribute('y2', y + hw + 1);
     line.setAttribute('stroke', 'rgba(26,24,20,0.25)'); line.setAttribute('stroke-width', '1');
-
     g.appendChild(rect); g.appendChild(line);
     drawSVGPips(g, faceA, x, y, tw, hw);
     drawSVGPips(g, faceB, x, y + hw + 2, tw, hw);
@@ -748,17 +569,14 @@ function drawBoardTile(svg, entry, x, y, hw, hh) {
     rect.setAttribute('width', tw); rect.setAttribute('height', th);
     rect.setAttribute('rx', '3'); rect.setAttribute('fill', '#f0ead8');
     rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
-
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', x + hw + 1); line.setAttribute('y1', y + 2);
     line.setAttribute('x2', x + hw + 1); line.setAttribute('y2', y + th - 2);
     line.setAttribute('stroke', 'rgba(26,24,20,0.25)'); line.setAttribute('stroke-width', '1');
-
     g.appendChild(rect); g.appendChild(line);
     drawSVGPips(g, faceA, x, y, hw, th);
     drawSVGPips(g, faceB, x + hw + 2, y, hw, th);
   }
-
   svg.appendChild(g);
 }
 
@@ -772,56 +590,37 @@ function drawSVGPips(g, n, x, y, w, h) {
 }
 
 function getPipPositions(n, x, y, w, h) {
-  const mx = x + w / 2, my = y + h / 2;
-  const ox = w * 0.28,  oy = h * 0.28;
-  return {
-    0: [],
-    1: [[mx, my]],
-    2: [[mx - ox, my - oy], [mx + ox, my + oy]],
-    3: [[mx - ox, my - oy], [mx, my], [mx + ox, my + oy]],
-    4: [[mx - ox, my - oy], [mx + ox, my - oy], [mx - ox, my + oy], [mx + ox, my + oy]],
-    5: [[mx - ox, my - oy], [mx + ox, my - oy], [mx, my], [mx - ox, my + oy], [mx + ox, my + oy]],
-    6: [[mx - ox, my - oy], [mx + ox, my - oy], [mx - ox, my], [mx + ox, my], [mx - ox, my + oy], [mx + ox, my + oy]]
+  const mx = x + w/2, my = y + h/2, ox = w*0.28, oy = h*0.28;
+  return { 0:[], 1:[[mx,my]], 2:[[mx-ox,my-oy],[mx+ox,my+oy]],
+    3:[[mx-ox,my-oy],[mx,my],[mx+ox,my+oy]],
+    4:[[mx-ox,my-oy],[mx+ox,my-oy],[mx-ox,my+oy],[mx+ox,my+oy]],
+    5:[[mx-ox,my-oy],[mx+ox,my-oy],[mx,my],[mx-ox,my+oy],[mx+ox,my+oy]],
+    6:[[mx-ox,my-oy],[mx+ox,my-oy],[mx-ox,my],[mx+ox,my],[mx-ox,my+oy],[mx+ox,my+oy]]
   }[n] || [];
 }
 
-// ─── Turn State ──────────────────────────────────────────────────────────────
 function updateTurnState() {
   const active = players.find(p => p.seat === roomData.current_turn);
-  if (isMyTurn) {
-    showToast('Your turn!');
-  } else if (active) {
-    showToast(`${active.nickname}'s turn`);
-  }
+  if (isMyTurn) showToast('Your turn!');
+  else if (active) showToast(`${active.nickname}'s turn`);
 }
 
 function showToast(msg) {
   const t = document.getElementById('turn-toast');
-  t.textContent = msg;
-  t.classList.add('visible');
+  t.textContent = msg; t.classList.add('visible');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('visible'), 2500);
 }
 
-// ─── Tile Selection ──────────────────────────────────────────────────────────
 function selectTile(tile, idx) {
   if (!isMyTurn) return;
-
   if (selectedTile && selectedTile.idx === idx) { cancelSelection(); return; }
-
   selectedTile = { tile, idx };
   renderHand();
-
-  if (!boardData || !boardData.tiles || boardData.tiles.length === 0) {
-    placeFirstTile(tile);
-    return;
-  }
-
+  if (!boardData || !boardData.tiles || boardData.tiles.length === 0) { placeFirstTile(tile); return; }
   const canLeft  = canPlayOnSide(tile, 'left');
   const canRight = canPlayOnSide(tile, 'right');
-
   renderBoard();
-
   if (canLeft && canRight && boardData.left_end !== boardData.right_end) {
     document.getElementById('side-picker').classList.add('visible');
   } else if (canLeft) {
@@ -836,8 +635,7 @@ function selectTile(tile, idx) {
 function cancelSelection() {
   selectedTile = null;
   document.getElementById('side-picker').classList.remove('visible');
-  renderHand();
-  renderBoard();
+  renderHand(); renderBoard();
 }
 
 function handleDropZone(side) {
@@ -846,12 +644,10 @@ function handleDropZone(side) {
   confirmPlace(side);
 }
 
-// ─── Game Logic ──────────────────────────────────────────────────────────────
 function getPlayableTiles(hand) {
   if (!boardData || !Array.isArray(boardData.tiles) || boardData.tiles.length === 0) return hand;
-  const left = boardData.left_end;
-  const right = boardData.right_end;
-  return hand.filter(t => t[0] === left || t[1] === left || t[0] === right || t[1] === right);
+  const left = boardData.left_end, right = boardData.right_end;
+  return hand.filter(t => t[0]===left || t[1]===left || t[0]===right || t[1]===right);
 }
 
 function canPlayOnSide(tile, side) {
@@ -863,21 +659,9 @@ function canPlayOnSide(tile, side) {
 async function placeFirstTile(tile) {
   const me = players.find(p => p.seat === myInfo.seat);
   const newHand = me.hand.filter((_, i) => i !== selectedTile.idx);
-
-  await db.from('board').update({
-    tiles: [{ tile, flipped: false }],
-    left_end: tile[0],
-    right_end: tile[1]
-  }).eq('room_id', myInfo.roomId);
-
-  await db.from('players')
-    .update({ hand: newHand })
-    .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
-
-  await db.from('game_events').insert({
-    room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile
-  });
-
+  await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId);
+  await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
+  await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
   await advanceTurn(newHand);
   selectedTile = null;
   document.getElementById('side-picker').classList.remove('visible');
@@ -885,42 +669,27 @@ async function placeFirstTile(tile) {
 
 async function confirmPlace(side) {
   if (!selectedTile) return;
-  const me   = players.find(p => p.seat === myInfo.seat);
-  const tile = selectedTile.tile;
-  const idx  = selectedTile.idx;
-  const end  = side === 'left' ? boardData.left_end : boardData.right_end;
-
-  let flipped = false;
-  let newOpenEnd;
-
+  const me = players.find(p => p.seat === myInfo.seat);
+  const tile = selectedTile.tile, idx = selectedTile.idx;
+  const end = side === 'left' ? boardData.left_end : boardData.right_end;
+  let flipped = false, newOpenEnd;
   if (side === 'right') {
-    if (tile[1] === end) { flipped = true;  newOpenEnd = tile[0]; }
+    if (tile[1] === end) { flipped = true; newOpenEnd = tile[0]; }
     else if (tile[0] === end) { flipped = false; newOpenEnd = tile[1]; }
     else { cancelSelection(); return; }
   } else {
-    if (tile[0] === end) { flipped = true;  newOpenEnd = tile[1]; }
+    if (tile[0] === end) { flipped = true; newOpenEnd = tile[1]; }
     else if (tile[1] === end) { flipped = false; newOpenEnd = tile[0]; }
     else { cancelSelection(); return; }
   }
-
   const newEntry    = { tile, flipped };
   const newTiles    = side === 'left' ? [newEntry, ...boardData.tiles] : [...boardData.tiles, newEntry];
   const newLeftEnd  = side === 'left'  ? newOpenEnd : boardData.left_end;
   const newRightEnd = side === 'right' ? newOpenEnd : boardData.right_end;
   const newHand     = me.hand.filter((_, i) => i !== idx);
-
-  await db.from('board').update({
-    tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd
-  }).eq('room_id', myInfo.roomId);
-
-  await db.from('players')
-    .update({ hand: newHand })
-    .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
-
-  await db.from('game_events').insert({
-    room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile
-  });
-
+  await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId);
+  await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
+  await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
   await advanceTurn(newHand);
   selectedTile = null;
   document.getElementById('side-picker').classList.remove('visible');
@@ -928,65 +697,42 @@ async function confirmPlace(side) {
 
 async function passMove() {
   const me = players.find(p => p.seat === myInfo.seat);
-  await db.from('game_events').insert({
-    room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null
-  });
+  await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null });
   await advanceTurn(me.hand);
 }
 
 async function advanceTurn(myNewHand) {
   if (myNewHand.length === 0) { await endGame(myInfo.seat); return; }
-
-  const { data: events } = await db.from('game_events')
-    .select('*').eq('room_id', myInfo.roomId)
-    .order('created_at', { ascending: false }).limit(4);
-
-  if (events && events.length === 4 && events.every(e => e.action === 'pass')) {
-    await endGame(null);
-    return;
-  }
-
+  const { data: events } = await db.from('game_events').select('*')
+    .eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4);
+  if (events && events.length === 4 && events.every(e => e.action === 'pass')) { await endGame(null); return; }
   const nextSeat = (roomData.current_turn + 1) % 4;
   await db.from('rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
 }
 
 async function endGame(winningSeat) {
-  await db.from('rooms')
-    .update({ status: 'finished', current_turn: winningSeat ?? 0 })
-    .eq('id', myInfo.roomId);
+  await db.from('rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
 }
 
-// ─── Game Over ───────────────────────────────────────────────────────────────
 function showGameOver() {
   if (gameOver) return;
   gameOver = true;
-
   const results = players.map(p => ({
-    nickname: p.nickname,
-    seat:     p.seat,
-    pips:     (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
+    nickname: p.nickname, seat: p.seat,
+    pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
   })).sort((a, b) => a.pips - b.pips);
-
   const winner = results[0];
   const isMe   = winner.seat === myInfo.seat;
-
   document.getElementById('winner-title').textContent = isMe ? '🎉 You Win!' : `${winner.nickname} Wins!`;
-  document.getElementById('winner-desc').textContent  =
-    `${winner.nickname} wins with the lowest pip count (${winner.pips} pips).`;
-
+  document.getElementById('winner-desc').textContent  = `${winner.nickname} wins with the lowest pip count (${winner.pips} pips).`;
   const tbody = document.getElementById('scores-body');
   tbody.innerHTML = '';
   results.forEach((r, i) => {
     const tr = document.createElement('tr');
     if (i === 0) tr.className = 'winner';
-    tr.innerHTML = `
-      <td>${escHtml(r.nickname)}${r.seat === myInfo.seat ? ' (you)' : ''}</td>
-      <td>${r.seat + 1}</td>
-      <td>${r.pips}${i === 0 ? ' 👑' : ''}</td>
-    `;
+    tr.innerHTML = `<td>${escHtml(r.nickname)}${r.seat === myInfo.seat ? ' (you)' : ''}</td><td>${r.seat + 1}</td><td>${r.pips}${i === 0 ? ' 👑' : ''}</td>`;
     tbody.appendChild(tr);
   });
-
   document.getElementById('overlay-gameover').classList.remove('hidden');
 }
 
@@ -994,29 +740,19 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ─── Leave Table ──────────────────────────────────────────────────────────────
 async function leaveTable() {
   if (!confirm('Leave this table?')) return;
-
-  const isHost = myInfo.seat === 0;
-
   try {
-    if (isHost) {
+    if (myInfo.seat === 0) {
       await db.from('rooms').update({ status: 'abandoned' }).eq('id', myInfo.roomId);
     } else {
-      await db.from('players')
-        .update({ is_connected: false })
-        .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
+      await db.from('players').update({ is_connected: false }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
     }
     sessionStorage.removeItem('domino_player');
     location.href = 'index.html';
-  } catch (e) {
-    console.error('Error leaving table:', e);
-    alert('Failed to leave table. Please try again.');
-  }
+  } catch (e) { console.error('Error leaving table:', e); alert('Failed to leave table. Please try again.'); }
 }
 
-// ─── Handle Host Kick ─────────────────────────────────────────────────────────
 function handleRoomAbandoned() {
   alert('The host has left. Returning to lobby...');
   sessionStorage.removeItem('domino_player');
