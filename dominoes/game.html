@@ -514,7 +514,7 @@ html, body {
 <script>
 /* ═══════════════════════════════════════════════════════════════
    DOMINOES GAME — PlayVolt Module
-   Auth is verified via PlayVolt.requireAuth before anything runs.
+   PlayVolt session is loaded optionally for nav strip population.
    Game data uses the dominoes Supabase project.
 ═══════════════════════════════════════════════════════════════ */
 
@@ -534,30 +534,28 @@ let isMyTurn     = false;
 let gameOver     = false;
 let toastTimer   = null;
 
-// ─── Boot — verify PlayVolt session, then check domino_player ─────────────────
+// ─── Boot ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
-  // 1. Verify PlayVolt auth — redirects to hub if not logged in
-  try {
-    await PlayVolt.requireAuth({ minTier: 'any' });
-  } catch {
-    return; // redirected
-  }
-
-  // 2. Init domino DB
+  // Init domino DB
   db = window.supabase.createClient(DOMINO_URL, DOMINO_KEY);
 
-  // 3. Check that we arrived here from the lobby (not direct URL)
+  // Try to get PlayVolt session for the nav strip — optional, never blocks
+  try {
+    const ctx = await PlayVolt.getSession();
+    if (ctx?.profile?.username) {
+      // Could populate a profile badge here if needed
+    }
+  } catch (_) { /* auth.js unavailable or no session — that's fine */ }
+
+  // Check that we arrived here from the lobby
   const raw = sessionStorage.getItem('domino_player');
   if (!raw) {
-    // No lobby session — send to domino lobby (not PlayVolt hub)
     location.href = 'index.html';
     return;
   }
 
   myInfo = JSON.parse(raw);
   document.getElementById('room-code-badge').textContent = myInfo.roomCode || '——';
-
-  // 4. All good — hide gate and start game
   document.getElementById('auth-gate').classList.add('hidden');
   await loadGameState();
   subscribeToGame();
