@@ -6,7 +6,6 @@
 <title>Dominoes — PlayVolt</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
-<!-- PlayVolt auth helper — adjust path to wherever auth.js lives in your project -->
 <!-- <script src="../auth.js"></script> -->
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -24,7 +23,6 @@
   --pip:        #1a1814;
   --red:        #c94c4c;
   --green:      #4caa6e;
-  /* PlayVolt accent — adjust to match your hub's palette */
   --pv-accent:  #7c5cfc;
   --pv-accent2: #a07aff;
 }
@@ -78,185 +76,60 @@ body::before {
   border: 1px solid rgba(124,92,252,0.2);
   border-radius: 6px;
 }
-
-.pv-brand {
-  font-size: 0.6rem;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  color: var(--pv-accent2);
-  font-weight: 500;
-}
-
-.pv-user {
-  font-size: 0.6rem;
-  color: var(--ivory-dim);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pv-avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--pv-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.6rem;
-  color: white;
-  font-weight: 600;
-}
-
-.pv-back {
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
-  color: var(--pv-accent2);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: opacity 0.2s;
-}
+.pv-brand { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--pv-accent2); font-weight: 500; }
+.pv-user  { font-size: 0.6rem; color: var(--ivory-dim); display: flex; align-items: center; gap: 0.5rem; }
+.pv-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--pv-accent); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: white; font-weight: 600; }
+.pv-back { font-size: 0.6rem; letter-spacing: 0.1em; color: var(--pv-accent2); text-decoration: none; display: flex; align-items: center; gap: 4px; transition: opacity 0.2s; }
 .pv-back:hover { opacity: 0.7; }
 
 /* ── Title ── */
 .title-block { text-align: center; margin-bottom: 2.5rem; }
 
-.domino-logo {
-  display: inline-flex;
-  gap: 4px;
-  margin-bottom: 1.25rem;
-}
-
+.domino-logo { display: inline-flex; gap: 4px; margin-bottom: 1.25rem; }
 .domino-logo .tile {
-  width: 34px;
-  height: 60px;
-  background: var(--ivory);
-  border-radius: 5px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-around;
-  padding: 5px 4px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
-  position: relative;
-  animation: float 3s ease-in-out infinite;
+  width: 34px; height: 60px; background: var(--ivory); border-radius: 5px;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-around;
+  padding: 5px 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+  position: relative; animation: float 3s ease-in-out infinite;
 }
-
 .domino-logo .tile:nth-child(2) { animation-delay: 0.35s; }
 .domino-logo .tile:nth-child(3) { animation-delay: 0.7s; }
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-6px); }
-}
-
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .domino-logo .tile::after {
-  content: '';
-  position: absolute;
-  left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%; height: 1.5px;
-  background: rgba(26,24,20,0.3);
+  content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 90%; height: 1.5px; background: rgba(26,24,20,0.3);
 }
-
 .pip-row { display: flex; gap: 3px; align-items: center; justify-content: center; height: 22px; }
 .pip { width: 5px; height: 5px; border-radius: 50%; background: var(--pip); }
 
-h1 {
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(2.2rem, 8vw, 3.5rem);
-  font-weight: 900;
-  color: var(--ivory);
-  letter-spacing: -0.02em;
-  line-height: 1;
-  text-shadow: 0 0 40px rgba(201,168,76,0.3);
-}
+h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem, 8vw, 3.5rem); font-weight: 900; color: var(--ivory); letter-spacing: -0.02em; line-height: 1; text-shadow: 0 0 40px rgba(201,168,76,0.3); }
 h1 span { color: var(--gold); }
-
-.subtitle {
-  font-size: 0.65rem;
-  letter-spacing: 0.25em;
-  color: var(--ivory-dim);
-  text-transform: uppercase;
-  margin-top: 0.4rem;
-}
+.subtitle { font-size: 0.65rem; letter-spacing: 0.25em; color: var(--ivory-dim); text-transform: uppercase; margin-top: 0.4rem; }
 
 /* ── Form & Controls ── */
-label {
-  font-size: 0.62rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ivory-dim);
-  display: block;
-  margin-bottom: 0.4rem;
-}
-
+label { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim); display: block; margin-bottom: 0.4rem; }
 input[type="text"] {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.75rem 1rem;
-  color: var(--ivory);
-  font-family: 'DM Mono', monospace;
-  font-size: 0.9rem;
-  letter-spacing: 0.1em;
-  transition: border-color 0.2s;
-  outline: none;
+  width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+  padding: 0.75rem 1rem; color: var(--ivory); font-family: 'DM Mono', monospace;
+  font-size: 0.9rem; letter-spacing: 0.1em; transition: border-color 0.2s; outline: none;
 }
-input[type="text"]:focus {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
-}
+input[type="text"]:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.1); }
 input[type="text"]::placeholder { color: #4a4538; }
 .input-group { display: flex; flex-direction: column; }
 
 /* ── Tabs ── */
-.tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1.75rem;
-}
-.tab {
-  flex: 1;
-  padding: 0.7rem;
-  background: none;
-  border: none;
-  color: var(--ivory-dim);
-  font-family: 'DM Mono', monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: all 0.2s;
-}
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.75rem; }
+.tab { flex: 1; padding: 0.7rem; background: none; border: none; color: var(--ivory-dim); font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
 .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
 .tab:hover:not(.active) { color: var(--ivory); }
 
 /* ── Panels ── */
 .panel { display: none; flex-direction: column; gap: 1.25rem; animation: fadeUp 0.3s ease; }
 .panel.active { display: flex; }
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ── Buttons ── */
-.btn {
-  padding: 0.875rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-family: 'DM Mono', monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s;
-}
+.btn { padding: 0.875rem 1.5rem; border: none; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
 .btn-primary { background: var(--gold); color: var(--bg); font-weight: 500; }
 .btn-primary:hover { background: var(--gold-glow); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(201,168,76,0.3); }
 .btn-primary:active { transform: translateY(0); }
@@ -265,93 +138,31 @@ input[type="text"]::placeholder { color: #4a4538; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
 
 /* ── Room code display ── */
-.room-code-display {
-  background: var(--surface2);
-  border: 1px solid var(--gold);
-  border-radius: 4px;
-  padding: 1.5rem;
-  text-align: center;
-  display: none;
-}
+.room-code-display { background: var(--surface2); border: 1px solid var(--gold); border-radius: 4px; padding: 1.5rem; text-align: center; display: none; }
 .room-code-display.visible { display: block; }
 .room-code-label { font-size: 0.58rem; letter-spacing: 0.25em; color: var(--ivory-dim); text-transform: uppercase; margin-bottom: 0.5rem; }
 .room-code-value { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 700; color: var(--gold); letter-spacing: 0.3em; }
 .share-url { font-size: 0.62rem; color: var(--ivory-dim); margin-top: 0.75rem; word-break: break-all; }
-.copy-btn {
-  display: inline-block;
-  margin-top: 0.75rem;
-  font-size: 0.6rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--gold);
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: 'DM Mono', monospace;
-  text-decoration: underline;
-}
+.copy-btn { display: inline-block; margin-top: 0.75rem; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); cursor: pointer; border: none; background: none; font-family: 'DM Mono', monospace; text-decoration: underline; }
 
 /* ── Waiting room ── */
 .waiting-room { display: none; flex-direction: column; gap: 1rem; }
 .waiting-room.visible { display: flex; }
-
 .players-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-
-.player-slot {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  transition: border-color 0.3s;
-}
+.player-slot { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem; transition: border-color 0.3s; }
 .player-slot.occupied { border-color: var(--green); }
 .player-slot.me { border-color: var(--gold); }
-
-.seat-number {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  background: var(--border);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.65rem;
-  color: var(--ivory-dim);
-  flex-shrink: 0;
-}
+.seat-number { width: 26px; height: 26px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: var(--ivory-dim); flex-shrink: 0; }
 .player-slot.occupied .seat-number { background: var(--green); color: white; }
 .player-slot.me .seat-number { background: var(--gold); color: var(--bg); }
 .player-name { font-size: 0.72rem; color: var(--ivory); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player-empty { font-size: 0.62rem; color: #3a3528; letter-spacing: 0.1em; }
-
-.waiting-status {
-  font-size: 0.62rem;
-  letter-spacing: 0.15em;
-  color: var(--ivory-dim);
-  text-align: center;
-  padding: 0.5rem;
-}
-.pulse {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--gold);
-  margin-right: 6px;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.4; transform: scale(0.7); }
-}
+.waiting-status { font-size: 0.62rem; letter-spacing: 0.15em; color: var(--ivory-dim); text-align: center; padding: 0.5rem; }
+.pulse { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin-right: 6px; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
 
 /* ── Queue ── */
-.queue-status {
-  background: var(--surface2);
-  border: 1px dashed var(--border);
-  border-radius: 4px;
-  padding: 1.5rem;
-  text-align: center;
-}
+.queue-status { background: var(--surface2); border: 1px dashed var(--border); border-radius: 4px; padding: 1.5rem; text-align: center; }
 .queue-count { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--gold); display: block; margin: 0.5rem 0; }
 
 /* ── Messages ── */
@@ -361,20 +172,9 @@ input[type="text"]::placeholder { color: #4a4538; }
 
 hr { border: none; border-top: 1px solid var(--border); }
 
-/* ── Auth gate ── */
-#auth-gate {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  text-align: center;
-  padding: 2rem;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-#auth-gate.visible { display: flex; }
-#auth-gate p { font-size: 0.75rem; color: var(--ivory-dim); line-height: 1.6; }
+/* ── Connection indicator ── */
+.conn-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--border); margin-right: 5px; transition: background 0.4s; }
+.conn-dot.connected { background: var(--green); }
 </style>
 </head>
 <body>
@@ -410,16 +210,10 @@ hr { border: none; border-top: 1px solid var(--border); }
     <p class="subtitle">Block · 4 Players · Online</p>
   </div>
 
-  <!-- Auth gate (shown only when not logged in) -->
-  <div id="auth-gate">
-    <p>You need a PlayVolt account to play.<br/>Sign in from the hub to continue.</p>
-    <a class="btn btn-primary" style="text-decoration:none;display:inline-block" href="../index.html">Go to PlayVolt Hub</a>
-  </div>
+  <!-- Main lobby -->
+  <div id="lobby-content">
 
-  <!-- Main lobby (hidden until auth confirmed) -->
-  <div id="lobby-content" style="display:none">
-
-    <!-- Nickname (pre-filled from profile) -->
+    <!-- Nickname -->
     <div class="input-group" style="margin-bottom:1.5rem">
       <label>Your Nickname</label>
       <input type="text" id="nickname" placeholder="Enter your name…" maxlength="16"/>
@@ -446,7 +240,10 @@ hr { border: none; border-top: 1px solid var(--border); }
 
       <div class="waiting-room" id="waiting-create">
         <div class="players-grid" id="players-create"></div>
-        <div class="waiting-status"><span class="pulse"></span>Waiting for players…</div>
+        <div class="waiting-status">
+          <span class="conn-dot" id="conn-dot-create"></span>
+          <span class="pulse"></span>Waiting for players…
+        </div>
         <button class="btn btn-primary" id="btn-start" onclick="startGame()" disabled>Start Game (Need 4 Players)</button>
       </div>
     </div>
@@ -464,7 +261,10 @@ hr { border: none; border-top: 1px solid var(--border); }
 
       <div class="waiting-room" id="waiting-join">
         <div class="players-grid" id="players-join"></div>
-        <div class="waiting-status"><span class="pulse"></span>Waiting for host to start…</div>
+        <div class="waiting-status">
+          <span class="conn-dot" id="conn-dot-join"></span>
+          <span class="pulse"></span>Waiting for host to start…
+        </div>
       </div>
     </div>
 
@@ -490,31 +290,19 @@ hr { border: none; border-top: 1px solid var(--border); }
 
 <script>
 // ─── State ───────────────────────────────────────────────────────────────────
-let myPlayerId   = null;
-let myRoomId     = null;
-let myRoomCode   = null;
-let mySeat       = null;
-let roomChannel  = null;
+let myPlayerId  = null;
+let myRoomId    = null;
+let myRoomCode  = null;
+let mySeat      = null;
+let roomChannel = null;
 let queueChannel = null;
-let isInQueue    = false;
-let pvProfile    = null;
+let isInQueue   = false;
+let activePanel = null; // 'create' | 'join'
 
 // ─── Init ────────────────────────────────────────────────────────────────────
-window.addEventListener('load', async () => {
-  // Try PlayVolt auth if the helper is available
-  if (typeof PlayVolt !== 'undefined') {
-    try {
-      const ctx = await PlayVolt.requireAuth({ minTier: 'any' });
-      pvProfile = ctx.profile;
-      showLobby(pvProfile);
-    } catch {
-      // requireAuth already redirected
-      return;
-    }
-  } else {
-    // Auth helper not loaded — run without auth (dev mode)
-    showLobby(null);
-  }
+window.addEventListener('load', () => {
+  document.getElementById('pv-username').textContent = 'Guest';
+  loadQueueCount();
 
   // Auto-join from URL ?join=CODE
   const code = new URLSearchParams(location.search).get('join');
@@ -523,20 +311,6 @@ window.addEventListener('load', async () => {
     document.getElementById('join-code').value = code.toUpperCase();
   }
 });
-
-function showLobby(profile) {
-  const lobbyEl = document.getElementById('lobby-content');
-  lobbyEl.style.display = 'block';
-
-  if (profile) {
-    document.getElementById('pv-avatar').textContent   = (profile.username || profile.first_name || '?')[0].toUpperCase();
-    document.getElementById('pv-username').textContent = profile.username || profile.first_name || 'Player';
-    document.getElementById('nickname').value          = profile.username || profile.first_name || '';
-  } else {
-    document.getElementById('pv-username').textContent = 'Guest';
-  }
-  loadQueueCount();
-}
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
@@ -558,6 +332,41 @@ function showMsg(id, text, type) {
   const el = document.getElementById(id);
   el.textContent = text;
   el.className = 'msg ' + type;
+}
+
+function setConnected(panel, ok) {
+  const dot = document.getElementById('conn-dot-' + panel);
+  if (dot) dot.classList.toggle('connected', ok);
+}
+
+// ─── Render players — fetches fresh from DB every time ───────────────────────
+async function loadAndRenderPlayers(roomId, panel) {
+  const containerId = 'players-' + panel;
+  console.log('[dominoes] loadAndRenderPlayers', roomId, panel);
+
+  const { data: players, error } = await db
+    .from('players')
+    .select('*')
+    .eq('room_id', roomId)
+    .order('seat');
+
+  if (error) { console.error('loadAndRenderPlayers error:', error); return; }
+
+  console.log('[dominoes] players loaded:', players?.length, players?.map(p => p.nickname));
+  renderPlayers(containerId, players || [], mySeat);
+
+  // Update start button for host
+  if (panel === 'create') {
+    const startBtn = document.getElementById('btn-start');
+    const count = (players || []).length;
+    if (count >= 4) {
+      startBtn.disabled = false;
+      startBtn.textContent = 'Start Game!';
+    } else {
+      startBtn.disabled = true;
+      startBtn.textContent = `Start Game (${count}/4 Players)`;
+    }
+  }
 }
 
 function renderPlayers(containerId, players, myS) {
@@ -607,6 +416,7 @@ async function createRoom() {
     myRoomId   = room.id;
     myRoomCode = code;
     mySeat     = 0;
+    activePanel = 'create';
 
     document.getElementById('display-code').textContent = code;
     const url = `${location.origin}${location.pathname}?join=${code}`;
@@ -614,8 +424,13 @@ async function createRoom() {
     document.getElementById('code-display').classList.add('visible');
     document.getElementById('waiting-create').classList.add('visible');
     btn.style.display = 'none';
+
+    // Immediately render myself — don't wait for subscription
     renderPlayers('players-create', [player], 0);
+
+    // Subscribe then immediately re-fetch to catch any race
     subscribeToRoom(room.id, 'create');
+
   } catch (e) {
     showMsg('msg-create', 'Error: ' + e.message, 'error');
     btn.disabled = false;
@@ -654,16 +469,75 @@ async function joinRoom(codeOverride) {
       .select().single();
     if (pErr) throw pErr;
 
-    myPlayerId = player.id;
-    myRoomId   = room.id;
-    myRoomCode = code;
-    mySeat     = freeSeat;
+    myPlayerId  = player.id;
+    myRoomId    = room.id;
+    myRoomCode  = code;
+    mySeat      = freeSeat;
+    activePanel = 'join';
 
     document.getElementById('waiting-join').classList.add('visible');
+
+    // Immediately render current state
+    await loadAndRenderPlayers(room.id, 'join');
+
+    // Subscribe then re-fetch
     subscribeToRoom(room.id, 'join');
+
   } catch (e) {
     showMsg('msg-join', 'Error: ' + e.message, 'error');
   }
+}
+
+// ─── Room Subscription ────────────────────────────────────────────────────────
+// Mirrors wtw pattern: subscribe broadly (no filter) → re-fetch on every change
+function subscribeToRoom(roomId, panel) {
+  console.log('[dominoes] subscribeToRoom', roomId, panel);
+
+  // Clean up any previous channel
+  if (roomChannel) { db.removeChannel(roomChannel); roomChannel = null; }
+
+  // Immediately load so host sees themselves without waiting for a DB event
+  loadAndRenderPlayers(roomId, panel);
+
+  roomChannel = db.channel('room:' + roomId)
+    // Listen to ALL player changes — no row filter, same as wtw
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'players' },
+      (payload) => {
+        console.log('[dominoes] player change received', payload);
+        // Only handle events for our room
+        const roomMatch =
+          payload.new?.room_id === roomId ||
+          payload.old?.room_id === roomId;
+        if (!roomMatch) return;
+        loadAndRenderPlayers(roomId, panel);
+      })
+    // Listen to ALL room changes — no row filter
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'rooms' },
+      (payload) => {
+        console.log('[dominoes] room change received', payload);
+        if (payload.new?.id !== roomId) return;
+        if (payload.new.status === 'playing') {
+          sessionStorage.setItem('domino_player', JSON.stringify({
+            seat:     mySeat,
+            nickname: document.getElementById('nickname').value.trim(),
+            roomId:   myRoomId,
+            roomCode: myRoomCode
+          }));
+          location.href = 'game.html';
+        }
+      })
+    .subscribe((status) => {
+      console.log('[dominoes] subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        setConnected(panel, true);
+        // Re-fetch on confirmed subscription to close any race window
+        loadAndRenderPlayers(roomId, panel);
+      } else {
+        setConnected(panel, false);
+      }
+    });
 }
 
 // ─── Matchmaking ──────────────────────────────────────────────────────────────
@@ -738,53 +612,14 @@ async function leaveQueue() {
   loadQueueCount();
 }
 
-// ─── Room Subscription ───────────────────────────────────────────────────────
-function subscribeToRoom(roomId, panel) {
-  const playersEl = panel === 'create' ? 'players-create' : 'players-join';
-
-  roomChannel = db.channel('room-' + roomId)
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
-      async () => {
-        const { data: players } = await db.from('players').select('*').eq('room_id', roomId).order('seat');
-        renderPlayers(playersEl, players || [], mySeat);
-        if (panel === 'create') {
-          const startBtn = document.getElementById('btn-start');
-          if ((players || []).length === 4) {
-            startBtn.disabled = false;
-            startBtn.textContent = 'Start Game!';
-          }
-        }
-      })
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
-      (payload) => {
-        if (payload.new.status === 'playing') {
-          sessionStorage.setItem('domino_player', JSON.stringify({
-            seat: mySeat,
-            nickname: document.getElementById('nickname').value.trim(),
-            roomId: myRoomId,
-            roomCode: myRoomCode
-          }));
-          location.href = 'game.html';
-        }
-      })
-    .subscribe();
-
-  // Initial render
-  db.from('players').select('*').eq('room_id', roomId).order('seat').then(({ data: players }) => {
-    if (players) renderPlayers(playersEl, players, mySeat);
-  });
-}
-
-// ─── Start Game (host only) ──────────────────────────────────────────────────
+// ─── Start Game (host only) ───────────────────────────────────────────────────
 async function startGame() {
   if (!myRoomId) return;
   const { data: players } = await db.from('players').select('*').eq('room_id', myRoomId).order('seat');
   if (!players || players.length < 4) { alert('Need 4 players to start!'); return; }
 
   const tiles = shuffle(generateDominoSet());
-  const hands = [tiles.slice(0, 7), tiles.slice(7, 14), tiles.slice(14, 21), tiles.slice(21, 28)];
+  const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
 
   for (let i = 0; i < 4; i++) {
     await db.from('players')
@@ -792,14 +627,11 @@ async function startGame() {
       .eq('room_id', myRoomId).eq('seat', i);
   }
 
-  // Create board row (upsert-safe)
   const { error: bErr } = await db.from('board').insert({
     room_id: myRoomId, tiles: [], left_end: null, right_end: null
   });
-  // If board row already exists that's fine — ignore the unique conflict
   if (bErr && !bErr.message.includes('unique')) console.warn('Board insert:', bErr.message);
 
-  // Who has [6,6]?
   let startingSeat = 0;
   for (let i = 0; i < 4; i++) {
     if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break; }
