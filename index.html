@@ -766,6 +766,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const GAME_ROUTES = {
   wtw_adult: '../PlayVolt/whos-the-worst-adult/index.html',
   wtw_kids:  '../PlayVolt/whos-the-worst/index.html',
+  dominoes:  'dominoes/index.html',
 };
 
 // ── GAME CATALOGUE ──
@@ -790,10 +791,10 @@ const GAMES = [
   {
     id:      'dominoes',
     name:    "Dominoes Online",
-    icon:    '🌟',
-    desc:    'Play with friends!',
-    access:  'kids',
-    route:   GAME_ROUTES.wtw_kids,
+    icon:    '🁣',
+    desc:    'Classic block dominoes with friends. 4 players online!',
+    access:  'all',
+    route:   GAME_ROUTES.dominoes,
   },
   {
     id:      'coming_soon_1',
