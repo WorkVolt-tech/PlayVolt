@@ -10,6 +10,8 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   }
 });
 
+console.log('[DEBUG] Supabase client initialized');
+
 /* ── Shared helpers ── */
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
