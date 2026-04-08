@@ -651,48 +651,98 @@ function layoutAndRenderTiles(svg, W, H) {
   const tiles = boardData.tiles;
   if (!tiles.length) return;
 
-  const HW = 46, HH = 23, GAP = 2;
-  const FW = HW * 2 + GAP;
+  // Tile dimensions: normal tiles are wide (horizontal), doubles are tall (vertical/square-ish)
+  // Normal: width = HW*2+GAP, height = HH
+  // Double: width = HH,       height = HW*2+GAP  (rotated 90°)
+  const HW = 46, HH = 24, GAP = 2;
 
-  const totalW  = tiles.length * (FW + GAP);
-  let startX    = Math.max(80, (W - totalW) / 2);
-  const cy      = H / 2;
+  // Pre-compute widths for each tile
+  const widths = tiles.map(e => isDouble(e.tile) ? HH : HW * 2 + GAP);
+  const totalW = widths.reduce((s, w) => s + w + GAP, -GAP);
+
+  let startX = Math.max(60, (W - totalW) / 2);
+  const cy   = H / 2;
 
   tiles.forEach((entry, i) => {
-    const x = startX + i * (FW + GAP);
-    const y = cy - HH / 2;
-    drawBoardTile(svg, entry.tile, x, y, HW, HH, entry.flipped);
+    const tileW = widths[i];
+    const x     = startX + widths.slice(0, i).reduce((s, w) => s + w + GAP, 0);
+    const y     = cy - (isDouble(entry.tile) ? (HW * 2 + GAP) / 2 : HH / 2);
+    drawBoardTile(svg, entry, x, y, HW, HH);
   });
 }
 
-function drawBoardTile(svg, tile, x, y, hw, hh, flipped) {
-  const a = flipped ? tile[1] : tile[0];
-  const b = flipped ? tile[0] : tile[1];
+function isDouble(tile) { return tile[0] === tile[1]; }
+
+function drawBoardTile(svg, entry, x, y, hw, hh) {
+  const { tile, flipped } = entry;
+  const double = isDouble(tile);
+
+  // For a normal (horizontal) tile:
+  //   left half  = tile[0] if not flipped, tile[1] if flipped
+  //   right half = tile[1] if not flipped, tile[0] if flipped
+  // "flipped" just means the tile was physically turned around to connect.
+  // The open end (facing outward) is always stored correctly in left_end/right_end.
+  // For rendering we show: left-face = tile[0], right-face = tile[1] (original order),
+  // but rotate the whole tile 180° when flipped — which for a symmetric domino
+  // just swaps which half faces which direction.
+  const faceA = flipped ? tile[1] : tile[0];
+  const faceB = flipped ? tile[0] : tile[1];
 
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
-  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  rect.setAttribute('x', x);
-  rect.setAttribute('y', y);
-  rect.setAttribute('width', hw * 2 + 2);
-  rect.setAttribute('height', hh);
-  rect.setAttribute('rx', '3');
-  rect.setAttribute('fill', '#f0ead8');
-  rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
+  if (double) {
+    // Vertical layout: height = hw*2+2, width = hh
+    const tw = hh, th = hw * 2 + 2;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', x);
+    rect.setAttribute('y', y);
+    rect.setAttribute('width', tw);
+    rect.setAttribute('height', th);
+    rect.setAttribute('rx', '3');
+    rect.setAttribute('fill', '#f0ead8');
+    rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
 
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.setAttribute('x1', x + hw + 1);
-  line.setAttribute('y1', y + 2);
-  line.setAttribute('x2', x + hw + 1);
-  line.setAttribute('y2', y + hh - 2);
-  line.setAttribute('stroke', 'rgba(26,24,20,0.25)');
-  line.setAttribute('stroke-width', '1');
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x + 2);
+    line.setAttribute('y1', y + hw + 1);
+    line.setAttribute('x2', x + tw - 2);
+    line.setAttribute('y2', y + hw + 1);
+    line.setAttribute('stroke', 'rgba(26,24,20,0.25)');
+    line.setAttribute('stroke-width', '1');
 
-  g.appendChild(rect);
-  g.appendChild(line);
+    g.appendChild(rect);
+    g.appendChild(line);
 
-  drawSVGPips(g, a, x,       y, hw, hh);
-  drawSVGPips(g, b, x + hw + 1, y, hw, hh);
+    // Top half = faceA, bottom half = faceB
+    drawSVGPips(g, faceA, x, y,       tw, hw);
+    drawSVGPips(g, faceB, x, y + hw + 2, tw, hw);
+  } else {
+    // Horizontal layout: width = hw*2+2, height = hh
+    const tw = hw * 2 + 2, th = hh;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', x);
+    rect.setAttribute('y', y);
+    rect.setAttribute('width', tw);
+    rect.setAttribute('height', th);
+    rect.setAttribute('rx', '3');
+    rect.setAttribute('fill', '#f0ead8');
+    rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x + hw + 1);
+    line.setAttribute('y1', y + 2);
+    line.setAttribute('x2', x + hw + 1);
+    line.setAttribute('y2', y + th - 2);
+    line.setAttribute('stroke', 'rgba(26,24,20,0.25)');
+    line.setAttribute('stroke-width', '1');
+
+    g.appendChild(rect);
+    g.appendChild(line);
+
+    // Left half = faceA (open/outward end), right half = faceB
+    drawSVGPips(g, faceA, x,       y, hw, th);
+    drawSVGPips(g, faceB, x + hw + 2, y, hw, th);
+  }
 
   svg.appendChild(g);
 }
@@ -830,29 +880,32 @@ async function confirmPlace(side) {
 
   const end = side === 'left' ? boardData.left_end : boardData.right_end;
 
-  // Determine if tile needs flipping so the matching pip faces the board end
+  // Determine orientation:
+  // For RIGHT placement: the face touching the board is the connecting face.
+  //   • If tile[1] === end → tile[1] connects, tile[0] is new open end → no flip
+  //   • If tile[0] === end → tile[0] connects, tile[1] is new open end → flip
+  // For LEFT placement:
+  //   • If tile[0] === end → tile[0] connects, tile[1] is new open end → no flip
+  //   • If tile[1] === end → tile[1] connects, tile[0] is new open end → flip
   let flipped = false;
-  if (side === 'left') {
-    flipped = (tile[1] === end);   // tile[1] connects to left → flip so tile[0] becomes new left end
+  let newOpenEnd;
+  if (side === 'right') {
+    if (tile[1] === end)      { flipped = false; newOpenEnd = tile[0]; }
+    else if (tile[0] === end) { flipped = true;  newOpenEnd = tile[1]; }
+    else { cancelSelection(); return; }
   } else {
-    flipped = (tile[0] === end);   // tile[0] connects to right → flip so tile[1] becomes new right end
+    if (tile[0] === end)      { flipped = false; newOpenEnd = tile[1]; }
+    else if (tile[1] === end) { flipped = true;  newOpenEnd = tile[0]; }
+    else { cancelSelection(); return; }
   }
-
-  // Validate the tile actually matches
-  const matchVal = flipped ? tile[1] : tile[0]; // value connecting to board
-  if (side === 'left'  && matchVal !== boardData.left_end)  { cancelSelection(); return; }
-  if (side === 'right' && matchVal !== boardData.right_end) { cancelSelection(); return; }
 
   const newEntry  = { tile, flipped };
   const newTiles  = side === 'left'
     ? [newEntry, ...boardData.tiles]
     : [...boardData.tiles, newEntry];
 
-  // Recompute open ends
-  const leftEntry  = newTiles[0];
-  const rightEntry = newTiles[newTiles.length - 1];
-  const newLeftEnd  = leftEntry.flipped  ? leftEntry.tile[1]  : leftEntry.tile[0];
-  const newRightEnd = rightEntry.flipped ? rightEntry.tile[0] : rightEntry.tile[1];
+  const newLeftEnd  = side === 'left'  ? newOpenEnd : boardData.left_end;
+  const newRightEnd = side === 'right' ? newOpenEnd : boardData.right_end;
 
   const newHand = me.hand.filter((_, i) => i !== idx);
 
