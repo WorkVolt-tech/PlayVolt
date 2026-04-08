@@ -4,9 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Dominoes — PlayVolt</title>
+<!-- Supabase loaded from PlayVolt hub via auth.js; keep this as fallback -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js"></script>
-<!-- <script src="../auth.js"></script> -->
+<!-- PlayVolt shared auth helper — path relative to this file -->
+<script src="../auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,6 +58,17 @@ body::before {
   pointer-events: none;
   z-index: 0;
 }
+
+/* Auth gate — shown while verifying session */
+#auth-gate {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+  font-size: 0.72rem; letter-spacing: 0.2em; color: var(--ivory-dim);
+  text-transform: uppercase;
+}
+#auth-gate.hidden { display: none; }
 
 .wrapper {
   position: relative;
@@ -116,6 +128,12 @@ input[type="text"] {
 input[type="text"]:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.1); }
 input[type="text"]::placeholder { color: #4a4538; }
 .input-group { display: flex; flex-direction: column; }
+
+/* ── Nickname note (pre-filled from PlayVolt profile) ── */
+.nickname-note {
+  font-size: 0.56rem; letter-spacing: 0.1em; color: var(--pv-accent2);
+  margin-top: 0.3rem;
+}
 
 /* ── Tabs ── */
 .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.75rem; }
@@ -178,6 +196,10 @@ hr { border: none; border-top: 1px solid var(--border); }
 </style>
 </head>
 <body>
+
+<!-- Auth gate overlay — hidden once session confirmed -->
+<div id="auth-gate">⚡ Verifying session…</div>
+
 <div class="wrapper">
 
   <!-- PlayVolt nav strip -->
@@ -185,7 +207,7 @@ hr { border: none; border-top: 1px solid var(--border); }
     <span class="pv-brand">⚡ PlayVolt</span>
     <div class="pv-user">
       <div class="pv-avatar" id="pv-avatar">?</div>
-      <span id="pv-username">Loading…</span>
+      <span id="pv-username">…</span>
     </div>
     <a class="pv-back" href="../index.html">← Hub</a>
   </div>
@@ -213,10 +235,11 @@ hr { border: none; border-top: 1px solid var(--border); }
   <!-- Main lobby -->
   <div id="lobby-content">
 
-    <!-- Nickname -->
+    <!-- Nickname — pre-filled from PlayVolt profile, still editable -->
     <div class="input-group" style="margin-bottom:1.5rem">
       <label>Your Nickname</label>
-      <input type="text" id="nickname" placeholder="Enter your name…" maxlength="16"/>
+      <input type="text" id="nickname" placeholder="Loading…" maxlength="16"/>
+      <div class="nickname-note" id="nickname-note">Pre-filled from your PlayVolt profile</div>
     </div>
 
     <!-- Tabs -->
@@ -289,7 +312,25 @@ hr { border: none; border-top: 1px solid var(--border); }
 </div><!-- /wrapper -->
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════
+   DOMINOES LOBBY — PlayVolt Module
+   Requires: auth.js (PlayVolt shared helper) loaded above.
+   The domino Supabase project is separate from the PlayVolt hub.
+   Auth uses PlayVolt's Supabase; game data uses dominoes' Supabase.
+═══════════════════════════════════════════════════════════════ */
+
+// ── Dominoes Supabase (game data only) ──
+const DOMINO_URL = 'https://eybzbtyfafmqbkulyvog.supabase.co';
+const DOMINO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
+
+// Initialised after PlayVolt auth confirms the user
+let db = null;
+
+// PlayVolt session info (populated in boot)
+let pvUser    = null;
+let pvProfile = null;
+
+// Lobby state
 let myPlayerId  = null;
 let myRoomId    = null;
 let myRoomCode  = null;
@@ -299,10 +340,55 @@ let queueChannel = null;
 let isInQueue   = false;
 let activePanel = null; // 'create' | 'join'
 
-// ─── Init ────────────────────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-  document.getElementById('pv-username').textContent = 'Guest';
-  loadQueueCount();
+// ─── Shared helpers (mirror of supabase.js) ──────────────────────────────────
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+function generateDominoSet() {
+  const tiles = [];
+  for (let a = 0; a <= 6; a++)
+    for (let b = a; b <= 6; b++)
+      tiles.push([a, b]);
+  return tiles;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ─── Boot — verify PlayVolt session first ─────────────────────────────────────
+window.addEventListener('load', async () => {
+  try {
+    // requireAuth redirects to hub if not logged in — no tier restriction for dominoes
+    const ctx = await PlayVolt.requireAuth({ minTier: 'any' });
+    pvUser    = ctx.user;
+    pvProfile = ctx.profile;
+  } catch {
+    // PlayVolt.requireAuth already redirected; just stop here
+    return;
+  }
+
+  // Auth confirmed — init domino DB client
+  db = window.supabase.createClient(DOMINO_URL, DOMINO_KEY);
+
+  // Populate nav strip with PlayVolt identity
+  const name = pvProfile?.username || pvUser.email?.split('@')[0] || 'Player';
+  document.getElementById('pv-username').textContent = name;
+  document.getElementById('pv-avatar').textContent   = name[0].toUpperCase();
+
+  // Pre-fill nickname from PlayVolt profile
+  const nick = pvProfile?.username || name;
+  document.getElementById('nickname').value = nick.slice(0, 16);
+
+  // Remove auth gate
+  document.getElementById('auth-gate').classList.add('hidden');
 
   // Auto-join from URL ?join=CODE
   const code = new URLSearchParams(location.search).get('join');
@@ -310,6 +396,8 @@ window.addEventListener('load', () => {
     switchTab('join');
     document.getElementById('join-code').value = code.toUpperCase();
   }
+
+  loadQueueCount();
 });
 
 // ─── Tab ─────────────────────────────────────────────────────────────────────
@@ -339,11 +427,8 @@ function setConnected(panel, ok) {
   if (dot) dot.classList.toggle('connected', ok);
 }
 
-// ─── Render players — fetches fresh from DB every time ───────────────────────
+// ─── Render players ───────────────────────────────────────────────────────────
 async function loadAndRenderPlayers(roomId, panel) {
-  const containerId = 'players-' + panel;
-  console.log('[dominoes] loadAndRenderPlayers', roomId, panel);
-
   const { data: players, error } = await db
     .from('players')
     .select('*')
@@ -353,10 +438,8 @@ async function loadAndRenderPlayers(roomId, panel) {
 
   if (error) { console.error('loadAndRenderPlayers error:', error); return; }
 
-  console.log('[dominoes] players loaded:', players?.length, players?.map(p => p.nickname));
-  renderPlayers(containerId, players || [], mySeat);
+  renderPlayers('players-' + panel, players || [], mySeat);
 
-  // Update start button for host
   if (panel === 'create') {
     const startBtn = document.getElementById('btn-start');
     const count = (players || []).length;
@@ -426,10 +509,7 @@ async function createRoom() {
     document.getElementById('waiting-create').classList.add('visible');
     btn.style.display = 'none';
 
-    // Immediately render myself — don't wait for subscription
     renderPlayers('players-create', [player], 0);
-
-    // Subscribe then immediately re-fetch to catch any race
     subscribeToRoom(room.id, 'create');
 
   } catch (e) {
@@ -478,10 +558,7 @@ async function joinRoom(codeOverride) {
 
     document.getElementById('waiting-join').classList.add('visible');
 
-    // Immediately render current state
     await loadAndRenderPlayers(room.id, 'join');
-
-    // Subscribe then re-fetch
     subscribeToRoom(room.id, 'join');
 
   } catch (e) {
@@ -491,49 +568,30 @@ async function joinRoom(codeOverride) {
 
 // ─── Room Subscription ────────────────────────────────────────────────────────
 function subscribeToRoom(roomId, panel) {
-  console.log('[DEBUG] Subscribing to room:', roomId, 'Panel:', panel);
-
-  // Clean up existing channel if any
-  if (roomChannel) {
-    console.log('[DEBUG] Removing existing channel');
-    db.removeChannel(roomChannel);
-    roomChannel = null;
-  }
+  if (roomChannel) { db.removeChannel(roomChannel); roomChannel = null; }
 
   roomChannel = db.channel('room-' + roomId + '-' + Date.now())
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
-      async (payload) => {
-        console.log('[DEBUG] Realtime UPDATE received:', payload);
-        // Re-fetch and render all players
-        await loadAndRenderPlayers(roomId, panel);
-      })
+      async () => { await loadAndRenderPlayers(roomId, panel); })
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
       (payload) => {
-        console.log('[DEBUG] Room status update:', payload);
         if (payload.new.status === 'playing') {
+          // Store session so game.html knows who we are + include PlayVolt user_id
           sessionStorage.setItem('domino_player', JSON.stringify({
-            seat: mySeat,
-            nickname: document.getElementById('nickname').value.trim(),
-            roomId: myRoomId,
-            roomCode: myRoomCode
+            seat:      mySeat,
+            nickname:  document.getElementById('nickname').value.trim(),
+            roomId:    myRoomId,
+            roomCode:  myRoomCode,
+            pvUserId:  pvUser?.id || null,
           }));
           location.href = 'game.html';
         }
       })
-    .subscribe((status, err) => {
-      console.log('[DEBUG] Channel subscription status:', status);
-      if (err) console.error('[DEBUG] Subscription error:', err);
-      
-      // Update connection indicator
+    .subscribe((status) => {
       setConnected(panel, status === 'SUBSCRIBED');
-      
-      if (status === 'SUBSCRIBED') {
-        console.log('[DEBUG] Successfully subscribed to room updates');
-        // Force a fresh load now that we're subscribed
-        loadAndRenderPlayers(roomId, panel);
-      }
+      if (status === 'SUBSCRIBED') loadAndRenderPlayers(roomId, panel);
     });
 }
 
@@ -593,7 +651,8 @@ async function autoCreateMatchRoom(queuePlayers) {
   }
 
   sessionStorage.setItem('domino_player', JSON.stringify({
-    seat: 0, nickname: queuePlayers[0].nickname, roomId: room.id, roomCode: room.code
+    seat: 0, nickname: queuePlayers[0].nickname, roomId: room.id, roomCode: room.code,
+    pvUserId: pvUser?.id || null,
   }));
   location.href = 'game.html';
 }
