@@ -152,7 +152,15 @@ html, body {
   color: rgba(240,234,216,0.18);
   text-transform: uppercase;
 }
-
+/* Leave button */
+#btn-leave {
+  margin-left: auto;
+  border-color: var(--red);
+  color: var(--red);
+}
+#btn-leave:hover {
+  background: rgba(201, 76, 76, 0.1);
+}
 /* Drop zones */
 .drop-zone {
   position: absolute;
@@ -453,6 +461,7 @@ html, body {
       <span class="pv-badge">⚡ PlayVolt</span>
     </div>
     <div class="player-tags" id="player-tags"></div>
+    <button class="btn btn-outline" id="btn-leave" onclick="leaveTable()" style="font-size: 0.55rem; padding: 0.4rem 0.75rem;">Leave Table</button>
   </div>
 
   <!-- Board -->
@@ -536,7 +545,14 @@ async function loadGameState() {
 function subscribeToGame() {
   db.channel('game-' + myInfo.roomId)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',       filter: `id=eq.${myInfo.roomId}` },      loadGameState)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',       filter: `id=eq.${myInfo.roomId}` },      (payload) => {
+      // Check if room was abandoned by host
+      if (payload.new.status === 'abandoned' && myInfo.seat !== 0) {
+        handleRoomAbandoned();
+        return;
+      }
+      loadGameState();
+    })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'board',       filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
     .subscribe();
 }
@@ -1034,6 +1050,42 @@ function showGameOver() {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+  // ─── Leave Table ──────────────────────────────────────────────────────────────
+async function leaveTable() {
+  if (!confirm('Leave this table?')) return;
+  
+  const me = players.find(p => p.seat === myInfo.seat);
+  const isHost = myInfo.seat === 0;
+  
+  try {
+    if (isHost) {
+      // Host leaving: kick everyone by setting room to 'abandoned'
+      await db.from('rooms')
+        .update({ status: 'abandoned' })
+        .eq('id', myInfo.roomId);
+    } else {
+      // Regular player leaving: just mark as disconnected
+      await db.from('players')
+        .update({ is_connected: false })
+        .eq('room_id', myInfo.roomId)
+        .eq('seat', myInfo.seat);
+    }
+    
+    // Clean up session and redirect
+    sessionStorage.removeItem('domino_player');
+    location.href = 'index.html';
+  } catch (e) {
+    console.error('Error leaving table:', e);
+    alert('Failed to leave table. Please try again.');
+  }
+}
+
+// ─── Handle Host Kick / Room Abandoned ─────────────────────────────────────────
+function handleRoomAbandoned() {
+  alert('The host has left. Returning to lobby...');
+  sessionStorage.removeItem('domino_player');
+  location.href = 'index.html';
 }
 </script>
 </body>
