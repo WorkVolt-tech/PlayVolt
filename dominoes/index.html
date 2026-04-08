@@ -490,40 +490,27 @@ async function joinRoom(codeOverride) {
 
 // ─── Room Subscription ────────────────────────────────────────────────────────
 function subscribeToRoom(roomId, panel) {
-  const playersEl = panel === 'create' ? 'players-create' : 'players-join';
-  
   console.log('[DEBUG] Subscribing to room:', roomId, 'Panel:', panel);
 
   // Clean up existing channel if any
   if (roomChannel) {
     console.log('[DEBUG] Removing existing channel');
     db.removeChannel(roomChannel);
+    roomChannel = null;
   }
 
-  roomChannel = db.channel('room-' + roomId + '-' + Date.now()) // Unique channel name
+  roomChannel = db.channel('room-' + roomId + '-' + Date.now())
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
       async (payload) => {
         console.log('[DEBUG] Realtime UPDATE received:', payload);
-        const { data: players, error } = await db.from('players').select('*').eq('room_id', roomId).order('seat');
-        if (error) {
-          console.error('[DEBUG] Error fetching players:', error);
-          return;
-        }
-        console.log('[DEBUG] Fetched players:', players);
-        renderPlayers(playersEl, players || [], mySeat);
-        if (panel === 'create') {
-          const startBtn = document.getElementById('btn-start');
-          if ((players || []).length === 4) {
-            startBtn.disabled = false;
-            startBtn.textContent = 'Start Game!';
-          }
-        }
+        // Re-fetch and render all players
+        await loadAndRenderPlayers(roomId, panel);
       })
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
       (payload) => {
-        console.log('[DEBUG] Room update:', payload);
+        console.log('[DEBUG] Room status update:', payload);
         if (payload.new.status === 'playing') {
           sessionStorage.setItem('domino_player', JSON.stringify({
             seat: mySeat,
@@ -537,17 +524,16 @@ function subscribeToRoom(roomId, panel) {
     .subscribe((status, err) => {
       console.log('[DEBUG] Channel subscription status:', status);
       if (err) console.error('[DEBUG] Subscription error:', err);
+      
+      // Update connection indicator
+      setConnected(panel, status === 'SUBSCRIBED');
+      
       if (status === 'SUBSCRIBED') {
         console.log('[DEBUG] Successfully subscribed to room updates');
+        // Force a fresh load now that we're subscribed
+        loadAndRenderPlayers(roomId, panel);
       }
     });
-
-  // Initial render
-  db.from('players').select('*').eq('room_id', roomId).order('seat').then(({ data: players, error }) => {
-    if (error) console.error('[DEBUG] Initial fetch error:', error);
-    console.log('[DEBUG] Initial players fetch:', players);
-    if (players) renderPlayers(playersEl, players, mySeat);
-  });
 }
 
 // ─── Matchmaking ──────────────────────────────────────────────────────────────
