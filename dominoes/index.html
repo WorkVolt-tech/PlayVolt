@@ -348,6 +348,7 @@ async function loadAndRenderPlayers(roomId, panel) {
     .from('players')
     .select('*')
     .eq('room_id', roomId)
+    .eq('is_connected', true)
     .order('seat');
 
   if (error) { console.error('loadAndRenderPlayers error:', error); return; }
