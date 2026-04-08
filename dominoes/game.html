@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Dominoes — Game · PlayVolt</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase.js"></script>
-<!-- <script src="../auth.js"></script> -->
+<!-- PlayVolt shared auth helper -->
+<script src="../auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,6 +38,17 @@ html, body {
   overflow: hidden;
   user-select: none;
 }
+
+/* Auth gate */
+#auth-gate {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+  font-size: 0.72rem; letter-spacing: 0.2em; color: var(--ivory-dim);
+  text-transform: uppercase;
+}
+#auth-gate.hidden { display: none; }
 
 /* ── Layout ── */
 .game-layout {
@@ -152,15 +163,15 @@ html, body {
   color: rgba(240,234,216,0.18);
   text-transform: uppercase;
 }
+
 /* Leave button */
 #btn-leave {
   margin-left: auto;
   border-color: var(--red);
   color: var(--red);
 }
-#btn-leave:hover {
-  background: rgba(201, 76, 76, 0.1);
-}
+#btn-leave:hover { background: rgba(201,76,76,0.1); }
+
 /* Drop zones */
 .drop-zone {
   position: absolute;
@@ -444,6 +455,9 @@ html, body {
 </head>
 <body>
 
+<!-- Auth gate overlay -->
+<div id="auth-gate">⚡ Verifying session…</div>
+
 <div class="turn-toast" id="turn-toast"></div>
 
 <div class="side-picker" id="side-picker">
@@ -461,7 +475,7 @@ html, body {
       <span class="pv-badge">⚡ PlayVolt</span>
     </div>
     <div class="player-tags" id="player-tags"></div>
-    <button class="btn btn-outline" id="btn-leave" onclick="leaveTable()" style="font-size: 0.55rem; padding: 0.4rem 0.75rem;">Leave Table</button>
+    <button class="btn btn-outline" id="btn-leave" onclick="leaveTable()" style="font-size:0.55rem;padding:0.4rem 0.75rem;border:1px solid var(--red);color:var(--red);">Leave Table</button>
   </div>
 
   <!-- Board -->
@@ -498,30 +512,53 @@ html, body {
 </div>
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
-let myInfo      = null;
-let roomData    = null;
-let players     = [];
-let boardData   = null;
-let selectedTile = null;
-let isMyTurn    = false;
-let gameOver    = false;
-let toastTimer  = null;
+/* ═══════════════════════════════════════════════════════════════
+   DOMINOES GAME — PlayVolt Module
+   Auth is verified via PlayVolt.requireAuth before anything runs.
+   Game data uses the dominoes Supabase project.
+═══════════════════════════════════════════════════════════════ */
 
-// ─── Init ────────────────────────────────────────────────────────────────────
+// ── Dominoes Supabase ──
+const DOMINO_URL = 'https://eybzbtyfafmqbkulyvog.supabase.co';
+const DOMINO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
+
+let db = null;
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let myInfo       = null;
+let roomData     = null;
+let players      = [];
+let boardData    = null;
+let selectedTile = null;
+let isMyTurn     = false;
+let gameOver     = false;
+let toastTimer   = null;
+
+// ─── Boot — verify PlayVolt session, then check domino_player ─────────────────
 window.addEventListener('load', async () => {
-  // Optional PlayVolt auth check
-  if (typeof PlayVolt !== 'undefined') {
-    try { await PlayVolt.requireAuth({ minTier: 'any' }); }
-    catch { return; }
+  // 1. Verify PlayVolt auth — redirects to hub if not logged in
+  try {
+    await PlayVolt.requireAuth({ minTier: 'any' });
+  } catch {
+    return; // redirected
   }
 
-  const raw = sessionStorage.getItem('domino_player');
-  if (!raw) { location.href = 'index.html'; return; }
-  myInfo = JSON.parse(raw);
+  // 2. Init domino DB
+  db = window.supabase.createClient(DOMINO_URL, DOMINO_KEY);
 
+  // 3. Check that we arrived here from the lobby (not direct URL)
+  const raw = sessionStorage.getItem('domino_player');
+  if (!raw) {
+    // No lobby session — send to domino lobby (not PlayVolt hub)
+    location.href = 'index.html';
+    return;
+  }
+
+  myInfo = JSON.parse(raw);
   document.getElementById('room-code-badge').textContent = myInfo.roomCode || '——';
 
+  // 4. All good — hide gate and start game
+  document.getElementById('auth-gate').classList.add('hidden');
   await loadGameState();
   subscribeToGame();
 });
@@ -545,8 +582,7 @@ async function loadGameState() {
 function subscribeToGame() {
   db.channel('game-' + myInfo.roomId)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',       filter: `id=eq.${myInfo.roomId}` },      (payload) => {
-      // Check if room was abandoned by host
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',       filter: `id=eq.${myInfo.roomId}` }, (payload) => {
       if (payload.new.status === 'abandoned' && myInfo.seat !== 0) {
         handleRoomAbandoned();
         return;
@@ -624,10 +660,10 @@ function renderPips(n) {
 
 // ─── Board ────────────────────────────────────────────────────────────────────
 function renderBoard() {
-  const svg      = document.getElementById('board-svg');
-  const hint     = document.getElementById('board-hint');
-  const dropL    = document.getElementById('drop-left');
-  const dropR    = document.getElementById('drop-right');
+  const svg   = document.getElementById('board-svg');
+  const hint  = document.getElementById('board-hint');
+  const dropL = document.getElementById('drop-left');
+  const dropR = document.getElementById('drop-right');
 
   svg.innerHTML = '';
 
@@ -650,7 +686,6 @@ function renderBoard() {
 
   layoutAndRenderTiles(svg, W, H);
 
-  // Drop zones
   const canLeft  = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
   const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
 
@@ -667,12 +702,7 @@ function layoutAndRenderTiles(svg, W, H) {
   const tiles = boardData.tiles;
   if (!tiles.length) return;
 
-  // Tile dimensions: normal tiles are wide (horizontal), doubles are tall (vertical/square-ish)
-  // Normal: width = HW*2+GAP, height = HH
-  // Double: width = HH,       height = HW*2+GAP  (rotated 90°)
   const HW = 46, HH = 24, GAP = 2;
-
-  // Pre-compute widths for each tile
   const widths = tiles.map(e => isDouble(e.tile) ? HH : HW * 2 + GAP);
   const totalW = widths.reduce((s, w) => s + w + GAP, -GAP);
 
@@ -692,70 +722,41 @@ function isDouble(tile) { return tile[0] === tile[1]; }
 function drawBoardTile(svg, entry, x, y, hw, hh) {
   const { tile, flipped } = entry;
   const double = isDouble(tile);
-
-  // For a normal (horizontal) tile:
-  //   left half  = tile[0] if not flipped, tile[1] if flipped
-  //   right half = tile[1] if not flipped, tile[0] if flipped
-  // "flipped" just means the tile was physically turned around to connect.
-  // The open end (facing outward) is always stored correctly in left_end/right_end.
-  // For rendering we show: left-face = tile[0], right-face = tile[1] (original order),
-  // but rotate the whole tile 180° when flipped — which for a symmetric domino
-  // just swaps which half faces which direction.
   const faceA = flipped ? tile[1] : tile[0];
   const faceB = flipped ? tile[0] : tile[1];
 
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
   if (double) {
-    // Vertical layout: height = hw*2+2, width = hh
     const tw = hh, th = hw * 2 + 2;
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('x', x);
-    rect.setAttribute('y', y);
-    rect.setAttribute('width', tw);
-    rect.setAttribute('height', th);
-    rect.setAttribute('rx', '3');
-    rect.setAttribute('fill', '#f0ead8');
+    rect.setAttribute('x', x); rect.setAttribute('y', y);
+    rect.setAttribute('width', tw); rect.setAttribute('height', th);
+    rect.setAttribute('rx', '3'); rect.setAttribute('fill', '#f0ead8');
     rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
 
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', x + 2);
-    line.setAttribute('y1', y + hw + 1);
-    line.setAttribute('x2', x + tw - 2);
-    line.setAttribute('y2', y + hw + 1);
-    line.setAttribute('stroke', 'rgba(26,24,20,0.25)');
-    line.setAttribute('stroke-width', '1');
+    line.setAttribute('x1', x + 2); line.setAttribute('y1', y + hw + 1);
+    line.setAttribute('x2', x + tw - 2); line.setAttribute('y2', y + hw + 1);
+    line.setAttribute('stroke', 'rgba(26,24,20,0.25)'); line.setAttribute('stroke-width', '1');
 
-    g.appendChild(rect);
-    g.appendChild(line);
-
-    // Top half = faceA, bottom half = faceB
-    drawSVGPips(g, faceA, x, y,       tw, hw);
+    g.appendChild(rect); g.appendChild(line);
+    drawSVGPips(g, faceA, x, y, tw, hw);
     drawSVGPips(g, faceB, x, y + hw + 2, tw, hw);
   } else {
-    // Horizontal layout: width = hw*2+2, height = hh
     const tw = hw * 2 + 2, th = hh;
     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('x', x);
-    rect.setAttribute('y', y);
-    rect.setAttribute('width', tw);
-    rect.setAttribute('height', th);
-    rect.setAttribute('rx', '3');
-    rect.setAttribute('fill', '#f0ead8');
+    rect.setAttribute('x', x); rect.setAttribute('y', y);
+    rect.setAttribute('width', tw); rect.setAttribute('height', th);
+    rect.setAttribute('rx', '3'); rect.setAttribute('fill', '#f0ead8');
     rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
 
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', x + hw + 1);
-    line.setAttribute('y1', y + 2);
-    line.setAttribute('x2', x + hw + 1);
-    line.setAttribute('y2', y + th - 2);
-    line.setAttribute('stroke', 'rgba(26,24,20,0.25)');
-    line.setAttribute('stroke-width', '1');
+    line.setAttribute('x1', x + hw + 1); line.setAttribute('y1', y + 2);
+    line.setAttribute('x2', x + hw + 1); line.setAttribute('y2', y + th - 2);
+    line.setAttribute('stroke', 'rgba(26,24,20,0.25)'); line.setAttribute('stroke-width', '1');
 
-    g.appendChild(rect);
-    g.appendChild(line);
-
-    // Left half = faceA (open/outward end), right half = faceB
+    g.appendChild(rect); g.appendChild(line);
     drawSVGPips(g, faceA, x, y, hw, th);
     drawSVGPips(g, faceB, x + hw + 2, y, hw, th);
   }
@@ -766,10 +767,8 @@ function drawBoardTile(svg, entry, x, y, hw, hh) {
 function drawSVGPips(g, n, x, y, w, h) {
   getPipPositions(n, x, y, w, h).forEach(([px, py]) => {
     const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    c.setAttribute('cx', px);
-    c.setAttribute('cy', py);
-    c.setAttribute('r', '2.5');
-    c.setAttribute('fill', '#1a1814');
+    c.setAttribute('cx', px); c.setAttribute('cy', py);
+    c.setAttribute('r', '2.5'); c.setAttribute('fill', '#1a1814');
     g.appendChild(c);
   });
 }
@@ -815,7 +814,6 @@ function selectTile(tile, idx) {
   selectedTile = { tile, idx };
   renderHand();
 
-  // First tile — place directly
   if (!boardData || !boardData.tiles || boardData.tiles.length === 0) {
     placeFirstTile(tile);
     return;
@@ -869,8 +867,8 @@ async function placeFirstTile(tile) {
   const newHand = me.hand.filter((_, i) => i !== selectedTile.idx);
 
   await db.from('board').update({
-    tiles:     [{ tile, flipped: false }],
-    left_end:  tile[0],
+    tiles: [{ tile, flipped: false }],
+    left_end: tile[0],
     right_end: tile[1]
   }).eq('room_id', myInfo.roomId);
 
@@ -883,7 +881,6 @@ async function placeFirstTile(tile) {
   });
 
   await advanceTurn(newHand);
-
   selectedTile = null;
   document.getElementById('side-picker').classList.remove('visible');
 }
@@ -891,76 +888,31 @@ async function placeFirstTile(tile) {
 async function confirmPlace(side) {
   if (!selectedTile) return;
   const me   = players.find(p => p.seat === myInfo.seat);
-  const tile = selectedTile.tile;  // [a, b]
+  const tile = selectedTile.tile;
   const idx  = selectedTile.idx;
-
-  const end = side === 'left' ? boardData.left_end : boardData.right_end;
-
-  // CORRECTED FLIP LOGIC:
-  // We want the matching pip to face the board (inward)
-  // and the other pip to face outward (new open end)
-  //
-  // For a tile [a, b]:
-  // - If we DON'T flip: a faces LEFT, b faces RIGHT
-  // - If we DO flip:    b faces LEFT, a faces RIGHT
-  //
-  // For RIGHT placement (adding to right end of board):
-  //   - The matching pip must face LEFT (toward the board)
-  //   - So if b matches, we need b on left → FLIP
-  //   - If a matches, we need a on left → NO FLIP
-  //
-  // For LEFT placement (adding to left end of board):
-  //   - The matching pip must face RIGHT (toward the board)  
-  //   - So if a matches, we need a on right → FLIP
-  //   - If b matches, we need b on right → NO FLIP
+  const end  = side === 'left' ? boardData.left_end : boardData.right_end;
 
   let flipped = false;
   let newOpenEnd;
 
   if (side === 'right') {
-    // Placing on right: matching pip must be on LEFT side of tile
-    if (tile[1] === end) {
-      // b matches, need b on left → FLIP
-      flipped = true;
-      newOpenEnd = tile[0];  // a faces outward
-    } else if (tile[0] === end) {
-      // a matches, need a on left → NO FLIP
-      flipped = false;
-      newOpenEnd = tile[1];  // b faces outward
-    } else {
-      cancelSelection();
-      return;
-    }
-  } else {  // side === 'left'
-    // Placing on left: matching pip must be on RIGHT side of tile
-    if (tile[0] === end) {
-      // a matches, need a on right → FLIP
-      flipped = true;
-      newOpenEnd = tile[1];  // b faces outward
-    } else if (tile[1] === end) {
-      // b matches, need b on right → NO FLIP
-      flipped = false;
-      newOpenEnd = tile[0];  // a faces outward
-    } else {
-      cancelSelection();
-      return;
-    }
+    if (tile[1] === end) { flipped = true;  newOpenEnd = tile[0]; }
+    else if (tile[0] === end) { flipped = false; newOpenEnd = tile[1]; }
+    else { cancelSelection(); return; }
+  } else {
+    if (tile[0] === end) { flipped = true;  newOpenEnd = tile[1]; }
+    else if (tile[1] === end) { flipped = false; newOpenEnd = tile[0]; }
+    else { cancelSelection(); return; }
   }
 
-  const newEntry  = { tile, flipped };
-  const newTiles  = side === 'left'
-    ? [newEntry, ...boardData.tiles]
-    : [...boardData.tiles, newEntry];
-
+  const newEntry    = { tile, flipped };
+  const newTiles    = side === 'left' ? [newEntry, ...boardData.tiles] : [...boardData.tiles, newEntry];
   const newLeftEnd  = side === 'left'  ? newOpenEnd : boardData.left_end;
   const newRightEnd = side === 'right' ? newOpenEnd : boardData.right_end;
-
-  const newHand = me.hand.filter((_, i) => i !== idx);
+  const newHand     = me.hand.filter((_, i) => i !== idx);
 
   await db.from('board').update({
-    tiles:     newTiles,
-    left_end:  newLeftEnd,
-    right_end: newRightEnd
+    tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd
   }).eq('room_id', myInfo.roomId);
 
   await db.from('players')
@@ -972,7 +924,6 @@ async function confirmPlace(side) {
   });
 
   await advanceTurn(newHand);
-
   selectedTile = null;
   document.getElementById('side-picker').classList.remove('visible');
 }
@@ -986,26 +937,19 @@ async function passMove() {
 }
 
 async function advanceTurn(myNewHand) {
-  // Win: empty hand
-  if (myNewHand.length === 0) {
-    await endGame(myInfo.seat);
-    return;
-  }
+  if (myNewHand.length === 0) { await endGame(myInfo.seat); return; }
 
-  // Blocked: last N events all passes (N = number of players who have tiles)
   const { data: events } = await db.from('game_events')
     .select('*').eq('room_id', myInfo.roomId)
     .order('created_at', { ascending: false }).limit(4);
 
   if (events && events.length === 4 && events.every(e => e.action === 'pass')) {
-    await endGame(null); // blocked — winner decided by pip count
+    await endGame(null);
     return;
   }
 
   const nextSeat = (roomData.current_turn + 1) % 4;
-  await db.from('rooms')
-    .update({ current_turn: nextSeat })
-    .eq('id', myInfo.roomId);
+  await db.from('rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
 }
 
 async function endGame(winningSeat) {
@@ -1051,28 +995,21 @@ function showGameOver() {
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-  // ─── Leave Table ──────────────────────────────────────────────────────────────
+
+// ─── Leave Table ──────────────────────────────────────────────────────────────
 async function leaveTable() {
   if (!confirm('Leave this table?')) return;
-  
-  const me = players.find(p => p.seat === myInfo.seat);
+
   const isHost = myInfo.seat === 0;
-  
+
   try {
     if (isHost) {
-      // Host leaving: kick everyone by setting room to 'abandoned'
-      await db.from('rooms')
-        .update({ status: 'abandoned' })
-        .eq('id', myInfo.roomId);
+      await db.from('rooms').update({ status: 'abandoned' }).eq('id', myInfo.roomId);
     } else {
-      // Regular player leaving: just mark as disconnected
       await db.from('players')
         .update({ is_connected: false })
-        .eq('room_id', myInfo.roomId)
-        .eq('seat', myInfo.seat);
+        .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
     }
-    
-    // Clean up session and redirect
     sessionStorage.removeItem('domino_player');
     location.href = 'index.html';
   } catch (e) {
@@ -1081,7 +1018,7 @@ async function leaveTable() {
   }
 }
 
-// ─── Handle Host Kick / Room Abandoned ─────────────────────────────────────────
+// ─── Handle Host Kick ─────────────────────────────────────────────────────────
 function handleRoomAbandoned() {
   alert('The host has left. Returning to lobby...');
   sessionStorage.removeItem('domino_player');
