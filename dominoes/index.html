@@ -489,55 +489,65 @@ async function joinRoom(codeOverride) {
 }
 
 // ─── Room Subscription ────────────────────────────────────────────────────────
-// Mirrors wtw pattern: subscribe broadly (no filter) → re-fetch on every change
 function subscribeToRoom(roomId, panel) {
-  console.log('[dominoes] subscribeToRoom', roomId, panel);
+  const playersEl = panel === 'create' ? 'players-create' : 'players-join';
+  
+  console.log('[DEBUG] Subscribing to room:', roomId, 'Panel:', panel);
 
-  // Clean up any previous channel
-  if (roomChannel) { db.removeChannel(roomChannel); roomChannel = null; }
+  // Clean up existing channel if any
+  if (roomChannel) {
+    console.log('[DEBUG] Removing existing channel');
+    db.removeChannel(roomChannel);
+  }
 
-  // Immediately load so host sees themselves without waiting for a DB event
-  loadAndRenderPlayers(roomId, panel);
-
-  roomChannel = db.channel('room:' + roomId)
-    // Listen to ALL player changes — no row filter, same as wtw
+  roomChannel = db.channel('room-' + roomId + '-' + Date.now()) // Unique channel name
     .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'players' },
-      (payload) => {
-        console.log('[dominoes] player change received', payload);
-        // Only handle events for our room
-        const roomMatch =
-          payload.new?.room_id === roomId ||
-          payload.old?.room_id === roomId;
-        if (!roomMatch) return;
-        loadAndRenderPlayers(roomId, panel);
+      { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
+      async (payload) => {
+        console.log('[DEBUG] Realtime UPDATE received:', payload);
+        const { data: players, error } = await db.from('players').select('*').eq('room_id', roomId).order('seat');
+        if (error) {
+          console.error('[DEBUG] Error fetching players:', error);
+          return;
+        }
+        console.log('[DEBUG] Fetched players:', players);
+        renderPlayers(playersEl, players || [], mySeat);
+        if (panel === 'create') {
+          const startBtn = document.getElementById('btn-start');
+          if ((players || []).length === 4) {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Game!';
+          }
+        }
       })
-    // Listen to ALL room changes — no row filter
     .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'rooms' },
+      { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
       (payload) => {
-        console.log('[dominoes] room change received', payload);
-        if (payload.new?.id !== roomId) return;
+        console.log('[DEBUG] Room update:', payload);
         if (payload.new.status === 'playing') {
           sessionStorage.setItem('domino_player', JSON.stringify({
-            seat:     mySeat,
+            seat: mySeat,
             nickname: document.getElementById('nickname').value.trim(),
-            roomId:   myRoomId,
+            roomId: myRoomId,
             roomCode: myRoomCode
           }));
           location.href = 'game.html';
         }
       })
-    .subscribe((status) => {
-      console.log('[dominoes] subscription status:', status);
+    .subscribe((status, err) => {
+      console.log('[DEBUG] Channel subscription status:', status);
+      if (err) console.error('[DEBUG] Subscription error:', err);
       if (status === 'SUBSCRIBED') {
-        setConnected(panel, true);
-        // Re-fetch on confirmed subscription to close any race window
-        loadAndRenderPlayers(roomId, panel);
-      } else {
-        setConnected(panel, false);
+        console.log('[DEBUG] Successfully subscribed to room updates');
       }
     });
+
+  // Initial render
+  db.from('players').select('*').eq('room_id', roomId).order('seat').then(({ data: players, error }) => {
+    if (error) console.error('[DEBUG] Initial fetch error:', error);
+    console.log('[DEBUG] Initial players fetch:', players);
+    if (players) renderPlayers(playersEl, players, mySeat);
+  });
 }
 
 // ─── Matchmaking ──────────────────────────────────────────────────────────────
