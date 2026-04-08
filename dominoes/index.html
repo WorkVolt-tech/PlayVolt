@@ -434,7 +434,11 @@ function setConnected(panel, ok) {
 }
 
 // ─── Render players ───────────────────────────────────────────────────────────
+let _loadingPlayers = false;
 async function loadAndRenderPlayers(roomId, panel) {
+  if (_loadingPlayers) return;
+  _loadingPlayers = true;
+  try {
   const { data: players, error } = await db
     .from('players')
     .select('*')
@@ -456,6 +460,9 @@ async function loadAndRenderPlayers(roomId, panel) {
       startBtn.disabled = true;
       startBtn.textContent = `Start Game (${count}/4 Players)`;
     }
+  }
+  } finally {
+    _loadingPlayers = false;
   }
 }
 
@@ -597,7 +604,6 @@ function subscribeToRoom(roomId, panel) {
       })
     .subscribe((status) => {
       setConnected(panel, status === 'SUBSCRIBED');
-      if (status === 'SUBSCRIBED') loadAndRenderPlayers(roomId, panel);
     });
 }
 
