@@ -740,7 +740,7 @@ function drawBoardTile(svg, entry, x, y, hw, hh) {
     g.appendChild(line);
 
     // Left half = faceA (open/outward end), right half = faceB
-    drawSVGPips(g, faceA, x,       y, hw, th);
+    drawSVGPips(g, faceA, x, y, hw, th);
     drawSVGPips(g, faceB, x + hw + 2, y, hw, th);
   }
 
@@ -875,28 +875,60 @@ async function placeFirstTile(tile) {
 async function confirmPlace(side) {
   if (!selectedTile) return;
   const me   = players.find(p => p.seat === myInfo.seat);
-  const tile = selectedTile.tile;
+  const tile = selectedTile.tile;  // [a, b]
   const idx  = selectedTile.idx;
 
   const end = side === 'left' ? boardData.left_end : boardData.right_end;
 
-  // Determine orientation:
-  // For RIGHT placement: the face touching the board is the connecting face.
-  //   • If tile[1] === end → tile[1] connects, tile[0] is new open end → no flip
-  //   • If tile[0] === end → tile[0] connects, tile[1] is new open end → flip
-  // For LEFT placement:
-  //   • If tile[0] === end → tile[0] connects, tile[1] is new open end → no flip
-  //   • If tile[1] === end → tile[1] connects, tile[0] is new open end → flip
+  // CORRECTED FLIP LOGIC:
+  // We want the matching pip to face the board (inward)
+  // and the other pip to face outward (new open end)
+  //
+  // For a tile [a, b]:
+  // - If we DON'T flip: a faces LEFT, b faces RIGHT
+  // - If we DO flip:    b faces LEFT, a faces RIGHT
+  //
+  // For RIGHT placement (adding to right end of board):
+  //   - The matching pip must face LEFT (toward the board)
+  //   - So if b matches, we need b on left → FLIP
+  //   - If a matches, we need a on left → NO FLIP
+  //
+  // For LEFT placement (adding to left end of board):
+  //   - The matching pip must face RIGHT (toward the board)  
+  //   - So if a matches, we need a on right → FLIP
+  //   - If b matches, we need b on right → NO FLIP
+
   let flipped = false;
   let newOpenEnd;
+
   if (side === 'right') {
-    if (tile[1] === end)      { flipped = false; newOpenEnd = tile[0]; }
-    else if (tile[0] === end) { flipped = true;  newOpenEnd = tile[1]; }
-    else { cancelSelection(); return; }
-  } else {
-    if (tile[0] === end)      { flipped = false; newOpenEnd = tile[1]; }
-    else if (tile[1] === end) { flipped = true;  newOpenEnd = tile[0]; }
-    else { cancelSelection(); return; }
+    // Placing on right: matching pip must be on LEFT side of tile
+    if (tile[1] === end) {
+      // b matches, need b on left → FLIP
+      flipped = true;
+      newOpenEnd = tile[0];  // a faces outward
+    } else if (tile[0] === end) {
+      // a matches, need a on left → NO FLIP
+      flipped = false;
+      newOpenEnd = tile[1];  // b faces outward
+    } else {
+      cancelSelection();
+      return;
+    }
+  } else {  // side === 'left'
+    // Placing on left: matching pip must be on RIGHT side of tile
+    if (tile[0] === end) {
+      // a matches, need a on right → FLIP
+      flipped = true;
+      newOpenEnd = tile[1];  // b faces outward
+    } else if (tile[1] === end) {
+      // b matches, need b on right → NO FLIP
+      flipped = false;
+      newOpenEnd = tile[0];  // a faces outward
+    } else {
+      cancelSelection();
+      return;
+    }
   }
 
   const newEntry  = { tile, flipped };
