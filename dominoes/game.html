@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dominoes — Game · PlayVolt</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<!-- <script src="../auth.js"></script> -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0f0e0c;
+  --felt:       #1a2e1a;
+  --felt2:      #162614;
+  --surface:    #1a1814;
+  --surface2:   #242118;
+  --border:     #3a3528;
+  --ivory:      #f0ead8;
+  --ivory-dim:  #a09880;
+  --gold:       #c9a84c;
+  --gold-glow:  #e8c96a;
+  --pip:        #1a1814;
+  --red:        #c94c4c;
+  --green:      #4caa6e;
+  --blue:       #4c8cca;
+  --pv-accent:  #7c5cfc;
+  --pv-accent2: #a07aff;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ivory);
+  font-family: 'DM Mono', monospace;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Layout ── */
+.game-layout {
+  display: grid;
+  grid-template-rows: 50px 1fr 148px;
+  height: 100vh;
+}
+
+/* ── Top Bar ── */
+.top-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.top-bar-left { display: flex; align-items: center; gap: 0.75rem; }
+
+.game-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.room-code-badge {
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  padding: 3px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--ivory-dim);
+}
+
+.pv-badge {
+  font-size: 0.55rem;
+  letter-spacing: 0.2em;
+  padding: 2px 6px;
+  background: rgba(124,92,252,0.1);
+  border: 1px solid rgba(124,92,252,0.25);
+  border-radius: 3px;
+  color: var(--pv-accent2);
+}
+
+.player-tags { display: flex; gap: 0.4rem; overflow: hidden; }
+
+.player-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 3px;
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+  transition: all 0.3s;
+  background: var(--surface2);
+  white-space: nowrap;
+}
+.player-tag.active-turn {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.1);
+  color: var(--gold);
+}
+.player-tag.is-me { border-color: var(--blue); color: var(--blue); }
+.player-tag.active-turn.is-me {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(201,168,76,0.15);
+}
+
+.tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.tag-tiles { opacity: 0.6; font-size: 0.52rem; }
+
+/* ── Board ── */
+.board-area {
+  background: var(--felt);
+  background-image: radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.board-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Ccircle cx='1' cy='1' r='0.5' fill='rgba(0,0,0,0.05)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+#board-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.board-hint {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+.board-hint-text {
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  color: rgba(240,234,216,0.18);
+  text-transform: uppercase;
+}
+
+/* Drop zones */
+.drop-zone {
+  position: absolute;
+  border: 2px dashed rgba(201,168,76,0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  color: rgba(201,168,76,0.5);
+  text-transform: uppercase;
+  z-index: 10;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.08);
+  color: var(--gold);
+}
+
+/* ── Hand ── */
+.hand-area {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.hand-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--ivory-dim);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.hand-tiles {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  flex: 1;
+  justify-content: center;
+}
+
+/* Hand tile */
+.hand-tile {
+  display: flex;
+  flex-direction: column;
+  background: var(--ivory);
+  border-radius: 6px;
+  cursor: grab;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: transform 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+  border: 2px solid transparent;
+  width: 40px;
+}
+.hand-tile:hover { transform: translateY(-8px); box-shadow: 0 12px 24px rgba(0,0,0,0.6); }
+.hand-tile.playable {
+  border-color: var(--gold);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 12px rgba(201,168,76,0.3);
+}
+.hand-tile.playable:hover {
+  box-shadow: 0 12px 24px rgba(0,0,0,0.6), 0 0 20px rgba(201,168,76,0.5);
+}
+.hand-tile.selected {
+  transform: translateY(-12px);
+  border-color: var(--gold-glow);
+  box-shadow: 0 16px 30px rgba(0,0,0,0.7), 0 0 25px rgba(201,168,76,0.6);
+}
+.hand-tile.not-playable { opacity: 0.38; cursor: not-allowed; }
+
+.hand-tile .half {
+  width: 100%;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hand-tile .divider {
+  height: 1px;
+  background: rgba(26,24,20,0.22);
+  margin: 0 4px;
+}
+
+.pip-grid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+}
+.pip-grid .p {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--pip);
+  justify-self: center;
+  align-self: center;
+}
+
+.pips-0 { display: flex; }
+.pips-1 { display: grid; place-items: center; }
+.pips-2 { display: grid; grid-template-rows: 1fr 1fr; place-items: center; }
+.pips-3 { display: grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); }
+.pips-3 .p:nth-child(1) { grid-column:3; grid-row:1; }
+.pips-3 .p:nth-child(2) { grid-column:2; grid-row:2; }
+.pips-3 .p:nth-child(3) { grid-column:1; grid-row:3; }
+.pips-4 { display: grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
+.pips-5 { display: grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); }
+.pips-5 .p:nth-child(1) { grid-column:1; grid-row:1; }
+.pips-5 .p:nth-child(2) { grid-column:3; grid-row:1; }
+.pips-5 .p:nth-child(3) { grid-column:2; grid-row:2; }
+.pips-5 .p:nth-child(4) { grid-column:1; grid-row:3; }
+.pips-5 .p:nth-child(5) { grid-column:3; grid-row:3; }
+.pips-6 { display: grid; grid-template-columns:1fr 1fr; grid-template-rows:repeat(3,1fr); }
+
+/* ── Action Bar ── */
+.action-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.btn {
+  padding: 0.5rem 0.875rem;
+  border: none;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-pass {
+  background: transparent;
+  color: var(--ivory-dim);
+  border: 1px solid var(--border);
+}
+.btn-pass:hover:not(:disabled) { border-color: var(--red); color: var(--red); background: rgba(201,76,76,0.05); }
+.btn-pass:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--gold);
+  color: var(--bg);
+  font-weight: 500;
+}
+.btn-primary:hover { background: var(--gold-glow); }
+
+/* ── Turn Toast ── */
+.turn-toast {
+  position: fixed;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: var(--surface);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-transform: uppercase;
+  z-index: 50;
+  opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none;
+}
+.turn-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Side Picker ── */
+.side-picker {
+  position: fixed;
+  bottom: 162px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  gap: 0.5rem;
+  z-index: 50;
+  animation: fadeUp 0.2s ease;
+}
+.side-picker.visible { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.side-btn {
+  background: var(--surface);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.side-btn:hover { background: rgba(201,168,76,0.1); }
+.side-btn-cancel { border-color: var(--border); color: var(--ivory-dim); }
+.side-btn-cancel:hover { border-color: var(--red); color: var(--red); background: rgba(201,76,76,0.05); }
+
+/* ── Game Over Overlay ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,9,8,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+.overlay.hidden { display: none; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2.5rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.modal h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+.modal p {
+  color: var(--ivory-dim);
+  font-size: 0.72rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.scores-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.72rem;
+}
+.scores-table th {
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem;
+}
+.scores-table td { padding: 0.5rem; border-bottom: 1px solid rgba(58,53,40,0.5); }
+.scores-table tr.winner td { color: var(--gold); }
+</style>
+</head>
+<body>
+
+<div class="turn-toast" id="turn-toast"></div>
+
+<div class="side-picker" id="side-picker">
+  <button class="side-btn" onclick="confirmPlace('left')">← Left</button>
+  <button class="side-btn" onclick="confirmPlace('right')">Right →</button>
+  <button class="side-btn side-btn-cancel" onclick="cancelSelection()">Cancel</button>
+</div>
+
+<div class="game-layout">
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <span class="game-title">Dominoes</span>
+      <span class="room-code-badge" id="room-code-badge">——</span>
+      <span class="pv-badge">⚡ PlayVolt</span>
+    </div>
+    <div class="player-tags" id="player-tags"></div>
+  </div>
+
+  <!-- Board -->
+  <div class="board-area" id="board-area">
+    <svg id="board-svg"></svg>
+    <div class="board-hint" id="board-hint">
+      <div class="board-hint-text" id="board-hint-text">Place the first tile</div>
+    </div>
+    <div class="drop-zone" id="drop-left"  style="display:none" onclick="handleDropZone('left')">← Left</div>
+    <div class="drop-zone" id="drop-right" style="display:none" onclick="handleDropZone('right')">Right →</div>
+  </div>
+
+  <!-- Hand -->
+  <div class="hand-area">
+    <div class="hand-label">Your Hand</div>
+    <div class="hand-tiles" id="hand-tiles"></div>
+    <div class="action-bar">
+      <button class="btn btn-pass" id="btn-pass" onclick="passMove()" disabled>Pass</button>
+    </div>
+  </div>
+</div>
+
+<!-- Game Over -->
+<div class="overlay hidden" id="overlay-gameover">
+  <div class="modal">
+    <h2 id="winner-title">Victory!</h2>
+    <p id="winner-desc"></p>
+    <table class="scores-table">
+      <thead><tr><th>Player</th><th>Seat</th><th>Pips Left</th></tr></thead>
+      <tbody id="scores-body"></tbody>
+    </table>
+    <button class="btn btn-primary" onclick="location.href='index.html'">Back to Lobby</button>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let myInfo      = null;
+let roomData    = null;
+let players     = [];
+let boardData   = null;
+let selectedTile = null;
+let isMyTurn    = false;
+let gameOver    = false;
+let toastTimer  = null;
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  // Optional PlayVolt auth check
+  if (typeof PlayVolt !== 'undefined') {
+    try { await PlayVolt.requireAuth({ minTier: 'any' }); }
+    catch { return; }
+  }
+
+  const raw = sessionStorage.getItem('domino_player');
+  if (!raw) { location.href = 'index.html'; return; }
+  myInfo = JSON.parse(raw);
+
+  document.getElementById('room-code-badge').textContent = myInfo.roomCode || '——';
+
+  await loadGameState();
+  subscribeToGame();
+});
+
+// ─── Load State ──────────────────────────────────────────────────────────────
+async function loadGameState() {
+  const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
+    db.from('rooms').select('*').eq('id', myInfo.roomId).single(),
+    db.from('players').select('*').eq('room_id', myInfo.roomId).order('seat'),
+    db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
+  ]);
+
+  roomData  = room;
+  players   = pData || [];
+  boardData = bData;
+
+  renderAll();
+}
+
+// ─── Subscribe ───────────────────────────────────────────────────────────────
+function subscribeToGame() {
+  db.channel('game-' + myInfo.roomId)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',       filter: `id=eq.${myInfo.roomId}` },      loadGameState)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'board',       filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
+    .subscribe();
+}
+
+// ─── Render ──────────────────────────────────────────────────────────────────
+function renderAll() {
+  if (!roomData || !players.length) return;
+  renderPlayerTags();
+  renderHand();
+  renderBoard();
+  updateTurnState();
+  if (roomData.status === 'finished') showGameOver();
+}
+
+function renderPlayerTags() {
+  const container = document.getElementById('player-tags');
+  container.innerHTML = '';
+  for (const p of players) {
+    const isMe     = p.seat === myInfo.seat;
+    const isActive = p.seat === roomData.current_turn;
+    const div = document.createElement('div');
+    div.className = 'player-tag' + (isActive ? ' active-turn' : '') + (isMe ? ' is-me' : '');
+    div.innerHTML = `
+      <div class="tag-dot"></div>
+      <span>${escHtml(p.nickname)}${isMe ? ' ★' : ''}</span>
+      <span class="tag-tiles">${Array.isArray(p.hand) ? p.hand.length : 0}</span>
+    `;
+    container.appendChild(div);
+  }
+}
+
+// ─── Hand ─────────────────────────────────────────────────────────────────────
+function renderHand() {
+  const me = players.find(p => p.seat === myInfo.seat);
+  if (!me) return;
+  const hand = me.hand || [];
+
+  isMyTurn = roomData.current_turn === myInfo.seat && roomData.status === 'playing';
+  const playable = getPlayableTiles(hand);
+
+  const container = document.getElementById('hand-tiles');
+  container.innerHTML = '';
+
+  hand.forEach((tile, idx) => {
+    const canPlay = isMyTurn && playable.some(t => t[0] === tile[0] && t[1] === tile[1]);
+    const isSelected = selectedTile && selectedTile.idx === idx;
+    const div = document.createElement('div');
+    div.className = 'hand-tile'
+      + (canPlay ? ' playable' : (isMyTurn ? ' not-playable' : ''))
+      + (isSelected ? ' selected' : '');
+    div.innerHTML = `
+      <div class="half">${renderPips(tile[0])}</div>
+      <div class="divider"></div>
+      <div class="half">${renderPips(tile[1])}</div>
+    `;
+    if (canPlay) div.onclick = () => selectTile(tile, idx);
+    container.appendChild(div);
+  });
+
+  const passBtn = document.getElementById('btn-pass');
+  const hasTilesOnBoard = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
+  passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
+}
+
+function renderPips(n) {
+  const pips = Array(n).fill('<div class="p"></div>').join('');
+  return `<div class="pip-grid pips-${n}">${pips}</div>`;
+}
+
+// ─── Board ────────────────────────────────────────────────────────────────────
+function renderBoard() {
+  const svg      = document.getElementById('board-svg');
+  const hint     = document.getElementById('board-hint');
+  const dropL    = document.getElementById('drop-left');
+  const dropR    = document.getElementById('drop-right');
+
+  svg.innerHTML = '';
+
+  const hasTiles = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
+
+  if (!hasTiles) {
+    hint.style.display = 'block';
+    document.getElementById('board-hint-text').textContent =
+      isMyTurn ? 'Click a tile to place it' : 'Place the first tile';
+    dropL.style.display = 'none';
+    dropR.style.display = 'none';
+    return;
+  }
+
+  hint.style.display = 'none';
+
+  const area = document.getElementById('board-area');
+  const W = area.clientWidth  || 800;
+  const H = area.clientHeight || 300;
+
+  layoutAndRenderTiles(svg, W, H);
+
+  // Drop zones
+  const canLeft  = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
+  const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
+
+  if (canLeft) {
+    Object.assign(dropL.style, { display:'flex', left:'10px', top:'50%', transform:'translateY(-50%)', width:'70px', height:'50px' });
+  } else { dropL.style.display = 'none'; }
+
+  if (canRight) {
+    Object.assign(dropR.style, { display:'flex', right:'10px', left:'auto', top:'50%', transform:'translateY(-50%)', width:'70px', height:'50px' });
+  } else { dropR.style.display = 'none'; }
+}
+
+function layoutAndRenderTiles(svg, W, H) {
+  const tiles = boardData.tiles;
+  if (!tiles.length) return;
+
+  const HW = 46, HH = 23, GAP = 2;
+  const FW = HW * 2 + GAP;
+
+  const totalW  = tiles.length * (FW + GAP);
+  let startX    = Math.max(80, (W - totalW) / 2);
+  const cy      = H / 2;
+
+  tiles.forEach((entry, i) => {
+    const x = startX + i * (FW + GAP);
+    const y = cy - HH / 2;
+    drawBoardTile(svg, entry.tile, x, y, HW, HH, entry.flipped);
+  });
+}
+
+function drawBoardTile(svg, tile, x, y, hw, hh, flipped) {
+  const a = flipped ? tile[1] : tile[0];
+  const b = flipped ? tile[0] : tile[1];
+
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x);
+  rect.setAttribute('y', y);
+  rect.setAttribute('width', hw * 2 + 2);
+  rect.setAttribute('height', hh);
+  rect.setAttribute('rx', '3');
+  rect.setAttribute('fill', '#f0ead8');
+  rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
+
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x + hw + 1);
+  line.setAttribute('y1', y + 2);
+  line.setAttribute('x2', x + hw + 1);
+  line.setAttribute('y2', y + hh - 2);
+  line.setAttribute('stroke', 'rgba(26,24,20,0.25)');
+  line.setAttribute('stroke-width', '1');
+
+  g.appendChild(rect);
+  g.appendChild(line);
+
+  drawSVGPips(g, a, x,       y, hw, hh);
+  drawSVGPips(g, b, x + hw + 1, y, hw, hh);
+
+  svg.appendChild(g);
+}
+
+function drawSVGPips(g, n, x, y, w, h) {
+  getPipPositions(n, x, y, w, h).forEach(([px, py]) => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', px);
+    c.setAttribute('cy', py);
+    c.setAttribute('r', '2.5');
+    c.setAttribute('fill', '#1a1814');
+    g.appendChild(c);
+  });
+}
+
+function getPipPositions(n, x, y, w, h) {
+  const mx = x + w / 2, my = y + h / 2;
+  const ox = w * 0.28,  oy = h * 0.28;
+  return {
+    0: [],
+    1: [[mx, my]],
+    2: [[mx - ox, my - oy], [mx + ox, my + oy]],
+    3: [[mx - ox, my - oy], [mx, my], [mx + ox, my + oy]],
+    4: [[mx - ox, my - oy], [mx + ox, my - oy], [mx - ox, my + oy], [mx + ox, my + oy]],
+    5: [[mx - ox, my - oy], [mx + ox, my - oy], [mx, my], [mx - ox, my + oy], [mx + ox, my + oy]],
+    6: [[mx - ox, my - oy], [mx + ox, my - oy], [mx - ox, my], [mx + ox, my], [mx - ox, my + oy], [mx + ox, my + oy]]
+  }[n] || [];
+}
+
+// ─── Turn State ──────────────────────────────────────────────────────────────
+function updateTurnState() {
+  const active = players.find(p => p.seat === roomData.current_turn);
+  if (isMyTurn) {
+    showToast('Your turn!');
+  } else if (active) {
+    showToast(`${active.nickname}'s turn`);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('turn-toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 2500);
+}
+
+// ─── Tile Selection ──────────────────────────────────────────────────────────
+function selectTile(tile, idx) {
+  if (!isMyTurn) return;
+
+  if (selectedTile && selectedTile.idx === idx) { cancelSelection(); return; }
+
+  selectedTile = { tile, idx };
+  renderHand();
+
+  // First tile — place directly
+  if (!boardData || !boardData.tiles || boardData.tiles.length === 0) {
+    placeFirstTile(tile);
+    return;
+  }
+
+  const canLeft  = canPlayOnSide(tile, 'left');
+  const canRight = canPlayOnSide(tile, 'right');
+
+  renderBoard();
+
+  if (canLeft && canRight && boardData.left_end !== boardData.right_end) {
+    document.getElementById('side-picker').classList.add('visible');
+  } else if (canLeft) {
+    confirmPlace('left');
+  } else if (canRight) {
+    confirmPlace('right');
+  } else {
+    cancelSelection();
+  }
+}
+
+function cancelSelection() {
+  selectedTile = null;
+  document.getElementById('side-picker').classList.remove('visible');
+  renderHand();
+  renderBoard();
+}
+
+function handleDropZone(side) {
+  if (!selectedTile) return;
+  document.getElementById('side-picker').classList.remove('visible');
+  confirmPlace(side);
+}
+
+// ─── Game Logic ──────────────────────────────────────────────────────────────
+function getPlayableTiles(hand) {
+  if (!boardData || !Array.isArray(boardData.tiles) || boardData.tiles.length === 0) return hand;
+  const left = boardData.left_end;
+  const right = boardData.right_end;
+  return hand.filter(t => t[0] === left || t[1] === left || t[0] === right || t[1] === right);
+}
+
+function canPlayOnSide(tile, side) {
+  if (!boardData || !boardData.tiles || boardData.tiles.length === 0) return true;
+  const end = side === 'left' ? boardData.left_end : boardData.right_end;
+  return tile[0] === end || tile[1] === end;
+}
+
+async function placeFirstTile(tile) {
+  const me = players.find(p => p.seat === myInfo.seat);
+  const newHand = me.hand.filter((_, i) => i !== selectedTile.idx);
+
+  await db.from('board').update({
+    tiles:     [{ tile, flipped: false }],
+    left_end:  tile[0],
+    right_end: tile[1]
+  }).eq('room_id', myInfo.roomId);
+
+  await db.from('players')
+    .update({ hand: newHand })
+    .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
+
+  await db.from('game_events').insert({
+    room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile
+  });
+
+  await advanceTurn(newHand);
+
+  selectedTile = null;
+  document.getElementById('side-picker').classList.remove('visible');
+}
+
+async function confirmPlace(side) {
+  if (!selectedTile) return;
+  const me   = players.find(p => p.seat === myInfo.seat);
+  const tile = selectedTile.tile;
+  const idx  = selectedTile.idx;
+
+  const end = side === 'left' ? boardData.left_end : boardData.right_end;
+
+  // Determine if tile needs flipping so the matching pip faces the board end
+  let flipped = false;
+  if (side === 'left') {
+    flipped = (tile[1] === end);   // tile[1] connects to left → flip so tile[0] becomes new left end
+  } else {
+    flipped = (tile[0] === end);   // tile[0] connects to right → flip so tile[1] becomes new right end
+  }
+
+  // Validate the tile actually matches
+  const matchVal = flipped ? tile[1] : tile[0]; // value connecting to board
+  if (side === 'left'  && matchVal !== boardData.left_end)  { cancelSelection(); return; }
+  if (side === 'right' && matchVal !== boardData.right_end) { cancelSelection(); return; }
+
+  const newEntry  = { tile, flipped };
+  const newTiles  = side === 'left'
+    ? [newEntry, ...boardData.tiles]
+    : [...boardData.tiles, newEntry];
+
+  // Recompute open ends
+  const leftEntry  = newTiles[0];
+  const rightEntry = newTiles[newTiles.length - 1];
+  const newLeftEnd  = leftEntry.flipped  ? leftEntry.tile[1]  : leftEntry.tile[0];
+  const newRightEnd = rightEntry.flipped ? rightEntry.tile[0] : rightEntry.tile[1];
+
+  const newHand = me.hand.filter((_, i) => i !== idx);
+
+  await db.from('board').update({
+    tiles:     newTiles,
+    left_end:  newLeftEnd,
+    right_end: newRightEnd
+  }).eq('room_id', myInfo.roomId);
+
+  await db.from('players')
+    .update({ hand: newHand })
+    .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
+
+  await db.from('game_events').insert({
+    room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile
+  });
+
+  await advanceTurn(newHand);
+
+  selectedTile = null;
+  document.getElementById('side-picker').classList.remove('visible');
+}
+
+async function passMove() {
+  const me = players.find(p => p.seat === myInfo.seat);
+  await db.from('game_events').insert({
+    room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null
+  });
+  await advanceTurn(me.hand);
+}
+
+async function advanceTurn(myNewHand) {
+  // Win: empty hand
+  if (myNewHand.length === 0) {
+    await endGame(myInfo.seat);
+    return;
+  }
+
+  // Blocked: last N events all passes (N = number of players who have tiles)
+  const { data: events } = await db.from('game_events')
+    .select('*').eq('room_id', myInfo.roomId)
+    .order('created_at', { ascending: false }).limit(4);
+
+  if (events && events.length === 4 && events.every(e => e.action === 'pass')) {
+    await endGame(null); // blocked — winner decided by pip count
+    return;
+  }
+
+  const nextSeat = (roomData.current_turn + 1) % 4;
+  await db.from('rooms')
+    .update({ current_turn: nextSeat })
+    .eq('id', myInfo.roomId);
+}
+
+async function endGame(winningSeat) {
+  await db.from('rooms')
+    .update({ status: 'finished', current_turn: winningSeat ?? 0 })
+    .eq('id', myInfo.roomId);
+}
+
+// ─── Game Over ───────────────────────────────────────────────────────────────
+function showGameOver() {
+  if (gameOver) return;
+  gameOver = true;
+
+  const results = players.map(p => ({
+    nickname: p.nickname,
+    seat:     p.seat,
+    pips:     (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
+  })).sort((a, b) => a.pips - b.pips);
+
+  const winner = results[0];
+  const isMe   = winner.seat === myInfo.seat;
+
+  document.getElementById('winner-title').textContent = isMe ? '🎉 You Win!' : `${winner.nickname} Wins!`;
+  document.getElementById('winner-desc').textContent  =
+    `${winner.nickname} wins with the lowest pip count (${winner.pips} pips).`;
+
+  const tbody = document.getElementById('scores-body');
+  tbody.innerHTML = '';
+  results.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    if (i === 0) tr.className = 'winner';
+    tr.innerHTML = `
+      <td>${escHtml(r.nickname)}${r.seat === myInfo.seat ? ' (you)' : ''}</td>
+      <td>${r.seat + 1}</td>
+      <td>${r.pips}${i === 0 ? ' 👑' : ''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('overlay-gameover').classList.remove('hidden');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

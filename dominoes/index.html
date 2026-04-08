@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dominoes — PlayVolt</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<!-- PlayVolt auth helper — adjust path to wherever auth.js lives in your project -->
+<!-- <script src="../auth.js"></script> -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0f0e0c;
+  --surface:    #1a1814;
+  --surface2:   #242118;
+  --border:     #3a3528;
+  --ivory:      #f0ead8;
+  --ivory-dim:  #a09880;
+  --gold:       #c9a84c;
+  --gold-glow:  #e8c96a;
+  --pip:        #1a1814;
+  --red:        #c94c4c;
+  --green:      #4caa6e;
+  /* PlayVolt accent — adjust to match your hub's palette */
+  --pv-accent:  #7c5cfc;
+  --pv-accent2: #a07aff;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ivory);
+  font-family: 'DM Mono', monospace;
+  overflow-x: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201,168,76,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 80%, rgba(124,92,252,0.05) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(58,53,40,0.25) 39px, rgba(58,53,40,0.25) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(58,53,40,0.25) 39px, rgba(58,53,40,0.25) 40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 520px;
+}
+
+/* ── PlayVolt nav strip ── */
+.pv-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(124,92,252,0.06);
+  border: 1px solid rgba(124,92,252,0.2);
+  border-radius: 6px;
+}
+
+.pv-brand {
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--pv-accent2);
+  font-weight: 500;
+}
+
+.pv-user {
+  font-size: 0.6rem;
+  color: var(--ivory-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pv-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--pv-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: white;
+  font-weight: 600;
+}
+
+.pv-back {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--pv-accent2);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.2s;
+}
+.pv-back:hover { opacity: 0.7; }
+
+/* ── Title ── */
+.title-block { text-align: center; margin-bottom: 2.5rem; }
+
+.domino-logo {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 1.25rem;
+}
+
+.domino-logo .tile {
+  width: 34px;
+  height: 60px;
+  background: var(--ivory);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  padding: 5px 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+  position: relative;
+  animation: float 3s ease-in-out infinite;
+}
+
+.domino-logo .tile:nth-child(2) { animation-delay: 0.35s; }
+.domino-logo .tile:nth-child(3) { animation-delay: 0.7s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+.domino-logo .tile::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%; height: 1.5px;
+  background: rgba(26,24,20,0.3);
+}
+
+.pip-row { display: flex; gap: 3px; align-items: center; justify-content: center; height: 22px; }
+.pip { width: 5px; height: 5px; border-radius: 50%; background: var(--pip); }
+
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.2rem, 8vw, 3.5rem);
+  font-weight: 900;
+  color: var(--ivory);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(201,168,76,0.3);
+}
+h1 span { color: var(--gold); }
+
+.subtitle {
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  color: var(--ivory-dim);
+  text-transform: uppercase;
+  margin-top: 0.4rem;
+}
+
+/* ── Form & Controls ── */
+label {
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+input[type="text"] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  color: var(--ivory);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  transition: border-color 0.2s;
+  outline: none;
+}
+input[type="text"]:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+}
+input[type="text"]::placeholder { color: #4a4538; }
+.input-group { display: flex; flex-direction: column; }
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.75rem;
+}
+.tab {
+  flex: 1;
+  padding: 0.7rem;
+  background: none;
+  border: none;
+  color: var(--ivory-dim);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.tab:hover:not(.active) { color: var(--ivory); }
+
+/* ── Panels ── */
+.panel { display: none; flex-direction: column; gap: 1.25rem; animation: fadeUp 0.3s ease; }
+.panel.active { display: flex; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Buttons ── */
+.btn {
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary { background: var(--gold); color: var(--bg); font-weight: 500; }
+.btn-primary:hover { background: var(--gold-glow); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(201,168,76,0.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-outline { background: transparent; color: var(--ivory); border: 1px solid var(--border); }
+.btn-outline:hover { border-color: var(--ivory-dim); background: rgba(240,234,216,0.05); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+/* ── Room code display ── */
+.room-code-display {
+  background: var(--surface2);
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  padding: 1.5rem;
+  text-align: center;
+  display: none;
+}
+.room-code-display.visible { display: block; }
+.room-code-label { font-size: 0.58rem; letter-spacing: 0.25em; color: var(--ivory-dim); text-transform: uppercase; margin-bottom: 0.5rem; }
+.room-code-value { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 700; color: var(--gold); letter-spacing: 0.3em; }
+.share-url { font-size: 0.62rem; color: var(--ivory-dim); margin-top: 0.75rem; word-break: break-all; }
+.copy-btn {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: 'DM Mono', monospace;
+  text-decoration: underline;
+}
+
+/* ── Waiting room ── */
+.waiting-room { display: none; flex-direction: column; gap: 1rem; }
+.waiting-room.visible { display: flex; }
+
+.players-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+.player-slot {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: border-color 0.3s;
+}
+.player-slot.occupied { border-color: var(--green); }
+.player-slot.me { border-color: var(--gold); }
+
+.seat-number {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem;
+  color: var(--ivory-dim);
+  flex-shrink: 0;
+}
+.player-slot.occupied .seat-number { background: var(--green); color: white; }
+.player-slot.me .seat-number { background: var(--gold); color: var(--bg); }
+.player-name { font-size: 0.72rem; color: var(--ivory); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-empty { font-size: 0.62rem; color: #3a3528; letter-spacing: 0.1em; }
+
+.waiting-status {
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  color: var(--ivory-dim);
+  text-align: center;
+  padding: 0.5rem;
+}
+.pulse {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  margin-right: 6px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* ── Queue ── */
+.queue-status {
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  padding: 1.5rem;
+  text-align: center;
+}
+.queue-count { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--gold); display: block; margin: 0.5rem 0; }
+
+/* ── Messages ── */
+.msg { font-size: 0.68rem; padding: 0.5rem 0.75rem; border-radius: 3px; display: none; }
+.msg.error   { background: rgba(201,76,76,0.15);  color: var(--red);   border: 1px solid rgba(201,76,76,0.3);  display: block; }
+.msg.success { background: rgba(76,170,110,0.15); color: var(--green); border: 1px solid rgba(76,170,110,0.3); display: block; }
+
+hr { border: none; border-top: 1px solid var(--border); }
+
+/* ── Auth gate ── */
+#auth-gate {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  padding: 2rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+#auth-gate.visible { display: flex; }
+#auth-gate p { font-size: 0.75rem; color: var(--ivory-dim); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- PlayVolt nav strip -->
+  <div class="pv-strip">
+    <span class="pv-brand">⚡ PlayVolt</span>
+    <div class="pv-user">
+      <div class="pv-avatar" id="pv-avatar">?</div>
+      <span id="pv-username">Loading…</span>
+    </div>
+    <a class="pv-back" href="../index.html">← Hub</a>
+  </div>
+
+  <!-- Logo & Title -->
+  <div class="title-block">
+    <div class="domino-logo">
+      <div class="tile">
+        <div class="pip-row"><div class="pip"></div></div>
+        <div class="pip-row"></div>
+      </div>
+      <div class="tile">
+        <div class="pip-row"><div class="pip"></div><div class="pip"></div></div>
+        <div class="pip-row"><div class="pip"></div><div class="pip"></div></div>
+      </div>
+      <div class="tile">
+        <div class="pip-row"><div class="pip"></div><div class="pip"></div><div class="pip"></div></div>
+        <div class="pip-row"><div class="pip"></div><div class="pip"></div><div class="pip"></div></div>
+      </div>
+    </div>
+    <h1>Domi<span>nos</span></h1>
+    <p class="subtitle">Block · 4 Players · Online</p>
+  </div>
+
+  <!-- Auth gate (shown only when not logged in) -->
+  <div id="auth-gate">
+    <p>You need a PlayVolt account to play.<br/>Sign in from the hub to continue.</p>
+    <a class="btn btn-primary" style="text-decoration:none;display:inline-block" href="../index.html">Go to PlayVolt Hub</a>
+  </div>
+
+  <!-- Main lobby (hidden until auth confirmed) -->
+  <div id="lobby-content" style="display:none">
+
+    <!-- Nickname (pre-filled from profile) -->
+    <div class="input-group" style="margin-bottom:1.5rem">
+      <label>Your Nickname</label>
+      <input type="text" id="nickname" placeholder="Enter your name…" maxlength="16"/>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('create')">Create Room</button>
+      <button class="tab" onclick="switchTab('join')">Join by Code</button>
+      <button class="tab" onclick="switchTab('match')">Matchmaking</button>
+    </div>
+
+    <!-- ── Create Room ── -->
+    <div class="panel active" id="panel-create">
+      <div id="msg-create" class="msg"></div>
+      <button class="btn btn-primary" id="btn-create" onclick="createRoom()">Create New Room</button>
+
+      <div class="room-code-display" id="code-display">
+        <div class="room-code-label">Room Code</div>
+        <div class="room-code-value" id="display-code">------</div>
+        <div class="share-url" id="display-url"></div>
+        <button class="copy-btn" onclick="copyLink()">Copy Invite Link</button>
+      </div>
+
+      <div class="waiting-room" id="waiting-create">
+        <div class="players-grid" id="players-create"></div>
+        <div class="waiting-status"><span class="pulse"></span>Waiting for players…</div>
+        <button class="btn btn-primary" id="btn-start" onclick="startGame()" disabled>Start Game (Need 4 Players)</button>
+      </div>
+    </div>
+
+    <!-- ── Join by Code ── -->
+    <div class="panel" id="panel-join">
+      <div id="msg-join" class="msg"></div>
+      <div class="input-group">
+        <label>Room Code</label>
+        <input type="text" id="join-code" placeholder="Enter 6-character code…" maxlength="6"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter')joinRoom()"/>
+      </div>
+      <button class="btn btn-primary" onclick="joinRoom()">Join Room</button>
+
+      <div class="waiting-room" id="waiting-join">
+        <div class="players-grid" id="players-join"></div>
+        <div class="waiting-status"><span class="pulse"></span>Waiting for host to start…</div>
+      </div>
+    </div>
+
+    <!-- ── Matchmaking ── -->
+    <div class="panel" id="panel-match">
+      <div id="msg-match" class="msg"></div>
+      <div class="queue-status" id="queue-info">
+        <div style="font-size:0.62rem;letter-spacing:0.15em;color:var(--ivory-dim);text-transform:uppercase">Players in Queue</div>
+        <span class="queue-count" id="queue-count">—</span>
+        <div style="font-size:0.62rem;color:var(--ivory-dim)">Need 4 to auto-start</div>
+      </div>
+      <button class="btn btn-primary" id="btn-queue" onclick="joinQueue()">Join Matchmaking Queue</button>
+      <button class="btn btn-outline" id="btn-leave-queue" onclick="leaveQueue()" style="display:none">Leave Queue</button>
+
+      <div class="waiting-room" id="waiting-match">
+        <div class="players-grid" id="players-match"></div>
+        <div class="waiting-status"><span class="pulse"></span>Finding players…</div>
+      </div>
+    </div>
+
+  </div><!-- /lobby-content -->
+</div><!-- /wrapper -->
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let myPlayerId   = null;
+let myRoomId     = null;
+let myRoomCode   = null;
+let mySeat       = null;
+let roomChannel  = null;
+let queueChannel = null;
+let isInQueue    = false;
+let pvProfile    = null;
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  // Try PlayVolt auth if the helper is available
+  if (typeof PlayVolt !== 'undefined') {
+    try {
+      const ctx = await PlayVolt.requireAuth({ minTier: 'any' });
+      pvProfile = ctx.profile;
+      showLobby(pvProfile);
+    } catch {
+      // requireAuth already redirected
+      return;
+    }
+  } else {
+    // Auth helper not loaded — run without auth (dev mode)
+    showLobby(null);
+  }
+
+  // Auto-join from URL ?join=CODE
+  const code = new URLSearchParams(location.search).get('join');
+  if (code) {
+    switchTab('join');
+    document.getElementById('join-code').value = code.toUpperCase();
+  }
+});
+
+function showLobby(profile) {
+  const lobbyEl = document.getElementById('lobby-content');
+  lobbyEl.style.display = 'block';
+
+  if (profile) {
+    document.getElementById('pv-avatar').textContent   = (profile.username || profile.first_name || '?')[0].toUpperCase();
+    document.getElementById('pv-username').textContent = profile.username || profile.first_name || 'Player';
+    document.getElementById('nickname').value          = profile.username || profile.first_name || '';
+  } else {
+    document.getElementById('pv-username').textContent = 'Guest';
+  }
+  loadQueueCount();
+}
+
+// ─── Tab ─────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) =>
+    t.classList.toggle('active', ['create','join','match'][i] === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'match') loadQueueCount();
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function getNickname() {
+  const v = document.getElementById('nickname').value.trim();
+  if (!v) { alert('Please enter a nickname first!'); return null; }
+  return v;
+}
+
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'msg ' + type;
+}
+
+function renderPlayers(containerId, players, myS) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (let s = 0; s < 4; s++) {
+    const p = players.find(x => x.seat === s);
+    const isMe = p && p.seat === myS;
+    const div = document.createElement('div');
+    div.className = 'player-slot' + (p ? (isMe ? ' me' : ' occupied') : '');
+    div.innerHTML = `
+      <div class="seat-number">${s + 1}</div>
+      ${p
+        ? `<div class="player-name">${escHtml(p.nickname)}${isMe ? ' (you)' : ''}</div>`
+        : `<div class="player-empty">Waiting…</div>`}
+    `;
+    el.appendChild(div);
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Create Room ─────────────────────────────────────────────────────────────
+async function createRoom() {
+  const nickname = getNickname();
+  if (!nickname) return;
+  const btn = document.getElementById('btn-create');
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+
+  try {
+    const code = generateRoomCode();
+
+    const { data: room, error: rErr } = await db.from('rooms')
+      .insert({ code, status: 'waiting', current_turn: 0 })
+      .select().single();
+    if (rErr) throw rErr;
+
+    const { data: player, error: pErr } = await db.from('players')
+      .insert({ room_id: room.id, seat: 0, nickname, hand: [], is_connected: true })
+      .select().single();
+    if (pErr) throw pErr;
+
+    myPlayerId = player.id;
+    myRoomId   = room.id;
+    myRoomCode = code;
+    mySeat     = 0;
+
+    document.getElementById('display-code').textContent = code;
+    const url = `${location.origin}${location.pathname}?join=${code}`;
+    document.getElementById('display-url').textContent = url;
+    document.getElementById('code-display').classList.add('visible');
+    document.getElementById('waiting-create').classList.add('visible');
+    btn.style.display = 'none';
+    renderPlayers('players-create', [player], 0);
+    subscribeToRoom(room.id, 'create');
+  } catch (e) {
+    showMsg('msg-create', 'Error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Create New Room';
+  }
+}
+
+function copyLink() {
+  const url = `${location.origin}${location.pathname}?join=${myRoomCode}`;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy Invite Link', 2000);
+  });
+}
+
+// ─── Join by Code ─────────────────────────────────────────────────────────────
+async function joinRoom(codeOverride) {
+  const nickname = getNickname();
+  if (!nickname) return;
+  const code = (codeOverride || document.getElementById('join-code').value.trim()).toUpperCase();
+  if (code.length !== 6) { showMsg('msg-join', 'Enter a 6-character room code.', 'error'); return; }
+
+  try {
+    const { data: room, error: rErr } = await db.from('rooms')
+      .select('*').eq('code', code).eq('status', 'waiting').single();
+    if (rErr || !room) { showMsg('msg-join', 'Room not found or game already started.', 'error'); return; }
+
+    const { data: existing } = await db.from('players').select('seat').eq('room_id', room.id);
+    const takenSeats = (existing || []).map(p => p.seat);
+    const freeSeat = [0, 1, 2, 3].find(s => !takenSeats.includes(s));
+    if (freeSeat === undefined) { showMsg('msg-join', 'Room is full!', 'error'); return; }
+
+    const { data: player, error: pErr } = await db.from('players')
+      .insert({ room_id: room.id, seat: freeSeat, nickname, hand: [], is_connected: true })
+      .select().single();
+    if (pErr) throw pErr;
+
+    myPlayerId = player.id;
+    myRoomId   = room.id;
+    myRoomCode = code;
+    mySeat     = freeSeat;
+
+    document.getElementById('waiting-join').classList.add('visible');
+    subscribeToRoom(room.id, 'join');
+  } catch (e) {
+    showMsg('msg-join', 'Error: ' + e.message, 'error');
+  }
+}
+
+// ─── Matchmaking ──────────────────────────────────────────────────────────────
+async function loadQueueCount() {
+  const { data } = await db.from('queue').select('id').eq('status', 'waiting');
+  document.getElementById('queue-count').textContent = (data?.length ?? 0) + ' / 4';
+}
+
+async function joinQueue() {
+  const nickname = getNickname();
+  if (!nickname) return;
+  isInQueue = true;
+  document.getElementById('btn-queue').style.display = 'none';
+  document.getElementById('btn-leave-queue').style.display = 'block';
+
+  const { data: qEntry } = await db.from('queue')
+    .insert({ nickname, status: 'waiting' })
+    .select().single();
+  myPlayerId = qEntry.id;
+
+  queueChannel = db.channel('queue-watch-' + qEntry.id)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, async () => {
+      const { data } = await db.from('queue').select('*').eq('status', 'waiting').order('created_at');
+      document.getElementById('queue-count').textContent = (data?.length ?? 0) + ' / 4';
+      renderPlayers('players-match', (data || []).slice(0, 4).map((p, i) => ({ ...p, seat: i })),
+        (data || []).findIndex(p => p.id === myPlayerId));
+
+      if ((data || []).length >= 4 && data[0].id === myPlayerId) {
+        await autoCreateMatchRoom(data.slice(0, 4));
+      }
+    })
+    .subscribe();
+
+  document.getElementById('waiting-match').classList.add('visible');
+  loadQueueCount();
+}
+
+async function autoCreateMatchRoom(queuePlayers) {
+  const code = generateRoomCode();
+  const { data: room } = await db.from('rooms')
+    .insert({ code, status: 'waiting', current_turn: 0 })
+    .select().single();
+
+  for (let i = 0; i < 4; i++) {
+    await db.from('queue')
+      .update({ matched_room: room.id, status: 'matched' })
+      .eq('id', queuePlayers[i].id);
+  }
+
+  for (let i = 0; i < 4; i++) {
+    await db.from('players').insert({
+      room_id: room.id, seat: i,
+      nickname: queuePlayers[i].nickname,
+      hand: [], is_connected: true
+    });
+  }
+
+  sessionStorage.setItem('domino_player', JSON.stringify({
+    seat: 0, nickname: queuePlayers[0].nickname, roomId: room.id, roomCode: room.code
+  }));
+  location.href = 'game.html';
+}
+
+async function leaveQueue() {
+  if (myPlayerId) await db.from('queue').delete().eq('id', myPlayerId);
+  isInQueue = false;
+  if (queueChannel) { db.removeChannel(queueChannel); queueChannel = null; }
+  document.getElementById('btn-queue').style.display = 'block';
+  document.getElementById('btn-leave-queue').style.display = 'none';
+  document.getElementById('waiting-match').classList.remove('visible');
+  myPlayerId = null;
+  loadQueueCount();
+}
+
+// ─── Room Subscription ───────────────────────────────────────────────────────
+function subscribeToRoom(roomId, panel) {
+  const playersEl = panel === 'create' ? 'players-create' : 'players-join';
+
+  roomChannel = db.channel('room-' + roomId)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
+      async () => {
+        const { data: players } = await db.from('players').select('*').eq('room_id', roomId).order('seat');
+        renderPlayers(playersEl, players || [], mySeat);
+        if (panel === 'create') {
+          const startBtn = document.getElementById('btn-start');
+          if ((players || []).length === 4) {
+            startBtn.disabled = false;
+            startBtn.textContent = 'Start Game!';
+          }
+        }
+      })
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+      (payload) => {
+        if (payload.new.status === 'playing') {
+          sessionStorage.setItem('domino_player', JSON.stringify({
+            seat: mySeat,
+            nickname: document.getElementById('nickname').value.trim(),
+            roomId: myRoomId,
+            roomCode: myRoomCode
+          }));
+          location.href = 'game.html';
+        }
+      })
+    .subscribe();
+
+  // Initial render
+  db.from('players').select('*').eq('room_id', roomId).order('seat').then(({ data: players }) => {
+    if (players) renderPlayers(playersEl, players, mySeat);
+  });
+}
+
+// ─── Start Game (host only) ──────────────────────────────────────────────────
+async function startGame() {
+  if (!myRoomId) return;
+  const { data: players } = await db.from('players').select('*').eq('room_id', myRoomId).order('seat');
+  if (!players || players.length < 4) { alert('Need 4 players to start!'); return; }
+
+  const tiles = shuffle(generateDominoSet());
+  const hands = [tiles.slice(0, 7), tiles.slice(7, 14), tiles.slice(14, 21), tiles.slice(21, 28)];
+
+  for (let i = 0; i < 4; i++) {
+    await db.from('players')
+      .update({ hand: hands[i] })
+      .eq('room_id', myRoomId).eq('seat', i);
+  }
+
+  // Create board row (upsert-safe)
+  const { error: bErr } = await db.from('board').insert({
+    room_id: myRoomId, tiles: [], left_end: null, right_end: null
+  });
+  // If board row already exists that's fine — ignore the unique conflict
+  if (bErr && !bErr.message.includes('unique')) console.warn('Board insert:', bErr.message);
+
+  // Who has [6,6]?
+  let startingSeat = 0;
+  for (let i = 0; i < 4; i++) {
+    if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break; }
+  }
+
+  await db.from('rooms')
+    .update({ status: 'playing', current_turn: startingSeat })
+    .eq('id', myRoomId);
+}
+</script>
+</body>
+</html>
