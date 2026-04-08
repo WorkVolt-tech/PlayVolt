@@ -363,29 +363,35 @@ function shuffle(arr) {
   return a;
 }
 
-// ─── Boot — verify PlayVolt session first ─────────────────────────────────────
+// ─── Boot ─────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
-  try {
-    // requireAuth redirects to hub if not logged in — no tier restriction for dominoes
-    const ctx = await PlayVolt.requireAuth({ minTier: 'any' });
-    pvUser    = ctx.user;
-    pvProfile = ctx.profile;
-  } catch {
-    // PlayVolt.requireAuth already redirected; just stop here
-    return;
-  }
-
-  // Auth confirmed — init domino DB client
+  // Init domino DB client
   db = window.supabase.createClient(DOMINO_URL, DOMINO_KEY);
 
-  // Populate nav strip with PlayVolt identity
-  const name = pvProfile?.username || pvUser.email?.split('@')[0] || 'Player';
-  document.getElementById('pv-username').textContent = name;
-  document.getElementById('pv-avatar').textContent   = name[0].toUpperCase();
+  // Try to get PlayVolt session — optional, populates nav strip if available
+  let pvName = null;
+  try {
+    const ctx = await PlayVolt.getSession();
+    if (ctx?.profile?.username) {
+      pvName = ctx.profile.username;
+    } else if (ctx?.user?.email) {
+      pvName = ctx.user.email.split('@')[0];
+    }
+  } catch (_) { /* auth.js unavailable or no session — fine, continue */ }
 
-  // Pre-fill nickname from PlayVolt profile
-  const nick = pvProfile?.username || name;
-  document.getElementById('nickname').value = nick.slice(0, 16);
+  // Populate nav strip
+  const displayName = pvName || localStorage.getItem('domino_nickname') || '';
+  if (displayName) {
+    document.getElementById('pv-username').textContent = displayName;
+    document.getElementById('pv-avatar').textContent   = displayName[0].toUpperCase();
+  }
+
+  // Pre-fill nickname: PlayVolt profile > localStorage > blank
+  const savedNick = pvName || localStorage.getItem('domino_nickname') || '';
+  document.getElementById('nickname').value = savedNick.slice(0, 16);
+  document.getElementById('nickname').addEventListener('input', () => {
+    localStorage.setItem('domino_nickname', document.getElementById('nickname').value.trim());
+  });
 
   // Remove auth gate
   document.getElementById('auth-gate').classList.add('hidden');
