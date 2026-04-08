@@ -4,10 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Dominoes — PlayVolt</title>
-<!-- Supabase loaded from PlayVolt hub via auth.js; keep this as fallback -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- PlayVolt shared auth helper — path relative to this file -->
-<script src="../auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,17 +56,6 @@ body::before {
   z-index: 0;
 }
 
-/* Auth gate — shown while verifying session */
-#auth-gate {
-  position: fixed; inset: 0;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 999;
-  font-size: 0.72rem; letter-spacing: 0.2em; color: var(--ivory-dim);
-  text-transform: uppercase;
-}
-#auth-gate.hidden { display: none; }
-
 .wrapper {
   position: relative;
   z-index: 1;
@@ -77,24 +63,6 @@ body::before {
   max-width: 520px;
 }
 
-/* ── PlayVolt nav strip ── */
-.pv-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(124,92,252,0.06);
-  border: 1px solid rgba(124,92,252,0.2);
-  border-radius: 6px;
-}
-.pv-brand { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--pv-accent2); font-weight: 500; }
-.pv-user  { font-size: 0.6rem; color: var(--ivory-dim); display: flex; align-items: center; gap: 0.5rem; }
-.pv-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--pv-accent); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: white; font-weight: 600; }
-.pv-back { font-size: 0.6rem; letter-spacing: 0.1em; color: var(--pv-accent2); text-decoration: none; display: flex; align-items: center; gap: 4px; transition: opacity 0.2s; }
-.pv-back:hover { opacity: 0.7; }
-
-/* ── Title ── */
 .title-block { text-align: center; margin-bottom: 2.5rem; }
 
 .domino-logo { display: inline-flex; gap: 4px; margin-bottom: 1.25rem; }
@@ -118,7 +86,6 @@ h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem, 8vw, 3.5re
 h1 span { color: var(--gold); }
 .subtitle { font-size: 0.65rem; letter-spacing: 0.25em; color: var(--ivory-dim); text-transform: uppercase; margin-top: 0.4rem; }
 
-/* ── Form & Controls ── */
 label { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim); display: block; margin-bottom: 0.4rem; }
 input[type="text"] {
   width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
@@ -129,24 +96,15 @@ input[type="text"]:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba
 input[type="text"]::placeholder { color: #4a4538; }
 .input-group { display: flex; flex-direction: column; }
 
-/* ── Nickname note (pre-filled from PlayVolt profile) ── */
-.nickname-note {
-  font-size: 0.56rem; letter-spacing: 0.1em; color: var(--pv-accent2);
-  margin-top: 0.3rem;
-}
-
-/* ── Tabs ── */
 .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.75rem; }
 .tab { flex: 1; padding: 0.7rem; background: none; border: none; color: var(--ivory-dim); font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
 .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
 .tab:hover:not(.active) { color: var(--ivory); }
 
-/* ── Panels ── */
 .panel { display: none; flex-direction: column; gap: 1.25rem; animation: fadeUp 0.3s ease; }
 .panel.active { display: flex; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* ── Buttons ── */
 .btn { padding: 0.875rem 1.5rem; border: none; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
 .btn-primary { background: var(--gold); color: var(--bg); font-weight: 500; }
 .btn-primary:hover { background: var(--gold-glow); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(201,168,76,0.3); }
@@ -155,7 +113,6 @@ input[type="text"]::placeholder { color: #4a4538; }
 .btn-outline:hover { border-color: var(--ivory-dim); background: rgba(240,234,216,0.05); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
 
-/* ── Room code display ── */
 .room-code-display { background: var(--surface2); border: 1px solid var(--gold); border-radius: 4px; padding: 1.5rem; text-align: center; display: none; }
 .room-code-display.visible { display: block; }
 .room-code-label { font-size: 0.58rem; letter-spacing: 0.25em; color: var(--ivory-dim); text-transform: uppercase; margin-bottom: 0.5rem; }
@@ -163,7 +120,6 @@ input[type="text"]::placeholder { color: #4a4538; }
 .share-url { font-size: 0.62rem; color: var(--ivory-dim); margin-top: 0.75rem; word-break: break-all; }
 .copy-btn { display: inline-block; margin-top: 0.75rem; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); cursor: pointer; border: none; background: none; font-family: 'DM Mono', monospace; text-decoration: underline; }
 
-/* ── Waiting room ── */
 .waiting-room { display: none; flex-direction: column; gap: 1rem; }
 .waiting-room.visible { display: flex; }
 .players-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
@@ -179,40 +135,22 @@ input[type="text"]::placeholder { color: #4a4538; }
 .pulse { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin-right: 6px; animation: pulse 1.5s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
 
-/* ── Queue ── */
 .queue-status { background: var(--surface2); border: 1px dashed var(--border); border-radius: 4px; padding: 1.5rem; text-align: center; }
 .queue-count { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--gold); display: block; margin: 0.5rem 0; }
 
-/* ── Messages ── */
 .msg { font-size: 0.68rem; padding: 0.5rem 0.75rem; border-radius: 3px; display: none; }
 .msg.error   { background: rgba(201,76,76,0.15);  color: var(--red);   border: 1px solid rgba(201,76,76,0.3);  display: block; }
 .msg.success { background: rgba(76,170,110,0.15); color: var(--green); border: 1px solid rgba(76,170,110,0.3); display: block; }
 
 hr { border: none; border-top: 1px solid var(--border); }
 
-/* ── Connection indicator ── */
 .conn-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--border); margin-right: 5px; transition: background 0.4s; }
 .conn-dot.connected { background: var(--green); }
 </style>
 </head>
 <body>
 
-<!-- Auth gate overlay — hidden once session confirmed -->
-<div id="auth-gate">⚡ Verifying session…</div>
-
 <div class="wrapper">
-
-  <!-- PlayVolt nav strip -->
-  <div class="pv-strip">
-    <span class="pv-brand">⚡ PlayVolt</span>
-    <div class="pv-user">
-      <div class="pv-avatar" id="pv-avatar">?</div>
-      <span id="pv-username">…</span>
-    </div>
-    <a class="pv-back" href="../index.html">← Hub</a>
-  </div>
-
-  <!-- Logo & Title -->
   <div class="title-block">
     <div class="domino-logo">
       <div class="tile">
@@ -232,35 +170,28 @@ hr { border: none; border-top: 1px solid var(--border); }
     <p class="subtitle">Block · 4 Players · Online</p>
   </div>
 
-  <!-- Main lobby -->
   <div id="lobby-content">
-
-    <!-- Nickname — pre-filled from PlayVolt profile, still editable -->
     <div class="input-group" style="margin-bottom:1.5rem">
       <label>Your Nickname</label>
-      <input type="text" id="nickname" placeholder="Loading…" maxlength="16"/>
-      <div class="nickname-note" id="nickname-note">Pre-filled from your PlayVolt profile</div>
+      <input type="text" id="nickname" placeholder="Enter your name…" maxlength="16"/>
     </div>
 
-    <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" onclick="switchTab('create')">Create Room</button>
       <button class="tab" onclick="switchTab('join')">Join by Code</button>
       <button class="tab" onclick="switchTab('match')">Matchmaking</button>
     </div>
 
-    <!-- ── Create Room ── -->
+    <!-- Create Room -->
     <div class="panel active" id="panel-create">
       <div id="msg-create" class="msg"></div>
       <button class="btn btn-primary" id="btn-create" onclick="createRoom()">Create New Room</button>
-
       <div class="room-code-display" id="code-display">
         <div class="room-code-label">Room Code</div>
         <div class="room-code-value" id="display-code">------</div>
         <div class="share-url" id="display-url"></div>
         <button class="copy-btn" onclick="copyLink()">Copy Invite Link</button>
       </div>
-
       <div class="waiting-room" id="waiting-create">
         <div class="players-grid" id="players-create"></div>
         <div class="waiting-status">
@@ -271,7 +202,7 @@ hr { border: none; border-top: 1px solid var(--border); }
       </div>
     </div>
 
-    <!-- ── Join by Code ── -->
+    <!-- Join by Code -->
     <div class="panel" id="panel-join">
       <div id="msg-join" class="msg"></div>
       <div class="input-group">
@@ -281,7 +212,6 @@ hr { border: none; border-top: 1px solid var(--border); }
           onkeydown="if(event.key==='Enter')joinRoom()"/>
       </div>
       <button class="btn btn-primary" onclick="joinRoom()">Join Room</button>
-
       <div class="waiting-room" id="waiting-join">
         <div class="players-grid" id="players-join"></div>
         <div class="waiting-status">
@@ -291,56 +221,33 @@ hr { border: none; border-top: 1px solid var(--border); }
       </div>
     </div>
 
-    <!-- ── Matchmaking ── -->
+    <!-- Matchmaking -->
     <div class="panel" id="panel-match">
       <div id="msg-match" class="msg"></div>
-      <div class="queue-status" id="queue-info">
+      <div class="queue-status">
         <div style="font-size:0.62rem;letter-spacing:0.15em;color:var(--ivory-dim);text-transform:uppercase">Players in Queue</div>
         <span class="queue-count" id="queue-count">—</span>
         <div style="font-size:0.62rem;color:var(--ivory-dim)">Need 4 to auto-start</div>
       </div>
       <button class="btn btn-primary" id="btn-queue" onclick="joinQueue()">Join Matchmaking Queue</button>
       <button class="btn btn-outline" id="btn-leave-queue" onclick="leaveQueue()" style="display:none">Leave Queue</button>
-
       <div class="waiting-room" id="waiting-match">
         <div class="players-grid" id="players-match"></div>
         <div class="waiting-status"><span class="pulse"></span>Finding players…</div>
       </div>
     </div>
-
-  </div><!-- /lobby-content -->
-</div><!-- /wrapper -->
+  </div>
+</div>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   DOMINOES LOBBY — PlayVolt Module
-   Requires: auth.js (PlayVolt shared helper) loaded above.
-   The domino Supabase project is separate from the PlayVolt hub.
-   Auth uses PlayVolt's Supabase; game data uses dominoes' Supabase.
-═══════════════════════════════════════════════════════════════ */
-
-// ── Dominoes Supabase (game data only) ──
 const DOMINO_URL = 'https://eybzbtyfafmqbkulyvog.supabase.co';
 const DOMINO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
 
-// Initialised after PlayVolt auth confirms the user
-let db = null;
+const db = window.supabase.createClient(DOMINO_URL, DOMINO_KEY);
 
-// PlayVolt session info (populated in boot)
-let pvUser    = null;
-let pvProfile = null;
+let myPlayerId = null, myRoomId = null, myRoomCode = null, mySeat = null;
+let roomChannel = null, queueChannel = null;
 
-// Lobby state
-let myPlayerId  = null;
-let myRoomId    = null;
-let myRoomCode  = null;
-let mySeat      = null;
-let roomChannel = null;
-let queueChannel = null;
-let isInQueue   = false;
-let activePanel = null; // 'create' | 'join'
-
-// ─── Shared helpers (mirror of supabase.js) ──────────────────────────────────
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -349,8 +256,7 @@ function generateRoomCode() {
 function generateDominoSet() {
   const tiles = [];
   for (let a = 0; a <= 6; a++)
-    for (let b = a; b <= 6; b++)
-      tiles.push([a, b]);
+    for (let b = a; b <= 6; b++) tiles.push([a, b]);
   return tiles;
 }
 
@@ -363,50 +269,21 @@ function shuffle(arr) {
   return a;
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────────
-window.addEventListener('load', async () => {
-  // Init domino DB client
-  db = window.supabase.createClient(DOMINO_URL, DOMINO_KEY);
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-  // Try to get PlayVolt session — optional, populates nav strip if available
-  let pvName = null;
-  try {
-    const ctx = await PlayVolt.getSession();
-    if (ctx?.profile?.username) {
-      pvName = ctx.profile.username;
-    } else if (ctx?.user?.email) {
-      pvName = ctx.user.email.split('@')[0];
-    }
-  } catch (_) { /* auth.js unavailable or no session — fine, continue */ }
-
-  // Populate nav strip
-  const displayName = pvName || localStorage.getItem('domino_nickname') || '';
-  if (displayName) {
-    document.getElementById('pv-username').textContent = displayName;
-    document.getElementById('pv-avatar').textContent   = displayName[0].toUpperCase();
-  }
-
-  // Pre-fill nickname: PlayVolt profile > localStorage > blank
-  const savedNick = pvName || localStorage.getItem('domino_nickname') || '';
-  document.getElementById('nickname').value = savedNick.slice(0, 16);
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('domino_nickname') || '';
+  document.getElementById('nickname').value = saved;
   document.getElementById('nickname').addEventListener('input', () => {
     localStorage.setItem('domino_nickname', document.getElementById('nickname').value.trim());
   });
-
-  // Remove auth gate
-  document.getElementById('auth-gate').classList.add('hidden');
-
-  // Auto-join from URL ?join=CODE
   const code = new URLSearchParams(location.search).get('join');
-  if (code) {
-    switchTab('join');
-    document.getElementById('join-code').value = code.toUpperCase();
-  }
-
+  if (code) { switchTab('join'); document.getElementById('join-code').value = code.toUpperCase(); }
   loadQueueCount();
 });
 
-// ─── Tab ─────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t, i) =>
     t.classList.toggle('active', ['create','join','match'][i] === tab));
@@ -415,7 +292,6 @@ function switchTab(tab) {
   if (tab === 'match') loadQueueCount();
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 function getNickname() {
   const v = document.getElementById('nickname').value.trim();
   if (!v) { alert('Please enter a nickname first!'); return null; }
@@ -424,8 +300,7 @@ function getNickname() {
 
 function showMsg(id, text, type) {
   const el = document.getElementById(id);
-  el.textContent = text;
-  el.className = 'msg ' + type;
+  el.textContent = text; el.className = 'msg ' + type;
 }
 
 function setConnected(panel, ok) {
@@ -433,37 +308,21 @@ function setConnected(panel, ok) {
   if (dot) dot.classList.toggle('connected', ok);
 }
 
-// ─── Render players ───────────────────────────────────────────────────────────
 let _loadingPlayers = false;
 async function loadAndRenderPlayers(roomId, panel) {
   if (_loadingPlayers) return;
   _loadingPlayers = true;
   try {
-  const { data: players, error } = await db
-    .from('players')
-    .select('*')
-    .eq('room_id', roomId)
-    .eq('is_connected', true)
-    .order('seat');
-
-  if (error) { console.error('loadAndRenderPlayers error:', error); return; }
-
-  renderPlayers('players-' + panel, players || [], mySeat);
-
-  if (panel === 'create') {
-    const startBtn = document.getElementById('btn-start');
-    const count = (players || []).length;
-    if (count >= 4) {
-      startBtn.disabled = false;
-      startBtn.textContent = 'Start Game!';
-    } else {
-      startBtn.disabled = true;
-      startBtn.textContent = `Start Game (${count}/4 Players)`;
+    const { data: players } = await db.from('players').select('*')
+      .eq('room_id', roomId).eq('is_connected', true).order('seat');
+    renderPlayers('players-' + panel, players || [], mySeat);
+    if (panel === 'create') {
+      const startBtn = document.getElementById('btn-start');
+      const count = (players || []).length;
+      startBtn.disabled = count < 4;
+      startBtn.textContent = count >= 4 ? 'Start Game!' : `Start Game (${count}/4 Players)`;
     }
-  }
-  } finally {
-    _loadingPlayers = false;
-  }
+  } finally { _loadingPlayers = false; }
 }
 
 function renderPlayers(containerId, players, myS) {
@@ -476,44 +335,26 @@ function renderPlayers(containerId, players, myS) {
     div.className = 'player-slot' + (p ? (isMe ? ' me' : ' occupied') : '');
     div.innerHTML = `
       <div class="seat-number">${s + 1}</div>
-      ${p
-        ? `<div class="player-name">${escHtml(p.nickname)}${isMe ? ' (you)' : ''}</div>`
-        : `<div class="player-empty">Waiting…</div>`}
-    `;
+      ${p ? `<div class="player-name">${escHtml(p.nickname)}${isMe ? ' (you)' : ''}</div>`
+          : `<div class="player-empty">Waiting…</div>`}`;
     el.appendChild(div);
   }
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ─── Create Room ─────────────────────────────────────────────────────────────
 async function createRoom() {
-  const nickname = getNickname();
-  if (!nickname) return;
+  const nickname = getNickname(); if (!nickname) return;
   const btn = document.getElementById('btn-create');
-  btn.disabled = true;
-  btn.textContent = 'Creating…';
-
+  btn.disabled = true; btn.textContent = 'Creating…';
   try {
     const code = generateRoomCode();
-
     const { data: room, error: rErr } = await db.from('rooms')
-      .insert({ code, status: 'waiting', current_turn: 0 })
-      .select().single();
+      .insert({ code, status: 'waiting', current_turn: 0 }).select().single();
     if (rErr) throw rErr;
-
     const { data: player, error: pErr } = await db.from('players')
-      .insert({ room_id: room.id, seat: 0, nickname, hand: [], is_connected: true })
-      .select().single();
+      .insert({ room_id: room.id, seat: 0, nickname, hand: [], is_connected: true }).select().single();
     if (pErr) throw pErr;
 
-    myPlayerId = player.id;
-    myRoomId   = room.id;
-    myRoomCode = code;
-    mySeat     = 0;
-    activePanel = 'create';
+    myPlayerId = player.id; myRoomId = room.id; myRoomCode = code; mySeat = 0;
 
     document.getElementById('display-code').textContent = code;
     const url = `${location.origin}${location.pathname}?join=${code}`;
@@ -521,14 +362,11 @@ async function createRoom() {
     document.getElementById('code-display').classList.add('visible');
     document.getElementById('waiting-create').classList.add('visible');
     btn.style.display = 'none';
-
     renderPlayers('players-create', [player], 0);
     subscribeToRoom(room.id, 'create');
-
   } catch (e) {
     showMsg('msg-create', 'Error: ' + e.message, 'error');
-    btn.disabled = false;
-    btn.textContent = 'Create New Room';
+    btn.disabled = false; btn.textContent = 'Create New Room';
   }
 }
 
@@ -541,13 +379,10 @@ function copyLink() {
   });
 }
 
-// ─── Join by Code ─────────────────────────────────────────────────────────────
 async function joinRoom(codeOverride) {
-  const nickname = getNickname();
-  if (!nickname) return;
+  const nickname = getNickname(); if (!nickname) return;
   const code = (codeOverride || document.getElementById('join-code').value.trim()).toUpperCase();
   if (code.length !== 6) { showMsg('msg-join', 'Enter a 6-character room code.', 'error'); return; }
-
   try {
     const { data: room, error: rErr } = await db.from('rooms')
       .select('*').eq('code', code).eq('status', 'waiting').single();
@@ -555,159 +390,95 @@ async function joinRoom(codeOverride) {
 
     const { data: existing } = await db.from('players').select('seat').eq('room_id', room.id);
     const takenSeats = (existing || []).map(p => p.seat);
-    const freeSeat = [0, 1, 2, 3].find(s => !takenSeats.includes(s));
+    const freeSeat = [0,1,2,3].find(s => !takenSeats.includes(s));
     if (freeSeat === undefined) { showMsg('msg-join', 'Room is full!', 'error'); return; }
 
     const { data: player, error: pErr } = await db.from('players')
-      .insert({ room_id: room.id, seat: freeSeat, nickname, hand: [], is_connected: true })
-      .select().single();
+      .insert({ room_id: room.id, seat: freeSeat, nickname, hand: [], is_connected: true }).select().single();
     if (pErr) throw pErr;
 
-    myPlayerId  = player.id;
-    myRoomId    = room.id;
-    myRoomCode  = code;
-    mySeat      = freeSeat;
-    activePanel = 'join';
-
+    myPlayerId = player.id; myRoomId = room.id; myRoomCode = code; mySeat = freeSeat;
     document.getElementById('waiting-join').classList.add('visible');
-
     await loadAndRenderPlayers(room.id, 'join');
     subscribeToRoom(room.id, 'join');
-
-  } catch (e) {
-    showMsg('msg-join', 'Error: ' + e.message, 'error');
-  }
+  } catch (e) { showMsg('msg-join', 'Error: ' + e.message, 'error'); }
 }
 
-// ─── Room Subscription ────────────────────────────────────────────────────────
 function subscribeToRoom(roomId, panel) {
   if (roomChannel) { db.removeChannel(roomChannel); roomChannel = null; }
-
   roomChannel = db.channel('room-' + roomId + '-' + Date.now())
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
       async () => { await loadAndRenderPlayers(roomId, panel); })
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
       (payload) => {
         if (payload.new.status === 'playing') {
-          // Store session so game.html knows who we are + include PlayVolt user_id
           sessionStorage.setItem('domino_player', JSON.stringify({
-            seat:      mySeat,
-            nickname:  document.getElementById('nickname').value.trim(),
-            roomId:    myRoomId,
-            roomCode:  myRoomCode,
-            pvUserId:  pvUser?.id || null,
+            seat: mySeat, nickname: document.getElementById('nickname').value.trim(),
+            roomId: myRoomId, roomCode: myRoomCode,
           }));
           location.href = 'game.html';
         }
       })
-    .subscribe((status) => {
-      setConnected(panel, status === 'SUBSCRIBED');
-    });
+    .subscribe((status) => { setConnected(panel, status === 'SUBSCRIBED'); });
 }
 
-// ─── Matchmaking ──────────────────────────────────────────────────────────────
 async function loadQueueCount() {
   const { data } = await db.from('queue').select('id').eq('status', 'waiting');
   document.getElementById('queue-count').textContent = (data?.length ?? 0) + ' / 4';
 }
 
 async function joinQueue() {
-  const nickname = getNickname();
-  if (!nickname) return;
-  isInQueue = true;
+  const nickname = getNickname(); if (!nickname) return;
   document.getElementById('btn-queue').style.display = 'none';
   document.getElementById('btn-leave-queue').style.display = 'block';
-
-  const { data: qEntry } = await db.from('queue')
-    .insert({ nickname, status: 'waiting' })
-    .select().single();
+  const { data: qEntry } = await db.from('queue').insert({ nickname, status: 'waiting' }).select().single();
   myPlayerId = qEntry.id;
-
   queueChannel = db.channel('queue-watch-' + qEntry.id)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, async () => {
       const { data } = await db.from('queue').select('*').eq('status', 'waiting').order('created_at');
       document.getElementById('queue-count').textContent = (data?.length ?? 0) + ' / 4';
-      renderPlayers('players-match', (data || []).slice(0, 4).map((p, i) => ({ ...p, seat: i })),
-        (data || []).findIndex(p => p.id === myPlayerId));
-
-      if ((data || []).length >= 4 && data[0].id === myPlayerId) {
-        await autoCreateMatchRoom(data.slice(0, 4));
-      }
-    })
-    .subscribe();
-
+      renderPlayers('players-match', (data||[]).slice(0,4).map((p,i) => ({...p, seat:i})),
+        (data||[]).findIndex(p => p.id === myPlayerId));
+      if ((data||[]).length >= 4 && data[0].id === myPlayerId) await autoCreateMatchRoom(data.slice(0,4));
+    }).subscribe();
   document.getElementById('waiting-match').classList.add('visible');
   loadQueueCount();
 }
 
 async function autoCreateMatchRoom(queuePlayers) {
   const code = generateRoomCode();
-  const { data: room } = await db.from('rooms')
-    .insert({ code, status: 'waiting', current_turn: 0 })
-    .select().single();
-
-  for (let i = 0; i < 4; i++) {
-    await db.from('queue')
-      .update({ matched_room: room.id, status: 'matched' })
-      .eq('id', queuePlayers[i].id);
-  }
-
-  for (let i = 0; i < 4; i++) {
-    await db.from('players').insert({
-      room_id: room.id, seat: i,
-      nickname: queuePlayers[i].nickname,
-      hand: [], is_connected: true
-    });
-  }
-
-  sessionStorage.setItem('domino_player', JSON.stringify({
-    seat: 0, nickname: queuePlayers[0].nickname, roomId: room.id, roomCode: room.code,
-    pvUserId: pvUser?.id || null,
-  }));
+  const { data: room } = await db.from('rooms').insert({ code, status: 'waiting', current_turn: 0 }).select().single();
+  for (let i = 0; i < 4; i++)
+    await db.from('queue').update({ matched_room: room.id, status: 'matched' }).eq('id', queuePlayers[i].id);
+  for (let i = 0; i < 4; i++)
+    await db.from('players').insert({ room_id: room.id, seat: i, nickname: queuePlayers[i].nickname, hand: [], is_connected: true });
+  sessionStorage.setItem('domino_player', JSON.stringify({ seat: 0, nickname: queuePlayers[0].nickname, roomId: room.id, roomCode: room.code }));
   location.href = 'game.html';
 }
 
 async function leaveQueue() {
   if (myPlayerId) await db.from('queue').delete().eq('id', myPlayerId);
-  isInQueue = false;
   if (queueChannel) { db.removeChannel(queueChannel); queueChannel = null; }
   document.getElementById('btn-queue').style.display = 'block';
   document.getElementById('btn-leave-queue').style.display = 'none';
   document.getElementById('waiting-match').classList.remove('visible');
-  myPlayerId = null;
-  loadQueueCount();
+  myPlayerId = null; loadQueueCount();
 }
 
-// ─── Start Game (host only) ───────────────────────────────────────────────────
 async function startGame() {
   if (!myRoomId) return;
   const { data: players } = await db.from('players').select('*').eq('room_id', myRoomId).order('seat');
   if (!players || players.length < 4) { alert('Need 4 players to start!'); return; }
-
   const tiles = shuffle(generateDominoSet());
   const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
-
-  for (let i = 0; i < 4; i++) {
-    await db.from('players')
-      .update({ hand: hands[i] })
-      .eq('room_id', myRoomId).eq('seat', i);
-  }
-
-  const { error: bErr } = await db.from('board').insert({
-    room_id: myRoomId, tiles: [], left_end: null, right_end: null
-  });
+  for (let i = 0; i < 4; i++)
+    await db.from('players').update({ hand: hands[i] }).eq('room_id', myRoomId).eq('seat', i);
+  const { error: bErr } = await db.from('board').insert({ room_id: myRoomId, tiles: [], left_end: null, right_end: null });
   if (bErr && !bErr.message.includes('unique')) console.warn('Board insert:', bErr.message);
-
   let startingSeat = 0;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; i++)
     if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break; }
-  }
-
-  await db.from('rooms')
-    .update({ status: 'playing', current_turn: startingSeat })
-    .eq('id', myRoomId);
+  await db.from('rooms').update({ status: 'playing', current_turn: startingSeat }).eq('id', myRoomId);
 }
 </script>
 </body>
