@@ -607,7 +607,7 @@ function drawBoardTile(svg, entry, x, y, isDouble) {
     const centerY = y;
     
     // Apply rotation transform: rotate 90 degrees around center
-    g.setAttribute('transform', `rotate(90, ${centerX}, ${centerY})`);
+    g.setAttribute('transform', `rotate(-90, ${centerX}, ${centerY})`);
     
     // Position image so its center is at the rotation point
     // When rotated 90°, the 40x80 domino becomes 80x40 effectively
