@@ -534,6 +534,8 @@ function createTileElement(top, bottom, isVertical = true, isDouble = false) {
   img1.className = 'pip-img';
   img1.src = `tiles-white/${top}.png`;
   img1.alt = top;
+  
+  if (!isVertical && top === 6) img1.style.transform = 'rotate(90deg)';
   half1.appendChild(img1);
   
   // Bottom/Right half
@@ -543,13 +545,14 @@ function createTileElement(top, bottom, isVertical = true, isDouble = false) {
   img2.className = 'pip-img';
   img2.src = `tiles-white/${bottom}.png`;
   img2.alt = bottom;
+  
+  if (!isVertical && bottom === 6) img2.style.transform = 'rotate(90deg)';
   half2.appendChild(img2);
   
   if (isVertical) {
     tile.appendChild(half1);
     tile.appendChild(half2);
   } else {
-    // For horizontal, order depends on connection side
     tile.appendChild(half1);
     tile.appendChild(half2);
   }
