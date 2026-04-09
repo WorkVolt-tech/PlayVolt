@@ -535,51 +535,63 @@ function renderBoard() {
 function layoutAndRenderTiles(svg, W, H) {
   const tiles = boardData.tiles;
   if (!tiles.length) return;
-  const HW = 46, HH = 24, GAP = 2;
+  
+  const HORIZONTAL_WIDTH = 46;
+  const HORIZONTAL_HEIGHT = 24;
+  const VERTICAL_WIDTH = 24;
+  const VERTICAL_HEIGHT = 46;
+  const GAP = 2;
+  
+  // Calculate widths for layout spacing
   const widths = tiles.map(e => {
-  const isDbl = e.tile[0] === e.tile[1];
-  return isDbl ? HH : HW * 2 + GAP;
-});
+    const isDbl = e.tile[0] === e.tile[1];
+    return isDbl ? VERTICAL_WIDTH : HORIZONTAL_WIDTH;
+  });
+  
+  const totalW = widths.reduce((s, w) => s + w + GAP, -GAP);
+  let startX = Math.max(60, (W - totalW) / 2);
+  const cy = H / 2;
+
   tiles.forEach((entry, i) => {
-    const x = Math.max(60, (W - widths.reduce((s, w) => s + w + GAP, -GAP)) / 2)
-      + widths.slice(0, i).reduce((s, w) => s + w + GAP, 0);
-    const y = H / 2 - (isDouble(entry.tile) ? (HW * 2 + GAP) / 2 : HH / 2);
-    drawBoardTile(svg, entry, x, y, HW, HH);
+    const isDbl = entry.tile[0] === entry.tile[1];
+    const x = startX + widths.slice(0, i).reduce((s, w) => s + w + GAP, 0);
+    // Center vertically based on tile type
+    const y = isDbl ? cy - VERTICAL_HEIGHT / 2 : cy - HORIZONTAL_HEIGHT / 2;
+    
+    drawBoardTile(svg, entry, x, y, isDbl);
   });
 }
 
+
 function isDouble(tile) { return tile[0] === tile[1]; }
 
-function drawBoardTile(svg, entry, x, y, hw, hh) {
+function drawBoardTile(svg, entry, x, y, isDouble) {
   const { tile, flipped } = entry;
   
-  // Determine which numbers to show
   let topNum = flipped ? tile[1] : tile[0];
   let bottomNum = flipped ? tile[0] : tile[1];
   
-  // Create image element instead of SVG shapes
   const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-  
-  // Set image source to your PNG file
   img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `tiles-white/${topNum}-${bottomNum}.png`);
   
-  // Calculate dimensions (horizontal domino)
-  const isDouble = tile[0] === tile[1];
-  const tileWidth = isDouble ? hh : hw * 2 + 2;
-  const tileHeight = isDouble ? hw * 2 + 2 : hh;
+  if (isDouble) {
+    // Vertical: 24 wide, 46 tall
+    img.setAttribute('x', x);
+    img.setAttribute('y', y);
+    img.setAttribute('width', 24);
+    img.setAttribute('height', 46);
+  } else {
+    // Horizontal: 46 wide, 24 tall
+    img.setAttribute('x', x);
+    img.setAttribute('y', y);
+    img.setAttribute('width', 46);
+    img.setAttribute('height', 24);
+  }
   
-  // Position and size
-  img.setAttribute('x', x);
-  img.setAttribute('y', y);
-  img.setAttribute('width', tileWidth);
-  img.setAttribute('height', tileHeight);
-  
-  // Add drop shadow filter
   img.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
-  
   svg.appendChild(img);
 }
-
+  
 function drawSVGPips(g, n, x, y, w, h) {
   getPipPositions(n, x, y, w, h).forEach(([px, py]) => {
     const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
