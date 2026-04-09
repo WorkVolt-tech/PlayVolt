@@ -615,129 +615,43 @@ function renderBoard() {
   const area = document.getElementById('board-area');
   const W = area.clientWidth || 800;
   const H = area.clientHeight || 300;
-  const MARGIN = 60;
-  const GAP = 2;
   
   const tiles = boardData.tiles;
-  const centerIndex = Math.floor(tiles.length / 2);
   
-  // Build positions from center outward
-  const positions = [];
+  // Calculate bounds to center the board
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   
-  // Calculate left side positions (going left from center)
-  const leftPositions = [];
-  let x = W / 2;
-  let y = H / 2;
-  let direction = 'left';
-  
-  for (let i = centerIndex; i >= 0; i--) {
-    const entry = tiles[i];
+  tiles.forEach((entry, i) => {
     const isDbl = entry.tile[0] === entry.tile[1];
+    const isVertical = entry.direction === 'vertical' || isDbl;
+    const tileW = isVertical ? TILE_WIDTH : TILE_HEIGHT;
+    const tileH = isVertical ? TILE_HEIGHT : TILE_WIDTH;
     
-    let isVertical = isDbl;
-    if (!isDbl && (direction === 'up' || direction === 'down')) {
-      isVertical = true;
-    }
+    const x = entry.x || W/2;
+    const y = entry.y || H/2;
     
-    const tileWidth = isVertical ? TILE_WIDTH : TILE_HEIGHT;
-    const tileHeight = isVertical ? TILE_HEIGHT : TILE_WIDTH;
-    
-    leftPositions.unshift({ x, y, isVertical, tileWidth, tileHeight, index: i });
-    
-    if (i > 0) {
-      const nextEntry = tiles[i-1];
-      const nextIsDbl = nextEntry.tile[0] === nextEntry.tile[1];
-      const nextWidth = nextIsDbl ? TILE_WIDTH : TILE_HEIGHT;
-      
-      if (direction === 'left') {
-        x -= (tileWidth/2 + nextWidth/2 + GAP);
-        if (x - nextWidth/2 < MARGIN) {
-          x = MARGIN + nextWidth/2;
-          y -= (TILE_HEIGHT/2 + TILE_WIDTH/2 + GAP);
-          direction = 'up';
-        }
-      } else if (direction === 'up') {
-        y -= (tileHeight/2 + (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2 + GAP);
-        if (y - (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2 < MARGIN) {
-          y = MARGIN + (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2;
-          x += (TILE_WIDTH/2 + (nextIsDbl ? TILE_WIDTH : TILE_HEIGHT)/2 + GAP);
-          direction = 'right';
-        }
-      } else if (direction === 'right') {
-        x += (tileWidth/2 + nextWidth/2 + GAP);
-        if (x + nextWidth/2 > W - MARGIN) {
-          x = W - MARGIN - nextWidth/2;
-          y -= (TILE_HEIGHT/2 + TILE_WIDTH/2 + GAP);
-          direction = 'up';
-        }
-      }
-    }
-  }
+    minX = Math.min(minX, x - tileW/2);
+    maxX = Math.max(maxX, x + tileW/2);
+    minY = Math.min(minY, y - tileH/2);
+    maxY = Math.max(maxY, y + tileH/2);
+  });
   
-  // Calculate right side positions (going right from center)
-  const rightPositions = [];
-  x = W / 2;
-  y = H / 2;
-  direction = 'right';
+  // Center offset
+  const boardCenterX = (minX + maxX) / 2;
+  const boardCenterY = (minY + maxY) / 2;
+  const viewCenterX = W / 2;
+  const viewCenterY = H / 2;
+  const offsetX = viewCenterX - boardCenterX;
+  const offsetY = viewCenterY - boardCenterY;
   
-  for (let i = centerIndex; i < tiles.length; i++) {
-    const entry = tiles[i];
+  // Render tiles using stored positions
+  tiles.forEach((entry, i) => {
     const isDbl = entry.tile[0] === entry.tile[1];
-    
-    let isVertical = isDbl;
-    if (!isDbl && (direction === 'up' || direction === 'down')) {
-      isVertical = true;
-    }
-    
-    const tileWidth = isVertical ? TILE_WIDTH : TILE_HEIGHT;
-    const tileHeight = isVertical ? TILE_HEIGHT : TILE_WIDTH;
-    
-    if (i !== centerIndex) {
-      rightPositions.push({ x, y, isVertical, tileWidth, tileHeight, index: i });
-    }
-    
-    if (i < tiles.length - 1) {
-      const nextEntry = tiles[i+1];
-      const nextIsDbl = nextEntry.tile[0] === nextEntry.tile[1];
-      const nextWidth = nextIsDbl ? TILE_WIDTH : TILE_HEIGHT;
-      
-      if (direction === 'right') {
-        x += (tileWidth/2 + nextWidth/2 + GAP);
-        if (x + nextWidth/2 > W - MARGIN) {
-          x = W - MARGIN - nextWidth/2;
-          y += (TILE_HEIGHT/2 + TILE_WIDTH/2 + GAP);
-          direction = 'down';
-        }
-      } else if (direction === 'down') {
-        y += (tileHeight/2 + (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2 + GAP);
-        if (y + (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2 > H - MARGIN) {
-          y = H - MARGIN - (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2;
-          x -= (TILE_WIDTH/2 + (nextIsDbl ? TILE_WIDTH : TILE_HEIGHT)/2 + GAP);
-          direction = 'left';
-        }
-      } else if (direction === 'left') {
-        x -= (tileWidth/2 + nextWidth/2 + GAP);
-        if (x - nextWidth/2 < MARGIN) {
-          x = MARGIN + nextWidth/2;
-          y += (TILE_HEIGHT/2 + TILE_WIDTH/2 + GAP);
-          direction = 'down';
-        }
-      }
-    }
-  }
-  
-  // Combine and sort positions
-  const allPositions = [...leftPositions, ...rightPositions];
-  allPositions.sort((a, b) => a.index - b.index);
-  
-  // Render tiles
-  allPositions.forEach((pos, i) => {
-    const entry = tiles[pos.index];
-    const isDbl = entry.tile[0] === entry.tile[1];
+    const isVertical = entry.direction === 'vertical' || isDbl;
     
     let displayTile = [...entry.tile];
-    let isVertical = pos.isVertical;
     
+    // Handle flip for non-doubles
     if (!isDbl && entry.flipped) {
       displayTile = [entry.tile[1], entry.tile[0]];
     }
@@ -746,23 +660,36 @@ function renderBoard() {
     tileEl.classList.add('board-tile');
     tileEl.classList.add(isVertical ? 'vertical' : 'horizontal');
     
-    tileEl.style.left = `${pos.x - pos.tileWidth/2}px`;
-    tileEl.style.top = `${pos.y - pos.tileHeight/2}px`;
+    // Use stored position with centering offset
+    const x = (entry.x || W/2) + offsetX;
+    const y = (entry.y || H/2) + offsetY;
+    const tileW = isVertical ? TILE_WIDTH : TILE_HEIGHT;
+    const tileH = isVertical ? TILE_HEIGHT : TILE_WIDTH;
+    
+    tileEl.style.left = `${x - tileW/2}px`;
+    tileEl.style.top = `${y - tileH/2}px`;
     tileEl.style.zIndex = i;
     
     container.appendChild(tileEl);
   });
   
-  // Position drop zones
+  // Position drop zones at the ends
   const canLeft = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
   const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
   
-  if (canLeft && allPositions.length > 0) {
-    const firstPos = allPositions[0];
+  if (canLeft && tiles.length > 0) {
+    const firstEntry = tiles[0];
+    const isDbl = firstEntry.tile[0] === firstEntry.tile[1];
+    const isVertical = firstEntry.direction === 'vertical' || isDbl;
+    const tileW = isVertical ? TILE_WIDTH : TILE_HEIGHT;
+    
+    const x = (firstEntry.x || W/2) + offsetX;
+    const y = (firstEntry.y || H/2) + offsetY;
+    
     Object.assign(dropL.style, {
       display: 'flex',
-      left: `${Math.max(10, firstPos.x - firstPos.tileWidth/2 - 80)}px`,
-      top: `${firstPos.y - 25}px`,
+      left: `${Math.max(10, x - tileW/2 - 80)}px`,
+      top: `${y - 25}px`,
       width: '70px',
       height: '50px'
     });
@@ -770,12 +697,19 @@ function renderBoard() {
     dropL.style.display = 'none';
   }
   
-  if (canRight && allPositions.length > 0) {
-    const lastPos = allPositions[allPositions.length - 1];
+  if (canRight && tiles.length > 0) {
+    const lastEntry = tiles[tiles.length - 1];
+    const isDbl = lastEntry.tile[0] === lastEntry.tile[1];
+    const isVertical = lastEntry.direction === 'vertical' || isDbl;
+    const tileW = isVertical ? TILE_WIDTH : TILE_HEIGHT;
+    
+    const x = (lastEntry.x || W/2) + offsetX;
+    const y = (lastEntry.y || H/2) + offsetY;
+    
     Object.assign(dropR.style, {
       display: 'flex',
-      left: `${Math.min(W - 80, lastPos.x + lastPos.tileWidth/2 + 10)}px`,
-      top: `${lastPos.y - 25}px`,
+      left: `${Math.min(W - 80, x + tileW/2 + 10)}px`,
+      top: `${y - 25}px`,
       width: '70px',
       height: '50px'
     });
@@ -861,13 +795,13 @@ async function placeFirstTile(tile) {
   const startY = H / 2;
   
   await db.from('board').update({
-    tiles: [{ 
-      tile, 
-      flipped: false,
-      x: startX,
-      y: startY,
-      direction: 'vertical' // doubles are vertical
-    }],
+  tiles: [{ 
+    tile, 
+    flipped: false,
+    x: startX,
+    y: startY,
+    direction: tile[0] === tile[1] ? 'vertical' : 'horizontal'
+  }],
     left_end: tile[0],
     right_end: tile[1],
     left_x: startX,
@@ -982,12 +916,12 @@ async function confirmPlace(side) {
   
   // Create the new tile entry with position
   const newEntry = { 
-    tile, 
-    flipped,
-    x: newX,
-    y: newY,
-    direction: newDirection
-  };
+  tile, 
+  flipped,
+  x: newX,
+  y: newY,
+  direction: isDbl ? 'vertical' : newDirection  // Force vertical for doubles
+};
   
   const newTiles = side === 'left' ? [newEntry, ...boardData.tiles] : [...boardData.tiles, newEntry];
   const newLeftEnd = side === 'left' ? newOpenEnd : boardData.left_end;
