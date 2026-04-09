@@ -537,113 +537,83 @@ function layoutAndRenderTiles(svg, W, H) {
   if (!tiles.length) return;
   
   const DOMINO_WIDTH = 40;   // narrow dimension
-  const DOMINO_HEIGHT = 80;  // tall dimension
+  const DOMINO_HEIGHT = 80;  // tall dimension (from PNG)
   const GAP = 2;
   
-  // Calculate total width needed
-  let totalWidth = 0;
-  const tileSpaces = tiles.map(entry => {
+  const positions = [];
+  let currentX = 0;
+  
+  tiles.forEach((entry) => {
     const isDbl = entry.tile[0] === entry.tile[1];
-    return isDbl ? DOMINO_WIDTH : DOMINO_HEIGHT;
+    const spaceNeeded = isDbl ? DOMINO_WIDTH : DOMINO_HEIGHT;
+    positions.push(currentX);
+    currentX += spaceNeeded + GAP;
   });
   
-  totalWidth = tileSpaces.reduce((sum, space) => sum + space + GAP, -GAP);
-  
-  // Start position (centered)
-  let currentX = (W - totalWidth) / 2;
+  const totalWidth = currentX - GAP;
+  const startX = Math.max(60, (W - totalWidth) / 2);
   const centerY = H / 2;
   
   tiles.forEach((entry, i) => {
     const isDbl = entry.tile[0] === entry.tile[1];
-    const space = isDbl ? DOMINO_WIDTH : DOMINO_HEIGHT;
+    const x = startX + positions[i] + (isDbl ? DOMINO_WIDTH / 2 : DOMINO_HEIGHT / 2);
+    const y = centerY;
     
-    // Position: x is left edge, need center for drawing
-    const drawX = currentX + space / 2;
-    const drawY = centerY;
-    
-    drawBoardTile(svg, entry, drawX, drawY, isDbl);
-    
-    currentX += space + GAP;
+    drawBoardTile(svg, entry, x, y, isDbl);
   });
 }
 
 function isDouble(tile) { return tile[0] === tile[1]; }
 
-function drawBoardTile(svg, entry, x, y, isDouble) {
+function drawBoardTile(svg, entry, x, y, isDouble, side = 'right') {
   const { tile, flipped } = entry;
   
-  // Get the numbers as they should appear
-  const num1 = flipped ? tile[1] : tile[0];  // This is "first" in the tile data
-  const num2 = flipped ? tile[0] : tile[1];  // This is "second" in the tile data
+  // Determine which numbers to show
+  let firstNum = flipped ? tile[1] : tile[0];
+  let secondNum = flipped ? tile[0] : tile[1];
   
-  // PNG filename: always smaller number first (your file naming)
-  const fileNum1 = Math.min(tile[0], tile[1]);
-  const fileNum2 = Math.max(tile[0], tile[1]);
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+  img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `tiles-white/${firstNum}-${secondNum}.png`);
   
   const DOMINO_WIDTH = 40;
   const DOMINO_HEIGHT = 80;
   
-  const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-  img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `tiles-white/${fileNum1}-${fileNum2}.png`);
-  
   if (isDouble) {
     // Vertical - no rotation
-    img.setAttribute('x', x - DOMINO_WIDTH / 2);
-    img.setAttribute('y', y - DOMINO_HEIGHT / 2);
+    const drawX = x - DOMINO_WIDTH / 2;
+    const drawY = y - DOMINO_HEIGHT / 2;
+    img.setAttribute('x', drawX);
+    img.setAttribute('y', drawY);
     img.setAttribute('width', DOMINO_WIDTH);
     img.setAttribute('height', DOMINO_HEIGHT);
-    img.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
-    svg.appendChild(img);
-  } else {
-    // Horizontal - need rotation
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    
-    const tileIndex = boardData.tiles.indexOf(entry);
-    const isLeftSide = tileIndex % 2 === 1; // Odd indices go left
-    
-    let rotation;
-    
-    if (tileIndex === 0) {
-      // First tile - shouldn't be here if not double, but handle anyway
-      rotation = 0;
-    } else if (isLeftSide) {
-      
-      const connectNum = isLeftSide ? boardData.left_end : boardData.right_end;
-      
-      // Check which number in our tile matches the connecting end
-      if (num2 === connectNum) {
-        // num2 needs to be on the right, so rotate 90 (bottom->right)
-        rotation = 90;
-      } else {
-        // num1 needs to be on the right, so rotate -90 (top->right)
-        rotation = -90;
-      }
-    } else {
-      // Placing on the right side of the chain
-      // The connecting number should be on the LEFT side of this tile
-      
-      const connectNum = boardData.right_end;
-      
-      if (num2 === connectNum) {
-        // num2 needs to be on the left, so rotate -90 (bottom->left)
-        rotation = -90;
-      } else {
-        // num1 needs to be on the left, so rotate 90 (top->left)
-        rotation = 90;
-      }
-    }
-    
-    img.setAttribute('x', -DOMINO_WIDTH / 2);
-    img.setAttribute('y', -DOMINO_HEIGHT / 2);
-    img.setAttribute('width', DOMINO_WIDTH);
-    img.setAttribute('height', DOMINO_HEIGHT);
-    
-    g.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation})`);
-    g.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
-    
     g.appendChild(img);
-    svg.appendChild(g);
+  } else {
+    // Horizontal - need to rotate so correct number connects
+    // For 'left' side: firstNum should be on the right (connects to board)
+    // For 'right' side: secondNum should be on the left (connects to board)
+    
+    const centerX = x;
+    const centerY = y;
+    const drawX = centerX - DOMINO_WIDTH / 2;
+    const drawY = centerY - DOMINO_HEIGHT / 2;
+    
+    // Rotate 90 degrees
+    // If side is 'left', we need firstNum on the right, so rotate counter-clockwise (-90)
+    // If side is 'right', we need secondNum on the left, so rotate clockwise (90) or use flipped image
+    
+    const rotation = side === 'left' ? -90 : 90;
+    g.setAttribute('transform', `rotate(${rotation}, ${centerX}, ${centerY})`);
+    
+    img.setAttribute('x', drawX);
+    img.setAttribute('y', drawY);
+    img.setAttribute('width', DOMINO_WIDTH);
+    img.setAttribute('height', DOMINO_HEIGHT);
+    g.appendChild(img);
   }
+  
+  g.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
+  svg.appendChild(g);
 }
   
 function drawSVGPips(g, n, x, y, w, h) {
