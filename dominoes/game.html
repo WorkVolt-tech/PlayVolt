@@ -564,28 +564,57 @@ function isDouble(tile) { return tile[0] === tile[1]; }
 function drawBoardTile(svg, entry, x, y, isDouble) {
   const { tile, flipped } = entry;
   
-  let topNum = flipped ? tile[1] : tile[0];
-  let bottomNum = flipped ? tile[0] : tile[1];
+  // Determine which numbers to show
+  let firstNum = flipped ? tile[1] : tile[0];
+  let secondNum = flipped ? tile[0] : tile[1];
   
+  // Create a group for the tile (allows rotation)
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  
+  // Create the image
   const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-  img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `tiles-white/${topNum}-${bottomNum}.png`);
+  img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `tiles-white/${firstNum}-${secondNum}.png`);
+  
+  // Standard domino dimensions (from your PNG)
+  const DOMINO_WIDTH = 40;   // width of PNG
+  const DOMINO_HEIGHT = 80;  // height of PNG (tall domino)
   
   if (isDouble) {
-    // Vertical: 24 wide, 46 tall
-    img.setAttribute('x', x);
-    img.setAttribute('y', y);
-    img.setAttribute('width', 24);
-    img.setAttribute('height', 46);
+    // Double: place vertically (no rotation needed if PNG is already vertical)
+    // Center the tall domino
+    const drawX = x - DOMINO_WIDTH / 2;
+    const drawY = y - DOMINO_HEIGHT / 2;
+    
+    img.setAttribute('x', drawX);
+    img.setAttribute('y', drawY);
+    img.setAttribute('width', DOMINO_WIDTH);
+    img.setAttribute('height', DOMINO_HEIGHT);
+    g.appendChild(img);
   } else {
-    // Horizontal: 46 wide, 24 tall
-    img.setAttribute('x', x);
-    img.setAttribute('y', y);
-    img.setAttribute('width', 46);
-    img.setAttribute('height', 24);
+    // Non-double: place horizontally (rotate 90 degrees)
+    // The domino needs to be rotated so it lays on its side
+    // Rotate around the center point
+    
+    const centerX = x;
+    const centerY = y;
+    
+    // Apply rotation transform: rotate 90 degrees around center
+    g.setAttribute('transform', `rotate(90, ${centerX}, ${centerY})`);
+    
+    // Position image so its center is at the rotation point
+    // When rotated 90°, the 40x80 domino becomes 80x40 effectively
+    const drawX = centerX - DOMINO_WIDTH / 2;
+    const drawY = centerY - DOMINO_HEIGHT / 2;
+    
+    img.setAttribute('x', drawX);
+    img.setAttribute('y', drawY);
+    img.setAttribute('width', DOMINO_WIDTH);
+    img.setAttribute('height', DOMINO_HEIGHT);
+    g.appendChild(img);
   }
   
-  img.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
-  svg.appendChild(img);
+  g.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
+  svg.appendChild(g);
 }
   
 function drawSVGPips(g, n, x, y, w, h) {
