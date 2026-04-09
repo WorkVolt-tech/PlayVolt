@@ -598,7 +598,6 @@ function renderBoard() {
   const dropL = document.getElementById('drop-left');
   const dropR = document.getElementById('drop-right');
   
-  // Clear existing tiles
   container.innerHTML = '';
   
   const hasTiles = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
@@ -613,48 +612,18 @@ function renderBoard() {
   
   hint.style.display = 'none';
   
-  // Calculate layout
-  const area = document.getElementById('board-area');
-  const W = area.clientWidth || 800;
-  const H = area.clientHeight || 300;
-  
   const tiles = boardData.tiles;
-  const GAP = 4;
+  const W = document.getElementById('board-area').clientWidth || 800;
   
-  // Calculate positions for each tile
-  const positions = [];
-  let currentX = 0;
-  
-  tiles.forEach((entry) => {
-    const isDbl = entry.tile[0] === entry.tile[1];
-    const spaceNeeded = isDbl ? TILE_WIDTH : TILE_HEIGHT;
-    positions.push(currentX);
-    currentX += spaceNeeded + GAP;
-  });
-  
-  const totalWidth = currentX - GAP;
-  const startX = Math.max(60, (W - totalWidth) / 2);
-  const centerY = H / 2;
-  
-  // Render tiles
+  // Render tiles at their stored positions
   tiles.forEach((entry, i) => {
     const isDbl = entry.tile[0] === entry.tile[1];
-    const x = startX + positions[i] + (isDbl ? TILE_WIDTH / 2 : TILE_HEIGHT / 2);
-    const y = centerY;
-    
-    // Determine orientation and which numbers to show
-    // For doubles: always vertical
-    // For non-doubles: horizontal, but need to handle flipping for correct connection
     
     let displayTile = [...entry.tile];
     let isVertical = isDbl;
-    let rotation = 0;
     
     if (!isDbl) {
       isVertical = false;
-      // For horizontal tiles on board, we need to handle the connection properly
-      // The tile is stored as [a, b] where a was connected to the chain
-      // If flipped is true, we need to swap the display order
       if (entry.flipped) {
         displayTile = [entry.tile[1], entry.tile[0]];
       }
@@ -662,30 +631,25 @@ function renderBoard() {
     
     const tileEl = createTileElement(displayTile[0], displayTile[1], isVertical, isDbl);
     tileEl.classList.add('board-tile');
-    if (isVertical) {
-      tileEl.classList.add('vertical');
-    } else {
-      tileEl.classList.add('horizontal');
-    }
+    tileEl.classList.add(isVertical ? 'vertical' : 'horizontal');
     
-    // Position the tile
-    tileEl.style.left = `${x - (isVertical ? TILE_WIDTH/2 : TILE_HEIGHT/2)}px`;
-    tileEl.style.top = `${y - (isVertical ? TILE_HEIGHT/2 : TILE_WIDTH/2)}px`;
+    // Use stored position
+    tileEl.style.left = `${entry.x - (isVertical ? TILE_WIDTH/2 : TILE_HEIGHT/2)}px`;
+    tileEl.style.top = `${entry.y - (isVertical ? TILE_HEIGHT/2 : TILE_WIDTH/2)}px`;
     tileEl.style.zIndex = i;
     
     container.appendChild(tileEl);
   });
   
-  // Show drop zones if a tile is selected
+  // Position drop zones at the actual chain ends
   const canLeft = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
   const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
   
   if (canLeft) {
     Object.assign(dropL.style, {
       display: 'flex',
-      left: '10px',
-      top: '50%',
-      transform: 'translateY(-50%)',
+      left: `${Math.max(10, boardData.left_x - TILE_HEIGHT/2 - 80)}px`,
+      top: `${boardData.left_y - 25}px`,
       width: '70px',
       height: '50px'
     });
@@ -696,10 +660,8 @@ function renderBoard() {
   if (canRight) {
     Object.assign(dropR.style, {
       display: 'flex',
-      right: '10px',
-      left: 'auto',
-      top: '50%',
-      transform: 'translateY(-50%)',
+      left: `${Math.min(W - 80, boardData.right_x + TILE_HEIGHT/2 + 10)}px`,
+      top: `${boardData.right_y - 25}px`,
       width: '70px',
       height: '50px'
     });
@@ -777,10 +739,27 @@ async function placeFirstTile(tile) {
   const me = players.find(p => p.seat === myInfo.seat);
   const newHand = me.hand.filter((_, i) => i !== selectedTile.idx);
   
+  // Calculate center position
+  const area = document.getElementById('board-area');
+  const W = area.clientWidth || 800;
+  const H = area.clientHeight || 300;
+  const startX = W / 2;
+  const startY = H / 2;
+  
   await db.from('board').update({
-    tiles: [{ tile, flipped: false }],
+    tiles: [{ 
+      tile, 
+      flipped: false,
+      x: startX,
+      y: startY,
+      direction: 'vertical' // doubles are vertical
+    }],
     left_end: tile[0],
-    right_end: tile[1]
+    right_end: tile[1],
+    left_x: startX,
+    left_y: startY,
+    right_x: startX,
+    right_y: startY
   }).eq('room_id', myInfo.roomId);
   
   await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
@@ -801,6 +780,7 @@ async function confirmPlace(side) {
   let flipped = false;
   let newOpenEnd;
   
+  // Determine flip and new open end
   if (side === 'right') {
     if (tile[1] === end) {
       flipped = true;
@@ -825,16 +805,96 @@ async function confirmPlace(side) {
     }
   }
   
-  const newEntry = { tile, flipped };
+  // SNAKE POSITION CALCULATION
+  const isDbl = tile[0] === tile[1];
+  const tileWidth = isDbl ? TILE_WIDTH : TILE_HEIGHT;  // 44 or 88
+  const tileHeight = isDbl ? TILE_HEIGHT : TILE_WIDTH; // 88 or 44
+  const GAP = 4;
+  const MARGIN = 80;
+  
+  // Get the position we're connecting from
+  const fromX = side === 'left' ? boardData.left_x : boardData.right_x;
+  const fromY = side === 'left' ? boardData.left_y : boardData.right_y;
+  
+  // Calculate new position
+  let newX = fromX;
+  let newY = fromY;
+  let newDirection = 'horizontal';
+  
+  if (isDbl) {
+    // Doubles are vertical and centered on the chain
+    newDirection = 'vertical';
+    if (side === 'left') {
+      newX = fromX - (TILE_WIDTH/2 + GAP + TILE_HEIGHT/2);
+    } else {
+      newX = fromX + (TILE_WIDTH/2 + GAP + TILE_HEIGHT/2);
+    }
+    newY = fromY; // Same Y as connection point
+  } else {
+    // Non-doubles are horizontal
+    newDirection = 'horizontal';
+    
+    // Try to place horizontally first
+    if (side === 'left') {
+      newX = fromX - (TILE_HEIGHT + GAP);
+    } else {
+      newX = fromX + (TILE_HEIGHT + GAP);
+    }
+    newY = fromY;
+    
+    // Check if we're going off-screen and need to turn
+    const area = document.getElementById('board-area');
+    const W = area.clientWidth || 800;
+    
+    if (newX < MARGIN + TILE_HEIGHT/2 || newX > W - MARGIN - TILE_HEIGHT/2) {
+      // HIT EDGE - need to turn up or down
+      newX = side === 'left' ? MARGIN + TILE_HEIGHT/2 : W - MARGIN - TILE_HEIGHT/2;
+      
+      // Determine up or down based on previous turns
+      // Check if there are tiles above or below to decide direction
+      const existingTiles = boardData.tiles || [];
+      const tilesAbove = existingTiles.filter(t => t.y < fromY).length;
+      const tilesBelow = existingTiles.filter(t => t.y > fromY).length;
+      
+      if (tilesAbove <= tilesBelow) {
+        // Go up
+        newY = fromY - (TILE_HEIGHT + GAP * 2);
+      } else {
+        // Go down  
+        newY = fromY + (TILE_HEIGHT + GAP * 2);
+      }
+    }
+  }
+  
+  // Create the new tile entry with position
+  const newEntry = { 
+    tile, 
+    flipped,
+    x: newX,
+    y: newY,
+    direction: newDirection
+  };
+  
   const newTiles = side === 'left' ? [newEntry, ...boardData.tiles] : [...boardData.tiles, newEntry];
   const newLeftEnd = side === 'left' ? newOpenEnd : boardData.left_end;
   const newRightEnd = side === 'right' ? newOpenEnd : boardData.right_end;
+  
+  // Update the end positions for next placement
+  const newLeftX = side === 'left' ? newX : boardData.left_x;
+  const newLeftY = side === 'left' ? newY : boardData.left_y;
+  const newRightX = side === 'right' ? newX : boardData.right_x;
+  const newRightY = side === 'right' ? newY : boardData.right_y;
+  
   const newHand = me.hand.filter((_, i) => i !== idx);
   
   await db.from('board').update({
     tiles: newTiles,
     left_end: newLeftEnd,
-    right_end: newRightEnd
+    right_end: newRightEnd,
+    left_x: newLeftX,
+    left_y: newLeftY,
+    right_x: newRightX,
+    right_y: newRightY
   }).eq('room_id', myInfo.roomId);
   
   await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
