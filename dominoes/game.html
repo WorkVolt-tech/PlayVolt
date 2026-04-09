@@ -535,17 +535,12 @@ function renderBoard() {
 function layoutAndRenderTiles(svg, W, H) {
   const tiles = boardData.tiles;
   if (!tiles.length) return;
+  const HW = 46, HH = 24, GAP = 2;
   
-  const HORIZONTAL_WIDTH = 46;
-  const HORIZONTAL_HEIGHT = 24;
-  const VERTICAL_WIDTH = 24;
-  const VERTICAL_HEIGHT = 46;
-  const GAP = 2;
-  
-  // Calculate widths for layout spacing
+  // Calculate widths for spacing
   const widths = tiles.map(e => {
     const isDbl = e.tile[0] === e.tile[1];
-    return isDbl ? VERTICAL_WIDTH : HORIZONTAL_WIDTH;
+    return isDbl ? HH : HW; // Double uses HH (24), normal uses HW (46)
   });
   
   const totalW = widths.reduce((s, w) => s + w + GAP, -GAP);
@@ -554,11 +549,12 @@ function layoutAndRenderTiles(svg, W, H) {
 
   tiles.forEach((entry, i) => {
     const isDbl = entry.tile[0] === entry.tile[1];
+    const tileW = isDbl ? HH : HW;
     const x = startX + widths.slice(0, i).reduce((s, w) => s + w + GAP, 0);
-    // Center vertically based on tile type
-    const y = isDbl ? cy - VERTICAL_HEIGHT / 2 : cy - HORIZONTAL_HEIGHT / 2;
+    // Center vertically: doubles are taller, normals are shorter
+    const y = isDbl ? cy - HW : cy - HH / 2;
     
-    drawBoardTile(svg, entry, x, y, isDbl);
+    drawBoardTile(svg, entry, x, y, HW / 2, HH / 2);
   });
 }
 
