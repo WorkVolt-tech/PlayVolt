@@ -535,29 +535,37 @@ function renderBoard() {
 function layoutAndRenderTiles(svg, W, H) {
   const tiles = boardData.tiles;
   if (!tiles.length) return;
-  const HW = 46, HH = 24, GAP = 2;
   
-  // Calculate widths for spacing
-  const widths = tiles.map(e => {
-    const isDbl = e.tile[0] === e.tile[1];
-    return isDbl ? HH : HW; // Double uses HH (24), normal uses HW (46)
+  const DOMINO_WIDTH = 40;   // narrow dimension
+  const DOMINO_HEIGHT = 80;  // tall dimension (from PNG)
+  const GAP = 2;
+  
+  // Calculate positions
+  // For doubles: they stand vertical, so they take DOMINO_WIDTH space horizontally
+  // For non-doubles: they lay horizontal, so they take DOMINO_HEIGHT space horizontally
+  
+  const positions = [];
+  let currentX = 0;
+  
+  tiles.forEach((entry) => {
+    const isDbl = entry.tile[0] === entry.tile[1];
+    const spaceNeeded = isDbl ? DOMINO_WIDTH : DOMINO_HEIGHT;
+    positions.push(currentX);
+    currentX += spaceNeeded + GAP;
   });
   
-  const totalW = widths.reduce((s, w) => s + w + GAP, -GAP);
-  let startX = Math.max(60, (W - totalW) / 2);
-  const cy = H / 2;
-
+  const totalWidth = currentX - GAP;
+  const startX = Math.max(60, (W - totalWidth) / 2);
+  const centerY = H / 2;
+  
   tiles.forEach((entry, i) => {
     const isDbl = entry.tile[0] === entry.tile[1];
-    const tileW = isDbl ? HH : HW;
-    const x = startX + widths.slice(0, i).reduce((s, w) => s + w + GAP, 0);
-    // Center vertically: doubles are taller, normals are shorter
-    const y = isDbl ? cy - HW : cy - HH / 2;
+    const x = startX + positions[i] + (isDbl ? DOMINO_WIDTH / 2 : DOMINO_HEIGHT / 2);
+    const y = centerY;
     
-    drawBoardTile(svg, entry, x, y, HW / 2, HH / 2);
+    drawBoardTile(svg, entry, x, y, isDbl);
   });
 }
-
 
 function isDouble(tile) { return tile[0] === tile[1]; }
 
