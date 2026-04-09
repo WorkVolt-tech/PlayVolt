@@ -483,10 +483,10 @@ function renderHand() {
     div.className = 'hand-tile'
       + (canPlay ? ' playable' : (isMyTurn ? ' not-playable' : ''))
       + (isSelected ? ' selected' : '');
-    div.innerHTML = `
-      <div class="half">${renderPips(tile[0])}</div>
-      <div class="divider"></div>
-      <div class="half">${renderPips(tile[1])}</div>`;
+    const img = renderTileImage(tile[0], tile[1], true);
+    div.appendChild(img);
+    div.style.background = 'transparent'; // Remove default ivory background
+    div.style.boxShadow = 'none';
     if (canPlay) div.onclick = () => selectTile(tile, idx);
     container.appendChild(div);
   });
@@ -495,9 +495,16 @@ function renderHand() {
   passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
 }
 
-function renderPips(n) {
-  const pips = Array(n).fill('<div class="p"></div>').join('');
-  return `<div class="pip-grid pips-${n}">${pips}</div>`;
+function renderTileImage(top, bottom, isVertical = false) {
+  // Returns an img element for the domino
+  const img = document.createElement('img');
+  img.src = `tiles-white/${top}-${bottom}.png`;
+  img.style.width = '40px';
+  img.style.height = isVertical ? '80px' : '40px'; // vertical for hand, horizontal for board
+  img.style.objectFit = 'contain';
+  img.style.borderRadius = '6px';
+  img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+  return img;
 }
 
 function renderBoard() {
@@ -529,7 +536,10 @@ function layoutAndRenderTiles(svg, W, H) {
   const tiles = boardData.tiles;
   if (!tiles.length) return;
   const HW = 46, HH = 24, GAP = 2;
-  const widths = tiles.map(e => isDouble(e.tile) ? HH : HW * 2 + GAP);
+  const widths = tiles.map(e => {
+  const isDbl = e.tile[0] === e.tile[1];
+  return isDbl ? HH : HW * 2 + GAP;
+});
   tiles.forEach((entry, i) => {
     const x = Math.max(60, (W - widths.reduce((s, w) => s + w + GAP, -GAP)) / 2)
       + widths.slice(0, i).reduce((s, w) => s + w + GAP, 0);
@@ -542,40 +552,32 @@ function isDouble(tile) { return tile[0] === tile[1]; }
 
 function drawBoardTile(svg, entry, x, y, hw, hh) {
   const { tile, flipped } = entry;
-  const double = isDouble(tile);
-  const faceA = flipped ? tile[1] : tile[0];
-  const faceB = flipped ? tile[0] : tile[1];
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  if (double) {
-    const tw = hh, th = hw * 2 + 2;
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('x', x); rect.setAttribute('y', y);
-    rect.setAttribute('width', tw); rect.setAttribute('height', th);
-    rect.setAttribute('rx', '3'); rect.setAttribute('fill', '#f0ead8');
-    rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', x + 2); line.setAttribute('y1', y + hw + 1);
-    line.setAttribute('x2', x + tw - 2); line.setAttribute('y2', y + hw + 1);
-    line.setAttribute('stroke', 'rgba(26,24,20,0.25)'); line.setAttribute('stroke-width', '1');
-    g.appendChild(rect); g.appendChild(line);
-    drawSVGPips(g, faceA, x, y, tw, hw);
-    drawSVGPips(g, faceB, x, y + hw + 2, tw, hw);
-  } else {
-    const tw = hw * 2 + 2, th = hh;
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('x', x); rect.setAttribute('y', y);
-    rect.setAttribute('width', tw); rect.setAttribute('height', th);
-    rect.setAttribute('rx', '3'); rect.setAttribute('fill', '#f0ead8');
-    rect.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', x + hw + 1); line.setAttribute('y1', y + 2);
-    line.setAttribute('x2', x + hw + 1); line.setAttribute('y2', y + th - 2);
-    line.setAttribute('stroke', 'rgba(26,24,20,0.25)'); line.setAttribute('stroke-width', '1');
-    g.appendChild(rect); g.appendChild(line);
-    drawSVGPips(g, faceA, x, y, hw, th);
-    drawSVGPips(g, faceB, x + hw + 2, y, hw, th);
-  }
-  svg.appendChild(g);
+  
+  // Determine which numbers to show
+  let topNum = flipped ? tile[1] : tile[0];
+  let bottomNum = flipped ? tile[0] : tile[1];
+  
+  // Create image element instead of SVG shapes
+  const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+  
+  // Set image source to your PNG file
+  img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `tiles-white/${topNum}-${bottomNum}.png`);
+  
+  // Calculate dimensions (horizontal domino)
+  const isDouble = tile[0] === tile[1];
+  const tileWidth = isDouble ? hh : hw * 2 + 2;
+  const tileHeight = isDouble ? hw * 2 + 2 : hh;
+  
+  // Position and size
+  img.setAttribute('x', x);
+  img.setAttribute('y', y);
+  img.setAttribute('width', tileWidth);
+  img.setAttribute('height', tileHeight);
+  
+  // Add drop shadow filter
+  img.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
+  
+  svg.appendChild(img);
 }
 
 function drawSVGPips(g, n, x, y, w, h) {
