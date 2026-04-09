@@ -536,93 +536,101 @@ function layoutAndRenderTiles(svg, W, H) {
   const tiles = boardData.tiles;
   if (!tiles.length) return;
   
-  const DOMINO_WIDTH = 40;   // narrow dimension
-  const DOMINO_HEIGHT = 80;  // tall dimension (from PNG)
+  const DOMINO_WIDTH = 40;
+  const DOMINO_HEIGHT = 80;
   const GAP = 2;
   
-  // Calculate positions
-  // For doubles: they stand vertical, so they take DOMINO_WIDTH space horizontally
-  // For non-doubles: they lay horizontal, so they take DOMINO_HEIGHT space horizontally
-  
+  // Calculate positions from center outward
   const positions = [];
-  let currentX = 0;
+  let leftPos = 0;
+  let rightPos = 0;
   
-  tiles.forEach((entry) => {
+  tiles.forEach((entry, i) => {
     const isDbl = entry.tile[0] === entry.tile[1];
-    const spaceNeeded = isDbl ? DOMINO_WIDTH : DOMINO_HEIGHT;
-    positions.push(currentX);
-    currentX += spaceNeeded + GAP;
+    const space = isDbl ? DOMINO_WIDTH : DOMINO_HEIGHT;
+    
+    if (i === 0) {
+      positions.push(0); // Center
+    } else if (i % 2 === 1) {
+      // Odd indices go to left
+      leftPos -= space + GAP;
+      positions.push(leftPos);
+    } else {
+      // Even indices go to right
+      rightPos += space + GAP;
+      positions.push(rightPos);
+    }
   });
   
-  const totalWidth = currentX - GAP;
-  const startX = Math.max(60, (W - totalWidth) / 2);
+  const totalWidth = rightPos - leftPos + DOMINO_HEIGHT;
+  const startX = (W - totalWidth) / 2 - leftPos;
   const centerY = H / 2;
   
   tiles.forEach((entry, i) => {
     const isDbl = entry.tile[0] === entry.tile[1];
-    const x = startX + positions[i] + (isDbl ? DOMINO_WIDTH / 2 : DOMINO_HEIGHT / 2);
+    const x = startX + positions[i] + (isDbl ? DOMINO_WIDTH/2 : DOMINO_HEIGHT/2);
     const y = centerY;
     
-    drawBoardTile(svg, entry, x, y, isDbl);
+    // Determine which side this tile is on
+    let side;
+    if (i === 0) side = 'center';
+    else if (i % 2 === 1) side = 'left';
+    else side = 'right';
+    
+    drawBoardTile(svg, entry, x, y, isDbl, side);
   });
 }
 
 function isDouble(tile) { return tile[0] === tile[1]; }
 
-function drawBoardTile(svg, entry, x, y, isDouble) {
+function drawBoardTile(svg, entry, x, y, isDouble, side) {
   const { tile, flipped } = entry;
   
-  // Determine which numbers to show
-  let firstNum = flipped ? tile[1] : tile[0];
-  let secondNum = flipped ? tile[0] : tile[1];
+  // PNG filename: smaller number first
+  let fileNum1 = Math.min(tile[0], tile[1]);
+  let fileNum2 = Math.max(tile[0], tile[1]);
   
-  // Create a group for the tile (allows rotation)
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  const DOMINO_WIDTH = 40;
+  const DOMINO_HEIGHT = 80;
   
-  // Create the image
   const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-  img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `tiles-white/${firstNum}-${secondNum}.png`);
-  
-  // Standard domino dimensions (from your PNG)
-  const DOMINO_WIDTH = 40;   // width of PNG
-  const DOMINO_HEIGHT = 80;  // height of PNG (tall domino)
+  img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', `tiles-white/${fileNum1}-${fileNum2}.png`);
   
   if (isDouble) {
-    // Double: place vertically (no rotation needed if PNG is already vertical)
-    // Center the tall domino
-    const drawX = x - DOMINO_WIDTH / 2;
-    const drawY = y - DOMINO_HEIGHT / 2;
-    
-    img.setAttribute('x', drawX);
-    img.setAttribute('y', drawY);
+    img.setAttribute('x', x - DOMINO_WIDTH / 2);
+    img.setAttribute('y', y - DOMINO_HEIGHT / 2);
     img.setAttribute('width', DOMINO_WIDTH);
     img.setAttribute('height', DOMINO_HEIGHT);
-    g.appendChild(img);
+    img.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
+    svg.appendChild(img);
   } else {
-    // Non-double: place horizontally (rotate 90 degrees)
-    // The domino needs to be rotated so it lays on its side
-    // Rotate around the center point
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+    let rotation;
     
-    const centerX = x;
-    const centerY = y;
+    if (side === 'left') {
+
+      const connectNum = boardData.left_end;
+      rotation = (fileNum2 === connectNum) ? 90 : -90;
+    } else if (side === 'right') {
+
+      const connectNum = boardData.right_end;
+      rotation = (fileNum2 === connectNum) ? -90 : 90;
+    } else {
+      rotation = 0;
+    }
     
-    // Apply rotation transform: rotate 90 degrees around center
-    g.setAttribute('transform', `rotate(-90, ${centerX}, ${centerY})`);
-    
-    // Position image so its center is at the rotation point
-    // When rotated 90°, the 40x80 domino becomes 80x40 effectively
-    const drawX = centerX - DOMINO_WIDTH / 2;
-    const drawY = centerY - DOMINO_HEIGHT / 2;
-    
-    img.setAttribute('x', drawX);
-    img.setAttribute('y', drawY);
+    img.setAttribute('x', -DOMINO_WIDTH / 2);
+    img.setAttribute('y', -DOMINO_HEIGHT / 2);
     img.setAttribute('width', DOMINO_WIDTH);
     img.setAttribute('height', DOMINO_HEIGHT);
+    
+    g.setAttribute('transform', `translate(${x}, ${y}) rotate(${rotation})`);
+    g.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
+    
     g.appendChild(img);
+    svg.appendChild(g);
   }
-  
-  g.setAttribute('filter', 'drop-shadow(0 2px 5px rgba(0,0,0,0.55))');
-  svg.appendChild(g);
 }
   
 function drawSVGPips(g, n, x, y, w, h) {
