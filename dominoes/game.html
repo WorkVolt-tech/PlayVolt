@@ -598,6 +598,7 @@ function renderBoard() {
   const dropL = document.getElementById('drop-left');
   const dropR = document.getElementById('drop-right');
   
+  // Clear existing tiles
   container.innerHTML = '';
   
   const hasTiles = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
@@ -612,74 +613,48 @@ function renderBoard() {
   
   hint.style.display = 'none';
   
+  // Calculate layout
   const area = document.getElementById('board-area');
   const W = area.clientWidth || 800;
   const H = area.clientHeight || 300;
-  const MARGIN = 80;
-  const GAP = 6;
   
   const tiles = boardData.tiles;
+  const GAP = 4;
   
-  // Snake layout: start from center, expand left and right with turns at edges
+  // Calculate positions for each tile
   const positions = [];
-  let x = W / 2;
-  let y = H / 2;
-  let direction = 'left'; // Start going left
-  let row = 0;
+  let currentX = 0;
   
-  tiles.forEach((entry, i) => {
+  tiles.forEach((entry) => {
     const isDbl = entry.tile[0] === entry.tile[1];
-    const tileLong = TILE_HEIGHT; // 88
-    const tileShort = TILE_WIDTH;  // 44
-    const tileWidth = isDbl ? tileShort : tileLong;
-    const tileHeight = isDbl ? tileLong : tileShort;
-    
-    positions.push({ x, y, tileWidth, tileHeight });
-    
-    // Calculate next position
-    const step = tileWidth + GAP;
-    
-    if (direction === 'left') {
-      x -= step;
-      if (x - tileWidth/2 < MARGIN) {
-        // Hit left edge, turn
-        x = MARGIN + tileWidth/2;
-        direction = 'right';
-        // Move up or down based on row
-        if (row % 2 === 0) {
-          y -= (tileLong + GAP * 2); // Go up
-        } else {
-          y += (tileLong + GAP * 2); // Go down  
-        }
-        row++;
-      }
-    } else {
-      x += step;
-      if (x + tileWidth/2 > W - MARGIN) {
-        // Hit right edge, turn
-        x = W - MARGIN - tileWidth/2;
-        direction = 'left';
-        // Move up or down based on row
-        if (row % 2 === 0) {
-          y -= (tileLong + GAP * 2); // Go up
-        } else {
-          y += (tileLong + GAP * 2); // Go down
-        }
-        row++;
-      }
-    }
+    const spaceNeeded = isDbl ? TILE_WIDTH : TILE_HEIGHT;
+    positions.push(currentX);
+    currentX += spaceNeeded + GAP;
   });
+  
+  const totalWidth = currentX - GAP;
+  const startX = Math.max(60, (W - totalWidth) / 2);
+  const centerY = H / 2;
   
   // Render tiles
   tiles.forEach((entry, i) => {
-    const pos = positions[i];
     const isDbl = entry.tile[0] === entry.tile[1];
+    const x = startX + positions[i] + (isDbl ? TILE_WIDTH / 2 : TILE_HEIGHT / 2);
+    const y = centerY;
+    
+    // Determine orientation and which numbers to show
+    // For doubles: always vertical
+    // For non-doubles: horizontal, but need to handle flipping for correct connection
     
     let displayTile = [...entry.tile];
     let isVertical = isDbl;
+    let rotation = 0;
     
     if (!isDbl) {
       isVertical = false;
+      // For horizontal tiles on board, we need to handle the connection properly
+      // The tile is stored as [a, b] where a was connected to the chain
+      // If flipped is true, we need to swap the display order
       if (entry.flipped) {
         displayTile = [entry.tile[1], entry.tile[0]];
       }
@@ -687,25 +662,30 @@ function renderBoard() {
     
     const tileEl = createTileElement(displayTile[0], displayTile[1], isVertical, isDbl);
     tileEl.classList.add('board-tile');
-    tileEl.classList.add(isVertical ? 'vertical' : 'horizontal');
+    if (isVertical) {
+      tileEl.classList.add('vertical');
+    } else {
+      tileEl.classList.add('horizontal');
+    }
     
-    tileEl.style.left = `${pos.x - pos.tileWidth/2}px`;
-    tileEl.style.top = `${pos.y - pos.tileHeight/2}px`;
+    // Position the tile
+    tileEl.style.left = `${x - (isVertical ? TILE_WIDTH/2 : TILE_HEIGHT/2)}px`;
+    tileEl.style.top = `${y - (isVertical ? TILE_HEIGHT/2 : TILE_WIDTH/2)}px`;
     tileEl.style.zIndex = i;
     
     container.appendChild(tileEl);
   });
   
-  // Position drop zones at the ends
+  // Show drop zones if a tile is selected
   const canLeft = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
   const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
   
-  if (canLeft && positions.length > 0) {
-    const firstPos = positions[0];
+  if (canLeft) {
     Object.assign(dropL.style, {
       display: 'flex',
-      left: `${Math.max(10, firstPos.x - firstPos.tileWidth/2 - 80)}px`,
-      top: `${firstPos.y - 25}px`,
+      left: '10px',
+      top: '50%',
+      transform: 'translateY(-50%)',
       width: '70px',
       height: '50px'
     });
@@ -713,12 +693,13 @@ function renderBoard() {
     dropL.style.display = 'none';
   }
   
-  if (canRight && positions.length > 0) {
-    const lastPos = positions[positions.length - 1];
+  if (canRight) {
     Object.assign(dropR.style, {
       display: 'flex',
-      left: `${Math.min(W - 80, lastPos.x + lastPos.tileWidth/2 + 10)}px`,
-      top: `${lastPos.y - 25}px`,
+      right: '10px',
+      left: 'auto',
+      top: '50%',
+      transform: 'translateY(-50%)',
       width: '70px',
       height: '50px'
     });
