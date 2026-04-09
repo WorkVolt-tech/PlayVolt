@@ -405,16 +405,15 @@ html, body {
 </div>
 
 <script>
-const DOMINO_URL = 'https://eybzbtyfafmqbkulyvog.supabase.co';
-const DOMINO_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
-
+const SUPABASE_URL = 'https://eybzbtyfafmqbkulyvog.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  
 let db = null;
 let myInfo = null, roomData = null, players = [], boardData = null;
 let selectedTile = null, isMyTurn = false, gameOver = false, toastTimer = null;
 
 window.addEventListener('load', async () => {
-  db = window.supabase.createClient(DOMINO_URL, DOMINO_KEY);
-
   const raw = sessionStorage.getItem('domino_player');
   if (!raw) { location.href = 'index.html'; return; }
 
