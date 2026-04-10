@@ -597,11 +597,11 @@ function renderBoard() {
   const hint = document.getElementById('board-hint');
   const dropL = document.getElementById('drop-left');
   const dropR = document.getElementById('drop-right');
-  
+
   container.innerHTML = '';
-  
+
   const hasTiles = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
-  
+
   if (!hasTiles) {
     hint.style.display = 'block';
     document.getElementById('board-hint-text').textContent = isMyTurn ? 'Click a tile to place it' : 'Place the first tile';
@@ -609,173 +609,56 @@ function renderBoard() {
     dropR.style.display = 'none';
     return;
   }
-  
+
   hint.style.display = 'none';
-  
   const area = document.getElementById('board-area');
   const W = area.clientWidth || 800;
-  const H = area.clientHeight || 300;
-  const MARGIN = 60;
-  const GAP = 2;
-  
+
   const tiles = boardData.tiles;
-  const centerIndex = Math.floor(tiles.length / 2);
-  
-  // Build positions from center outward
-  const positions = [];
-  
-  // Calculate left side positions (going left from center)
-  const leftPositions = [];
-  let x = W / 2;
-  let y = H / 2;
-  let direction = 'left';
-  
-  for (let i = centerIndex; i >= 0; i--) {
-    const entry = tiles[i];
+
+  // Render each tile purely from its stored x/y/direction
+  tiles.forEach((entry, i) => {
     const isDbl = entry.tile[0] === entry.tile[1];
-    
-    let isVertical = isDbl;
-    if (!isDbl && (direction === 'up' || direction === 'down')) {
-      isVertical = true;
-    }
-    
-    const tileWidth = isVertical ? TILE_WIDTH : TILE_HEIGHT;
-    const tileHeight = isVertical ? TILE_HEIGHT : TILE_WIDTH;
-    
-    leftPositions.unshift({ x, y, isVertical, tileWidth, tileHeight, index: i });
-    
-    if (i > 0) {
-      const nextEntry = tiles[i-1];
-      const nextIsDbl = nextEntry.tile[0] === nextEntry.tile[1];
-      const nextWidth = nextIsDbl ? TILE_WIDTH : TILE_HEIGHT;
-      
-      if (direction === 'left') {
-        x -= (tileWidth/2 + nextWidth/2 + GAP);
-        if (x - nextWidth/2 < MARGIN) {
-          x = MARGIN + nextWidth/2;
-          y -= (TILE_HEIGHT/2 + TILE_WIDTH/2 + GAP);
-          direction = 'up';
-        }
-      } else if (direction === 'up') {
-        y -= (tileHeight/2 + (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2 + GAP);
-        if (y - (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2 < MARGIN) {
-          y = MARGIN + (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2;
-          x += (TILE_WIDTH/2 + (nextIsDbl ? TILE_WIDTH : TILE_HEIGHT)/2 + GAP);
-          direction = 'right';
-        }
-      } else if (direction === 'right') {
-        x += (tileWidth/2 + nextWidth/2 + GAP);
-        if (x + nextWidth/2 > W - MARGIN) {
-          x = W - MARGIN - nextWidth/2;
-          y -= (TILE_HEIGHT/2 + TILE_WIDTH/2 + GAP);
-          direction = 'up';
-        }
-      }
-    }
-  }
-  
-  // Calculate right side positions (going right from center)
-  const rightPositions = [];
-  x = W / 2;
-  y = H / 2;
-  direction = 'right';
-  
-  for (let i = centerIndex; i < tiles.length; i++) {
-    const entry = tiles[i];
-    const isDbl = entry.tile[0] === entry.tile[1];
-    
-    let isVertical = isDbl;
-    if (!isDbl && (direction === 'up' || direction === 'down')) {
-      isVertical = true;
-    }
-    
-    const tileWidth = isVertical ? TILE_WIDTH : TILE_HEIGHT;
-    const tileHeight = isVertical ? TILE_HEIGHT : TILE_WIDTH;
-    
-    if (i !== centerIndex) {
-      rightPositions.push({ x, y, isVertical, tileWidth, tileHeight, index: i });
-    }
-    
-    if (i < tiles.length - 1) {
-      const nextEntry = tiles[i+1];
-      const nextIsDbl = nextEntry.tile[0] === nextEntry.tile[1];
-      const nextWidth = nextIsDbl ? TILE_WIDTH : TILE_HEIGHT;
-      
-      if (direction === 'right') {
-        x += (tileWidth/2 + nextWidth/2 + GAP);
-        if (x + nextWidth/2 > W - MARGIN) {
-          x = W - MARGIN - nextWidth/2;
-          y += (TILE_HEIGHT/2 + TILE_WIDTH/2 + GAP);
-          direction = 'down';
-        }
-      } else if (direction === 'down') {
-        y += (tileHeight/2 + (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2 + GAP);
-        if (y + (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2 > H - MARGIN) {
-          y = H - MARGIN - (nextIsDbl ? TILE_HEIGHT : TILE_WIDTH)/2;
-          x -= (TILE_WIDTH/2 + (nextIsDbl ? TILE_WIDTH : TILE_HEIGHT)/2 + GAP);
-          direction = 'left';
-        }
-      } else if (direction === 'left') {
-        x -= (tileWidth/2 + nextWidth/2 + GAP);
-        if (x - nextWidth/2 < MARGIN) {
-          x = MARGIN + nextWidth/2;
-          y += (TILE_HEIGHT/2 + TILE_WIDTH/2 + GAP);
-          direction = 'down';
-        }
-      }
-    }
-  }
-  
-  // Combine and sort positions
-  const allPositions = [...leftPositions, ...rightPositions];
-  allPositions.sort((a, b) => a.index - b.index);
-  
-  // Render tiles
-  allPositions.forEach((pos, i) => {
-    const entry = tiles[pos.index];
-    const isDbl = entry.tile[0] === entry.tile[1];
-    
+    const isVertical = (entry.direction === 'vertical');
+
     let displayTile = [...entry.tile];
-    let isVertical = pos.isVertical;
-    
-    if (!isDbl && entry.flipped) {
-      displayTile = [entry.tile[1], entry.tile[0]];
-    }
-    
+    if (!isDbl && entry.flipped) displayTile = [entry.tile[1], entry.tile[0]];
+
+    const tileW = isVertical ? TILE_WIDTH : TILE_HEIGHT;
+    const tileH = isVertical ? TILE_HEIGHT : TILE_WIDTH;
+
     const tileEl = createTileElement(displayTile[0], displayTile[1], isVertical, isDbl);
-    tileEl.classList.add('board-tile');
-    tileEl.classList.add(isVertical ? 'vertical' : 'horizontal');
-    
-    tileEl.style.left = `${pos.x - pos.tileWidth/2}px`;
-    tileEl.style.top = `${pos.y - pos.tileHeight/2}px`;
+    tileEl.classList.add('board-tile', isVertical ? 'vertical' : 'horizontal');
+    tileEl.style.left = `${entry.x - tileW / 2}px`;
+    tileEl.style.top  = `${entry.y - tileH / 2}px`;
     tileEl.style.zIndex = i;
-    
+
     container.appendChild(tileEl);
   });
-  
-  // Position drop zones
-  const canLeft = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
+
+  // Position drop zones relative to the stored end positions
+  const canLeft  = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
   const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
-  
-  if (canLeft && allPositions.length > 0) {
-    const firstPos = allPositions[0];
+
+  if (canLeft && boardData.left_x != null) {
+    const lx = boardData.left_x, ly = boardData.left_y;
     Object.assign(dropL.style, {
       display: 'flex',
-      left: `${Math.max(10, firstPos.x - firstPos.tileWidth/2 - 80)}px`,
-      top: `${firstPos.y - 25}px`,
+      left: `${Math.max(4, lx - 80)}px`,
+      top:  `${ly - 25}px`,
       width: '70px',
       height: '50px'
     });
   } else {
     dropL.style.display = 'none';
   }
-  
-  if (canRight && allPositions.length > 0) {
-    const lastPos = allPositions[allPositions.length - 1];
+
+  if (canRight && boardData.right_x != null) {
+    const rx = boardData.right_x, ry = boardData.right_y;
     Object.assign(dropR.style, {
       display: 'flex',
-      left: `${Math.min(W - 80, lastPos.x + lastPos.tileWidth/2 + 10)}px`,
-      top: `${lastPos.y - 25}px`,
+      left: `${Math.min(W - 80, rx + 10)}px`,
+      top:  `${ry - 25}px`,
       width: '70px',
       height: '50px'
     });
@@ -852,30 +735,26 @@ function canPlayOnSide(tile, side) {
 async function placeFirstTile(tile) {
   const me = players.find(p => p.seat === myInfo.seat);
   const newHand = me.hand.filter((_, i) => i !== selectedTile.idx);
-  
-  // Calculate center position
+
   const area = document.getElementById('board-area');
   const W = area.clientWidth || 800;
   const H = area.clientHeight || 300;
-  const startX = W / 2;
-  const startY = H / 2;
-  
+  const cx = W / 2, cy = H / 2;
+
+  // First tile is horizontal. Store snake dirs inside tile JSON — no extra DB columns needed.
+  const halfLen = TILE_HEIGHT / 2; // 44
+  const firstEntry = { tile, flipped: false, x: cx, y: cy, direction: 'horizontal',
+                       snakeDirLeft: 'left', snakeDirRight: 'right' };
   await db.from('board').update({
-    tiles: [{ 
-      tile, 
-      flipped: false,
-      x: startX,
-      y: startY,
-      direction: 'vertical' // doubles are vertical
-    }],
-    left_end: tile[0],
+    tiles:     [firstEntry],
+    left_end:  tile[0],
     right_end: tile[1],
-    left_x: startX,
-    left_y: startY,
-    right_x: startX,
-    right_y: startY
+    left_x:    cx - halfLen,
+    left_y:    cy,
+    right_x:   cx + halfLen,
+    right_y:   cy
   }).eq('room_id', myInfo.roomId);
-  
+
   await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
   await advanceTurn(newHand);
@@ -883,134 +762,176 @@ async function placeFirstTile(tile) {
   document.getElementById('side-picker').classList.remove('visible');
 }
 
+// ─── Snake layout constants ──────────────────────────────────────────────────
+const GAP    = 4;   // gap between tiles
+const MARGIN = 60;  // distance from board edge before turning
+
+// Read snake direction from tiles array (embedded in first/last entry)
+function getSnakeDir(tiles, side) {
+  if (!tiles || tiles.length === 0) return side === 'left' ? 'left' : 'right';
+  return side === 'left'
+    ? (tiles[0].snakeDirLeft || 'left')
+    : (tiles[tiles.length - 1].snakeDirRight || 'right');
+}
+
+function calcNextPos(fromX, fromY, snakeDir, isDbl, area) {
+  const W = area.clientWidth  || 800;
+  const H = area.clientHeight || 400;
+
+  const long  = TILE_HEIGHT; // 88
+  const short = TILE_WIDTH;  // 44
+
+  // For doubles we always use short×long (vertical tile)
+  // For horizontals we use long×short (horizontal tile)
+  const tileW = isDbl ? short : long;   // visual width
+  const tileH = isDbl ? long  : short;  // visual height
+
+  let cx, cy, nextDir, edgeX, edgeY;
+
+  if (isDbl) {
+    // Doubles slot in perpendicular; they don't advance the snake direction.
+    // They just sit at the current edge, centered on the Y axis.
+    if (snakeDir === 'right') {
+      cx = fromX + short / 2;
+      edgeX = cx + short / 2;
+      edgeY = fromY;
+    } else if (snakeDir === 'left') {
+      cx = fromX - short / 2;
+      edgeX = cx - short / 2;
+      edgeY = fromY;
+    } else if (snakeDir === 'down') {
+      cy = fromY + short / 2;
+      cx = fromX;
+      edgeX = fromX;
+      edgeY = cy + short / 2;
+    } else { // up
+      cy = fromY - short / 2;
+      cx = fromX;
+      edgeX = fromX;
+      edgeY = cy - short / 2;
+    }
+    if (cy === undefined) cy = fromY;
+    if (cx === undefined) cx = fromX;
+    nextDir = snakeDir; // direction unchanged after a double
+    return { cx, cy, nextDir, edgeX, edgeY, direction: 'vertical' };
+  }
+
+  // Non-double: advance along snakeDir, check for wall hit.
+  if (snakeDir === 'right') {
+    cx = fromX + long / 2;
+    cy = fromY;
+    if (cx + long / 2 + GAP > W - MARGIN) {
+      // Hit right wall — turn down (snake goes down next)
+      cx = fromX + short / 2;
+      nextDir = 'down';
+      edgeX = cx;
+      edgeY = cy + short / 2;
+      return { cx, cy, nextDir, edgeX, edgeY, direction: 'horizontal' };
+    }
+    nextDir = 'right';
+    edgeX = cx + long / 2;
+    edgeY = cy;
+  } else if (snakeDir === 'left') {
+    cx = fromX - long / 2;
+    cy = fromY;
+    if (cx - long / 2 - GAP < MARGIN) {
+      // Hit left wall — turn down
+      cx = fromX - short / 2;
+      nextDir = 'down';
+      edgeX = cx;
+      edgeY = cy + short / 2;
+      return { cx, cy, nextDir, edgeX, edgeY, direction: 'horizontal' };
+    }
+    nextDir = 'left';
+    edgeX = cx - long / 2;
+    edgeY = cy;
+  } else if (snakeDir === 'down') {
+    cy = fromY + short / 2;
+    cx = fromX;
+    if (cy + short / 2 + GAP > H - MARGIN) {
+      // Hit bottom — turn; decide left or right based on which wall we're near
+      nextDir = cx > W / 2 ? 'left' : 'right';
+      edgeX = nextDir === 'left' ? cx - long / 2 : cx + long / 2;
+      edgeY = cy;
+      return { cx, cy, nextDir, edgeX, edgeY, direction: 'horizontal' };
+    }
+    nextDir = 'down';
+    edgeX = cx;
+    edgeY = cy + short / 2;
+  } else { // up
+    cy = fromY - short / 2;
+    cx = fromX;
+    if (cy - short / 2 - GAP < MARGIN) {
+      nextDir = cx > W / 2 ? 'left' : 'right';
+      edgeX = nextDir === 'left' ? cx - long / 2 : cx + long / 2;
+      edgeY = cy;
+      return { cx, cy, nextDir, edgeX, edgeY, direction: 'horizontal' };
+    }
+    nextDir = 'up';
+    edgeX = cx;
+    edgeY = cy - short / 2;
+  }
+
+  return { cx, cy, nextDir, edgeX, edgeY, direction: 'horizontal' };
+}
+
 async function confirmPlace(side) {
   if (!selectedTile) return;
-  
+
   const me = players.find(p => p.seat === myInfo.seat);
   const tile = selectedTile.tile;
-  const idx = selectedTile.idx;
-  const end = side === 'left' ? boardData.left_end : boardData.right_end;
-  
-  let flipped = false;
-  let newOpenEnd;
-  
-  // Determine flip and new open end
+  const idx  = selectedTile.idx;
+  const end  = side === 'left' ? boardData.left_end : boardData.right_end;
+
+  // ── Determine flip & new open end ──────────────────────────────────────
+  let flipped = false, newOpenEnd;
   if (side === 'right') {
-    if (tile[1] === end) {
-      flipped = true;
-      newOpenEnd = tile[0];
-    } else if (tile[0] === end) {
-      flipped = false;
-      newOpenEnd = tile[1];
-    } else {
-      cancelSelection();
-      return;
-    }
+    if (tile[0] === end)      { flipped = false; newOpenEnd = tile[1]; }
+    else if (tile[1] === end) { flipped = true;  newOpenEnd = tile[0]; }
+    else { cancelSelection(); return; }
   } else {
-    if (tile[0] === end) {
-      flipped = true;
-      newOpenEnd = tile[1];
-    } else if (tile[1] === end) {
-      flipped = false;
-      newOpenEnd = tile[0];
-    } else {
-      cancelSelection();
-      return;
-    }
+    if (tile[1] === end)      { flipped = false; newOpenEnd = tile[0]; }
+    else if (tile[0] === end) { flipped = true;  newOpenEnd = tile[1]; }
+    else { cancelSelection(); return; }
   }
-  
-  // SNAKE POSITION CALCULATION
-  const isDbl = tile[0] === tile[1];
-  const tileWidth = isDbl ? TILE_WIDTH : TILE_HEIGHT;  // 44 or 88
-  const tileHeight = isDbl ? TILE_HEIGHT : TILE_WIDTH; // 88 or 44
-  const GAP = 4;
-  const MARGIN = 80;
-  
-  // Get the position we're connecting from
-  const fromX = side === 'left' ? boardData.left_x : boardData.right_x;
-  const fromY = side === 'left' ? boardData.left_y : boardData.right_y;
-  
-  // Calculate new position
-  let newX = fromX;
-  let newY = fromY;
-  let newDirection = 'horizontal';
-  
-  if (isDbl) {
-    // Doubles are vertical and centered on the chain
-    newDirection = 'vertical';
-    if (side === 'left') {
-      newX = fromX - (TILE_WIDTH/2 + GAP + TILE_HEIGHT/2);
-    } else {
-      newX = fromX + (TILE_WIDTH/2 + GAP + TILE_HEIGHT/2);
-    }
-    newY = fromY; // Same Y as connection point
-  } else {
-    // Non-doubles are horizontal
-    newDirection = 'horizontal';
-    
-    // Try to place horizontally first
-    if (side === 'left') {
-      newX = fromX - (TILE_HEIGHT + GAP);
-    } else {
-      newX = fromX + (TILE_HEIGHT + GAP);
-    }
-    newY = fromY;
-    
-    // Check if we're going off-screen and need to turn
-    const area = document.getElementById('board-area');
-    const W = area.clientWidth || 800;
-    
-    if (newX < MARGIN + TILE_HEIGHT/2 || newX > W - MARGIN - TILE_HEIGHT/2) {
-      // HIT EDGE - need to turn up or down
-      newX = side === 'left' ? MARGIN + TILE_HEIGHT/2 : W - MARGIN - TILE_HEIGHT/2;
-      
-      // Determine up or down based on previous turns
-      // Check if there are tiles above or below to decide direction
-      const existingTiles = boardData.tiles || [];
-      const tilesAbove = existingTiles.filter(t => t.y < fromY).length;
-      const tilesBelow = existingTiles.filter(t => t.y > fromY).length;
-      
-      if (tilesAbove <= tilesBelow) {
-        // Go up
-        newY = fromY - (TILE_HEIGHT + GAP * 2);
-      } else {
-        // Go down  
-        newY = fromY + (TILE_HEIGHT + GAP * 2);
-      }
-    }
+
+  // ── Snake position ──────────────────────────────────────────────────────
+  const isDbl    = tile[0] === tile[1];
+  const fromX    = side === 'left' ? boardData.left_x  : boardData.right_x;
+  const fromY    = side === 'left' ? boardData.left_y  : boardData.right_y;
+  const snakeDir = getSnakeDir(boardData.tiles, side);
+
+  const area = document.getElementById('board-area');
+  const pos  = calcNextPos(fromX, fromY, snakeDir, isDbl, area);
+
+  // Embed the updated snake directions into the end tiles (no extra DB columns)
+  const existingTiles = [...boardData.tiles];
+  if (side === 'left' && existingTiles.length > 0) {
+    existingTiles[0] = { ...existingTiles[0], snakeDirLeft: pos.nextDir };
+  } else if (side === 'right' && existingTiles.length > 0) {
+    existingTiles[existingTiles.length - 1] = {
+      ...existingTiles[existingTiles.length - 1], snakeDirRight: pos.nextDir
+    };
   }
-  
-  // Create the new tile entry with position
-  const newEntry = { 
-    tile, 
-    flipped,
-    x: newX,
-    y: newY,
-    direction: newDirection
-  };
-  
-  const newTiles = side === 'left' ? [newEntry, ...boardData.tiles] : [...boardData.tiles, newEntry];
-  const newLeftEnd = side === 'left' ? newOpenEnd : boardData.left_end;
-  const newRightEnd = side === 'right' ? newOpenEnd : boardData.right_end;
-  
-  // Update the end positions for next placement
-  const newLeftX = side === 'left' ? newX : boardData.left_x;
-  const newLeftY = side === 'left' ? newY : boardData.left_y;
-  const newRightX = side === 'right' ? newX : boardData.right_x;
-  const newRightY = side === 'right' ? newY : boardData.right_y;
-  
+
+  const newEntry = { tile, flipped, x: pos.cx, y: pos.cy, direction: pos.direction,
+                     snakeDirLeft: pos.nextDir, snakeDirRight: pos.nextDir };
+  const newTiles = side === 'left'
+    ? [newEntry, ...existingTiles]
+    : [...existingTiles, newEntry];
+
   const newHand = me.hand.filter((_, i) => i !== idx);
-  
+
   await db.from('board').update({
-    tiles: newTiles,
-    left_end: newLeftEnd,
-    right_end: newRightEnd,
-    left_x: newLeftX,
-    left_y: newLeftY,
-    right_x: newRightX,
-    right_y: newRightY
+    tiles:     newTiles,
+    left_end:  side === 'left'  ? newOpenEnd : boardData.left_end,
+    right_end: side === 'right' ? newOpenEnd : boardData.right_end,
+    left_x:    side === 'left'  ? pos.edgeX  : boardData.left_x,
+    left_y:    side === 'left'  ? pos.edgeY  : boardData.left_y,
+    right_x:   side === 'right' ? pos.edgeX  : boardData.right_x,
+    right_y:   side === 'right' ? pos.edgeY  : boardData.right_y
   }).eq('room_id', myInfo.roomId);
-  
+
   await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
   await advanceTurn(newHand);
