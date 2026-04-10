@@ -653,16 +653,23 @@ function computeSnakePositions(tiles, W, H) {
     const inCorner = cornerLeft > 0;
     const { w, h } = renderDims(entry, inCorner);
 
-    positions.push({ x, y, dir: inCorner ? 0 : dir });
+    // When a double sits in the corner column it renders as -- (88w×44h).
+    // Its connecting tip must align with the | tiles (44w) above/below it,
+    // so offset its center outward by (88-44)/2 = 22px from the column x.
+    // "outward" = away from the board interior, i.e. toward the wall edge.
+    // wallSide: +1 means wall is on the right (we came from the left going right),
+    //           -1 means wall is on the left  (we came from the right going left).
+    // After dir flips, the new dir points back inward, so wallSide = -dir.
+    const isDblCorner = inCorner && (entry.tile[0] === entry.tile[1]);
+    const tileX = isDblCorner ? x + (-dir) * (TH - TW) / 2 : x;
+
+    positions.push({ x: tileX, y, dir: inCorner ? 0 : dir });
 
     if (i < tiles.length - 1) {
       const next = tiles[i + 1];
 
       if (inCorner) {
         cornerLeft--;
-        // next tile is still in the corner column regardless of whether
-        // cornerLeft just hit 0 — it only exits after the column is done.
-        // Always use corner dims for the next tile's height when stepping down.
         const { h: nh } = renderDims(next, true);
         y = y + h / 2 + GAP + nh / 2;
       } else {
