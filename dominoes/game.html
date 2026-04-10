@@ -611,37 +611,21 @@ function tileDims(entry) {
 }
 
 // Compute snake positions for all tiles purely from screen size.
-// Returns array of {x, y} centers matching boardData.tiles order.
+// Returns array of {x, y, dir} — dir: +1=going right, -1=going left.
 function computeSnakePositions(tiles, W, H) {
   const MARGIN = 56;
   const positions = [];
 
-  // We walk from center tile outward in both directions.
-  // Each tile gets a center x,y. Non-doubles are horizontal (88×44),
-  // doubles are vertical (44×88). When the next tile would go off-screen
-  // horizontally, we step up or down one row instead.
-
-  // Build a simple left-to-right chain: tiles[0] is leftmost end.
-  // Direction: +1 = going right, -1 = going left (after a U-turn at edge).
-  let x = W / 2;
-  let y = H / 2;
-
-  // Find center of board by starting at W/2, then offset left by
-  // (half the total chain width / 2) so chain is visually centered.
-  // Simpler: just start at left margin and flow right, wrapping.
-
-  // Reset to left edge for first tile
   const first = tiles[0];
   const firstDims = tileDims(first);
-  x = MARGIN + firstDims.w / 2;
-  y = H / 2;
-
+  let x = MARGIN + firstDims.w / 2;
+  let y = H / 2;
   let dir = 1; // +1 right, -1 left
 
   for (let i = 0; i < tiles.length; i++) {
     const entry = tiles[i];
     const { w, h } = tileDims(entry);
-    positions.push({ x, y });
+    positions.push({ x, y, dir });
 
     if (i < tiles.length - 1) {
       const next = tiles[i + 1];
@@ -649,11 +633,8 @@ function computeSnakePositions(tiles, W, H) {
       const nextX = x + dir * (w / 2 + GAP + nw / 2);
 
       if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
-        // Hit edge — stay at edge x, step y down, flip direction
-        x = dir > 0
-          ? W - MARGIN - nw / 2
-          : MARGIN + nw / 2;
-        // Step down by max(current tile height, next tile height) + gap
+        // Hit edge — clamp to edge, step down a row, flip direction
+        x = dir > 0 ? W - MARGIN - nw / 2 : MARGIN + nw / 2;
         y = y + Math.max(h, nh) / 2 + GAP + nh / 2;
         dir *= -1;
       } else {
@@ -696,9 +677,19 @@ function renderBoard() {
     const vertical = isVert(entry);
     const { w, h } = tileDims(entry);
     const isDbl = entry.tile[0] === entry.tile[1];
+    const tileDir = positions[i].dir; // +1 or -1
 
     let displayTile = [...entry.tile];
-    if (!isDbl && entry.flipped) displayTile = [entry.tile[1], entry.tile[0]];
+
+    if (!isDbl) {
+      // entry.flipped tracks the logical connection flip (which end connects)
+      // tileDir tracks visual direction — when going left (-1), mirror the halves
+      // so the connecting pip always faces the previous tile
+      const logicalFlip = !!entry.flipped;
+      const visualMirror = tileDir === -1;
+      const shouldSwap = logicalFlip !== visualMirror;
+      if (shouldSwap) displayTile = [entry.tile[1], entry.tile[0]];
+    }
 
     const tileEl = createTileElement(displayTile[0], displayTile[1], vertical, isDbl);
     tileEl.classList.add('board-tile');
