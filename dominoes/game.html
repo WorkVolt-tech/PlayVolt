@@ -653,17 +653,7 @@ function computeSnakePositions(tiles, W, H) {
     const inCorner = cornerLeft > 0;
     const { w, h } = renderDims(entry, inCorner);
 
-    // If the previous tile in the corner was a double (--), it sticks out
-    // TW/2 (22px) past the column baseline toward the wall. This tile must
-    // shift the same amount inward (toward the wall) to meet its tip.
-    // The double itself stays at x — only the tile AFTER a corner double shifts.
-    const prevEntry = i > 0 ? tiles[i - 1] : null;
-    const prevWasCornerDouble = inCorner && prevEntry && (prevEntry.tile[0] === prevEntry.tile[1]);
-    // wallSide: which direction the wall is — same as -dir (dir already flipped entering corner)
-    const wallSide = -dir;
-    const tileX = prevWasCornerDouble ? x + wallSide * TW / 2 : x;
-
-    positions.push({ x: tileX, y, dir: inCorner ? 0 : dir });
+    positions.push({ x, y, dir: inCorner ? 0 : dir });
 
     if (i < tiles.length - 1) {
       const next = tiles[i + 1];
@@ -672,6 +662,19 @@ function computeSnakePositions(tiles, W, H) {
         cornerLeft--;
         const { h: nh } = renderDims(next, true);
         y = y + h / 2 + GAP + nh / 2;
+
+        // If corner column just finished (cornerLeft===0), the next tile is
+        // the first of the new horizontal run. If THIS tile (last in column)
+        // is a double (-- shape, 88px wide), its inner tip is 22px inward
+        // from x. Shift x so the horizontal run starts from that tip.
+        if (cornerLeft === 0) {
+          const lastCornerIsDbl = entry.tile[0] === entry.tile[1];
+          if (lastCornerIsDbl) {
+            // dir already flipped; wallSide = -dir points toward the wall
+            const wallSide = -dir;
+            x = x - wallSide * (TH - TW) / 2;
+          }
+        }
       } else {
         const { w: nw, h: nh } = renderDims(next, false);
         const nextX = x + dir * (w / 2 + GAP + nw / 2);
