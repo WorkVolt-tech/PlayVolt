@@ -653,15 +653,15 @@ function computeSnakePositions(tiles, W, H) {
     const inCorner = cornerLeft > 0;
     const { w, h } = renderDims(entry, inCorner);
 
-    // In the corner column:
-    // - non-doubles render as | (44w) → center at x
-    // - doubles render as -- (88w)   → tip connects at x, so center = x + wallOffset*22
-    // wallOffset: after dir flipped, -dir tells us which side the wall is on.
-    // If wall is on the right (came from left→right run), double shifts right (+22).
-    // If wall is on the left  (came from right→left run), double shifts left  (-22).
-    const wallOffset = -dir; // dir already flipped when we entered the corner
-    const isDblCorner = inCorner && (entry.tile[0] === entry.tile[1]);
-    const tileX = isDblCorner ? x + wallOffset * TW / 2 : x;
+    // If the previous tile in the corner was a double (--), it sticks out
+    // TW/2 (22px) past the column baseline toward the wall. This tile must
+    // shift the same amount inward (toward the wall) to meet its tip.
+    // The double itself stays at x — only the tile AFTER a corner double shifts.
+    const prevEntry = i > 0 ? tiles[i - 1] : null;
+    const prevWasCornerDouble = inCorner && prevEntry && (prevEntry.tile[0] === prevEntry.tile[1]);
+    // wallSide: which direction the wall is — same as -dir (dir already flipped entering corner)
+    const wallSide = -dir;
+    const tileX = prevWasCornerDouble ? x + wallSide * TW / 2 : x;
 
     positions.push({ x: tileX, y, dir: inCorner ? 0 : dir });
 
