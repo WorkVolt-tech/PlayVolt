@@ -633,12 +633,36 @@ function computeSnakePositions(tiles, W, H) {
   function renderDims(entry, inCorner) {
     const isDbl = entry.tile[0] === entry.tile[1];
     if (inCorner) {
-      // doubles go flat (--), non-doubles go tall (|)
       return isDbl ? { w: TH, h: TW } : { w: TW, h: TH };
     } else {
-      // doubles go tall (|), non-doubles go flat (--)
       return isDbl ? { w: TW, h: TH } : { w: TH, h: TW };
     }
+  }
+
+  // Check if two axis-aligned boxes overlap (with a small pad for safety)
+  function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
+    const pad = 1;
+    return Math.abs(ax - bx) < (aw + bw) / 2 - pad &&
+           Math.abs(ay - by) < (ah + bh) / 2 - pad;
+  }
+
+  // Check candidate position (cx,cy,cw,ch) against all already-placed tiles
+  function hasCollision(cx, cy, cw, ch) {
+    for (const p of positions) {
+      if (overlaps(cx, cy, cw, ch, p.x, p.y, p.pw, p.ph)) return true;
+    }
+    return false;
+  }
+
+  // Place a tile: push only after ensuring no overlap — nudge y down if needed
+  function safePush(px, py, pw, ph, pdir) {
+    let tries = 0;
+    while (hasCollision(px, py, pw, ph) && tries < 50) {
+      py += GAP + 1;
+      tries++;
+    }
+    positions.push({ x: px, y: py, dir: pdir, pw, ph });
+    return py; // return final y in case it moved
   }
 
   const first = tiles[0];
@@ -653,7 +677,7 @@ function computeSnakePositions(tiles, W, H) {
     const inCorner = cornerLeft > 0;
     const { w, h } = renderDims(entry, inCorner);
 
-    positions.push({ x, y, dir: inCorner ? 0 : dir });
+    y = safePush(x, y, w, h, inCorner ? 0 : dir);
 
     if (i < tiles.length - 1) {
       const next = tiles[i + 1];
@@ -663,14 +687,9 @@ function computeSnakePositions(tiles, W, H) {
         const { h: nh } = renderDims(next, true);
         y = y + h / 2 + GAP + nh / 2;
 
-        // If corner column just finished (cornerLeft===0), the next tile is
-        // the first of the new horizontal run. If THIS tile (last in column)
-        // is a double (-- shape, 88px wide), its inner tip is 22px inward
-        // from x. Shift x so the horizontal run starts from that tip.
         if (cornerLeft === 0) {
           const lastCornerIsDbl = entry.tile[0] === entry.tile[1];
           if (lastCornerIsDbl) {
-            // dir already flipped; wallSide = -dir points toward the wall
             const wallSide = -dir;
             x = x - wallSide * (TH - TW) / 2;
           }
@@ -680,7 +699,6 @@ function computeSnakePositions(tiles, W, H) {
         const nextX = x + dir * (w / 2 + GAP + nw / 2);
 
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
-          // Hit edge — snap to wall, begin corner drop
           const firstCornerDims = renderDims(next, true);
           x = dir > 0 ? W - MARGIN - firstCornerDims.w / 2 : MARGIN + firstCornerDims.w / 2;
           dir *= -1;
@@ -733,9 +751,9 @@ function renderBoard() {
     //   corner column:  doubles → horizontal (--), non-doubles → vertical (|)
     const renderVertical = inCorner ? !isDbl : isDbl;
 
-    // Actual rendered pixel size
-    const rw = renderVertical ? TW : TH;
-    const rh = renderVertical ? TH : TW;
+    // Use the dims that were computed (and collision-checked) by computeSnakePositions
+    const rw = positions[i].pw;
+    const rh = positions[i].ph;
 
     let displayTile = [...entry.tile];
     if (!isDbl) {
