@@ -592,16 +592,28 @@ function renderHand() {
   passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
 }
 
+function tileIsVertical(entry) {
+  // A tile is vertical if it's a double, OR if its stored direction is 'vertical'
+  const isDbl = entry.tile[0] === entry.tile[1];
+  if (isDbl) return true;
+  return entry.direction === 'vertical';
+}
+
+function tileDisplayDims(entry) {
+  const v = tileIsVertical(entry);
+  return { w: v ? TILE_WIDTH : TILE_HEIGHT, h: v ? TILE_HEIGHT : TILE_WIDTH };
+}
+
 function renderBoard() {
   const container = document.getElementById('board-container');
-  const hint      = document.getElementById('board-hint');
-  const dropL     = document.getElementById('drop-left');
-  const dropR     = document.getElementById('drop-right');
-
+  const hint = document.getElementById('board-hint');
+  const dropL = document.getElementById('drop-left');
+  const dropR = document.getElementById('drop-right');
+  
   container.innerHTML = '';
-
+  
   const hasTiles = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
-
+  
   if (!hasTiles) {
     hint.style.display = 'block';
     document.getElementById('board-hint-text').textContent = isMyTurn ? 'Click a tile to place it' : 'Place the first tile';
@@ -609,51 +621,64 @@ function renderBoard() {
     dropR.style.display = 'none';
     return;
   }
-
+  
   hint.style.display = 'none';
+  
   const area = document.getElementById('board-area');
   const W = area.clientWidth || 800;
-
-  // Render tiles purely from stored x/y/direction
-  boardData.tiles.forEach((entry, i) => {
+  
+  const tiles = boardData.tiles;
+  
+  // Render each tile using its stored x, y, direction
+  tiles.forEach((entry, i) => {
+    const isVertical = tileIsVertical(entry);
+    const { w, h } = tileDisplayDims(entry);
     const isDbl = entry.tile[0] === entry.tile[1];
-    const isVertical = (entry.direction === 'vertical');
-    const tileW = isVertical ? TILE_WIDTH  : TILE_HEIGHT;
-    const tileH = isVertical ? TILE_HEIGHT : TILE_WIDTH;
-
+    
     let displayTile = [...entry.tile];
-    if (!isDbl && entry.flipped) displayTile = [entry.tile[1], entry.tile[0]];
-
+    if (!isDbl && entry.flipped) {
+      displayTile = [entry.tile[1], entry.tile[0]];
+    }
+    
     const tileEl = createTileElement(displayTile[0], displayTile[1], isVertical, isDbl);
-    tileEl.classList.add('board-tile', isVertical ? 'vertical' : 'horizontal');
-    tileEl.style.left   = `${entry.x - tileW / 2}px`;
-    tileEl.style.top    = `${entry.y - tileH / 2}px`;
+    tileEl.classList.add('board-tile');
+    tileEl.classList.add(isVertical ? 'vertical' : 'horizontal');
+    
+    // entry.x/y are the center; CSS top/left need top-left corner
+    tileEl.style.left = `${(entry.x || 0) - w / 2}px`;
+    tileEl.style.top  = `${(entry.y || 0) - h / 2}px`;
     tileEl.style.zIndex = i;
+    
     container.appendChild(tileEl);
   });
-
-  // Drop zones use stored edge positions
+  
+  // Position drop zones next to the leftmost / rightmost tile
   const canLeft  = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
   const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
-
-  if (canLeft && boardData.left_x != null) {
+  
+  const leftEntry  = tiles[0];
+  const rightEntry = tiles[tiles.length - 1];
+  
+  if (canLeft && leftEntry) {
+    const { w, h } = tileDisplayDims(leftEntry);
     Object.assign(dropL.style, {
       display: 'flex',
-      left:   `${Math.max(4, boardData.left_x - 70)}px`,
-      top:    `${boardData.left_y - 25}px`,
-      width:  '60px',
+      left:   `${Math.max(4, (leftEntry.x || 0) - w / 2 - 78)}px`,
+      top:    `${(leftEntry.y || 0) - 25}px`,
+      width:  '70px',
       height: '50px'
     });
   } else {
     dropL.style.display = 'none';
   }
-
-  if (canRight && boardData.right_x != null) {
+  
+  if (canRight && rightEntry) {
+    const { w } = tileDisplayDims(rightEntry);
     Object.assign(dropR.style, {
       display: 'flex',
-      left:   `${Math.min(W - 70, boardData.right_x + 4)}px`,
-      top:    `${boardData.right_y - 25}px`,
-      width:  '60px',
+      left:   `${Math.min(W - 78, (rightEntry.x || 0) + w / 2 + 8)}px`,
+      top:    `${(rightEntry.y || 0) - 25}px`,
+      width:  '70px',
       height: '50px'
     });
   } else {
@@ -737,20 +762,20 @@ async function placeFirstTile(tile) {
   const startX = W / 2;
   const startY = H / 2;
   
-  // First tile is horizontal; store outer EDGES so next tile positions correctly
+  const firstIsDouble = tile[0] === tile[1];
   await db.from('board').update({
     tiles: [{ 
       tile, 
       flipped: false,
       x: startX,
       y: startY,
-      direction: 'horizontal'
+      direction: firstIsDouble ? 'vertical' : 'horizontal'
     }],
     left_end: tile[0],
     right_end: tile[1],
-    left_x: startX - TILE_HEIGHT / 2,
+    left_x: startX,
     left_y: startY,
-    right_x: startX + TILE_HEIGHT / 2,
+    right_x: startX,
     right_y: startY
   }).eq('room_id', myInfo.roomId);
   
@@ -785,15 +810,12 @@ async function confirmPlace(side) {
       return;
     }
   } else {
-    // Going LEFT: right half of tile connects to the chain end
-    // tile[1] is on right → matches end → open end is tile[0] → no flip needed
-    // tile[0] is on right → matches end → need to flip so tile[1] faces left (outward)
-    if (tile[1] === end) {
-      flipped = false;
-      newOpenEnd = tile[0];
-    } else if (tile[0] === end) {
+    if (tile[0] === end) {
       flipped = true;
       newOpenEnd = tile[1];
+    } else if (tile[1] === end) {
+      flipped = false;
+      newOpenEnd = tile[0];
     } else {
       cancelSelection();
       return;
@@ -801,94 +823,69 @@ async function confirmPlace(side) {
   }
   
   // SNAKE POSITION CALCULATION
-  const isDbl = tile[0] === tile[1];
+  // Doubles are always vertical (44w x 88h). Non-doubles are horizontal (88w x 44h)
+  // unless forced to turn at the edge, where they become vertical (44w x 88h).
   const GAP = 4;
   const MARGIN = 80;
+  const isDbl = tile[0] === tile[1];
+
+  // Anchor tile: the end tile we're connecting to
+  const anchorEntry = side === 'left' ? boardData.tiles[0] : boardData.tiles[boardData.tiles.length - 1];
+  const anchorV = tileIsVertical(anchorEntry);
+  const anchorHalfW = (anchorV ? TILE_WIDTH : TILE_HEIGHT) / 2; // half-size along horizontal chain axis
+
+  const fromX = side === 'left' ? boardData.left_x : boardData.right_x;
+  const fromY = side === 'left' ? boardData.left_y : boardData.right_y;
+
   const area = document.getElementById('board-area');
   const W = area.clientWidth || 800;
   const H = area.clientHeight || 400;
 
-  // fromX/fromY = the open EDGE of the last tile on this side
-  const fromX = side === 'left' ? boardData.left_x : boardData.right_x;
-  const fromY = side === 'left' ? boardData.left_y : boardData.right_y;
-
-  // Detect whether the chain is currently running vertically on this side
-  // by checking if left_x/right_x is near a wall edge
-  const isCurrentlyVertical = (side === 'left')
-    ? (fromX <= MARGIN + TILE_HEIGHT / 2 + 2)
-    : (fromX >= W - MARGIN - TILE_HEIGHT / 2 - 2);
-
-  let newX, newY, newDirection;
-  let newEdgeX, newEdgeY;
+  let newX = fromX;
+  let newY = fromY;
+  let newDirection = 'horizontal';
 
   if (isDbl) {
-    // Doubles are always vertical (portrait), placed at the current edge
+    // Double: vertical, 44w x 88h — half-width along chain = 22
     newDirection = 'vertical';
-    if (isCurrentlyVertical) {
-      // Vertical chain: double advances along Y
-      const dy = (fromY > H / 2) ? TILE_WIDTH + GAP : -(TILE_WIDTH + GAP);
-      newX = fromX;
-      newY = fromY + dy;
-      newEdgeX = newX;
-      newEdgeY = newY + (dy > 0 ? TILE_WIDTH / 2 : -TILE_WIDTH / 2);
-    } else {
-      // Horizontal chain: double goes at edge, same Y
-      if (side === 'left') {
-        newX = fromX - TILE_WIDTH / 2 - GAP - TILE_WIDTH / 2;
-        newEdgeX = newX - TILE_WIDTH / 2;
-      } else {
-        newX = fromX + TILE_WIDTH / 2 + GAP + TILE_WIDTH / 2;
-        newEdgeX = newX + TILE_WIDTH / 2;
-      }
-      newY = fromY;
-      newEdgeY = fromY;
-    }
-  } else if (isCurrentlyVertical) {
-    // Continue moving vertically (non-double in vertical stretch)
-    newDirection = 'vertical';
-    const dy = (fromY > H / 2) ? TILE_WIDTH + GAP : -(TILE_WIDTH + GAP);
-    newX = fromX;
-    newY = fromY + dy;
-    newEdgeX = newX;
-    newEdgeY = newY + (dy > 0 ? TILE_WIDTH / 2 : -TILE_WIDTH / 2);
-
-    // Check if we've hit top/bottom wall — turn back horizontal
-    if (newEdgeY < MARGIN || newEdgeY > H - MARGIN) {
-      newDirection = 'horizontal';
-      // Turn: step away from wall, move horizontally inward
-      newY = fromY; // stay at same row, just shift X
-      const inward = (side === 'left') ? TILE_HEIGHT + GAP : -(TILE_HEIGHT + GAP);
-      newX = fromX + inward;
-      newEdgeX = newX + (inward > 0 ? TILE_HEIGHT / 2 : -TILE_HEIGHT / 2);
-      newEdgeY = newY;
-    }
-  } else {
-    // Normal horizontal movement
-    newDirection = 'horizontal';
-    if (side === 'left') {
-      newX = fromX - TILE_HEIGHT / 2 - GAP - TILE_HEIGHT / 2;
-      newEdgeX = newX - TILE_HEIGHT / 2;
-    } else {
-      newX = fromX + TILE_HEIGHT / 2 + GAP + TILE_HEIGHT / 2;
-      newEdgeX = newX + TILE_HEIGHT / 2;
-    }
+    const newHalfW = TILE_WIDTH / 2;
+    newX = side === 'left'
+      ? fromX - anchorHalfW - GAP - newHalfW
+      : fromX + anchorHalfW + GAP + newHalfW;
     newY = fromY;
-    newEdgeY = fromY;
+  } else {
+    // Non-double: try horizontal (88w x 44h), half-width along chain = 44
+    const newHalfW = TILE_HEIGHT / 2;
+    let tryX = side === 'left'
+      ? fromX - anchorHalfW - GAP - newHalfW
+      : fromX + anchorHalfW + GAP + newHalfW;
 
-    // Hit the wall — turn vertical
-    if (newEdgeX < MARGIN || newEdgeX > W - MARGIN) {
+    if (tryX - newHalfW >= MARGIN && tryX + newHalfW <= W - MARGIN) {
+      // Fits horizontally
+      newDirection = 'horizontal';
+      newX = tryX;
+      newY = fromY;
+    } else {
+      // Hit edge — turn up or down as vertical tile (44w x 88h)
       newDirection = 'vertical';
-      // Pin X to the wall margin
-      newX = (side === 'left') ? MARGIN + TILE_WIDTH / 2 : W - MARGIN - TILE_WIDTH / 2;
-      // Move vertically: go up if chain started above center, down if below
-      const goUp = fromY >= H / 2;
-      const dy = goUp ? -(TILE_WIDTH + GAP) : (TILE_WIDTH + GAP);
-      newY = fromY + dy;
-      newEdgeX = newX;
-      newEdgeY = newY + (goUp ? -TILE_WIDTH / 2 : TILE_WIDTH / 2);
+      newX = side === 'left' ? MARGIN + TILE_WIDTH / 2 : W - MARGIN - TILE_WIDTH / 2;
+
+      const existingTiles = boardData.tiles || [];
+      const tilesAbove = existingTiles.filter(t => t.y < fromY - 10).length;
+      const tilesBelow = existingTiles.filter(t => t.y > fromY + 10).length;
+      const anchorHalfH = (anchorV ? TILE_HEIGHT : TILE_WIDTH) / 2;
+      const newHalfH = TILE_HEIGHT / 2;
+
+      if (tilesAbove <= tilesBelow) {
+        newY = fromY - anchorHalfH - GAP - newHalfH;
+      } else {
+        newY = fromY + anchorHalfH + GAP + newHalfH;
+      }
+      // Clamp vertically
+      newY = Math.max(MARGIN + newHalfH, Math.min(H - MARGIN - newHalfH, newY));
     }
   }
-
+  
   // Create the new tile entry with position
   const newEntry = { 
     tile, 
@@ -902,11 +899,11 @@ async function confirmPlace(side) {
   const newLeftEnd = side === 'left' ? newOpenEnd : boardData.left_end;
   const newRightEnd = side === 'right' ? newOpenEnd : boardData.right_end;
   
-  // Store the open EDGE (not center) so next tile starts correctly
-  const newLeftX = side === 'left' ? newEdgeX : boardData.left_x;
-  const newLeftY = side === 'left' ? newEdgeY : boardData.left_y;
-  const newRightX = side === 'right' ? newEdgeX : boardData.right_x;
-  const newRightY = side === 'right' ? newEdgeY : boardData.right_y;
+  // Update the end positions for next placement
+  const newLeftX = side === 'left' ? newX : boardData.left_x;
+  const newLeftY = side === 'left' ? newY : boardData.left_y;
+  const newRightX = side === 'right' ? newX : boardData.right_x;
+  const newRightY = side === 'right' ? newY : boardData.right_y;
   
   const newHand = me.hand.filter((_, i) => i !== idx);
   
