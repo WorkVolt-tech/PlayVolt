@@ -660,8 +660,10 @@ function computeSnakePositions(tiles, W, H) {
 
       if (inCorner) {
         cornerLeft--;
-        const nextInCorner = cornerLeft > 0;
-        const { h: nh } = renderDims(next, nextInCorner);
+        // next tile is still in the corner column regardless of whether
+        // cornerLeft just hit 0 — it only exits after the column is done.
+        // Always use corner dims for the next tile's height when stepping down.
+        const { h: nh } = renderDims(next, true);
         y = y + h / 2 + GAP + nh / 2;
       } else {
         const { w: nw, h: nh } = renderDims(next, false);
