@@ -694,53 +694,14 @@ function computeSnakePositions(tiles, W, H) {
 
   if (tiles.length === 0) return [];
 
+  // Center first tile on screen
+  const firstDims = renderDims(tiles[0], false);
   const cx = W / 2;
   const cy = H / 2;
 
-  // firstIdx is the originally-played tile — always stays centered at cx,cy
-  const firstIdx = (typeof boardData !== 'undefined' && boardData.first_tile_idx != null)
-    ? boardData.first_tile_idx
-    : 0;
-
-  // Walk RIGHT from firstIdx → gives positions for tiles[firstIdx..end]
-  const rightPos = walk(tiles, firstIdx, cx, cy, 1);
-
-  // Walk LEFT from firstIdx → reversed tiles going right, then flip x around cx
-  // Strategy: walk the left segment [0..firstIdx-1] reversed, as if going right
-  // from a mirror of cx, then flip each position back.
-  const leftPos = [];
-  if (firstIdx > 0) {
-    const anchorDims = rightPos[0]; // dims of the centered anchor tile
-    // Mirror starting point: connect to the LEFT edge of the anchor tile
-    // going right in mirror space = going left in real space
-    const mirrorStartX = cx; // we walk leftward using dir=-1 via walk()
-    // Build a fake tiles array: left segment in reverse order so walk() goes outward
-    const leftSegReversed = tiles.slice(0, firstIdx).reverse();
-    // Prepend a dummy anchor entry so walk() steps correctly from it
-    // Actually simpler: just run walk() with dir=-1 from cx directly
-    const leftWalk = walk(
-      // Pass the full tiles but only walk the left segment reversed
-      leftSegReversed,
-      0,
-      cx,
-      cy,
-      -1
-    );
-    // leftWalk[0] would be on top of the anchor — skip it and take [1..]
-    // Actually leftWalk[0] IS the first left tile placed at cx offset left
-    // We need to offset by the anchor half-width first
-    const anchorHalfW = anchorDims.pw / 2;
-    // Recompute: walk left starting from (cx - anchorHalfW - GAP - firstLeftDims.w/2)
-    const firstLeftEntry = leftSegReversed[0];
-    const firstLeftDims = renderDims(firstLeftEntry, false);
-    const leftStartX = cx - (anchorHalfW + GAP + firstLeftDims.w / 2);
-    const leftWalk2 = walk(leftSegReversed, 0, leftStartX, cy, -1);
-    // Reverse back to original order (tile[0] first)
-    leftWalk2.reverse();
-    leftPos.push(...leftWalk2);
-  }
-
-  return [...leftPos, ...rightPos];
+  // Walk right from tile 0
+  const rightPos = walk(tiles, 0, cx, cy, 1);
+  return rightPos;
 }
 
 function renderBoard() {
@@ -908,8 +869,7 @@ async function placeFirstTile(tile) {
   await db.from('board').update({
     tiles: [{ tile, flipped: false }],
     left_end: tile[0],
-    right_end: tile[1],
-    first_tile_idx: 0
+    right_end: tile[1]
   }).eq('room_id', myInfo.roomId);
   
   await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
@@ -960,18 +920,13 @@ async function confirmPlace(side) {
   const newTiles = side === 'left' ? [newEntry, ...boardData.tiles] : [...boardData.tiles, newEntry];
   const newLeftEnd  = side === 'left'  ? newOpenEnd : boardData.left_end;
   const newRightEnd = side === 'right' ? newOpenEnd : boardData.right_end;
-  // Track which index is the first-played tile so it stays centered
-  const newFirstIdx = side === 'left'
-    ? (boardData.first_tile_idx ?? 0) + 1
-    : (boardData.first_tile_idx ?? 0);
 
   const newHand = me.hand.filter((_, i) => i !== idx);
 
   await db.from('board').update({
     tiles: newTiles,
     left_end: newLeftEnd,
-    right_end: newRightEnd,
-    first_tile_idx: newFirstIdx
+    right_end: newRightEnd
   }).eq('room_id', myInfo.roomId);
   
   await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
