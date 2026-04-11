@@ -610,107 +610,98 @@ function tileDims(entry) {
     : { w: TH, h: TW };
 }
 
-// Compute snake positions for all tiles purely from screen size.
-// Returns array of {x, y, dir} where:
-//   dir +1  = going right (horizontal run)
-//   dir -1  = going left  (horizontal run)
-//   dir  0  = going down  (corner column)
+// Compute snake positions for all tiles, centered on tile[0] (first played).
+// Returns array of {x, y, dir, pw, ph} matching boardData.tiles order.
 //
-// Rules:
-//   Non-double in horizontal run  →  88w × 44h  (--)
-//   Double    in horizontal run   →  44w × 88h  (|)
-//   Non-double in corner column   →  44w × 88h  (|)   ← rendered tall
-//   Double    in corner column    →  88w × 44h  (--)  ← rotated flat
+// Orientation rules:
+//   Horizontal run : non-double → -- (88w×44h),  double → | (44w×88h)
+//   Corner column  : non-double → |  (44w×88h),  double → -- (88w×44h)
 //
-// At each edge the chain drops CORNER_STEPS tiles vertically before
-// resuming horizontally the other way.
+// Connection rule (the key to no gaps/overlaps):
+//   Each tile connects edge-to-edge with its neighbour.
+//   When a double (|) is in a horizontal run, the neighbour's connecting
+//   edge meets the double's CENTER (both share the same y).
+//   When a double (--) is in a corner column, the neighbour's connecting
+//   edge meets the double's CENTER (both share the same x).
+//   In all other cases tiles are simply flush edge-to-edge.
 function computeSnakePositions(tiles, W, H) {
   const MARGIN = 56;
   const CORNER_STEPS = 3;
-  const positions = [];
 
-  // Helper: actual rendered dims given entry + whether we're in a corner column
   function renderDims(entry, inCorner) {
     const isDbl = entry.tile[0] === entry.tile[1];
-    if (inCorner) {
-      return isDbl ? { w: TH, h: TW } : { w: TW, h: TH };
-    } else {
-      return isDbl ? { w: TW, h: TH } : { w: TH, h: TW };
-    }
+    return inCorner
+      ? (isDbl ? { w: TH, h: TW } : { w: TW, h: TH })
+      : (isDbl ? { w: TW, h: TH } : { w: TH, h: TW });
   }
 
-  // Check if two axis-aligned boxes overlap (with a small pad for safety)
-  function overlaps(ax, ay, aw, ah, bx, by, bw, bh) {
-    const pad = 1;
-    return Math.abs(ax - bx) < (aw + bw) / 2 - pad &&
-           Math.abs(ay - by) < (ah + bh) / 2 - pad;
-  }
+  // Walk tiles forward from startIdx, placing each one.
+  // startX/startY = center of the tile at startIdx.
+  // initDir: +1 going right, -1 going left.
+  // Returns positions array indexed from 0 = startIdx.
+  function walk(tiles, startIdx, startX, startY, initDir) {
+    const pos = [];
+    let x = startX, y = startY, dir = initDir, cornerLeft = 0;
 
-  // Check candidate position (cx,cy,cw,ch) against all already-placed tiles
-  function hasCollision(cx, cy, cw, ch) {
-    for (const p of positions) {
-      if (overlaps(cx, cy, cw, ch, p.x, p.y, p.pw, p.ph)) return true;
-    }
-    return false;
-  }
+    for (let i = startIdx; i < tiles.length; i++) {
+      const entry = tiles[i];
+      const inCorner = cornerLeft > 0;
+      const { w, h } = renderDims(entry, inCorner);
+      pos.push({ x, y, dir: inCorner ? 0 : dir, pw: w, ph: h });
 
-  // Place a tile: push only after ensuring no overlap — nudge y down if needed
-  function safePush(px, py, pw, ph, pdir) {
-    let tries = 0;
-    while (hasCollision(px, py, pw, ph) && tries < 50) {
-      py += GAP + 1;
-      tries++;
-    }
-    positions.push({ x: px, y: py, dir: pdir, pw, ph });
-    return py; // return final y in case it moved
-  }
-
-  const first = tiles[0];
-  const firstDims = renderDims(first, false);
-  let x = MARGIN + firstDims.w / 2;
-  let y = H / 2;
-  let dir = 1;
-  let cornerLeft = 0;
-
-  for (let i = 0; i < tiles.length; i++) {
-    const entry = tiles[i];
-    const inCorner = cornerLeft > 0;
-    const { w, h } = renderDims(entry, inCorner);
-
-    y = safePush(x, y, w, h, inCorner ? 0 : dir);
-
-    if (i < tiles.length - 1) {
+      if (i === tiles.length - 1) break;
       const next = tiles[i + 1];
 
       if (inCorner) {
         cornerLeft--;
-        const { h: nh } = renderDims(next, true);
-        y = y + h / 2 + GAP + nh / 2;
+        const nextInCorner = cornerLeft > 0;
+        const { h: nh } = renderDims(next, nextInCorner || cornerLeft === 0 ? true : false);
 
-        if (cornerLeft === 0) {
-          const lastCornerIsDbl = entry.tile[0] === entry.tile[1];
-          if (lastCornerIsDbl) {
-            const wallSide = -dir;
-            x = x - wallSide * (TH - TW) / 2;
-          }
+        // When a corner double (--, 88w×44h) exits, the next horizontal tile
+        // must start from the double's inner tip (offset inward by (TH-TW)/2)
+        if (cornerLeft === 0 && entry.tile[0] === entry.tile[1]) {
+          x = x - (-dir) * (TH - TW) / 2;
         }
+        y = y + h / 2 + GAP + nh / 2;
       } else {
+        // Horizontal run — advance x
+        const isDblCurrent = entry.tile[0] === entry.tile[1];
         const { w: nw, h: nh } = renderDims(next, false);
+        const isDblNext = next.tile[0] === next.tile[1];
+
+        // Edge-to-edge: current right-edge + gap + next left-edge
         const nextX = x + dir * (w / 2 + GAP + nw / 2);
 
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
+          // Hit edge — enter corner column
           const firstCornerDims = renderDims(next, true);
-          x = dir > 0 ? W - MARGIN - firstCornerDims.w / 2 : MARGIN + firstCornerDims.w / 2;
+          x = dir > 0
+            ? W - MARGIN - firstCornerDims.w / 2
+            : MARGIN + firstCornerDims.w / 2;
           dir *= -1;
           cornerLeft = CORNER_STEPS - 1;
           y = y + h / 2 + GAP + firstCornerDims.h / 2;
         } else {
           x = nextX;
+          // If next tile is a double (|, 44w×88h) its y is the same row —
+          // y stays unchanged (already aligned by horizontal run).
+          // If current tile is a double, next tile y also stays — centered on double.
         }
       }
     }
+    return pos;
   }
-  return positions;
+
+  if (tiles.length === 0) return [];
+
+  // Center first tile on screen
+  const firstDims = renderDims(tiles[0], false);
+  const cx = W / 2;
+  const cy = H / 2;
+
+  // Walk right from tile 0
+  const rightPos = walk(tiles, 0, cx, cy, 1);
+  return rightPos;
 }
 
 function renderBoard() {
@@ -784,7 +775,7 @@ function renderBoard() {
   if (canLeft && posL) {
     Object.assign(dropL.style, {
       display: 'flex',
-      left:   `${Math.max(4, posL.x - dimsL.w / 2 - 76)}px`,
+      left:   `${Math.max(4, posL.x - posL.pw / 2 - 76)}px`,
       top:    `${posL.y - 22}px`,
       width:  '68px',
       height: '44px'
@@ -796,7 +787,7 @@ function renderBoard() {
   if (canRight && posR) {
     Object.assign(dropR.style, {
       display: 'flex',
-      left:   `${Math.min(W - 76, posR.x + dimsR.w / 2 + 4)}px`,
+      left:   `${Math.min(W - 76, posR.x + posR.pw / 2 + 4)}px`,
       top:    `${posR.y - 22}px`,
       width:  '68px',
       height: '44px'
