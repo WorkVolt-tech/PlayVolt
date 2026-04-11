@@ -653,39 +653,39 @@ function computeSnakePositions(tiles, W, H) {
       const next = tiles[i + 1];
 
       if (inCorner) {
+        // Decrement FIRST so we know if the next tile is still in the corner
         cornerLeft--;
         const nextInCorner = cornerLeft > 0;
-        const { h: nh } = renderDims(next, nextInCorner || cornerLeft === 0 ? true : false);
+        // Use the ACTUAL dims the next tile will render with
+        const { w: nw, h: nh } = renderDims(next, nextInCorner);
 
-        // When a corner double (--, 88w×44h) exits, the next horizontal tile
-        // must start from the double's inner tip (offset inward by (TH-TW)/2)
-        if (cornerLeft === 0 && entry.tile[0] === entry.tile[1]) {
-          x = x - (-dir) * (TH - TW) / 2;
+        // When the LAST corner tile is a double (--), the next horizontal tile
+        // must align to its inner tip: shift x inward by (TH-TW)/2 = 22px
+        if (!nextInCorner && entry.tile[0] === entry.tile[1]) {
+          x = x + dir * (TH - TW) / 2;
         }
+        // Strict edge-to-edge y step using actual rendered heights
         y = y + h / 2 + GAP + nh / 2;
-      } else {
-        // Horizontal run — advance x
-        const isDblCurrent = entry.tile[0] === entry.tile[1];
-        const { w: nw, h: nh } = renderDims(next, false);
-        const isDblNext = next.tile[0] === next.tile[1];
 
-        // Edge-to-edge: current right-edge + gap + next left-edge
+      } else {
+        // Horizontal run
+        const { w: nw, h: nh } = renderDims(next, false);
         const nextX = x + dir * (w / 2 + GAP + nw / 2);
 
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
           // Hit edge — enter corner column
+          // The first corner tile's actual dims
           const firstCornerDims = renderDims(next, true);
+          // Pin x to the wall edge based on first corner tile's width
           x = dir > 0
             ? W - MARGIN - firstCornerDims.w / 2
             : MARGIN + firstCornerDims.w / 2;
           dir *= -1;
           cornerLeft = CORNER_STEPS - 1;
+          // Exact edge-to-edge y step: bottom of current + gap + top of next
           y = y + h / 2 + GAP + firstCornerDims.h / 2;
         } else {
           x = nextX;
-          // If next tile is a double (|, 44w×88h) its y is the same row —
-          // y stays unchanged (already aligned by horizontal run).
-          // If current tile is a double, next tile y also stays — centered on double.
         }
       }
     }
