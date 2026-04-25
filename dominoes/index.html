@@ -312,7 +312,7 @@ async function loadAndRenderPlayers(roomId, panel) {
   if (_loadingPlayers) return;
   _loadingPlayers = true;
   try {
-    const { data: players } = await db.from('players').select('*')
+    const { data: players } = await db.from('domino_players').select('*')
       .eq('room_id', roomId).eq('is_connected', true).order('seat');
     renderPlayers('players-' + panel, players || [], mySeat);
     if (panel === 'create') {
@@ -346,10 +346,10 @@ async function createRoom() {
   btn.disabled = true; btn.textContent = 'Creating…';
   try {
     const code = generateRoomCode();
-    const { data: room, error: rErr } = await db.from('rooms')
+    const { data: room, error: rErr } = await db.from('domino_rooms')
       .insert({ code, status: 'waiting', current_turn: 0 }).select().single();
     if (rErr) throw rErr;
-    const { data: player, error: pErr } = await db.from('players')
+    const { data: player, error: pErr } = await db.from('domino_players')
       .insert({ room_id: room.id, seat: 0, nickname, hand: [], is_connected: true }).select().single();
     if (pErr) throw pErr;
 
@@ -383,16 +383,16 @@ async function joinRoom(codeOverride) {
   const code = (codeOverride || document.getElementById('join-code').value.trim()).toUpperCase();
   if (code.length !== 6) { showMsg('msg-join', 'Enter a 6-character room code.', 'error'); return; }
   try {
-    const { data: room, error: rErr } = await db.from('rooms')
+    const { data: room, error: rErr } = await db.from('domino_rooms')
       .select('*').eq('code', code).eq('status', 'waiting').single();
     if (rErr || !room) { showMsg('msg-join', 'Room not found or game already started.', 'error'); return; }
 
-    const { data: existing } = await db.from('players').select('seat').eq('room_id', room.id);
+    const { data: existing } = await db.from('domino_players').select('seat').eq('room_id', room.id);
     const takenSeats = (existing || []).map(p => p.seat);
     const freeSeat = [0,1,2,3].find(s => !takenSeats.includes(s));
     if (freeSeat === undefined) { showMsg('msg-join', 'Room is full!', 'error'); return; }
 
-    const { data: player, error: pErr } = await db.from('players')
+    const { data: player, error: pErr } = await db.from('domino_players')
       .insert({ room_id: room.id, seat: freeSeat, nickname, hand: [], is_connected: true }).select().single();
     if (pErr) throw pErr;
 
@@ -406,9 +406,9 @@ async function joinRoom(codeOverride) {
 function subscribeToRoom(roomId, panel) {
   if (roomChannel) { db.removeChannel(roomChannel); roomChannel = null; }
   roomChannel = db.channel('room-' + roomId + '-' + Date.now())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players', filter: `room_id=eq.${roomId}` },
       async () => { await loadAndRenderPlayers(roomId, panel); })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
       (payload) => {
         if (payload.new.status === 'playing') {
           sessionStorage.setItem('domino_player', JSON.stringify({
@@ -446,11 +446,11 @@ async function joinQueue() {
 
 async function autoCreateMatchRoom(queuePlayers) {
   const code = generateRoomCode();
-  const { data: room } = await db.from('rooms').insert({ code, status: 'waiting', current_turn: 0 }).select().single();
+  const { data: room } = await db.from('domino_rooms').insert({ code, status: 'waiting', current_turn: 0 }).select().single();
   for (let i = 0; i < 4; i++)
     await db.from('queue').update({ matched_room: room.id, status: 'matched' }).eq('id', queuePlayers[i].id);
   for (let i = 0; i < 4; i++)
-    await db.from('players').insert({ room_id: room.id, seat: i, nickname: queuePlayers[i].nickname, hand: [], is_connected: true });
+    await db.from('domino_players').insert({ room_id: room.id, seat: i, nickname: queuePlayers[i].nickname, hand: [], is_connected: true });
   sessionStorage.setItem('domino_player', JSON.stringify({ seat: 0, nickname: queuePlayers[0].nickname, roomId: room.id, roomCode: room.code }));
   location.href = 'game.html';
 }
@@ -466,18 +466,18 @@ async function leaveQueue() {
 
 async function startGame() {
   if (!myRoomId) return;
-  const { data: players } = await db.from('players').select('*').eq('room_id', myRoomId).order('seat');
+  const { data: players } = await db.from('domino_players').select('*').eq('room_id', myRoomId).order('seat');
   if (!players || players.length < 4) { alert('Need 4 players to start!'); return; }
   const tiles = shuffle(generateDominoSet());
   const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
   for (let i = 0; i < 4; i++)
-    await db.from('players').update({ hand: hands[i] }).eq('room_id', myRoomId).eq('seat', i);
+    await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myRoomId).eq('seat', i);
   const { error: bErr } = await db.from('board').insert({ room_id: myRoomId, tiles: [], left_end: null, right_end: null });
   if (bErr && !bErr.message.includes('unique')) console.warn('Board insert:', bErr.message);
   let startingSeat = 0;
   for (let i = 0; i < 4; i++)
     if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break; }
-  await db.from('rooms').update({ status: 'playing', current_turn: startingSeat }).eq('id', myRoomId);
+  await db.from('domino_rooms').update({ status: 'playing', current_turn: startingSeat }).eq('id', myRoomId);
 }
 </script>
 </body>
