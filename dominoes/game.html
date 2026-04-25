@@ -623,30 +623,36 @@ function computeSnakePositions(tiles, W, H) {
       const prev = positions[i - 1];
 
       if (inCorner) {
-        // Snap this tile's TOP edge to prev tile's RIGHT or LEFT edge + GAP
-        // The corner tile sits at the end of the horizontal run, below it
+        // CONNECTOR SNAP:
+        // Going right: corner top-RIGHT corner = prev tile bottom-RIGHT corner
+        //   tx + w/2 = prev.x + prev.pw/2  →  tx = prev.x + prev.pw/2 - w/2
+        //   ty - h/2 = prev.y + prev.ph/2  →  ty = prev.y + prev.ph/2 + h/2
+        // Going left: corner top-LEFT corner = prev tile bottom-LEFT corner
+        //   tx - w/2 = prev.x - prev.pw/2  →  tx = prev.x - prev.pw/2 + w/2
+        //   ty - h/2 = prev.y + prev.ph/2  →  ty = prev.y + prev.ph/2 + h/2
         if (!goingRight) {
-          // was going right, corner is on the right side
-          // corner LEFT edge = prev RIGHT edge + GAP
-          tx = (prev.x + prev.pw / 2) + GAP + w / 2;
+          // came from right — corner on right side
+          tx = (prev.x + prev.pw / 2) - w / 2;
         } else {
-          // was going left, corner is on the left side
-          // corner RIGHT edge = prev LEFT edge - GAP
-          tx = (prev.x - prev.pw / 2) - GAP - w / 2;
+          // came from left — corner on left side
+          tx = (prev.x - prev.pw / 2) + w / 2;
         }
-        // corner TOP edge = prev BOTTOM edge + GAP
-        ty = (prev.y + prev.ph / 2) + GAP + h / 2;
+        ty = (prev.y + prev.ph / 2) + h / 2;
 
       } else if (prev.inCorner) {
-        // First tile after a corner — wall-side edge aligns with corner's wall-side edge
+        // CONNECTOR SNAP after corner:
+        // Going right: new tile top-LEFT corner = corner tile bottom-LEFT corner
+        //   tx - w/2 = prev.x - prev.pw/2  →  tx = prev.x - prev.pw/2 + w/2
+        //   ty - h/2 = prev.y + prev.ph/2  →  ty = prev.y + prev.ph/2 + h/2
+        // Going left: new tile top-RIGHT corner = corner tile bottom-RIGHT corner
+        //   tx + w/2 = prev.x + prev.pw/2  →  tx = prev.x + prev.pw/2 - w/2
+        //   ty - h/2 = prev.y + prev.ph/2  →  ty = prev.y + prev.ph/2 + h/2
         if (goingRight) {
-          // came from left wall: left edges align
           tx = (prev.x - prev.pw / 2) + w / 2;
         } else {
-          // came from right wall: right edges align
           tx = (prev.x + prev.pw / 2) - w / 2;
         }
-        ty = prev.y;  // same center-line as corner
+        ty = prev.y + prev.ph / 2 + h / 2;
       } else {
         // Normal horizontal run: left/right edge snaps to prev edge + GAP
         if (goingRight) {
