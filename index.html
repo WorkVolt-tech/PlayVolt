@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PlayVolt — Game Hub</title>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -576,6 +575,67 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 #forgotPanel.active { display: block; }
 
+/* ── ADMIN TOGGLE ── */
+.admin-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--ink2);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 8px 16px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s ease;
+}
+.admin-toggle:hover { border-color: var(--volt); color: var(--volt); }
+.admin-toggle.on {
+  background: rgba(212,255,0,0.1);
+  border-color: var(--volt);
+  color: var(--volt);
+  box-shadow: 0 0 16px rgba(212,255,0,0.2);
+}
+.hub-badge.admin {
+  background: rgba(212,255,0,0.15);
+  color: var(--volt);
+  border: 1px solid rgba(212,255,0,0.4);
+}
+/* ── ADMIN MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: panelFade 0.2s ease;
+}
+.modal-overlay.hidden { display: none; }
+.modal-box {
+  background: var(--ink2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 340px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+}
+.modal-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 2px;
+  color: var(--volt);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.modal-sub { font-size: 0.78rem; color: var(--muted); text-align: center; margin-bottom: 20px; }
 /* Responsive */
 @media (max-width: 420px) {
   .card { padding: 24px 18px; border-radius: 18px; }
@@ -600,140 +660,53 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
 
   <!-- ══════════════════════════════
-       AUTH CARD (Login / Register)
-  ══════════════════════════════ -->
-  <div class="card" id="authCard">
-    <div class="tabs">
-      <button class="tab active" id="tabLogin" onclick="switchTab('login')">Log In</button>
-      <button class="tab" id="tabRegister" onclick="switchTab('register')">Register</button>
-    </div>
-
-    <!-- ── LOGIN PANEL ── -->
-    <div class="panel active" id="loginPanel">
-      <div class="msg" id="loginMsg"></div>
-
-      <div class="field-group">
-        <label class="field-label">Email</label>
-        <input type="email" id="loginEmail" placeholder="you@email.com" autocomplete="email">
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Password</label>
-        <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password"
-               onkeydown="if(event.key==='Enter') login()">
-      </div>
-
-      <div class="forgot-link"><a href="#" onclick="showForgot(); return false;">Forgot password?</a></div>
-
-      <button class="btn btn-volt" id="loginBtn" onclick="login()">Log In</button>
-      <button class="btn btn-ghost" onclick="switchTab('register')">Create Account</button>
-    </div>
-
-    <!-- ── REGISTER PANEL ── -->
-    <div class="panel" id="registerPanel">
-      <div class="msg" id="registerMsg"></div>
-
-      <div class="field-row">
-        <div class="field-group">
-          <label class="field-label">First Name</label>
-          <input type="text" id="regFirstName" placeholder="Jane" maxlength="30" autocomplete="given-name">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Last Name</label>
-          <input type="text" id="regLastName" placeholder="Doe" maxlength="30" autocomplete="family-name">
-        </div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Username</label>
-        <input type="text" id="regUsername" placeholder="coolplayer99" maxlength="20"
-               oninput="sanitizeUsername(this)" autocomplete="username">
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Email</label>
-        <input type="email" id="regEmail" placeholder="you@email.com" autocomplete="email">
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Password</label>
-        <input type="password" id="regPassword" placeholder="Min 8 characters"
-               oninput="checkPasswordStrength(this.value)" autocomplete="new-password">
-        <div class="pw-strength-bar"><div class="pw-strength-fill" id="pwStrengthFill"></div></div>
-      </div>
-
-      <div class="field-group">
-        <label class="field-label">Date of Birth</label>
-        <input type="date" id="regDob" onchange="onDobChange(this.value)">
-        <div class="age-badge" id="ageBadge"></div>
-      </div>
-
-      <div class="access-info" id="accessInfo"></div>
-
-      <div class="check-row">
-        <input type="checkbox" id="agreeTerms">
-        <label for="agreeTerms">
-          I agree to the <a href="#" onclick="return false;">Terms of Service</a> and
-          <a href="#" onclick="return false;">Privacy Policy</a>.
-          I confirm the date of birth I entered is accurate.
-        </label>
-      </div>
-
-      <button class="btn btn-volt" id="registerBtn" onclick="register()">Create Account</button>
-      <button class="btn btn-ghost" onclick="switchTab('login')">Already have an account</button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════
-       FORGOT PASSWORD
-  ══════════════════════════════ -->
-  <div id="forgotPanel">
-    <div class="card">
-      <div style="text-align:center;margin-bottom:20px;">
-        <div style="font-size:2rem;margin-bottom:8px;">🔑</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:2px;color:var(--volt);">Reset Password</div>
-        <div style="font-size:0.82rem;color:var(--muted);margin-top:4px;">Enter your email and we'll send a reset link</div>
-      </div>
-      <div class="msg" id="forgotMsg"></div>
-      <div class="field-group">
-        <label class="field-label">Email</label>
-        <input type="email" id="forgotEmail" placeholder="you@email.com">
-      </div>
-      <button class="btn btn-volt" id="forgotBtn" onclick="sendReset()">Send Reset Link</button>
-      <button class="btn btn-ghost" onclick="hideForgot()">← Back to Login</button>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════
-       GAME HUB (after login)
+       GAME HUB (direct access)
   ══════════════════════════════ -->
   <div id="hubView">
     <div class="hub-header">
       <div class="hub-greeting" id="hubGreeting">Welcome!</div>
-      <div class="hub-sub" id="hubSub">Choose a game to play</div>
+      <div class="hub-sub" id="hubSub">Pick a game and jump in.</div>
       <div class="hub-badge" id="hubBadge"></div>
     </div>
 
     <div class="tier-row">
       <span class="tier-label">🎮 Access Tier</span>
-      <span class="tier-value" id="hubTier">Loading...</span>
+      <span class="tier-value" id="hubTier">Family Access</span>
     </div>
 
     <div class="games-grid" id="gamesGrid">
-      <!-- Populated by JS based on user's age tier -->
+      <!-- Populated by JS -->
     </div>
 
     <div class="hub-actions">
-      <button class="btn btn-ghost" onclick="logout()" style="margin-bottom:0;">Log Out</button>
       <button class="btn btn-volt" onclick="showToast('🛒 Store coming soon!')" style="margin-bottom:0;">🛒 Store</button>
     </div>
   </div>
 
-  <div class="footer" id="footerEl">
+  <div class="footer">
     &copy; 2025 PlayVolt &nbsp;·&nbsp; <a href="#">Privacy</a> &nbsp;·&nbsp; <a href="#">Terms</a>
   </div>
 
 </div><!-- /shell -->
+
+<!-- ADMIN MODAL -->
+<div class="modal-overlay hidden" id="adminModal" onclick="if(event.target===this) closeAdminModal()">
+  <div class="modal-box">
+    <div class="modal-title">⚡ Admin Access</div>
+    <div class="modal-sub">Enter the admin password to unlock adult games.</div>
+    <div class="msg" id="adminMsg"></div>
+    <div class="field-group">
+      <label class="field-label">Password</label>
+      <input type="password" id="adminPassword" placeholder="Admin password"
+             onkeydown="if(event.key==='Enter') submitAdminPassword()">
+    </div>
+    <button class="btn btn-volt" onclick="submitAdminPassword()" style="margin-bottom:10px;">Unlock</button>
+    <button class="btn btn-ghost" onclick="closeAdminModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- ADMIN TOGGLE BUTTON (fixed bottom-right) -->
+<button class="admin-toggle" id="adminToggleBtn" onclick="handleAdminToggle()">🔒 Admin</button>
 
 <!-- TOAST -->
 <div id="toast" style="
@@ -749,20 +722,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <script>
 /* ═══════════════════════════════════════════
-   PLAYVOLT — AUTH + ROUTING
-   ───────────────────────────────────────────
-   Supabase tables required (see auth.js for
-   full schema / SQL):
-     • profiles       — user profiles, dob, age_tier, username
-     • user_access    — what each user can access/buy
-   ═══════════════════════════════════════════ */
+   PLAYVOLT — DIRECT ACCESS (no auth)
+   Admin mode unlocks adult games via password.
+═══════════════════════════════════════════ */
 
-// ── CONFIGURE THESE ──
-const SUPABASE_URL = 'https://porpqvphytecuidomcgy.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcnBxdnBoeXRlY3VpZG9tY2d5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMzQwODUsImV4cCI6MjA4OTgxMDA4NX0.IFECuGpxl4HcMfFx7oqmbsVdeOLMK_4wvEi2L-NGNzI';
+// ── CHANGE THIS to your desired admin password ──
+const ADMIN_PASSWORD = 'playvolt2025';
 
 // ── GAME ROUTES ──
-// Point these at your actual game directories / URLs
 const GAME_ROUTES = {
   wtw_adult: '../PlayVolt/whos-the-worst-adult/index.html',
   wtw_kids:  '../PlayVolt/whos-the-worst/index.html',
@@ -770,7 +737,6 @@ const GAME_ROUTES = {
 };
 
 // ── GAME CATALOGUE ──
-// access: 'all' = everyone; 'adult' = 18+ only; 'kids' = under-18 only
 const GAMES = [
   {
     id:      'wtw_adult',
@@ -816,12 +782,70 @@ const GAMES = [
   },
 ];
 
-/* ── INIT SUPABASE ── */
-let sb;
-try {
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} catch(e) {
-  console.error('Supabase init failed — check your URL/Key', e);
+/* ═══════════════════════════════════════
+   ADMIN STATE
+   Stored in sessionStorage so it resets
+   when the browser tab is closed.
+═══════════════════════════════════════ */
+function isAdminMode() {
+  return sessionStorage.getItem('playvolt_admin') === '1';
+}
+
+function setAdminMode(on) {
+  if (on) sessionStorage.setItem('playvolt_admin', '1');
+  else     sessionStorage.removeItem('playvolt_admin');
+}
+
+/* ═══════════════════════════════════════
+   ADMIN TOGGLE BUTTON
+═══════════════════════════════════════ */
+function handleAdminToggle() {
+  if (isAdminMode()) {
+    // Already on — clicking again turns it off
+    setAdminMode(false);
+    refreshHub();
+    showToast('🔒 Admin mode off — family access restored.');
+    updateAdminBtn();
+  } else {
+    // Not on — show password modal
+    document.getElementById('adminModal').classList.remove('hidden');
+    document.getElementById('adminPassword').value = '';
+    clearMsg('adminMsg');
+    setTimeout(() => document.getElementById('adminPassword').focus(), 100);
+  }
+}
+
+function updateAdminBtn() {
+  const btn = document.getElementById('adminToggleBtn');
+  if (isAdminMode()) {
+    btn.textContent = '⚡ Admin ON';
+    btn.classList.add('on');
+  } else {
+    btn.textContent = '🔒 Admin';
+    btn.classList.remove('on');
+  }
+}
+
+/* ═══════════════════════════════════════
+   ADMIN MODAL
+═══════════════════════════════════════ */
+function submitAdminPassword() {
+  const pw = document.getElementById('adminPassword').value;
+  if (pw === ADMIN_PASSWORD) {
+    setAdminMode(true);
+    closeAdminModal();
+    refreshHub();
+    showToast('⚡ Admin mode on — all games unlocked!');
+    updateAdminBtn();
+  } else {
+    setMsg('adminMsg', 'Incorrect password. Try again.');
+    document.getElementById('adminPassword').select();
+  }
+}
+
+function closeAdminModal() {
+  document.getElementById('adminModal').classList.add('hidden');
+  clearMsg('adminMsg');
 }
 
 /* ═══════════════════════════════════════
@@ -836,312 +860,42 @@ function showToast(msg, duration = 3200) {
 
 function setMsg(id, text, type = 'error') {
   const el = document.getElementById(id);
+  if (!el) return;
   el.textContent = text;
   el.className = `msg ${type} show`;
 }
 function clearMsg(id) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.className = 'msg';
   el.textContent = '';
 }
 
-function setLoading(btnId, loading, label = '') {
-  const btn = document.getElementById(btnId);
-  if (loading) {
-    btn.disabled = true;
-    btn.innerHTML = label + '<span class="spinner"></span>';
-  } else {
-    btn.disabled = false;
-    btn.innerHTML = label || btn.innerHTML;
-  }
-}
-
 /* ═══════════════════════════════════════
-   TABS
+   HUB — BUILD + REFRESH
 ═══════════════════════════════════════ */
-function switchTab(tab) {
-  document.getElementById('loginPanel').classList.toggle('active', tab === 'login');
-  document.getElementById('registerPanel').classList.toggle('active', tab === 'register');
-  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
-  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
-  clearMsg('loginMsg'); clearMsg('registerMsg');
-}
+function refreshHub() {
+  const admin = isAdminMode();
 
-/* ═══════════════════════════════════════
-   FORGOT PASSWORD
-═══════════════════════════════════════ */
-function showForgot() {
-  document.getElementById('authCard').style.display = 'none';
-  document.getElementById('footerEl').style.display = 'none';
-  document.getElementById('forgotPanel').classList.add('active');
-}
-function hideForgot() {
-  document.getElementById('authCard').style.display = 'block';
-  document.getElementById('footerEl').style.display = 'block';
-  document.getElementById('forgotPanel').classList.remove('active');
-  clearMsg('forgotMsg');
-}
-
-async function sendReset() {
-  const email = document.getElementById('forgotEmail').value.trim();
-  if (!email) { setMsg('forgotMsg', 'Enter your email address.'); return; }
-  setLoading('forgotBtn', true, 'Sending...');
-  try {
-    const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname
-    });
-    if (error) throw error;
-    setMsg('forgotMsg', '✅ Reset link sent! Check your inbox.', 'success');
-  } catch(e) {
-    setMsg('forgotMsg', e.message || 'Something went wrong.');
-  } finally {
-    document.getElementById('forgotBtn').disabled = false;
-    document.getElementById('forgotBtn').innerHTML = 'Send Reset Link';
-  }
-}
-
-/* ═══════════════════════════════════════
-   REGISTER HELPERS
-═══════════════════════════════════════ */
-function sanitizeUsername(input) {
-  input.value = input.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-}
-
-function checkPasswordStrength(pw) {
-  const fill = document.getElementById('pwStrengthFill');
-  let score = 0;
-  if (pw.length >= 8)  score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/[0-9]/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  const colours = ['#ff4d6d','#ff9f43','#feca57','#39d98a'];
-  const widths   = ['25%','50%','75%','100%'];
-  fill.style.width      = pw.length === 0 ? '0%' : widths[score - 1] || '15%';
-  fill.style.background = pw.length === 0 ? '' : colours[score - 1] || '#ff4d6d';
-}
-
-function calcAge(dobStr) {
-  if (!dobStr) return null;
-  const today = new Date();
-  const dob   = new Date(dobStr);
-  let age = today.getFullYear() - dob.getFullYear();
-  const m = today.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-  return age;
-}
-
-function onDobChange(dobStr) {
-  const age    = calcAge(dobStr);
-  const badge  = document.getElementById('ageBadge');
-  const info   = document.getElementById('accessInfo');
-
-  if (age === null || age < 4) {
-    badge.className = 'age-badge'; // hide
-    info.className  = 'access-info';
-    return;
-  }
-
-  if (age < 0 || age > 120) {
-    badge.className   = 'age-badge'; // hide
-    info.className    = 'access-info';
-    return;
-  }
-
-  const isAdult = age >= 18;
-  badge.textContent = isAdult
-    ? `✅ Age ${age} — Adult Access`
-    : `🟡 Age ${age} — Family Access`;
-  badge.className = `age-badge show ${isAdult ? 'adult' : 'minor'}`;
-
-  if (isAdult) {
-    info.className   = 'access-info adult-info show';
-    info.innerHTML   = `<strong>🔥 Adult tier unlocked.</strong> You'll have access to the full versions of adult games like <em>Who's The Worst?</em> plus all family-friendly titles.`;
-  } else {
-    info.className   = 'access-info minor-info show';
-    info.innerHTML   = `<strong>🌟 Family tier.</strong> You'll have access to all age-appropriate games. Adult content is automatically filtered out — no exceptions.`;
-  }
-}
-
-/* ═══════════════════════════════════════
-   REGISTER
-═══════════════════════════════════════ */
-async function register() {
-  clearMsg('registerMsg');
-  const firstName = document.getElementById('regFirstName').value.trim();
-  const lastName  = document.getElementById('regLastName').value.trim();
-  const username  = document.getElementById('regUsername').value.trim().toLowerCase();
-  const email     = document.getElementById('regEmail').value.trim();
-  const password  = document.getElementById('regPassword').value;
-  const dob       = document.getElementById('regDob').value;
-  const agreed    = document.getElementById('agreeTerms').checked;
-
-  // Validation
-  if (!firstName || !lastName) return setMsg('registerMsg', 'Please enter your first and last name.');
-  if (username.length < 3)     return setMsg('registerMsg', 'Username must be at least 3 characters.');
-  if (!/^[a-z0-9_]+$/.test(username)) return setMsg('registerMsg', 'Username can only contain letters, numbers and underscores.');
-  if (!email)                  return setMsg('registerMsg', 'Please enter a valid email address.');
-  if (password.length < 8)    return setMsg('registerMsg', 'Password must be at least 8 characters.');
-  if (!dob)                    return setMsg('registerMsg', 'Please enter your date of birth.');
-  if (!agreed)                 return setMsg('registerMsg', 'Please agree to the Terms of Service to continue.');
-
-  const age = calcAge(dob);
-  if (age === null || age < 4) return setMsg('registerMsg', 'Please enter a valid date of birth.');
-  if (age > 120)               return setMsg('registerMsg', 'Please enter a valid date of birth.');
-
-  const ageTier = age >= 18 ? 'adult' : 'minor';
-
-  setLoading('registerBtn', true, 'Creating account...');
-
-  try {
-    // 1. Check username uniqueness
-    const { data: existing } = await sb
-      .from('profiles')
-      .select('id')
-      .eq('username', username)
-      .maybeSingle();
-    if (existing) {
-      setMsg('registerMsg', 'That username is already taken. Try another.');
-      return;
-    }
-
-    // 2. Create auth user
-    const { data: authData, error: authErr } = await sb.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { username, first_name: firstName, last_name: lastName }
-      }
-    });
-    if (authErr) throw authErr;
-    const userId = authData.user?.id;
-    if (!userId) throw new Error('Account creation failed. Please try again.');
-
-    // 3. Insert profile (age_tier set server-side from DOB — never trusting client input)
-    const { error: profileErr } = await sb.from('profiles').insert({
-      id:         userId,
-      username,
-      first_name: firstName,
-      last_name:  lastName,
-      dob,
-      age_tier:   ageTier,      // stored server-side, not editable by client
-      created_at: new Date().toISOString(),
-    });
-    if (profileErr) throw profileErr;
-
-    // 4. Insert default access record
-    await sb.from('user_access').insert({
-      user_id:    userId,
-      tier:       ageTier,
-      purchases:  [],
-      created_at: new Date().toISOString(),
-    });
-
-    setMsg('registerMsg',
-      '🎉 Account created! Check your email to verify, then log in.',
-      'success'
-    );
-    setTimeout(() => switchTab('login'), 2200);
-
-  } catch(e) {
-    console.error('Register error:', e);
-    setMsg('registerMsg', e.message || 'Registration failed. Please try again.');
-  } finally {
-    document.getElementById('registerBtn').disabled = false;
-    document.getElementById('registerBtn').innerHTML = 'Create Account';
-  }
-}
-
-/* ═══════════════════════════════════════
-   LOGIN
-═══════════════════════════════════════ */
-async function login() {
-  clearMsg('loginMsg');
-  const email    = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-
-  if (!email)    return setMsg('loginMsg', 'Please enter your email address.');
-  if (!password) return setMsg('loginMsg', 'Please enter your password.');
-
-  setLoading('loginBtn', true, 'Logging in...');
-
-  try {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    await loadUserAndShowHub(data.user);
-  } catch(e) {
-    console.error('Login error:', e);
-    const friendly = e.message?.includes('Invalid login') || e.message?.includes('credentials')
-      ? 'Incorrect email or password.'
-      : e.message || 'Login failed.';
-    setMsg('loginMsg', friendly);
-  } finally {
-    document.getElementById('loginBtn').disabled = false;
-    document.getElementById('loginBtn').innerHTML = 'Log In';
-  }
-}
-
-/* ═══════════════════════════════════════
-   LOGOUT
-═══════════════════════════════════════ */
-async function logout() {
-  await sb.auth.signOut();
-  document.getElementById('hubView').classList.remove('active');
-  document.getElementById('authCard').style.display = 'block';
-  document.getElementById('footerEl').style.display = 'block';
-  document.getElementById('loginEmail').value = '';
-  document.getElementById('loginPassword').value = '';
-  switchTab('login');
-  showToast('Logged out. See you next time! 👋');
-}
-
-/* ═══════════════════════════════════════
-   LOAD USER → SHOW HUB
-═══════════════════════════════════════ */
-async function loadUserAndShowHub(user) {
-  // Fetch profile
-  let { data: profile } = await sb
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  // Fallback if profile doesn't exist yet (e.g. email verification flow)
-  if (!profile) {
-    profile = {
-      username:   user.user_metadata?.username || user.email?.split('@')[0] || 'Player',
-      first_name: user.user_metadata?.first_name || '',
-      age_tier:   'minor', // default safe
-    };
-  }
-
-  const isAdult = profile.age_tier === 'adult';
-
-  // Hide auth UI
-  document.getElementById('authCard').style.display = 'none';
-  document.getElementById('forgotPanel').classList.remove('active');
-  document.getElementById('footerEl').style.display = 'none';
-
-  // Populate hub
-  const name = profile.first_name || profile.username;
-  document.getElementById('hubGreeting').textContent = `Hey, ${name}!`;
-  document.getElementById('hubSub').textContent = 'Pick a game and jump in.';
-
+  // Update badge
   const badge = document.getElementById('hubBadge');
-  badge.textContent = isAdult ? '🔥 Adult Tier' : '🌟 Family Tier';
-  badge.className   = `hub-badge ${isAdult ? 'adult' : 'minor'}`;
+  if (admin) {
+    badge.textContent = '⚡ Admin Mode';
+    badge.className   = 'hub-badge admin';
+  } else {
+    badge.textContent = '🌟 Family Tier';
+    badge.className   = 'hub-badge minor';
+  }
 
-  document.getElementById('hubTier').textContent = isAdult
+  document.getElementById('hubTier').textContent = admin
     ? 'Adult + Family Access'
     : 'Family Access Only';
 
-  // Build games grid
-  buildGamesGrid(isAdult);
-
-  document.getElementById('hubView').classList.add('active');
+  buildGamesGrid(admin);
 }
 
 /* ═══════════════════════════════════════
-   BUILD GAMES GRID (age-gated)
+   BUILD GAMES GRID
 ═══════════════════════════════════════ */
 function buildGamesGrid(isAdult) {
   const grid = document.getElementById('gamesGrid');
@@ -1150,33 +904,18 @@ function buildGamesGrid(isAdult) {
   GAMES.forEach(game => {
     const card = document.createElement('div');
 
-    // Determine if user can access this game
-    const canAccess = (
-      game.access === 'all' ||
-      (game.access === 'adult' && isAdult) ||
-      (game.access === 'kids'  && !isAdult) ||
-      (game.access === 'kids'  && isAdult) // adults can play kids games too
-    );
-
-    // Locked = adult game + minor user
     const locked = game.access === 'adult' && !isAdult;
-
     card.className = `game-card ${locked || game.comingSoon ? 'locked' : ''}`;
 
-    // Age chip label
     let chipHTML = '';
     if (game.comingSoon) {
       chipHTML = `<div class="lock-chip">SOON</div>`;
     } else if (game.access === 'adult') {
-      chipHTML = `<div class="age-chip adults-only">18+</div>`;
-    } else if (game.access === 'kids') {
+      chipHTML = locked
+        ? `<div class="lock-chip">🔒 18+</div>`
+        : `<div class="age-chip adults-only">18+</div>`;
+    } else {
       chipHTML = `<div class="age-chip all-ages">ALL AGES</div>`;
-    } else if (game.access === 'all') {
-      chipHTML = `<div class="age-chip all-ages">ALL AGES</div>`;
-    }
-
-    if (locked) {
-      chipHTML = `<div class="lock-chip">🔒 18+</div>`;
     }
 
     card.innerHTML = `
@@ -1189,7 +928,7 @@ function buildGamesGrid(isAdult) {
     if (!locked && !game.comingSoon && game.route) {
       card.onclick = () => launchGame(game);
     } else if (locked) {
-      card.onclick = () => showToast('🔒 This game is for players 18 and over.');
+      card.onclick = () => showToast('🔒 Enable Admin mode to access adult games.');
     } else if (game.comingSoon) {
       card.onclick = () => showToast(`🚧 ${game.name} is coming soon — stay tuned!`);
     }
@@ -1200,71 +939,26 @@ function buildGamesGrid(isAdult) {
 
 /* ═══════════════════════════════════════
    LAUNCH GAME
-   Passes auth token via sessionStorage so
-   the game can verify the user is logged in
 ═══════════════════════════════════════ */
-async function launchGame(game) {
+function launchGame(game) {
   showToast(`🚀 Loading ${game.name}…`);
-
-  // Store session info so the game page can pick it up
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    sessionStorage.setItem('playvolt_session', JSON.stringify({
-      access_token:  session.access_token,
-      user_id:       session.user.id,
-      game_id:       game.id,
-      launched_at:   Date.now()
-    }));
-  }
-
+  // Pass admin flag to game pages via sessionStorage
+  sessionStorage.setItem('playvolt_session', JSON.stringify({
+    admin:       isAdminMode(),
+    game_id:     game.id,
+    launched_at: Date.now()
+  }));
   setTimeout(() => {
-    if (game.route) {
-      window.location.href = game.route;
-    } else {
-      showToast('Game URL not configured yet.');
-    }
+    if (game.route) window.location.href = game.route;
+    else showToast('Game URL not configured yet.');
   }, 600);
 }
 
-/* ═══════════════════════════════════════
-   SESSION PERSISTENCE — auto-login
-   on page load if user already has a
-   valid Supabase session cookie
-═══════════════════════════════════════ */
-async function checkExistingSession() {
-  if (!sb) return;
-  try {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) {
-      await loadUserAndShowHub(session.user);
-    }
-  } catch(e) {
-    console.log('No existing session');
-  }
-}
-
-// Handle password reset redirect (Supabase sends user back with tokens)
-async function handleAuthCallback() {
-  const hash = window.location.hash;
-  if (hash.includes('type=recovery')) {
-    // Show password reset form — simplified: just prompt in login tab
-    showToast('🔑 Enter a new password in the form below.');
-    switchTab('login');
-  }
-}
-
 /* ── BOOT ── */
-window.addEventListener('DOMContentLoaded', async () => {
-  await handleAuthCallback();
-  await checkExistingSession();
-
-  // Set max DOB to today (can't be born in the future)
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('regDob').setAttribute('max', today);
-  // Min DOB: 120 years ago
-  const minYear = new Date();
-  minYear.setFullYear(minYear.getFullYear() - 120);
-  document.getElementById('regDob').setAttribute('min', minYear.toISOString().split('T')[0]);
+window.addEventListener('DOMContentLoaded', () => {
+  refreshHub();
+  updateAdminBtn();
+  document.getElementById('hubGreeting').textContent = 'Welcome!';
 });
 </script>
 </body>
