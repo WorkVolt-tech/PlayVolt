@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>PlayVolt — Game Hub</title>
+<title>Jay's PlayVolt</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -447,11 +447,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ── GAME HUB (shown after login) ── */
 #hubView {
-  display: none;
+  display: block;
   width: 100%;
   max-width: 520px;
+  animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
 }
-#hubView.active { display: block; animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
 
 .hub-header {
   text-align: center;
@@ -664,7 +664,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   <div class="logo-wrap">
     <div class="logo-mark">
       <span class="logo-bolt">⚡</span>
-      <span class="logo-text">PlayVolt</span>
+      <span class="logo-text">Jay's PlayVolt</span>
     </div>
     <div class="logo-tag">Your Game Hub</div>
   </div>
@@ -694,7 +694,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
 
   <div class="footer">
-    &copy; 2025 PlayVolt &nbsp;·&nbsp; <a href="#">Privacy</a> &nbsp;·&nbsp; <a href="#">Terms</a>
+    &copy; 2025 Jay's PlayVolt &nbsp;·&nbsp; <a href="#">Privacy</a> &nbsp;·&nbsp; <a href="#">Terms</a>
   </div>
 
 </div><!-- /shell -->
