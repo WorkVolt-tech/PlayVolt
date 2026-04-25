@@ -592,77 +592,69 @@ function renderHand() {
   passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
 }
 
-// ── TILE DIMENSIONS ──────────────────────────────────────────────
-const TW = 34;   // narrow side
-const TH = 68;   // long side
-const GAP = 2;
+// ── TILE DIMENSIONS ─────────────────────────────────────────────
+const TW = 34;   // narrow side of a tile
+const TH = 68;   // long side of a tile
+const GAP = 2;   // gap between tiles
 
-// In a horizontal run:  normal=landscape(TH×TW), double=portrait(TW×TH)
-// In a corner column:   normal=portrait(TW×TH),  double=landscape(TH×TW)
-function getDims(isDbl, inCorner) {
-  if (inCorner) return isDbl ? { w: TH, h: TW } : { w: TW, h: TH };
-  return isDbl ? { w: TW, h: TH } : { w: TH, h: TW };
-}
-
-// ── SNAKE LAYOUT ──────────────────────────────────────────────────
-// • Tile 0 locked to center, never moves
-// • Chain grows RIGHT, wraps at edges going DOWN then LEFT, DOWN then RIGHT…
-// • One tile per corner turn — exactly like a real domino table
-// • All tiles flush edge-to-edge
+// ── SNAKE LAYOUT ─────────────────────────────────────────────────
+// Rules matching a real domino table:
+//  • Tile 0 locked to exact center, never moves
+//  • Chain grows RIGHT first, wraps at edges turning DOWN one tile
+//  • Corner tile = one tile going vertically at the turn point
+//  • All tiles connect flush edge-to-edge (zero gap at connections)
+//  • Doubles in horizontal run: portrait (TW wide, TH tall)
+//  • Doubles at corner turn:    landscape (TH wide, TW tall)
 function computeSnakePositions(tiles, W, H) {
   if (tiles.length === 0) return [];
-
   const MARGIN = 36;
   const positions = [];
 
-  // Tile 0 always at exact center
-  const cx = W / 2;
-  const cy = H / 2;
-
-  let x = cx, y = cy;
-  let dir = 1;          // +1=right, -1=left
-  let inCorner = false; // true for exactly ONE tile per turn
+  let x = W / 2, y = H / 2;  // tile 0 locked to center
+  let goingRight = true;       // current horizontal direction
+  let inCorner = false;        // is current tile a corner turn tile?
 
   for (let i = 0; i < tiles.length; i++) {
     const isDbl = tiles[i].tile[0] === tiles[i].tile[1];
-    const { w, h } = getDims(isDbl, inCorner);
 
-    positions.push({ x, y, pw: w, ph: h, inCorner, dir: inCorner ? 0 : dir });
+    // Dimensions depend on whether this tile is a corner or horizontal run
+    const w = inCorner ? (isDbl ? TH : TW) : (isDbl ? TW : TH);
+    const h = inCorner ? (isDbl ? TW : TH) : (isDbl ? TH : TW);
+    const dir = inCorner ? 0 : (goingRight ? 1 : -1);
+
+    positions.push({ x, y, pw: w, ph: h, inCorner, dir });
 
     if (i === tiles.length - 1) break;
 
     const nextIsDbl = tiles[i + 1].tile[0] === tiles[i + 1].tile[1];
 
     if (inCorner) {
-      // Corner tile just placed — resume horizontal run on new row
-      const nextDims = getDims(nextIsDbl, false);
-      y = y + h / 2 + GAP + nextDims.h / 2;
-      // Align new run tile's wall-side edge flush with corner tile's wall-side edge:
-      // going left (came from right wall): right edges align → x = corner.x + corner.w/2 - next.w/2
-      // going right (came from left wall): left edges align  → x = corner.x - corner.w/2 + next.w/2
-      if (dir < 0) {
-        x = x + w / 2 - nextDims.w / 2;
-      } else {
-        x = x - w / 2 + nextDims.w / 2;
-      }
+      // Resume horizontal run in new direction below this corner tile
+      const nw = nextIsDbl ? TW : TH;
+      const nh = nextIsDbl ? TH : TW;
+      y = y + h / 2 + GAP + nh / 2;
+      // Align new row's wall-side edge flush with corner tile's wall-side edge
+      x = goingRight
+        ? (x - w / 2) + nw / 2   // left edges align (came from left wall)
+        : (x + w / 2) - nw / 2;  // right edges align (came from right wall)
       inCorner = false;
+
     } else {
-      // Horizontal run — try to place next tile horizontally
-      const nextDims = getDims(nextIsDbl, false);
-      const nextX = x + dir * (w / 2 + GAP + nextDims.w / 2);
+      // Horizontal run — check if next tile fits
+      const nw = nextIsDbl ? TW : TH;
+      const nh = nextIsDbl ? TH : TW;
+      const nextX = x + (goingRight ? 1 : -1) * (w / 2 + GAP + nw / 2);
+      const overflows = goingRight
+        ? (nextX + nw / 2) > (W - MARGIN)
+        : (nextX - nw / 2) < MARGIN;
 
-      // Check overflow based on where CORNER tile would land flush with current tile
-      const cornerDims = getDims(nextIsDbl, true);
-      const flushCornerX = x + dir * (w / 2 + cornerDims.w / 2);
-      const wouldOverflow = dir > 0
-        ? (flushCornerX + cornerDims.w / 2) > (W - MARGIN)
-        : (flushCornerX - cornerDims.w / 2) < MARGIN;
-
-      if (wouldOverflow) {
-        // Place corner flush against current run tile — no wall snap needed
-        x = flushCornerX;
-        y = y + h / 2 + GAP + cornerDims.h / 2;
-        dir *= -1;
+      if (overflows) {
+        // Next tile is a corner — place it flush against current tile's end
+        const cw = nextIsDbl ? TH : TW;
+        const ch = nextIsDbl ? TW : TH;
+        x = x + (goingRight ? 1 : -1) * (w / 2 + cw / 2);
+        y = y + h / 2 + GAP + ch / 2;
+        goingRight = !goingRight;
         inCorner = true;
       } else {
         x = nextX;
