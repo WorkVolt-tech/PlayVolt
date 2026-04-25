@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Dominoes — PlayVolt</title>
+<title>Dekabess! — PlayVolt</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -152,21 +152,12 @@ hr { border: none; border-top: 1px solid var(--border); }
 
 <div class="wrapper">
   <div class="title-block">
-    <div class="domino-logo">
-      <div class="tile">
-        <div class="pip-row"><div class="pip"></div></div>
-        <div class="pip-row"></div>
-      </div>
-      <div class="tile">
-        <div class="pip-row"><div class="pip"></div><div class="pip"></div></div>
-        <div class="pip-row"><div class="pip"></div><div class="pip"></div></div>
-      </div>
-      <div class="tile">
-        <div class="pip-row"><div class="pip"></div><div class="pip"></div><div class="pip"></div></div>
-        <div class="pip-row"><div class="pip"></div><div class="pip"></div><div class="pip"></div></div>
-      </div>
-    </div>
-    <h1>Domi<span>nos</span></h1>
+    <img src="dekabess_logo.webp" alt="Dekabess!" style="
+      width: 220px;
+      filter: drop-shadow(0 0 20px rgba(201,168,76,0.4));
+      animation: float 3s ease-in-out infinite;
+      margin-bottom: 0.5rem;
+    ">
     <p class="subtitle">Block · 4 Players · Online</p>
   </div>
 
@@ -472,7 +463,9 @@ async function startGame() {
   const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
   for (let i = 0; i < 4; i++)
     await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myRoomId).eq('seat', i);
+  // Clear any leftover events from a previous round before starting fresh
   await db.from('game_events').delete().eq('room_id', myRoomId);
+  // Reset board for a new round
   await db.from('board').delete().eq('room_id', myRoomId);
   const { error: bErr } = await db.from('board').insert({ room_id: myRoomId, tiles: [], left_end: null, right_end: null });
   if (bErr && !bErr.message.includes('unique')) console.warn('Board insert:', bErr.message);
