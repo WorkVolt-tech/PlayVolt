@@ -637,16 +637,24 @@ function computeSnakePositions(tiles, W, H) {
         // corner TOP edge = prev BOTTOM edge + GAP
         ty = (prev.y + prev.ph / 2) + GAP + h / 2;
 
-      } else {
-        // Horizontal run: snap this tile's input edge to prev tile's output edge
+      } else if (prev.inCorner) {
+        // First tile after a corner — wall-side edge aligns with corner's wall-side edge
         if (goingRight) {
-          // this LEFT edge = prev RIGHT edge + GAP
+          // came from left wall: left edges align
+          tx = (prev.x - prev.pw / 2) + w / 2;
+        } else {
+          // came from right wall: right edges align
+          tx = (prev.x + prev.pw / 2) - w / 2;
+        }
+        ty = prev.y;  // same center-line as corner
+      } else {
+        // Normal horizontal run: left/right edge snaps to prev edge + GAP
+        if (goingRight) {
           tx = (prev.x + prev.pw / 2) + GAP + w / 2;
         } else {
-          // this RIGHT edge = prev LEFT edge - GAP
           tx = (prev.x - prev.pw / 2) - GAP - w / 2;
         }
-        ty = prev.y;  // same row
+        ty = prev.y;
       }
     }
 
