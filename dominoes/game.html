@@ -617,9 +617,12 @@ function computeSnakePositions(tiles, W, H) {
   for (let i = 0; i < tiles.length; i++) {
     const isDbl = tiles[i].tile[0] === tiles[i].tile[1];
 
-    // Dimensions depend on whether this tile is a corner or horizontal run
-    const w = inCorner ? (isDbl ? TH : TW) : (isDbl ? TW : TH);
-    const h = inCorner ? (isDbl ? TW : TH) : (isDbl ? TH : TW);
+    // Dimensions:
+    // Horizontal run, normal → landscape (TH wide, TW tall)
+    // Horizontal run, double → portrait  (TW wide, TH tall)
+    // Corner, any tile       → portrait  (TW wide, TH tall)
+    const w = inCorner ? TW : (isDbl ? TW : TH);
+    const h = inCorner ? TH : (isDbl ? TH : TW);
     const dir = inCorner ? 0 : (goingRight ? 1 : -1);
 
     positions.push({ x, y, pw: w, ph: h, inCorner, dir });
@@ -700,7 +703,7 @@ function renderBoard() {
     // Portrait = TW wide, TH tall
     // Horizontal run: doubles=portrait, normals=landscape
     // Corner: doubles=landscape, normals=portrait
-    const renderVertical = pos.inCorner ? !isDbl : isDbl;
+    const renderVertical = pos.inCorner ? true : isDbl;  // corner always portrait
 
     let displayTile = [...entry.tile];
     if (!isDbl) {
