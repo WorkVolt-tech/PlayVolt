@@ -411,7 +411,7 @@ function subscribeToRoom(roomId, panel) {
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
       (payload) => {
         if (payload.new.status === 'playing') {
-          sessionStorage.setItem('domino_player', JSON.stringify({
+          localStorage.setItem('domino_player', JSON.stringify({
             seat: mySeat, nickname: document.getElementById('nickname').value.trim(),
             roomId: myRoomId, roomCode: myRoomCode,
           }));
@@ -451,7 +451,7 @@ async function autoCreateMatchRoom(queuePlayers) {
     await db.from('queue').update({ matched_room: room.id, status: 'matched' }).eq('id', queuePlayers[i].id);
   for (let i = 0; i < 4; i++)
     await db.from('domino_players').insert({ room_id: room.id, seat: i, nickname: queuePlayers[i].nickname, hand: [], is_connected: true });
-  sessionStorage.setItem('domino_player', JSON.stringify({ seat: 0, nickname: queuePlayers[0].nickname, roomId: room.id, roomCode: room.code }));
+  localStorage.setItem('domino_player', JSON.stringify({ seat: 0, nickname: queuePlayers[0].nickname, roomId: room.id, roomCode: room.code }));
   location.href = 'game.html';
 }
 
