@@ -472,50 +472,16 @@ window.addEventListener('load', async () => {
 
   myInfo = JSON.parse(raw);
   document.getElementById('room-code-badge').textContent = myInfo.roomCode || '——';
-
-  // Verify the room still exists and is active before loading
-  try {
-    const { data: room, error } = await db.from('domino_rooms')
-      .select('id, status').eq('id', myInfo.roomId).single();
-
-    if (error || !room || room.status === 'abandoned') {
-      sessionStorage.removeItem('domino_player');
-      location.href = 'index.html';
-      return;
-    }
-
-    // Mark player as reconnected
-    await db.from('domino_players')
-      .update({ is_connected: true })
-      .eq('room_id', myInfo.roomId)
-      .eq('seat', myInfo.seat);
-
-  } catch(e) {
-    // Can't reach DB at all — go back to lobby
-    console.warn('Room check failed:', e);
-    sessionStorage.removeItem('domino_player');
-    location.href = 'index.html';
-    return;
-  }
-
   await loadGameState();
   subscribeToGame();
 });
 
 async function loadGameState() {
-  const [{ data: room, error: rErr }, { data: pData }, { data: bData }] = await Promise.all([
+  const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
     db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
     db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
     db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
   ]);
-
-  // If room vanished mid-game, go back to lobby
-  if (rErr || !room) {
-    sessionStorage.removeItem('domino_player');
-    location.href = 'index.html';
-    return;
-  }
-
   roomData = room; players = pData || []; boardData = bData;
   renderAll();
 }
@@ -993,7 +959,6 @@ async function advanceTurn(myNewHand) {
 
 async function endGame(winningSeat) {
   await db.from('domino_rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
-  // Only host clears events to avoid 4 simultaneous deletes
   if (myInfo.seat === 0) {
     await db.from('game_events').delete().eq('room_id', myInfo.roomId);
   }
