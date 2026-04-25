@@ -593,46 +593,35 @@ function renderHand() {
 }
 
 // ── TILE DIMENSIONS ──────────────────────────────────────────────
-// TW = narrow side, TH = long side
-const TW = 34;
-const TH = 68;
+const TW = 34;   // narrow side
+const TH = 68;   // long side
 const GAP = 2;
 
-// Dims for a tile depending on its orientation in the layout:
-//   HORIZONTAL RUN : normal → landscape (TH wide, TW tall)
-//                    double → portrait  (TW wide, TH tall)
-//   CORNER (going down): normal → portrait  (TW wide, TH tall)
-//                         double → landscape (TH wide, TW tall)
+// In a horizontal run:  normal=landscape(TH×TW), double=portrait(TW×TH)
+// In a corner column:   normal=portrait(TW×TH),  double=landscape(TH×TW)
 function getDims(isDbl, inCorner) {
   if (inCorner) return isDbl ? { w: TH, h: TW } : { w: TW, h: TH };
   return isDbl ? { w: TW, h: TH } : { w: TH, h: TW };
 }
 
 // ── SNAKE LAYOUT ──────────────────────────────────────────────────
-// Rules (matching real domino games):
-//  • Tile 0 (first played) is always pinned to the exact center — never moves.
-//  • Chain grows RIGHT from tile 0, snake-wraps down then LEFT, then down then RIGHT…
-//  • At each edge, the chain turns DOWN one tile at a time (no fixed corner count).
-//  • Every tile connects flush edge-to-edge with its neighbour.
-//  • Doubles in a horizontal run stand portrait (TW×TH).
-//  • Doubles in a vertical corner column stand landscape (TH×TW).
+// • Tile 0 locked to center, never moves
+// • Chain grows RIGHT, wraps at edges going DOWN then LEFT, DOWN then RIGHT…
+// • One tile per corner turn — exactly like a real domino table
+// • All tiles flush edge-to-edge
 function computeSnakePositions(tiles, W, H) {
   if (tiles.length === 0) return [];
 
   const MARGIN = 36;
+  const positions = [];
 
-  // Fixed center for tile 0
+  // Tile 0 always at exact center
   const cx = W / 2;
   const cy = H / 2;
 
-  // Each position: { x, y, pw, ph, inCorner }
-  // x,y = center of tile
-  const positions = [];
-
-  // Current pen position and direction
   let x = cx, y = cy;
-  let dir = 1;        // +1 = right, -1 = left
-  let inCorner = false;
+  let dir = 1;          // +1=right, -1=left
+  let inCorner = false; // true for exactly ONE tile per turn
 
   for (let i = 0; i < tiles.length; i++) {
     const isDbl = tiles[i].tile[0] === tiles[i].tile[1];
@@ -644,44 +633,38 @@ function computeSnakePositions(tiles, W, H) {
 
     const nextIsDbl = tiles[i + 1].tile[0] === tiles[i + 1].tile[1];
 
-    if (!inCorner) {
-      // ── HORIZONTAL RUN ──────────────────────────────────────────
-      // Project where the NEXT tile's center would be if we stay horizontal
+    if (inCorner) {
+      // Just placed a corner tile — next tile goes back to horizontal run
+      // x aligns to the wall side, y steps down by this tile's bottom + next tile's half-height
+      const nextDims = getDims(nextIsDbl, false);
+      // The corner tile's center is at x; the horizontal run resumes at the same x
+      // (corner tile and first run tile of new row share the same wall-side x)
+      y = y + h / 2 + GAP + nextDims.h / 2;
+      // x stays where the corner pinned it — horizontal run continues from here
+      inCorner = false;
+    } else {
+      // Horizontal run — try to place next tile horizontally
       const nextDims = getDims(nextIsDbl, false);
       const nextX = x + dir * (w / 2 + GAP + nextDims.w / 2);
-      const nextLeft  = nextX - nextDims.w / 2;
-      const nextRight = nextX + nextDims.w / 2;
 
-      if (nextLeft < MARGIN || nextRight > W - MARGIN) {
-        // ── TURN: start going down ───────────────────────────────
-        // Pin x to the wall (right wall if going right, left wall if going left)
-        // The CORNER tile is portrait (normal) or landscape (double)
+      const wouldOverflow = dir > 0
+        ? (nextX + nextDims.w / 2) > (W - MARGIN)
+        : (nextX - nextDims.w / 2) < MARGIN;
+
+      if (wouldOverflow) {
+        // Turn: next tile is a corner tile going DOWN
         const cornerDims = getDims(nextIsDbl, true);
-
-        const pinnedX = dir > 0
+        // Pin x to the appropriate wall
+        x = dir > 0
           ? W - MARGIN - cornerDims.w / 2
           : MARGIN + cornerDims.w / 2;
-
-        x = pinnedX;
+        // Step y downward: current tile bottom edge + gap + corner tile top half
         y = y + h / 2 + GAP + cornerDims.h / 2;
         dir *= -1;
         inCorner = true;
       } else {
-        // Stay in horizontal run
         x = nextX;
       }
-    } else {
-      // ── CORNER / VERTICAL COLUMN ────────────────────────────────
-      // After one tile going down we return to horizontal
-      const nextDims = getDims(nextIsDbl, false);
-      y = y + h / 2 + GAP + nextDims.h / 2;
-      // x stays pinned to the wall but shifted inward for the horizontal run
-      // The corner tile's inner edge aligns with the run tiles' outer edge
-      // so x snaps back to wall-minus-half-run-tile-width
-      x = dir > 0
-        ? W - MARGIN - nextDims.w / 2
-        : MARGIN + nextDims.w / 2;
-      inCorner = false;
     }
   }
 
@@ -720,26 +703,23 @@ function renderBoard() {
     const pos = positions[i];
     const isDbl = entry.tile[0] === entry.tile[1];
 
-    // renderVertical: portrait tile (TW wide, TH tall)
-    //   in horizontal run: doubles are portrait, normals are landscape
-    //   in corner:         doubles are landscape, normals are portrait
+    // Portrait = TW wide, TH tall
+    // Horizontal run: doubles=portrait, normals=landscape
+    // Corner: doubles=landscape, normals=portrait
     const renderVertical = pos.inCorner ? !isDbl : isDbl;
 
     let displayTile = [...entry.tile];
     if (!isDbl) {
-      // Flip pips so connecting end always faces the previous tile
       const logicalFlip = !!entry.flipped;
       const goingLeft   = pos.dir === -1;
-      const inCorner    = pos.inCorner;
-      if (logicalFlip !== goingLeft && !inCorner) displayTile = [entry.tile[1], entry.tile[0]];
-      if (inCorner && logicalFlip) displayTile = [entry.tile[1], entry.tile[0]];
+      if (logicalFlip !== goingLeft) displayTile = [entry.tile[1], entry.tile[0]];
     }
 
     const tileEl = createTileElement(displayTile[0], displayTile[1], renderVertical, isDbl);
     tileEl.classList.add('board-tile');
     tileEl.classList.add(renderVertical ? 'vertical' : 'horizontal');
-    tileEl.style.left   = `${pos.x - pos.pw / 2}px`;
-    tileEl.style.top    = `${pos.y - pos.ph / 2}px`;
+    tileEl.style.left   = `${Math.round(pos.x - pos.pw / 2)}px`;
+    tileEl.style.top    = `${Math.round(pos.y - pos.ph / 2)}px`;
     tileEl.style.zIndex = i + 1;
     container.appendChild(tileEl);
   });
