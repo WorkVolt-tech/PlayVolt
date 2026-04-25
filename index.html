@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Jay's PlayVolt</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -646,6 +647,39 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin-bottom: 6px;
 }
 .modal-sub { font-size: 0.78rem; color: var(--muted); text-align: center; margin-bottom: 20px; }
+/* ── SUGGEST MODAL ── */
+.modal-box-wide {
+  background: var(--ink2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+}
+.modal-body { font-size: 0.88rem; color: var(--muted); line-height: 1.7; margin-bottom: 18px; }
+.modal-body p { margin-bottom: 10px; }
+.modal-body ul { padding-left: 18px; }
+.modal-body li { margin-bottom: 6px; }
+.suggest-textarea {
+  width: 100%;
+  background: var(--ink3);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.92rem;
+  resize: vertical;
+  min-height: 90px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.suggest-textarea:focus {
+  border-color: var(--volt);
+  box-shadow: 0 0 0 3px rgba(212,255,0,0.12);
+}
+.suggest-textarea::placeholder { color: var(--muted); }
 /* Responsive */
 @media (max-width: 420px) {
   .card { padding: 24px 18px; border-radius: 18px; }
@@ -689,7 +723,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     </div>
 
     <div class="hub-actions">
-      <button class="btn btn-volt" onclick="showToast('🛒 Store coming soon!')" style="margin-bottom:0;">🛒 Store</button>
+      <button class="btn btn-volt" onclick="openStoreModal()" style="margin-bottom:0;">🛒 Store</button>
     </div>
   </div>
 
@@ -698,6 +732,65 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
 
 </div><!-- /shell -->
+
+<!-- SUGGEST MODAL -->
+<div class="modal-overlay hidden" id="suggestModal" onclick="if(event.target===this) closeSuggestModal()">
+  <div class="modal-box-wide">
+    <div class="modal-title">💡 Suggest a Game</div>
+    <div class="modal-sub">Got an idea? We'd love to build it.</div>
+    <div class="msg" id="suggestMsg"></div>
+    <div class="field-group">
+      <label class="field-label">Your Name <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
+      <input type="text" id="suggestName" placeholder="e.g. Jay" style="width:100%;padding:13px 16px;background:var(--ink3);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:600;outline:none;margin-bottom:0;" maxlength="40">
+    </div>
+    <div class="field-group" style="margin-top:14px;">
+      <label class="field-label">Your Game Idea</label>
+      <textarea id="suggestText" class="suggest-textarea" placeholder="Describe the game you'd love to see — genre, players, vibe…" maxlength="500"></textarea>
+      <div style="text-align:right;font-size:0.68rem;color:var(--muted);margin-top:4px;"><span id="suggestCount">0</span>/500</div>
+    </div>
+    <button class="btn btn-volt" id="suggestSubmitBtn" onclick="submitSuggestion()" style="width:100%;margin-bottom:10px;">Send Suggestion ⚡</button>
+    <button class="btn btn-ghost" onclick="closeSuggestModal()" style="width:100%;">Maybe Later</button>
+  </div>
+</div>
+
+<!-- COMING SOON MODAL -->
+<div class="modal-overlay hidden" id="comingSoonModal" onclick="if(event.target===this) closeComingSoonModal()">
+  <div class="modal-box-wide">
+    <div class="modal-title">🚀 What's Coming</div>
+    <div class="modal-sub">Jay's PlayVolt is just getting started.</div>
+    <div class="modal-body">
+      <p>Our goal is to build a <strong style="color:var(--text);">platform for everyone</strong> — from family game nights to friend group chaos — all in your browser, no downloads needed.</p>
+      <p>We're focused on:</p>
+      <ul>
+        <li>🌟 <strong style="color:var(--text);">Family-friendly games</strong> that kids and adults can enjoy together</li>
+        <li>🎭 <strong style="color:var(--text);">Party & social games</strong> that bring people around one screen</li>
+        <li>🧠 <strong style="color:var(--text);">Trivia, word & strategy games</strong> for every crowd</li>
+        <li>⚡ <strong style="color:var(--text);">Fast to join</strong> — share a link, play instantly</li>
+      </ul>
+      <p style="margin-top:12px;color:var(--muted);">New games drop regularly. Suggest something and it might be next!</p>
+    </div>
+    <button class="btn btn-volt" onclick="closeComingSoonModal(); openSuggestModal();" style="width:100%;margin-bottom:10px;">💡 Suggest a Game</button>
+    <button class="btn btn-ghost" onclick="closeComingSoonModal()" style="width:100%;">Got It</button>
+  </div>
+</div>
+
+<!-- STORE MODAL -->
+<div class="modal-overlay hidden" id="storeModal" onclick="if(event.target===this) closeStoreModal()">
+  <div class="modal-box-wide">
+    <div class="modal-title">🛒 Store</div>
+    <div class="modal-sub">Extras, expansions & more — coming soon.</div>
+    <div class="modal-body">
+      <p>The PlayVolt store is on its way. You'll be able to unlock:</p>
+      <ul>
+        <li>🃏 <strong style="color:var(--text);">Extra question packs</strong> for Who's The Worst?</li>
+        <li>🎨 <strong style="color:var(--text);">Custom themes</strong> & avatar packs</li>
+        <li>⚡ <strong style="color:var(--text);">Game expansions</strong> as new titles launch</li>
+      </ul>
+      <p style="margin-top:12px;color:var(--muted);">Watch this space — we'll announce when it's live.</p>
+    </div>
+    <button class="btn btn-ghost" onclick="closeStoreModal()" style="width:100%;">Close</button>
+  </div>
+</div>
 
 <!-- ADMIN MODAL -->
 <div class="modal-overlay hidden" id="adminModal" onclick="if(event.target===this) closeAdminModal()">
@@ -904,18 +997,15 @@ function buildGamesGrid(isAdult) {
   grid.innerHTML = '';
 
   GAMES.forEach(game => {
-    const card = document.createElement('div');
+    // Hide adult games entirely unless admin mode is on
+    if (game.access === 'adult' && !isAdult) return;
 
-    const locked = game.access === 'adult' && !isAdult;
-    card.className = `game-card ${locked || game.comingSoon ? 'locked' : ''}`;
+    const card = document.createElement('div');
+    card.className = `game-card`;
 
     let chipHTML = '';
-    if (game.comingSoon) {
-      chipHTML = `<div class="lock-chip">SOON</div>`;
-    } else if (game.access === 'adult') {
-      chipHTML = locked
-        ? `<div class="lock-chip">🔒 18+</div>`
-        : `<div class="age-chip adults-only">18+</div>`;
+    if (game.access === 'adult') {
+      chipHTML = `<div class="age-chip adults-only">18+</div>`;
     } else {
       chipHTML = `<div class="age-chip all-ages">ALL AGES</div>`;
     }
@@ -927,12 +1017,8 @@ function buildGamesGrid(isAdult) {
       <div class="game-desc">${game.desc}</div>
     `;
 
-    if (!locked && !game.comingSoon && game.route) {
+    if (game.route) {
       card.onclick = () => launchGame(game);
-    } else if (locked) {
-      card.onclick = () => showToast('🔒 Enable Admin mode to access adult games.');
-    } else if (game.comingSoon) {
-      card.onclick = () => showToast(`🚧 ${game.name} is coming soon — stay tuned!`);
     }
 
     grid.appendChild(card);
@@ -946,7 +1032,7 @@ function buildGamesGrid(isAdult) {
     <div class="game-name">More Coming Soon</div>
     <div class="game-desc">New games dropping regularly. Stay tuned!</div>
   `;
-  soonCard.onclick = () => showToast('🚧 More games on the way — watch this space!');
+  soonCard.onclick = () => openComingSoonModal();
   grid.appendChild(soonCard);
 
   // ── SUGGEST A GAME card ──
@@ -957,10 +1043,7 @@ function buildGamesGrid(isAdult) {
     <div class="game-name">Suggest a Game</div>
     <div class="game-desc">Got an idea? We'd love to hear it!</div>
   `;
-  suggestCard.onclick = () => {
-    const idea = prompt('What game would you like to see on PlayVolt?');
-    if (idea && idea.trim()) showToast(`💡 Thanks! We got your idea: "${idea.trim().slice(0,40)}"`);
-  };
+  suggestCard.onclick = () => openSuggestModal();
   grid.appendChild(suggestCard);
 }
 
@@ -980,6 +1063,89 @@ function launchGame(game) {
     else showToast('Game URL not configured yet.');
   }, 600);
 }
+
+/* ═══════════════════════════════════════
+   SUGGEST MODAL
+═══════════════════════════════════════ */
+const SUPABASE_URL = 'https://porpqvphytecuidomcgy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcnBxdnBoeXRlY3VpZG9tY2d5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMzQwODUsImV4cCI6MjA4OTgxMDA4NX0.IFECuGpxl4HcMfFx7oqmbsVdeOLMK_4wvEi2L-NGNzI';
+
+let _sb = null;
+function getSB() {
+  if (_sb) return _sb;
+  if (window.supabase) _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  return _sb;
+}
+
+function openSuggestModal() {
+  document.getElementById('suggestModal').classList.remove('hidden');
+  document.getElementById('suggestMsg').className = 'msg';
+  document.getElementById('suggestMsg').textContent = '';
+  document.getElementById('suggestText').value = '';
+  document.getElementById('suggestName').value = '';
+  document.getElementById('suggestCount').textContent = '0';
+  setTimeout(() => document.getElementById('suggestText').focus(), 100);
+}
+function closeSuggestModal() {
+  document.getElementById('suggestModal').classList.add('hidden');
+}
+
+// Live character count
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('suggestText');
+  if (ta) ta.addEventListener('input', () => {
+    document.getElementById('suggestCount').textContent = ta.value.length;
+  });
+});
+
+async function submitSuggestion() {
+  const text = document.getElementById('suggestText').value.trim();
+  const name = document.getElementById('suggestName').value.trim();
+  const msgEl = document.getElementById('suggestMsg');
+  const btn   = document.getElementById('suggestSubmitBtn');
+
+  if (!text) {
+    msgEl.textContent = 'Please describe your game idea first.';
+    msgEl.className = 'msg error show';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    const sb = getSB();
+    if (!sb) throw new Error('Database not available.');
+    const { error } = await sb.from('game_suggestions').insert({
+      name:       name || null,
+      suggestion: text,
+      submitted_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+
+    msgEl.textContent = '🎉 Thanks! We got your idea and will take a look.';
+    msgEl.className = 'msg success show';
+    setTimeout(() => closeSuggestModal(), 2400);
+  } catch(e) {
+    msgEl.textContent = e.message || 'Something went wrong. Try again.';
+    msgEl.className = 'msg error show';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Suggestion ⚡';
+  }
+}
+
+/* ═══════════════════════════════════════
+   COMING SOON MODAL
+═══════════════════════════════════════ */
+function openComingSoonModal()  { document.getElementById('comingSoonModal').classList.remove('hidden'); }
+function closeComingSoonModal() { document.getElementById('comingSoonModal').classList.add('hidden'); }
+
+/* ═══════════════════════════════════════
+   STORE MODAL
+═══════════════════════════════════════ */
+function openStoreModal()  { document.getElementById('storeModal').classList.remove('hidden'); }
+function closeStoreModal() { document.getElementById('storeModal').classList.add('hidden'); }
 
 /* ── BOOT ── */
 window.addEventListener('DOMContentLoaded', () => {
