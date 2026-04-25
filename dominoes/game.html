@@ -658,10 +658,10 @@ function computeSnakePositions(tiles, W, H) {
       if (wouldOverflow) {
         // Turn: next tile is a corner tile going DOWN
         const cornerDims = getDims(nextIsDbl, true);
-        // Pin x to the appropriate wall
+        // Flush: corner tile's edge meets last run tile's end edge exactly
         x = dir > 0
-          ? W - MARGIN - cornerDims.w / 2
-          : MARGIN + cornerDims.w / 2;
+          ? x + w / 2 + cornerDims.w / 2
+          : x - w / 2 - cornerDims.w / 2;
         // Step y downward: current tile bottom edge + gap + corner tile top half
         y = y + h / 2 + GAP + cornerDims.h / 2;
         dir *= -1;
