@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bluff — Party Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --bg3: #1c1c28;
+    --bg4: #252535;
+    --surface: #1e1e2e;
+    --surface2: #2a2a3e;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #f0f0ff;
+    --text2: #a0a0c0;
+    --text3: #606080;
+    --accent: #7c6af7;
+    --accent2: #9d8fff;
+    --accent-glow: rgba(124,106,247,0.3);
+    --red: #ff5566;
+    --red-dim: rgba(255,85,102,0.2);
+    --green: #44ddaa;
+    --green-dim: rgba(68,221,170,0.2);
+    --amber: #ffaa44;
+    --amber-dim: rgba(255,170,68,0.2);
+    --pink: #ff6eb4;
+    --cyan: #44ccff;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+    --r: 12px;
+    --r-lg: 20px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-display);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND GRID ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,247,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    width: 100%;
+    max-width: 680px;
+    animation: screenIn 0.4s cubic-bezier(.2,.8,.3,1);
+  }
+  .screen.active { display: flex; flex-direction: column; gap: 1rem; }
+
+  @keyframes screenIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ── LOGO ── */
+  .logo {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--accent2) 0%, var(--pink) 50%, var(--cyan) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    line-height: 1;
+  }
+  .logo-sub {
+    text-align: center;
+    color: var(--text3);
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+    font-family: var(--font-mono);
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 1.5rem;
+  }
+  .card-sm {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 1rem 1.25rem;
+  }
+  .card-glass {
+    background: rgba(30,30,46,0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border2);
+    border-radius: var(--r-lg);
+    padding: 1.5rem;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--r);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    text-decoration: none;
+    user-select: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 24px var(--accent-glow);
+  }
+  .btn-primary:hover { background: var(--accent2); box-shadow: 0 0 32px var(--accent-glow); }
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+  .btn-outline:hover { background: var(--surface2); border-color: var(--accent); }
+  .btn-danger {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(255,85,102,0.3);
+  }
+  .btn-danger:hover { background: rgba(255,85,102,0.3); }
+  .btn-success {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(68,221,170,0.3);
+  }
+  .btn-success:hover { background: rgba(68,221,170,0.3); }
+  .btn-lg { padding: 1rem 2rem; font-size: 1.1rem; border-radius: var(--r-lg); }
+  .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.8rem; }
+  .btn-full { width: 100%; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ── INPUTS ── */
+  .input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    padding: 0.75rem 1rem;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .input::placeholder { color: var(--text3); }
+  .input-mono { font-family: var(--font-mono); letter-spacing: 0.1em; font-size: 1.5rem; text-align: center; text-transform: uppercase; }
+
+  /* ── LABELS ── */
+  .label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .badge-purple { background: rgba(124,106,247,0.2); color: var(--accent2); border: 1px solid rgba(124,106,247,0.3); }
+  .badge-red    { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,85,102,0.3); }
+  .badge-green  { background: var(--green-dim); color: var(--green); border: 1px solid rgba(68,221,170,0.3); }
+  .badge-amber  { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,170,68,0.3); }
+  .badge-cyan   { background: rgba(68,204,255,0.15); color: var(--cyan); border: 1px solid rgba(68,204,255,0.3); }
+  .badge-pink   { background: rgba(255,110,180,0.15); color: var(--pink); border: 1px solid rgba(255,110,180,0.3); }
+
+  /* ── PLAYER CHIPS ── */
+  .player-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .player-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    transition: border-color 0.2s;
+  }
+  .player-chip.highlighted { border-color: var(--accent); background: rgba(124,106,247,0.1); }
+  .player-chip.imposter-revealed { border-color: var(--red); background: var(--red-dim); }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .player-name { font-weight: 600; font-size: 0.95rem; flex: 1; }
+  .player-meta { font-size: 0.75rem; color: var(--text3); font-family: var(--font-mono); }
+
+  /* ── PHASE BANNER ── */
+  .phase-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+  }
+  .phase-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent2);
+    font-family: var(--font-mono);
+  }
+
+  /* ── TIMER ── */
+  .timer {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    transition: color 0.3s;
+  }
+  .timer.urgent { color: var(--red); animation: pulse 0.5s infinite alternate; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+
+  /* ── WORD REVEAL ── */
+  .word-card {
+    text-align: center;
+    padding: 2.5rem 2rem;
+    background: linear-gradient(135deg, rgba(124,106,247,0.15), rgba(255,110,180,0.1));
+    border: 1px solid rgba(124,106,247,0.3);
+    border-radius: var(--r-lg);
+    position: relative;
+    overflow: hidden;
+  }
+  .word-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(124,106,247,0.1) 0%, transparent 60%);
+    animation: rotate 8s linear infinite;
+  }
+  @keyframes rotate { to { transform: rotate(360deg); } }
+  .word-reveal {
+    font-size: clamp(2rem, 8vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    position: relative;
+    z-index: 1;
+  }
+  .word-role-hint {
+    font-size: 0.8rem;
+    color: var(--text2);
+    margin-top: 0.5rem;
+    font-family: var(--font-mono);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── CLUE FEED ── */
+  .clue-feed { display: flex; flex-direction: column; gap: 0.5rem; }
+  .clue-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    animation: clueIn 0.3s ease;
+  }
+  @keyframes clueIn {
+    from { opacity: 0; transform: translateX(-12px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .clue-text { font-size: 0.95rem; flex: 1; }
+  .clue-author { font-size: 0.7rem; color: var(--text3); font-family: var(--font-mono); }
+
+  /* ── VOTE BUTTONS ── */
+  .vote-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+  .vote-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .vote-btn:hover { border-color: var(--accent); background: rgba(124,106,247,0.1); }
+  .vote-btn.voted { border-color: var(--accent); background: rgba(124,106,247,0.15); }
+  .vote-bar-wrap { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .vote-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+  .vote-count { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text2); min-width: 2ch; }
+
+  /* ── REACTIONS ── */
+  .reaction-bar {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .reaction-btn {
+    padding: 0.4rem 0.7rem;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .reaction-btn:hover { transform: scale(1.2); border-color: var(--border2); }
+  .floating-reaction {
+    position: fixed;
+    pointer-events: none;
+    font-size: 1.8rem;
+    animation: floatUp 2s ease forwards;
+    z-index: 1000;
+  }
+  @keyframes floatUp {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-120px) scale(1.4); }
+  }
+
+  /* ── CHAOS EVENT BANNER ── */
+  .chaos-banner {
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, rgba(255,170,68,0.15), rgba(255,85,102,0.1));
+    border: 1px solid rgba(255,170,68,0.4);
+    border-radius: var(--r);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: chaosIn 0.5s cubic-bezier(.2,.8,.3,1);
+  }
+  @keyframes chaosIn {
+    from { opacity: 0; transform: scale(0.9) rotate(-1deg); }
+    to   { opacity: 1; transform: scale(1) rotate(0); }
+  }
+  .chaos-icon { font-size: 1.5rem; }
+  .chaos-text { font-weight: 700; color: var(--amber); }
+  .chaos-sub { font-size: 0.8rem; color: var(--text2); }
+
+  /* ── REVEAL SCREEN ── */
+  .reveal-card {
+    text-align: center;
+    padding: 3rem 2rem;
+    border-radius: var(--r-lg);
+    animation: revealPop 0.6s cubic-bezier(.2,.8,.3,1);
+  }
+  @keyframes revealPop {
+    0%   { transform: scale(0.5); opacity: 0; }
+    70%  { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .reveal-crew   { background: linear-gradient(135deg, rgba(68,221,170,0.2), rgba(68,204,255,0.1)); border: 1px solid rgba(68,221,170,0.4); }
+  .reveal-imp    { background: linear-gradient(135deg, rgba(255,85,102,0.2), rgba(255,110,180,0.1)); border: 1px solid rgba(255,85,102,0.4); }
+  .reveal-emoji  { font-size: 4rem; display: block; margin-bottom: 1rem; }
+  .reveal-title  { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .reveal-sub    { color: var(--text2); font-size: 0.9rem; }
+
+  /* ── PROGRESS DOTS ── */
+  .phase-dots {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    justify-content: center;
+  }
+  .phase-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border2);
+    transition: all 0.3s;
+  }
+  .phase-dot.active { width: 20px; border-radius: 3px; background: var(--accent); }
+  .phase-dot.done { background: var(--accent2); opacity: 0.5; }
+
+  /* ── SETTINGS TOGGLES ── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+  }
+  .toggle-label { font-size: 0.9rem; color: var(--text2); }
+  .toggle {
+    position: relative;
+    width: 44px; height: 24px;
+    cursor: pointer;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--bg4);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    transition: all 0.2s;
+  }
+  .toggle-thumb {
+    position: absolute;
+    left: 3px; top: 3px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: all 0.2s;
+  }
+  .toggle input:checked ~ .toggle-track { background: var(--accent); border-color: var(--accent); }
+  .toggle input:checked ~ .toggle-thumb { left: 23px; background: white; }
+
+  /* ── TOAST ── */
+  #toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .toast {
+    padding: 0.7rem 1.2rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap;
+    animation: toastIn 0.25s ease;
+  }
+  @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── GUESS INPUT (imposter comeback) ── */
+  .guess-section {
+    background: var(--red-dim);
+    border: 1px solid rgba(255,85,102,0.3);
+    border-radius: var(--r);
+    padding: 1rem 1.25rem;
+  }
+
+  /* ── TABS ── */
+  .tab-row { display: flex; gap: 0.25rem; background: var(--bg3); padding: 0.25rem; border-radius: var(--r); }
+  .tab-btn {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: calc(var(--r) - 2px);
+    background: transparent;
+    border: none;
+    color: var(--text3);
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active { background: var(--surface2); color: var(--text); }
+
+  /* ── CONFETTI ── */
+  .confetti-piece {
+    position: fixed;
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    pointer-events: none;
+    animation: confettiFall linear forwards;
+    z-index: 9998;
+  }
+  @keyframes confettiFall {
+    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ── UTILITY ── */
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .gap-sm { gap: 0.5rem; }
+  .gap-md { gap: 0.75rem; }
+  .gap-lg { gap: 1rem; }
+  .text-center { text-align: center; }
+  .text-sm { font-size: 0.85rem; }
+  .text-xs { font-size: 0.75rem; }
+  .text-muted { color: var(--text2); }
+  .text-muted2 { color: var(--text3); }
+  .mono { font-family: var(--font-mono); }
+  .bold { font-weight: 700; }
+  .mt-sm { margin-top: 0.5rem; }
+  .mt-md { margin-top: 0.75rem; }
+  .mt-lg { margin-top: 1rem; }
+  .divider { height: 1px; background: var(--border); margin: 0.5rem 0; }
+
+  /* ── MOBILE ── */
+  @media (max-width: 480px) {
+    .card, .card-glass { padding: 1.25rem; }
+    .word-reveal { font-size: 2.5rem; }
+    .reveal-title { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SCREEN: Home -->
+  <div id="screen-home" class="screen active">
+    <div class="text-center">
+      <div class="logo">Bluff</div>
+      <div class="logo-sub">Party Game · 4–10 Players</div>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <label class="label">Your Name</label>
+      <input type="text" id="player-name" class="input" placeholder="Enter your name…" maxlength="20">
+      <div class="flex gap-sm" style="margin-top:0.5rem;">
+        <button class="btn btn-outline text-xs btn-sm" id="random-emoji-btn">🎲 Random emoji</button>
+        <span id="selected-emoji" style="font-size:1.5rem;line-height:1;">🎭</span>
+      </div>
+    </div>
+
+    <div class="flex gap-md" style="flex-direction:column;">
+      <button class="btn btn-primary btn-lg btn-full" id="create-room-btn">
+        ✦ Create Room
+      </button>
+      <div class="flex gap-md items-center">
+        <div class="divider" style="flex:1;margin:0;"></div>
+        <span class="text-muted2 text-xs mono">or join with code</span>
+        <div class="divider" style="flex:1;margin:0;"></div>
+      </div>
+      <div class="flex gap-md">
+        <input type="text" id="join-code" class="input input-mono" placeholder="ABC123" maxlength="6" style="flex:1;">
+        <button class="btn btn-outline" id="join-room-btn">Join</button>
+      </div>
+    </div>
+
+    <div class="card-sm flex items-center gap-md" style="margin-top:0.5rem;">
+      <span style="font-size:1.5rem;">👁</span>
+      <div>
+        <div class="text-sm bold">Spectator Mode</div>
+        <div class="text-xs text-muted">Watch without playing</div>
+      </div>
+      <label class="toggle" style="margin-left:auto;">
+        <input type="checkbox" id="spectator-toggle">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+  </div>
+
+  <!-- SCREEN: Lobby -->
+  <div id="screen-lobby" class="screen">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="text-xs text-muted2 mono">ROOM CODE</div>
+        <div class="mono bold" style="font-size:2rem;letter-spacing:0.1em;color:var(--accent2);" id="lobby-code">——</div>
+      </div>
+      <div class="flex flex-col items-center gap-sm">
+        <div id="lobby-player-count" class="text-muted2 text-xs mono">0 / 8 players</div>
+        <button class="btn btn-outline btn-sm" id="copy-code-btn">📋 Copy Code</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="flex items-center justify-between" style="margin-bottom:0.75rem;">
+        <div class="label" style="margin:0;">Players</div>
+        <div id="lobby-ready-status" class="text-xs text-muted2 mono"></div>
+      </div>
+      <div class="player-list" id="lobby-players"></div>
+    </div>
+
+    <!-- Host: Settings -->
+    <div class="card" id="host-settings" style="display:none;">
+      <div class="label" style="margin-bottom:0.75rem;">⚙ Game Settings</div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Chaos Events</div>
+          <div class="text-xs text-muted2">Random mid-round twists</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="setting-chaos" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Special Roles</div>
+          <div class="text-xs text-muted2">Detective, Confused Player</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="setting-roles" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Variant Words</div>
+          <div class="text-xs text-muted2">Similar but wrong words</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="setting-variants" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Secret Objectives</div>
+          <div class="text-xs text-muted2">Hidden mission cards</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="setting-objectives" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      </div>
+    </div>
+
+    <div id="start-btn-wrap">
+      <button class="btn btn-primary btn-lg btn-full" id="start-game-btn" disabled>
+        Start Game (need 4+ players)
+      </button>
+    </div>
+    <div id="waiting-msg" class="text-center text-muted text-sm" style="display:none;">Waiting for host to start…</div>
+  </div>
+
+  <!-- SCREEN: Word Distribution -->
+  <div id="screen-word" class="screen">
+    <div class="phase-banner">
+      <div>
+        <div class="phase-label">Phase 2 · Word Distribution</div>
+        <div class="text-xs text-muted2 mt-sm">Memorize your word. Don't show anyone.</div>
+      </div>
+      <div class="timer" id="word-timer">10</div>
+    </div>
+
+    <div id="word-display" class="word-card">
+      <div id="word-role-badge" class="badge badge-green" style="margin-bottom:1rem;">Crewmate</div>
+      <div class="word-reveal" id="word-text">???</div>
+      <div class="word-role-hint" id="word-hint">Your secret word — give clues without being obvious</div>
+    </div>
+
+    <div id="objective-card" class="card" style="display:none;">
+      <div class="flex gap-md items-center">
+        <div style="font-size:1.5rem;">🎯</div>
+        <div>
+          <div class="text-xs text-muted2 mono" style="margin-bottom:0.25rem;">SECRET OBJECTIVE</div>
+          <div class="bold" id="objective-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-sm text-center text-muted text-sm">
+      <span id="word-countdown">Advancing to clue phase in <span class="mono bold" style="color:var(--accent2);" id="word-countdown-num">10</span>s</span>
+    </div>
+  </div>
+
+  <!-- SCREEN: Clue Phase -->
+  <div id="screen-clue" class="screen">
+    <div class="phase-banner">
+      <div>
+        <div class="phase-label">Phase 3 · Clue Phase</div>
+        <div class="text-xs text-muted2 mt-sm">Give one clue. Be clever.</div>
+      </div>
+      <div class="timer" id="clue-timer">60</div>
+    </div>
+
+    <div id="chaos-banner-clue" style="display:none;"></div>
+
+    <div class="card">
+      <div class="label" style="margin-bottom:0.75rem;">Clues So Far</div>
+      <div class="clue-feed" id="clue-feed">
+        <div class="text-muted2 text-sm text-center" style="padding:1rem 0;">Waiting for first clue…</div>
+      </div>
+    </div>
+
+    <div id="clue-input-section" class="card">
+      <label class="label">Your Clue</label>
+      <div class="flex gap-md">
+        <input type="text" id="clue-input" class="input" placeholder="One word or short phrase…" maxlength="80">
+        <button class="btn btn-primary" id="submit-clue-btn">Send</button>
+      </div>
+      <div class="text-xs text-muted2 mt-sm">Don't say the word or anything too obvious!</div>
+    </div>
+
+    <div id="clue-submitted-msg" class="card-sm text-center text-muted" style="display:none;">
+      ✓ Clue submitted. Waiting for others…
+    </div>
+
+    <div class="reaction-bar" id="reaction-bar-clue">
+      <span class="text-xs text-muted2 mono" style="line-height:2;">React:</span>
+      <button class="reaction-btn" data-emoji="👀">👀</button>
+      <button class="reaction-btn" data-emoji="🤔">🤔</button>
+      <button class="reaction-btn" data-emoji="😂">😂</button>
+      <button class="reaction-btn" data-emoji="😤">😤</button>
+      <button class="reaction-btn" data-emoji="🎯">🎯</button>
+      <button class="reaction-btn" data-emoji="🚨">🚨</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: Discussion Phase -->
+  <div id="screen-discussion" class="screen">
+    <div class="phase-banner">
+      <div>
+        <div class="phase-label">Phase 4 · Discussion</div>
+        <div class="text-xs text-muted2 mt-sm">Who's the imposter? Discuss!</div>
+      </div>
+      <div class="timer" id="discussion-timer">90</div>
+    </div>
+
+    <div id="chaos-banner-discussion" style="display:none;"></div>
+
+    <div class="card">
+      <div class="label" style="margin-bottom:0.75rem;">All Clues</div>
+      <div class="clue-feed" id="discussion-clue-feed"></div>
+    </div>
+
+    <div class="card">
+      <div class="label" style="margin-bottom:0.75rem;">Players</div>
+      <div class="player-list" id="discussion-players"></div>
+    </div>
+
+    <div class="reaction-bar">
+      <span class="text-xs text-muted2 mono" style="line-height:2;">React:</span>
+      <button class="reaction-btn" data-emoji="🕵️">🕵️</button>
+      <button class="reaction-btn" data-emoji="😈">😈</button>
+      <button class="reaction-btn" data-emoji="🤡">🤡</button>
+      <button class="reaction-btn" data-emoji="💀">💀</button>
+      <button class="reaction-btn" data-emoji="🤫">🤫</button>
+      <button class="reaction-btn" data-emoji="🫵">🫵</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: Voting Phase -->
+  <div id="screen-voting" class="screen">
+    <div class="phase-banner">
+      <div>
+        <div class="phase-label">Phase 5 · Voting</div>
+        <div class="text-xs text-muted2 mt-sm">Vote for who you think is the Imposter.</div>
+      </div>
+      <div class="timer" id="voting-timer">30</div>
+    </div>
+
+    <div class="vote-grid" id="vote-grid"></div>
+
+    <div id="voted-msg" class="card-sm text-center text-muted" style="display:none;">
+      ✓ Vote cast. Waiting for others… (<span id="votes-in">0</span>/<span id="votes-total">0</span>)
+    </div>
+  </div>
+
+  <!-- SCREEN: Reveal -->
+  <div id="screen-reveal" class="screen">
+    <div id="reveal-result-card" class="reveal-card reveal-crew">
+      <span class="reveal-emoji" id="reveal-emoji">🎉</span>
+      <div class="reveal-title" id="reveal-title">Crew Wins!</div>
+      <div class="reveal-sub" id="reveal-sub"></div>
+    </div>
+
+    <div class="card">
+      <div class="label" style="margin-bottom:0.75rem;">The Imposter Was…</div>
+      <div class="player-list" id="reveal-players"></div>
+    </div>
+
+    <div class="card">
+      <div class="flex items-center justify-between" style="margin-bottom:0.5rem;">
+        <div class="label" style="margin:0;">The Word Was</div>
+      </div>
+      <div class="word-reveal" style="font-size:2.5rem;text-align:center;padding:1.5rem 0;" id="reveal-word">———</div>
+    </div>
+
+    <!-- Imposter comeback guess -->
+    <div class="guess-section" id="imposter-guess-section" style="display:none;">
+      <div class="text-xs text-muted2 mono" style="margin-bottom:0.5rem;">IMPOSTER COMEBACK — Guess the word!</div>
+      <div class="flex gap-md">
+        <input type="text" id="imposter-guess-input" class="input" placeholder="What was the word?">
+        <button class="btn btn-danger" id="submit-guess-btn">Guess</button>
+      </div>
+    </div>
+
+    <div class="flex gap-md">
+      <button class="btn btn-outline btn-full" id="back-lobby-btn">Back to Lobby</button>
+      <button class="btn btn-primary btn-full" id="play-again-btn" style="display:none;">Play Again</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  CONFIGURATION — Replace with your Supabase credentials
+// ══════════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://eybzbtyfafmqbkulyvog.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
+
+// ══════════════════════════════════════════════════════
+//  OFFLINE / DEMO MODE (runs without Supabase)
+// ══════════════════════════════════════════════════════
+const DEMO_MODE = (SUPABASE_URL === 'YOUR_SUPABASE_URL');
+
+// ══════════════════════════════════════════════════════
+//  GAME DATA
+// ══════════════════════════════════════════════════════
+const WORD_DATA = [
+  { word:'Piano',      variants:['Guitar','Violin','Keyboard'],      category:'objects' },
+  { word:'Lighthouse', variants:['Watchtower','Beacon','Pier'],       category:'places'  },
+  { word:'Compass',    variants:['Map','GPS','Sundial'],              category:'objects' },
+  { word:'Telescope',  variants:['Binoculars','Microscope','Lens'],   category:'objects' },
+  { word:'Submarine',  variants:['Boat','Ship','Torpedo'],            category:'vehicles'},
+  { word:'Flamingo',   variants:['Pelican','Heron','Stork'],          category:'animals' },
+  { word:'Croissant',  variants:['Baguette','Danish','Brioche'],      category:'food'    },
+  { word:'Tornado',    variants:['Hurricane','Whirlpool','Vortex'],   category:'weather' },
+  { word:'Hammock',    variants:['Swing','Chair','Bed'],              category:'objects' },
+  { word:'Glacier',    variants:['Iceberg','Snowfield','Tundra'],     category:'geo'     },
+  { word:'Espresso',   variants:['Cappuccino','Lungo','Ristretto'],   category:'drinks'  },
+  { word:'Trampoline', variants:['Springboard','Mattress','Mat'],     category:'sports'  },
+  { word:'Nostalgia',  variants:['Longing','Homesickness','Memory'],  category:'abstract'},
+  { word:'Betrayal',   variants:['Deception','Backstab','Disloyalty'],category:'abstract'},
+  { word:'Platypus',   variants:['Beaver','Otter','Echidna'],         category:'animals' },
+  { word:'Maze',       variants:['Labyrinth','Puzzle','Grid'],        category:'concepts'},
+  { word:'Coral Reef', variants:['Seabed','Kelp Forest','Tide Pool'], category:'places'  },
+  { word:'Firefly',    variants:['Moth','Bioluminescence','Glowworm'],category:'animals' },
+  { word:'Tiramisu',   variants:['Panna Cotta','Mousse','Cheesecake'],category:'food'    },
+  { word:'Avalanche',  variants:['Landslide','Flood','Rockfall'],     category:'events'  },
+];
+
+const CHAOS_EVENTS = [
+  { type:'swap_clues',         icon:'🔄', title:'Clue Swap!',        desc:'Two players swap their submitted clues.' },
+  { type:'reveal_first_letter',icon:'🔍', title:'Letter Reveal!',    desc:'The first letter of the word is revealed to everyone.' },
+  { type:'everyone_lies',      icon:'🃏', title:'Liar\'s Round!',    desc:'Everyone must give a misleading clue this round.' },
+  { type:'double_votes',       icon:'⚡', title:'Double Votes!',      desc:'Each player\'s vote counts twice this round.' },
+  { type:'mute_player',        icon:'🤫', title:'Silenced!',          desc:'One random player cannot submit a clue this round.' },
+  { type:'blind_round',        icon:'🙈', title:'Blind Round!',       desc:'Clue authors are hidden — you don\'t know who said what.' },
+];
+
+const OBJECTIVES = [
+  { type:'be_suspicious',  text:'Act suspicious without getting voted out',     icon:'🎭' },
+  { type:'accuse_specific',text:'Convince others to vote out the host',          icon:'🫵' },
+  { type:'misleading_clue',text:'Give a clue that points away from the word',    icon:'🎯' },
+  { type:'stay_quiet',     text:'Say as little as possible — stay invisible',    icon:'🤫' },
+  { type:'first_accuser',  text:'Be the first person to accuse someone',         icon:'🚨' },
+];
+
+const EMOJIS = ['🎭','🦊','🐙','🦄','🐸','🎃','👻','🤖','🦁','🐺','🦋','🎲'];
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let state = {
+  sessionId:   null,
+  playerName:  '',
+  playerEmoji: '🎭',
+  roomId:      null,
+  roomCode:    null,
+  gameId:      null,
+  playerId:    null,
+  isHost:      false,
+  isSpectator: false,
+  phase:       'lobby',
+  myRole:      'crewmate',
+  myWord:      null,
+  myObjective: null,
+  players:     [],
+  clues:       [],
+  votes:       {},
+  myVote:      null,
+  myClueSent:  false,
+  chaosEvent:  null,
+  revealData:  null,
+  timers:      {},
+  subscriptions: [],
+  settings: {
+    chaos: true, roles: true, variants: true, objectives: true
+  }
+};
+
+// ══════════════════════════════════════════════════════
+//  SUPABASE CLIENT
+// ══════════════════════════════════════════════════════
+let sb = null;
+if (!DEMO_MODE) {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+}
+
+// ══════════════════════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════════════════════
+function uid() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+function getOrCreateSession() {
+  let id = localStorage.getItem('hw_session');
+  if (!id) { id = uid(); localStorage.setItem('hw_session', id); }
+  return id;
+}
+function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+function toast(msg, duration = 2500) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), duration);
+}
+function clearTimers() {
+  Object.values(state.timers).forEach(clearInterval);
+  state.timers = {};
+}
+function startTimer(id, seconds, onTick, onEnd) {
+  clearInterval(state.timers[id]);
+  let remaining = seconds;
+  onTick(remaining);
+  state.timers[id] = setInterval(() => {
+    remaining--;
+    onTick(remaining);
+    if (remaining <= 0) { clearInterval(state.timers[id]); onEnd(); }
+  }, 1000);
+}
+function setTimerEl(el, val) {
+  el.textContent = val;
+  el.classList.toggle('urgent', val <= 10);
+}
+function spawnReaction(emoji, x, y) {
+  const el = document.createElement('div');
+  el.className = 'floating-reaction';
+  el.textContent = emoji;
+  el.style.left = (x || Math.random() * 80 + 10) + '%';
+  el.style.bottom = '80px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2000);
+}
+function confetti() {
+  const colors = ['#7c6af7','#ff6eb4','#44ddaa','#ffaa44','#44ccff'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `left:${Math.random()*100}%;top:-10px;background:${randomFrom(colors)};animation-duration:${1.5+Math.random()*2}s;animation-delay:${Math.random()*0.5}s;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  DEMO MODE — Local multiplayer simulation
+// ══════════════════════════════════════════════════════
+const DemoRooms = new Map(); // code → room data
+
+function demoCreateRoom(code) {
+  const room = {
+    code, hostId: state.sessionId,
+    players: [], clues: [], votes: {},
+    phase: 'lobby', word: null, wordVariants: [],
+    imposterId: null, chaosEvent: null,
+    settings: { ...state.settings }
+  };
+  DemoRooms.set(code, room);
+  return room;
+}
+
+function demoAddPlayer(code, player) {
+  const room = DemoRooms.get(code);
+  if (!room) return null;
+  room.players.push(player);
+  broadcastLobbyUpdate(code);
+  return room;
+}
+
+const lobbyListeners = new Map();
+function broadcastLobbyUpdate(code) {
+  const listeners = lobbyListeners.get(code) || [];
+  const room = DemoRooms.get(code);
+  listeners.forEach(fn => fn(room));
+}
+function onLobbyUpdate(code, fn) {
+  if (!lobbyListeners.has(code)) lobbyListeners.set(code, []);
+  lobbyListeners.get(code).push(fn);
+}
+
+// ══════════════════════════════════════════════════════
+//  GAME LOGIC (works in demo mode)
+// ══════════════════════════════════════════════════════
+function assignRolesAndWords(players, wordData, settings) {
+  const shuffled = [...players].sort(() => Math.random() - 0.5);
+  const result = {};
+  const word = wordData.word;
+
+  // Determine imposter count
+  let imposterCount = 1;
+  if (settings.roles && players.length >= 7 && Math.random() > 0.5) imposterCount = 2;
+
+  // Assign roles
+  shuffled.forEach((p, i) => {
+    if (i < imposterCount) {
+      result[p.id] = { role: 'imposter', word: null };
+    } else if (settings.roles && settings.variants && i === imposterCount && wordData.variants.length && Math.random() > 0.6) {
+      result[p.id] = { role: 'confused', word: randomFrom(wordData.variants) };
+    } else if (settings.roles && i === imposterCount + 1 && Math.random() > 0.7) {
+      result[p.id] = { role: 'detective', word };
+    } else {
+      result[p.id] = { role: 'crewmate', word };
+    }
+  });
+  return result;
+}
+
+function pickChaosEvent() {
+  if (Math.random() > 0.4) return randomFrom(CHAOS_EVENTS);
+  return null;
+}
+
+function pickObjective(settings) {
+  if (!settings.objectives) return null;
+  if (Math.random() > 0.5) return randomFrom(OBJECTIVES);
+  return null;
+}
+
+// ══════════════════════════════════════════════════════
+//  UI — HOME SCREEN
+// ══════════════════════════════════════════════════════
+function initHome() {
+  state.sessionId = getOrCreateSession();
+
+  // Restore name
+  const saved = localStorage.getItem('hw_name');
+  if (saved) document.getElementById('player-name').value = saved;
+
+  const savedEmoji = localStorage.getItem('hw_emoji') || '🎭';
+  state.playerEmoji = savedEmoji;
+  document.getElementById('selected-emoji').textContent = savedEmoji;
+
+  document.getElementById('random-emoji-btn').onclick = () => {
+    state.playerEmoji = randomFrom(EMOJIS);
+    document.getElementById('selected-emoji').textContent = state.playerEmoji;
+    localStorage.setItem('hw_emoji', state.playerEmoji);
+  };
+
+  document.getElementById('create-room-btn').onclick = () => {
+    const name = document.getElementById('player-name').value.trim();
+    if (!name) { toast('Enter your name first!'); return; }
+    state.playerName = name;
+    localStorage.setItem('hw_name', name);
+    state.isSpectator = document.getElementById('spectator-toggle').checked;
+    createRoom();
+  };
+
+  document.getElementById('join-room-btn').onclick = () => {
+    const name = document.getElementById('player-name').value.trim();
+    const code = document.getElementById('join-code').value.trim().toUpperCase();
+    if (!name) { toast('Enter your name first!'); return; }
+    if (!code || code.length < 4) { toast('Enter a valid room code!'); return; }
+    state.playerName = name;
+    localStorage.setItem('hw_name', name);
+    state.isSpectator = document.getElementById('spectator-toggle').checked;
+    joinRoom(code);
+  };
+
+  document.getElementById('join-code').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('join-room-btn').click();
+  });
+
+  // Check for rejoin
+  const savedRoom = sessionStorage.getItem('hw_room');
+  const savedCode = sessionStorage.getItem('hw_code');
+  if (savedRoom && savedCode) {
+    document.getElementById('join-code').value = savedCode;
+    toast('Welcome back! Tap Join to rejoin.', 4000);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  ROOM MANAGEMENT
+// ══════════════════════════════════════════════════════
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+async function createRoom() {
+  const code = generateCode();
+  state.roomCode = code;
+  state.isHost = true;
+  state.playerId = uid();
+
+  if (DEMO_MODE) {
+    demoCreateRoom(code);
+    const me = {
+      id: state.playerId,
+      sessionId: state.sessionId,
+      name: state.playerName,
+      emoji: state.playerEmoji,
+      isHost: true,
+      isSpectator: state.isSpectator,
+      role: 'crewmate',
+      connected: true
+    };
+    state.players = [me];
+    demoAddPlayer(code, me);
+    sessionStorage.setItem('hw_room', code);
+    sessionStorage.setItem('hw_code', code);
+    showLobby();
+  } else {
+    // Supabase: create room then join
+    await supabaseCreateRoom(code);
+  }
+}
+
+async function joinRoom(code) {
+  state.roomCode = code.toUpperCase();
+  state.isHost = false;
+  state.playerId = uid();
+
+  if (DEMO_MODE) {
+    const room = DemoRooms.get(code);
+    if (!room) { toast('Room not found! Check the code.'); return; }
+    if (room.players.length >= 10) { toast('Room is full!'); return; }
+
+    const me = {
+      id: state.playerId,
+      sessionId: state.sessionId,
+      name: state.playerName,
+      emoji: state.playerEmoji,
+      isHost: false,
+      isSpectator: state.isSpectator,
+      role: 'crewmate',
+      connected: true
+    };
+    demoAddPlayer(code, me);
+    state.players = room.players;
+    sessionStorage.setItem('hw_room', code);
+    sessionStorage.setItem('hw_code', code);
+    showLobby();
+    toast(`Joined room ${code}!`);
+  } else {
+    await supabaseJoinRoom(code);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  LOBBY
+// ══════════════════════════════════════════════════════
+function showLobby() {
+  showScreen('lobby');
+  document.getElementById('lobby-code').textContent = state.roomCode;
+  document.getElementById('copy-code-btn').onclick = () => {
+    navigator.clipboard.writeText(state.roomCode).then(() => toast('Code copied!'));
+  };
+
+  // Host controls
+  if (state.isHost) {
+    document.getElementById('host-settings').style.display = 'block';
+    document.getElementById('start-btn-wrap').style.display = 'block';
+    document.getElementById('waiting-msg').style.display = 'none';
+    document.getElementById('start-game-btn').onclick = startGame;
+
+    // Settings
+    ['chaos','roles','variants','objectives'].forEach(key => {
+      const el = document.getElementById('setting-' + key);
+      el.checked = state.settings[key];
+      el.onchange = () => { state.settings[key] = el.checked; };
+    });
+  } else {
+    document.getElementById('host-settings').style.display = 'none';
+    document.getElementById('start-btn-wrap').style.display = 'none';
+    document.getElementById('waiting-msg').style.display = 'block';
+  }
+
+  if (DEMO_MODE) {
+    onLobbyUpdate(state.roomCode, room => {
+      state.players = room.players;
+      renderLobbyPlayers();
+    });
+    renderLobbyPlayers();
+
+    // Simulate other players joining in demo
+    if (state.isHost) {
+      setTimeout(() => addDemoPlayers(), 1000);
+    }
+  }
+}
+
+function addDemoPlayers() {
+  const demoNames = [
+    {name:'Alex',emoji:'🦊'},{name:'Sam',emoji:'🐙'},
+    {name:'Jordan',emoji:'🦄'},{name:'Casey',emoji:'🐸'},
+    {name:'Morgan',emoji:'🎃'},{name:'Taylor',emoji:'👻'}
+  ];
+  let delay = 600;
+  demoNames.slice(0, 4).forEach(p => {
+    setTimeout(() => {
+      const player = {
+        id: uid(), sessionId: uid(),
+        name: p.name, emoji: p.emoji,
+        isHost: false, isSpectator: false,
+        role: 'crewmate', connected: true
+      };
+      const room = DemoRooms.get(state.roomCode);
+      if (room) {
+        room.players.push(player);
+        broadcastLobbyUpdate(state.roomCode);
+        toast(`${p.emoji} ${p.name} joined!`);
+      }
+    }, delay);
+    delay += 800;
+  });
+}
+
+function renderLobbyPlayers() {
+  const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
+  const players = room ? room.players : state.players;
+  const container = document.getElementById('lobby-players');
+  container.innerHTML = '';
+
+  players.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'player-chip' + (p.id === state.playerId ? ' highlighted' : '');
+    chip.innerHTML = `
+      <div class="avatar">${p.emoji}</div>
+      <div class="player-name">${p.name}${p.id === state.playerId ? ' <span class="badge badge-purple">You</span>' : ''}</div>
+      <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+        ${p.isHost ? '<span class="badge badge-amber">Host</span>' : ''}
+        ${p.isSpectator ? '<span class="badge badge-cyan">Spectator</span>' : ''}
+      </div>
+    `;
+    container.appendChild(chip);
+  });
+
+  const count = players.length;
+  document.getElementById('lobby-player-count').textContent = `${count} / 10 players`;
+
+  const startBtn = document.getElementById('start-game-btn');
+  if (startBtn) {
+    if (count >= 4) {
+      startBtn.disabled = false;
+      startBtn.textContent = `🚀 Start Game (${count} players)`;
+    } else {
+      startBtn.disabled = true;
+      startBtn.textContent = `Start Game (need ${4-count} more)`;
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  GAME START
+// ══════════════════════════════════════════════════════
+function startGame() {
+  if (!DEMO_MODE) { supabaseStartGame(); return; }
+
+  const room = DemoRooms.get(state.roomCode);
+  if (!room || room.players.length < 4) { toast('Need at least 4 players!'); return; }
+
+  // Pick word
+  const wordData = randomFrom(WORD_DATA);
+  room.word = wordData.word;
+  room.wordData = wordData;
+
+  // Assign roles
+  const assignments = assignRolesAndWords(room.players, wordData, state.settings);
+  room.players.forEach(p => {
+    p.role = assignments[p.id].role;
+    p.wordShown = assignments[p.id].word;
+  });
+
+  // Chaos event
+  room.chaosEvent = state.settings.chaos ? pickChaosEvent() : null;
+
+  // Objectives
+  room.players.forEach(p => {
+    if (!p.isSpectator) {
+      p.objective = state.settings.objectives ? pickObjective(state.settings) : null;
+    }
+  });
+
+  room.phase = 'word_distribution';
+  room.clues = [];
+  room.votes = {};
+
+  // Update my local state
+  const me = room.players.find(p => p.id === state.playerId);
+  if (me) {
+    state.myRole = me.role;
+    state.myWord = me.wordShown;
+    state.myObjective = me.objective;
+    state.chaosEvent = room.chaosEvent;
+  }
+
+  broadcastLobbyUpdate(state.roomCode);
+  showWordPhase();
+}
+
+// ══════════════════════════════════════════════════════
+//  WORD DISTRIBUTION PHASE
+// ══════════════════════════════════════════════════════
+function showWordPhase() {
+  showScreen('word');
+  state.phase = 'word_distribution';
+  state.myClueSent = false;
+  state.myVote = null;
+
+  const roleConfigs = {
+    crewmate:        { badge:'badge-green',  label:'Crewmate',     hint:'Your secret word — give clues without being obvious' },
+    detective:       { badge:'badge-cyan',   label:'Detective',    hint:'You know there\'s an imposter — find them!' },
+    confused:        { badge:'badge-amber',  label:'Confused',     hint:'Your word is similar but different — be careful!' },
+    imposter:        { badge:'badge-red',    label:'Imposter',     hint:'You don\'t know the word — blend in!' },
+    double_imposter: { badge:'badge-pink',   label:'Imposter',     hint:'You\'re one of two imposters — stay hidden!' },
+  };
+
+  const cfg = roleConfigs[state.myRole] || roleConfigs.crewmate;
+  const badge = document.getElementById('word-role-badge');
+  badge.className = 'badge ' + cfg.badge;
+  badge.textContent = cfg.label;
+
+  const wordText = document.getElementById('word-text');
+  const wordHint = document.getElementById('word-hint');
+
+  if (state.myRole === 'imposter' || state.myRole === 'double_imposter') {
+    wordText.textContent = '???';
+    wordText.style.color = 'var(--red)';
+  } else {
+    wordText.textContent = state.myWord || '???';
+    wordText.style.color = '';
+  }
+  wordHint.textContent = cfg.hint;
+
+  // Objective card
+  const objCard = document.getElementById('objective-card');
+  if (state.myObjective) {
+    objCard.style.display = 'block';
+    document.getElementById('objective-text').textContent =
+      state.myObjective.icon + '  ' + state.myObjective.text;
+  } else {
+    objCard.style.display = 'none';
+  }
+
+  // Chaos preview
+  if (state.chaosEvent) {
+    setTimeout(() => toast(`⚡ Chaos Event incoming: ${state.chaosEvent.title}`, 3000), 2000);
+  }
+
+  // Timer
+  const timerEl = document.getElementById('word-timer');
+  const countEl = document.getElementById('word-countdown-num');
+  startTimer('word', 10,
+    s => { setTimerEl(timerEl, s); countEl.textContent = s; },
+    () => showCluePhase()
+  );
+}
+
+// ══════════════════════════════════════════════════════
+//  CLUE PHASE
+// ══════════════════════════════════════════════════════
+function showCluePhase() {
+  showScreen('clue');
+  state.phase = 'clue';
+
+  const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
+
+  // Show chaos event
+  if (state.chaosEvent) {
+    const bannerEl = document.getElementById('chaos-banner-clue');
+    bannerEl.style.display = 'block';
+    bannerEl.innerHTML = `
+      <div class="chaos-banner">
+        <div class="chaos-icon">${state.chaosEvent.icon}</div>
+        <div>
+          <div class="chaos-text">${state.chaosEvent.title}</div>
+          <div class="chaos-sub">${state.chaosEvent.desc}</div>
+        </div>
+      </div>`;
+  }
+
+  renderClueFeed('clue-feed', []);
+
+  const inputSection = document.getElementById('clue-input-section');
+  const submittedMsg = document.getElementById('clue-submitted-msg');
+
+  if (state.isSpectator || state.myClueSent) {
+    inputSection.style.display = 'none';
+    submittedMsg.style.display = 'block';
+  } else {
+    inputSection.style.display = 'block';
+    submittedMsg.style.display = 'none';
+  }
+
+  document.getElementById('submit-clue-btn').onclick = submitClue;
+  document.getElementById('clue-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitClue();
+  });
+
+  // Reaction buttons
+  document.querySelectorAll('#reaction-bar-clue .reaction-btn').forEach(btn => {
+    btn.onclick = () => {
+      spawnReaction(btn.dataset.emoji);
+      toast(btn.dataset.emoji, 1000);
+    };
+  });
+
+  // Timer
+  const timerEl = document.getElementById('clue-timer');
+  startTimer('clue', 60,
+    s => setTimerEl(timerEl, s),
+    () => showDiscussionPhase()
+  );
+
+  // Demo: simulate AI players submitting clues
+  if (DEMO_MODE && room) {
+    simulateDemoClues(room);
+  }
+}
+
+function simulateDemoClues(room) {
+  const demoClues = {
+    Piano:    ['keys','music','concert','Beethoven','black and white'],
+    Lighthouse: ['coast','beam','ships','rocky','keeper'],
+    Compass:  ['north','direction','explorer','navigate','needle'],
+    Flamingo: ['pink','one leg','tropical','wading','feathers'],
+    Croissant: ['buttery','flaky','Paris','breakfast','pastry'],
+    Tornado:  ['funnel','Dorothy','Kansas','spin','shelter'],
+    Hammock:  ['relax','swing','tropical','between trees','lazy'],
+    Submarine: ['deep','yellow','silent','depth','periscope'],
+  };
+  const wordClues = demoClues[room.word] || ['thing','object','concept','stuff','idea'];
+
+  const nonHostPlayers = room.players.filter(p => p.id !== state.playerId && !p.isSpectator);
+  let delay = 3000;
+
+  nonHostPlayers.forEach((p, i) => {
+    setTimeout(() => {
+      let clue;
+      if (p.role === 'imposter' || p.role === 'double_imposter') {
+        // Imposter gives vague clue
+        const vagueClues = ['interesting','mysterious','complex','special','unique'];
+        clue = randomFrom(vagueClues);
+      } else if (p.role === 'confused') {
+        // Confused gives slightly off clue
+        clue = wordClues[i % wordClues.length] + '?';
+      } else {
+        clue = wordClues[i % wordClues.length];
+      }
+
+      room.clues.push({ playerId: p.id, playerName: p.name, playerEmoji: p.emoji, text: clue, role: p.role });
+      renderClueFeed('clue-feed', room.clues);
+      toast(`${p.emoji} ${p.name} gave a clue`, 1500);
+    }, delay);
+    delay += 1500 + Math.random() * 2000;
+  });
+}
+
+function submitClue() {
+  if (state.myClueSent) return;
+  const input = document.getElementById('clue-input');
+  const text = input.value.trim();
+  if (!text) { toast('Write a clue first!'); return; }
+
+  const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
+  const me = room?.players.find(p => p.id === state.playerId);
+
+  const clue = {
+    playerId: state.playerId,
+    playerName: state.playerName,
+    playerEmoji: state.playerEmoji,
+    text,
+    role: state.myRole
+  };
+
+  if (room) room.clues.push(clue);
+  renderClueFeed('clue-feed', room?.clues || [clue]);
+
+  state.myClueSent = true;
+  input.value = '';
+  document.getElementById('clue-input-section').style.display = 'none';
+  document.getElementById('clue-submitted-msg').style.display = 'block';
+  toast('Clue submitted! ✓');
+
+  if (!DEMO_MODE) supabaseSubmitClue(text);
+}
+
+function renderClueFeed(containerId, clues) {
+  const container = document.getElementById(containerId);
+  if (!clues.length) {
+    container.innerHTML = '<div class="text-muted2 text-sm text-center" style="padding:1rem 0;">Waiting for first clue…</div>';
+    return;
+  }
+
+  const isBlind = state.chaosEvent?.type === 'blind_round';
+  container.innerHTML = clues.map(c => `
+    <div class="clue-item">
+      <div class="avatar" style="width:28px;height:28px;font-size:0.9rem;">${isBlind ? '?' : c.playerEmoji}</div>
+      <div>
+        <div class="clue-text">${c.text}</div>
+        <div class="clue-author">${isBlind ? 'Anonymous' : c.playerName}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  DISCUSSION PHASE
+// ══════════════════════════════════════════════════════
+function showDiscussionPhase() {
+  showScreen('discussion');
+  state.phase = 'discussion';
+
+  const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
+  if (room) renderClueFeed('discussion-clue-feed', room.clues);
+
+  // Chaos banner
+  if (state.chaosEvent) {
+    const bannerEl = document.getElementById('chaos-banner-discussion');
+    bannerEl.style.display = 'block';
+    bannerEl.innerHTML = `
+      <div class="chaos-banner">
+        <div class="chaos-icon">${state.chaosEvent.icon}</div>
+        <div>
+          <div class="chaos-text">${state.chaosEvent.title}</div>
+          <div class="chaos-sub">${state.chaosEvent.desc}</div>
+        </div>
+      </div>`;
+  }
+
+  // Players list
+  const container = document.getElementById('discussion-players');
+  const players = room?.players || state.players;
+  container.innerHTML = players.filter(p => !p.isSpectator).map(p => `
+    <div class="player-chip">
+      <div class="avatar">${p.emoji}</div>
+      <div class="player-name">${p.name}</div>
+      ${p.id === state.playerId ? '<span class="badge badge-purple">You</span>' : ''}
+    </div>
+  `).join('');
+
+  // Reactions
+  document.querySelectorAll('.reaction-btn').forEach(btn => {
+    btn.onclick = () => {
+      spawnReaction(btn.dataset.emoji);
+    };
+  });
+
+  const timerEl = document.getElementById('discussion-timer');
+  startTimer('discussion', 90,
+    s => setTimerEl(timerEl, s),
+    () => showVotingPhase()
+  );
+}
+
+// ══════════════════════════════════════════════════════
+//  VOTING PHASE
+// ══════════════════════════════════════════════════════
+function showVotingPhase() {
+  showScreen('voting');
+  state.phase = 'voting';
+  state.votes = {};
+
+  const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
+  const players = (room?.players || state.players).filter(p => !p.isSpectator);
+  const voteGrid = document.getElementById('vote-grid');
+  const otherPlayers = players.filter(p => p.id !== state.playerId);
+
+  function renderVotes() {
+    const totalVotes = Object.values(state.votes).reduce((s, v) => s + v, 0);
+    voteGrid.innerHTML = otherPlayers.map(p => {
+      const voteCount = state.votes[p.id] || 0;
+      const pct = totalVotes ? Math.round(voteCount / totalVotes * 100) : 0;
+      return `
+        <button class="vote-btn${state.myVote === p.id ? ' voted' : ''}" data-id="${p.id}" onclick="castVote('${p.id}')">
+          <div class="avatar" style="width:32px;height:32px;">${p.emoji}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:0.9rem;">${p.name}</div>
+          </div>
+          <div class="vote-bar-wrap"><div class="vote-bar" style="width:${pct}%"></div></div>
+          <div class="vote-count">${voteCount}</div>
+        </button>`;
+    }).join('');
+  }
+  renderVotes();
+
+  // Demo: simulate votes after delay
+  if (DEMO_MODE && room) {
+    const imposterIds = room.players.filter(p => p.role.includes('imposter')).map(p => p.id);
+    setTimeout(() => {
+      room.players.filter(p => p.id !== state.playerId && !p.isSpectator).forEach(p => {
+        let targetId;
+        if (p.role.includes('imposter')) {
+          // Imposter votes for random crewmate
+          const crew = room.players.filter(c => !c.role.includes('imposter') && c.id !== p.id);
+          targetId = randomFrom(crew)?.id;
+        } else {
+          // Crewmate might vote correctly (60% chance) or randomly
+          if (Math.random() > 0.4 && imposterIds.length) {
+            targetId = randomFrom(imposterIds);
+          } else {
+            const others = room.players.filter(c => c.id !== p.id && !p.isSpectator);
+            targetId = randomFrom(others)?.id;
+          }
+        }
+        if (targetId) {
+          state.votes[targetId] = (state.votes[targetId] || 0) + 1;
+          renderVotes();
+        }
+      });
+
+      const voteIn = document.getElementById('votes-in');
+      const voteTotal = document.getElementById('votes-total');
+      if (voteIn) voteIn.textContent = otherPlayers.length + (state.myVote ? 1 : 0);
+      if (voteTotal) voteTotal.textContent = players.length;
+    }, 3000 + Math.random() * 4000);
+  }
+
+  window.castVote = function(targetId) {
+    if (state.myVote) return;
+    state.myVote = targetId;
+    state.votes[targetId] = (state.votes[targetId] || 0) + 1;
+    renderVotes();
+    document.getElementById('voted-msg').style.display = 'block';
+    toast('Vote cast!');
+    if (!DEMO_MODE) supabaseCastVote(targetId);
+  };
+
+  const timerEl = document.getElementById('voting-timer');
+  startTimer('voting', 30,
+    s => setTimerEl(timerEl, s),
+    () => showRevealPhase()
+  );
+}
+
+// ══════════════════════════════════════════════════════
+//  REVEAL PHASE
+// ══════════════════════════════════════════════════════
+function showRevealPhase() {
+  showScreen('reveal');
+  state.phase = 'reveal';
+  clearTimers();
+
+  const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
+  const players = room?.players || state.players;
+
+  // Find imposter(s)
+  const imposters = players.filter(p => p.role?.includes('imposter'));
+  const word = room?.word || state.myWord || '???';
+
+  // Tally votes
+  let maxVotes = 0;
+  let mostVotedId = null;
+  Object.entries(state.votes).forEach(([id, count]) => {
+    if (count > maxVotes) { maxVotes = count; mostVotedId = id; }
+  });
+
+  const imposterIds = imposters.map(p => p.id);
+  const crewWins = imposterIds.includes(mostVotedId);
+
+  // Result card
+  const resultCard = document.getElementById('reveal-result-card');
+  const emoji = document.getElementById('reveal-emoji');
+  const title = document.getElementById('reveal-title');
+  const sub   = document.getElementById('reveal-sub');
+  const wordEl = document.getElementById('reveal-word');
+
+  wordEl.textContent = word;
+
+  if (crewWins) {
+    resultCard.className = 'reveal-card reveal-crew';
+    emoji.textContent = '🎉';
+    title.textContent = 'Crew Wins!';
+    title.style.color = 'var(--green)';
+    sub.textContent = `The imposter was caught with ${maxVotes} vote${maxVotes !== 1 ? 's' : ''}!`;
+    confetti();
+  } else {
+    resultCard.className = 'reveal-card reveal-imp';
+    emoji.textContent = '😈';
+    title.textContent = 'Imposter Wins!';
+    title.style.color = 'var(--red)';
+    sub.textContent = 'The crew failed to identify the imposter!';
+  }
+
+  // Render players with reveals
+  const container = document.getElementById('reveal-players');
+  container.innerHTML = players.filter(p => !p.isSpectator).map(p => {
+    const isImp = p.role?.includes('imposter');
+    const voteCount = state.votes[p.id] || 0;
+    return `
+      <div class="player-chip${isImp ? ' imposter-revealed' : ''}">
+        <div class="avatar">${p.emoji}</div>
+        <div class="player-name">${p.name}</div>
+        <div style="display:flex;gap:0.4rem;align-items:center;">
+          ${isImp ? '<span class="badge badge-red">Imposter</span>' : '<span class="badge badge-green">Crew</span>'}
+          ${p.role === 'confused' ? '<span class="badge badge-amber">Confused</span>' : ''}
+          ${p.role === 'detective' ? '<span class="badge badge-cyan">Detective</span>' : ''}
+          ${voteCount ? `<span class="badge badge-purple mono">${voteCount}v</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  // Imposter comeback guess
+  const isMyImposter = imposterIds.includes(state.playerId);
+  const guessSection = document.getElementById('imposter-guess-section');
+  if (isMyImposter && !crewWins) {
+    guessSection.style.display = 'block';
+    document.getElementById('submit-guess-btn').onclick = () => {
+      const guess = document.getElementById('imposter-guess-input').value.trim();
+      if (!guess) return;
+      if (guess.toLowerCase() === word.toLowerCase()) {
+        toast('🎉 Correct! Comeback win!', 3000);
+        confetti();
+        guessSection.innerHTML = '<div class="text-center" style="color:var(--green);font-weight:700;padding:0.5rem;">✓ Correct! Imposter gets the comeback win!</div>';
+      } else {
+        toast('❌ Wrong guess! Crew wins for real.', 3000);
+        guessSection.innerHTML = '<div class="text-center" style="color:var(--red);font-weight:700;padding:0.5rem;">✗ Wrong guess!</div>';
+      }
+    };
+  } else {
+    guessSection.style.display = 'none';
+  }
+
+  // Buttons
+  document.getElementById('back-lobby-btn').onclick = () => {
+    showScreen('lobby');
+    renderLobbyPlayers();
+  };
+  document.getElementById('play-again-btn').style.display = state.isHost ? 'flex' : 'none';
+  document.getElementById('play-again-btn').onclick = () => {
+    if (DEMO_MODE) {
+      const room = DemoRooms.get(state.roomCode);
+      if (room) { room.clues = []; room.votes = {}; room.phase = 'lobby'; }
+      state.chaosEvent = null;
+      state.myVote = null;
+      state.myClueSent = false;
+    }
+    startGame();
+  };
+}
+
+// ══════════════════════════════════════════════════════
+//  SUPABASE FUNCTIONS (stub — complete per your schema)
+// ══════════════════════════════════════════════════════
+async function supabaseCreateRoom(code) {
+  try {
+    const { data: room, error } = await sb.from('rooms').insert({
+      code,
+      host_id: state.sessionId,
+      settings: { phase_timers: {word_distribution:10,clue:60,discussion:90,voting:30,reveal:15}, ...state.settings }
+    }).select().single();
+    if (error) throw error;
+    state.roomId = room.id;
+
+    // Create initial game
+    const { data: game } = await sb.from('games').insert({ room_id: room.id }).select().single();
+    state.gameId = game.id;
+
+    // Add self as player
+    const { data: player } = await sb.from('players').insert({
+      room_id: room.id, game_id: game.id,
+      session_id: state.sessionId,
+      display_name: state.playerName, avatar_emoji: state.playerEmoji,
+      is_host: true, is_spectator: state.isSpectator
+    }).select().single();
+    state.playerId = player.id;
+
+    subscribeToRoom();
+    showLobby();
+  } catch (e) { toast('Error creating room: ' + e.message); }
+}
+
+async function supabaseJoinRoom(code) {
+  try {
+    const { data: room } = await sb.from('rooms').select('*').eq('code', code).single();
+    if (!room) { toast('Room not found!'); return; }
+    state.roomId = room.id;
+    state.gameId = room.current_game_id;
+
+    const { data: player } = await sb.from('players').insert({
+      room_id: room.id, game_id: state.gameId,
+      session_id: state.sessionId,
+      display_name: state.playerName, avatar_emoji: state.playerEmoji,
+      is_host: false, is_spectator: state.isSpectator
+    }).select().single();
+    state.playerId = player.id;
+
+    subscribeToRoom();
+    showLobby();
+  } catch (e) { toast('Error joining room: ' + e.message); }
+}
+
+function subscribeToRoom() {
+  if (!sb) return;
+  // Subscribe to players changes
+  const playerSub = sb.channel(`room-${state.roomId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${state.roomId}` },
+      payload => { fetchPlayers(); })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${state.gameId}` },
+      payload => { handleGameUpdate(payload.new); })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clues', filter: `game_id=eq.${state.gameId}` },
+      payload => { addClueToFeed(payload.new); })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes', filter: `game_id=eq.${state.gameId}` },
+      payload => { updateVoteCount(payload.new); })
+    .subscribe();
+  state.subscriptions.push(playerSub);
+}
+
+async function fetchPlayers() {
+  const { data } = await sb.from('players').select('*').eq('room_id', state.roomId);
+  if (data) { state.players = data; renderLobbyPlayers(); }
+}
+
+async function supabaseStartGame() {
+  // Pick random word
+  const { data: words } = await sb.from('words').select('*').limit(100);
+  const wordData = randomFrom(words);
+
+  const { error } = await sb.from('games').update({
+    phase: 'word_distribution',
+    word_id: wordData.id,
+    secret_word: wordData.word,
+    phase_ends_at: new Date(Date.now() + 10000).toISOString()
+  }).eq('id', state.gameId);
+
+  // Assign roles (use DB function)
+  await sb.rpc('assign_roles', {
+    p_game_id: state.gameId,
+    p_enable_double_imposter: state.settings.roles,
+    p_enable_confused: state.settings.variants,
+    p_enable_detective: state.settings.roles
+  });
+}
+
+async function supabaseSubmitClue(text) {
+  await sb.from('clues').insert({
+    game_id: state.gameId, player_id: state.playerId,
+    round: 1, content: text
+  });
+}
+
+async function supabaseCastVote(targetId) {
+  await sb.from('votes').upsert({
+    game_id: state.gameId, voter_id: state.playerId,
+    target_id: targetId, round: 1
+  });
+}
+
+function handleGameUpdate(game) {
+  if (game.phase !== state.phase) {
+    state.phase = game.phase;
+    if (game.phase === 'word_distribution') showWordPhase();
+    else if (game.phase === 'clue') showCluePhase();
+    else if (game.phase === 'discussion') showDiscussionPhase();
+    else if (game.phase === 'voting') showVotingPhase();
+    else if (game.phase === 'reveal') showRevealPhase();
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initHome();
+  if (DEMO_MODE) {
+    toast('🎮 Demo Mode — No Supabase configured. Add your credentials to go live!', 5000);
+  }
+});
+</script>
+</body>
+</html>
