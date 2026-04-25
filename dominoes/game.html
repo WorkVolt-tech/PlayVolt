@@ -637,9 +637,11 @@ function computeSnakePositions(tiles, W, H) {
       const nh = nextIsDbl ? TH : TW;
       y = y + h / 2 + GAP + nh / 2;
       // Align new row's wall-side edge flush with corner tile's wall-side edge
+      // Corner w=TW=34, run tile w=nw=68: wall-side edges must match
       x = goingRight
         ? (x - w / 2) + nw / 2   // left edges align (came from left wall)
         : (x + w / 2) - nw / 2;  // right edges align (came from right wall)
+      // Also need GAP between corner tile and first run tile of new row (y already has it)
       inCorner = false;
 
     } else {
@@ -652,10 +654,11 @@ function computeSnakePositions(tiles, W, H) {
         : (nextX - nw / 2) < MARGIN;
 
       if (overflows) {
-        // Next tile is a corner — place it flush against current tile's end
-        const cw = nextIsDbl ? TH : TW;
-        const ch = nextIsDbl ? TW : TH;
-        x = x + (goingRight ? 1 : -1) * (w / 2 + cw / 2);
+        // Corner tile is always portrait (TW wide, TH tall)
+        const cw = TW;
+        const ch = TH;
+        // Place corner flush with GAP between run tile edge and corner tile edge
+        x = x + (goingRight ? 1 : -1) * (w / 2 + GAP + cw / 2);
         y = y + h / 2 + GAP + ch / 2;
         goingRight = !goingRight;
         inCorner = true;
