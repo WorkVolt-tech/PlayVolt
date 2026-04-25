@@ -651,18 +651,16 @@ function computeSnakePositions(tiles, W, H) {
       const nextDims = getDims(nextIsDbl, false);
       const nextX = x + dir * (w / 2 + GAP + nextDims.w / 2);
 
+      // Check overflow based on where CORNER tile would land flush with current tile
+      const cornerDims = getDims(nextIsDbl, true);
+      const flushCornerX = x + dir * (w / 2 + cornerDims.w / 2);
       const wouldOverflow = dir > 0
-        ? (nextX + nextDims.w / 2) > (W - MARGIN)
-        : (nextX - nextDims.w / 2) < MARGIN;
+        ? (flushCornerX + cornerDims.w / 2) > (W - MARGIN)
+        : (flushCornerX - cornerDims.w / 2) < MARGIN;
 
       if (wouldOverflow) {
-        // Turn: next tile is a corner tile going DOWN
-        const cornerDims = getDims(nextIsDbl, true);
-        // Flush: corner tile's edge meets last run tile's end edge exactly
-        x = dir > 0
-          ? x + w / 2 + cornerDims.w / 2
-          : x - w / 2 - cornerDims.w / 2;
-        // Step y downward: current tile bottom edge + gap + corner tile top half
+        // Place corner flush against current run tile — no wall snap needed
+        x = flushCornerX;
         y = y + h / 2 + GAP + cornerDims.h / 2;
         dir *= -1;
         inCorner = true;
