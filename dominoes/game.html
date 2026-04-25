@@ -479,7 +479,6 @@ window.addEventListener('load', async () => {
       .select('id, status').eq('id', myInfo.roomId).single();
 
     if (error || !room || room.status === 'abandoned') {
-      // Room is gone — clear session and go back to lobby
       sessionStorage.removeItem('domino_player');
       location.href = 'index.html';
       return;
@@ -492,8 +491,11 @@ window.addEventListener('load', async () => {
       .eq('seat', myInfo.seat);
 
   } catch(e) {
-    // Network issue — still try to load
-    console.warn('Room check failed, attempting to load anyway:', e);
+    // Can't reach DB at all — go back to lobby
+    console.warn('Room check failed:', e);
+    sessionStorage.removeItem('domino_player');
+    location.href = 'index.html';
+    return;
   }
 
   await loadGameState();
@@ -501,11 +503,19 @@ window.addEventListener('load', async () => {
 });
 
 async function loadGameState() {
-  const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
+  const [{ data: room, error: rErr }, { data: pData }, { data: bData }] = await Promise.all([
     db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
     db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
     db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
   ]);
+
+  // If room vanished mid-game, go back to lobby
+  if (rErr || !room) {
+    sessionStorage.removeItem('domino_player');
+    location.href = 'index.html';
+    return;
+  }
+
   roomData = room; players = pData || []; boardData = bData;
   renderAll();
 }
