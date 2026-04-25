@@ -634,13 +634,17 @@ function computeSnakePositions(tiles, W, H) {
     const nextIsDbl = tiles[i + 1].tile[0] === tiles[i + 1].tile[1];
 
     if (inCorner) {
-      // Just placed a corner tile — next tile goes back to horizontal run
-      // x aligns to the wall side, y steps down by this tile's bottom + next tile's half-height
+      // Corner tile just placed — resume horizontal run on new row
       const nextDims = getDims(nextIsDbl, false);
-      // The corner tile's center is at x; the horizontal run resumes at the same x
-      // (corner tile and first run tile of new row share the same wall-side x)
       y = y + h / 2 + GAP + nextDims.h / 2;
-      // x stays where the corner pinned it — horizontal run continues from here
+      // Align new run tile's wall-side edge flush with corner tile's wall-side edge:
+      // going left (came from right wall): right edges align → x = corner.x + corner.w/2 - next.w/2
+      // going right (came from left wall): left edges align  → x = corner.x - corner.w/2 + next.w/2
+      if (dir < 0) {
+        x = x + w / 2 - nextDims.w / 2;
+      } else {
+        x = x - w / 2 + nextDims.w / 2;
+      }
       inCorner = false;
     } else {
       // Horizontal run — try to place next tile horizontally
