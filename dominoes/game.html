@@ -478,8 +478,8 @@ window.addEventListener('load', async () => {
 
 async function loadGameState() {
   const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
-    db.from('rooms').select('*').eq('id', myInfo.roomId).single(),
-    db.from('players').select('*').eq('room_id', myInfo.roomId).order('seat'),
+    db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
+    db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
     db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
   ]);
   roomData = room; players = pData || []; boardData = bData;
@@ -488,8 +488,8 @@ async function loadGameState() {
 
 function subscribeToGame() {
   db.channel('game-' + myInfo.roomId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',       filter: `id=eq.${myInfo.roomId}` }, (payload) => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_rooms',       filter: `id=eq.${myInfo.roomId}` }, (payload) => {
       if (payload.new.status === 'abandoned' && myInfo.seat !== 0) { handleRoomAbandoned(); return; }
       loadGameState();
     })
@@ -872,7 +872,7 @@ async function placeFirstTile(tile) {
     right_end: tile[1]
   }).eq('room_id', myInfo.roomId);
   
-  await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
+  await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
   await advanceTurn(newHand);
   selectedTile = null;
@@ -929,7 +929,7 @@ async function confirmPlace(side) {
     right_end: newRightEnd
   }).eq('room_id', myInfo.roomId);
   
-  await db.from('players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
+  await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
   await advanceTurn(newHand);
   selectedTile = null;
@@ -954,11 +954,11 @@ async function advanceTurn(myNewHand) {
   }
   
   const nextSeat = (roomData.current_turn + 1) % 4;
-  await db.from('rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
+  await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
 }
 
 async function endGame(winningSeat) {
-  await db.from('rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
+  await db.from('domino_rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
 }
 
 function showGameOver() {
@@ -997,9 +997,9 @@ async function leaveTable() {
   if (!confirm('Leave this table?')) return;
   try {
     if (myInfo.seat === 0) {
-      await db.from('rooms').update({ status: 'abandoned' }).eq('id', myInfo.roomId);
+      await db.from('domino_rooms').update({ status: 'abandoned' }).eq('id', myInfo.roomId);
     } else {
-      await db.from('players').update({ is_connected: false }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
+      await db.from('domino_players').update({ is_connected: false }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
     }
     sessionStorage.removeItem('domino_player');
     location.href = 'index.html';
