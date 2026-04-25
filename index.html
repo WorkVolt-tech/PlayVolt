@@ -510,6 +510,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .game-card.locked { cursor: not-allowed; opacity: 0.5; }
 .game-card.locked:hover { transform: none; border-color: var(--border); }
 .game-card.locked:hover::before { opacity: 0; }
+.game-card-static {
+  border-style: dashed;
+  opacity: 0.7;
+}
+.game-card-suggest {
+  border-style: dashed;
+  border-color: rgba(212,255,0,0.2);
+  opacity: 0.85;
+}
+.game-card-suggest:hover { border-color: var(--volt) !important; opacity: 1; }
 
 .game-icon { font-size: 2.4rem; margin-bottom: 8px; display: block; }
 .game-name { font-size: 0.88rem; font-weight: 900; margin-bottom: 3px; }
@@ -771,24 +781,7 @@ const GAMES = [
     access:  'all',
     route:   GAME_ROUTES.bluff,
   },
-  {
-    id:      'coming_soon_1',
-    name:    'Trivia Blitz',
-    icon:    '🧠',
-    desc:    'Fast-fire trivia battles. Coming soon!',
-    access:  'all',
-    route:   null,
-    comingSoon: true,
-  },
-  {
-    id:      'coming_soon_2',
-    name:    'Card Chaos',
-    icon:    '🃏',
-    desc:    'Wild card game madness. Coming soon!',
-    access:  'all',
-    route:   null,
-    comingSoon: true,
-  },
+
 ];
 
 /* ═══════════════════════════════════════
@@ -944,6 +937,31 @@ function buildGamesGrid(isAdult) {
 
     grid.appendChild(card);
   });
+
+  // ── COMING SOON card ──
+  const soonCard = document.createElement('div');
+  soonCard.className = 'game-card game-card-static';
+  soonCard.innerHTML = `
+    <span class="game-icon">🚀</span>
+    <div class="game-name">More Coming Soon</div>
+    <div class="game-desc">New games dropping regularly. Stay tuned!</div>
+  `;
+  soonCard.onclick = () => showToast('🚧 More games on the way — watch this space!');
+  grid.appendChild(soonCard);
+
+  // ── SUGGEST A GAME card ──
+  const suggestCard = document.createElement('div');
+  suggestCard.className = 'game-card game-card-suggest';
+  suggestCard.innerHTML = `
+    <span class="game-icon">💡</span>
+    <div class="game-name">Suggest a Game</div>
+    <div class="game-desc">Got an idea? We'd love to hear it!</div>
+  `;
+  suggestCard.onclick = () => {
+    const idea = prompt('What game would you like to see on PlayVolt?');
+    if (idea && idea.trim()) showToast(`💡 Thanks! We got your idea: "${idea.trim().slice(0,40)}"`);
+  };
+  grid.appendChild(suggestCard);
 }
 
 /* ═══════════════════════════════════════
