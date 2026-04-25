@@ -610,8 +610,8 @@ function computeSnakePositions(tiles, W, H) {
 
   for (let i = 0; i < tiles.length; i++) {
     const isDbl = tiles[i].tile[0] === tiles[i].tile[1];
-    const w = inCorner ? TW : TH;
-    const h = inCorner ? TH : TW;
+    const w = (inCorner || isDbl) ? TW : TH;
+    const h = (inCorner || isDbl) ? TH : TW;
 
     let tx, ty;
 
@@ -733,7 +733,7 @@ function renderBoard() {
     // Portrait = TW wide, TH tall
     // Horizontal run: doubles=portrait, normals=landscape
     // Corner: doubles=landscape, normals=portrait
-    const renderVertical = pos.inCorner;  // portrait only at corner, landscape everywhere else
+    const renderVertical = pos.inCorner || isDbl;  // portrait for doubles and corner tiles
 
     let displayTile = [...entry.tile];
     if (!isDbl) {
@@ -751,40 +751,9 @@ function renderBoard() {
     container.appendChild(tileEl);
   });
 
-  // Drop zones — LEFT end (tile 0) and RIGHT end (last tile)
-  const canLeft  = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
-  const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
-  const posL = positions[0];
-  const posR = positions[positions.length - 1];
-
-  if (canLeft && posL) {
-    // Left drop zone sits to the left of tile 0 (which is always horizontal run)
-    Object.assign(dropL.style, {
-      display: 'flex',
-      left:   `${Math.max(4, posL.x - posL.pw / 2 - GAP - 60)}px`,
-      top:    `${posL.y - 17}px`,
-      width:  '56px',
-      height: '34px'
-    });
-  } else {
-    dropL.style.display = 'none';
-  }
-
-  if (canRight && posR) {
-    // Right drop zone — position depends on whether last tile is in corner or horizontal
-    const dropX = posR.inCorner
-      ? posR.x - posR.pw / 2 - GAP - 60   // to the left of a corner tile
-      : posR.x + posR.pw / 2 + GAP;        // to the right of a horizontal tile
-    Object.assign(dropR.style, {
-      display: 'flex',
-      left:   `${Math.min(W - 60, dropX)}px`,
-      top:    `${posR.y - 17}px`,
-      width:  '56px',
-      height: '34px'
-    });
-  } else {
-    dropR.style.display = 'none';
-  }
+  // Drop zones removed from board — side picker at bottom handles left/right choice
+  dropL.style.display = 'none';
+  dropR.style.display = 'none';
 }
 
 function updateTurnState() {
