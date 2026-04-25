@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Dominos — Game · PlayVolt</title>
+<title>Dekabess! — PlayVolt</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -61,6 +61,7 @@ html, body {
   font-weight: 700;
   color: var(--gold);
 }
+.top-bar img { display: block; }
 
 .room-code-badge {
   font-size: 0.58rem;
@@ -415,7 +416,7 @@ html, body {
 <div class="game-layout">
   <div class="top-bar">
     <div class="top-bar-left">
-      <span class="game-title">Dominos</span>
+      <img src="dekabess_logo.webp" alt="Dekabess!" style="height:36px;filter:drop-shadow(0 0 8px rgba(201,168,76,0.5));">
       <span class="room-code-badge" id="room-code-badge">——</span>
     </div>
     <div class="player-tags" id="player-tags"></div>
