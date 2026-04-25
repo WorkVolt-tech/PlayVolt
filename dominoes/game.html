@@ -592,110 +592,90 @@ function renderHand() {
   passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
 }
 
-// ── TILE DIMENSIONS ─────────────────────────────────────────────
-const TW = 34;   // narrow side of a tile
-const TH = 68;   // long side of a tile
-const GAP = 2;   // visual gap between tiles
+const TW = 34;   // narrow side
+const TH = 68;   // long side
+const GAP = 2;
 
-// ── CONNECTOR-BASED SNAKE LAYOUT ─────────────────────────────────
-// Each tile has input/output connectors. The next tile's input snaps
-// exactly to the previous tile's output — like puzzle pieces.
-//
-// Normal tile (landscape TH×TW):
-//   Horizontal → input=left-mid,  output=right-mid
-//   Corner     → input=top-mid,   output=bottom-mid
-//
-// Double tile (portrait TW×TH):
-//   Horizontal → input=CENTER,    output=CENTER
-//   Corner     → input=left/right-edge (same as normal, edge not center)
-//
 function computeSnakePositions(tiles, W, H) {
   if (tiles.length === 0) return [];
-  const MARGIN = 36;
+
+  const MARGIN = 40;
   const positions = [];
   let goingRight = true;
-  let inCorner = false;
+  let inCorner   = false;
 
-  // Tile 0 locked to center
-  const isDbl0 = tiles[0].tile[0] === tiles[0].tile[1];
-  const w0 = isDbl0 ? TW : TH;
-  const h0 = isDbl0 ? TH : TW;
-  const cx = W / 2, cy = H / 2;
-  positions.push({ x: cx, y: cy, pw: w0, ph: h0, inCorner: false, dir: 1 });
+  // Every tile is landscape in a horizontal run: w=TH, h=TW
+  // Every tile is portrait  at a corner turn:    w=TW, h=TH
+  // (doubles and normals treated identically for sizing)
 
-  // Output connector of tile 0
-  let outX = isDbl0 ? cx : cx + w0 / 2;
-  let outY = cy;
-
-  for (let i = 1; i < tiles.length; i++) {
+  for (let i = 0; i < tiles.length; i++) {
     const isDbl = tiles[i].tile[0] === tiles[i].tile[1];
-    const w = (isDbl || inCorner) ? TW : TH;
-    const h = (isDbl || inCorner) ? TH : TW;
+    const w = inCorner ? TW : TH;
+    const h = inCorner ? TH : TW;
 
     let tx, ty;
 
-    if (inCorner) {
-      // Corner tile: left/right edge snaps to last run tile's end edge
-      // goingRight already flipped: !goingRight means we came from the right side
-      tx = !goingRight
-        ? outX + GAP + w / 2    // came from right → corner is to the RIGHT
-        : outX - GAP - w / 2;   // came from left  → corner is to the LEFT
-      ty = outY + GAP + h / 2;
+    if (i === 0) {
+      // First tile always at center
+      tx = W / 2;
+      ty = H / 2;
     } else {
-      if (isDbl) {
-        // Double: CENTER snaps to output
-        tx = outX + (goingRight ? GAP : -GAP);
-        ty = outY;
+      const prev = positions[i - 1];
+
+      if (inCorner) {
+        // Snap this tile's TOP edge to prev tile's RIGHT or LEFT edge + GAP
+        // The corner tile sits at the end of the horizontal run, below it
+        if (!goingRight) {
+          // was going right, corner is on the right side
+          // corner LEFT edge = prev RIGHT edge + GAP
+          tx = (prev.x + prev.pw / 2) + GAP + w / 2;
+        } else {
+          // was going left, corner is on the left side
+          // corner RIGHT edge = prev LEFT edge - GAP
+          tx = (prev.x - prev.pw / 2) - GAP - w / 2;
+        }
+        // corner TOP edge = prev BOTTOM edge + GAP
+        ty = (prev.y + prev.ph / 2) + GAP + h / 2;
+
       } else {
-        // Normal: left-mid (going right) or right-mid (going left) snaps to output
-        tx = goingRight
-          ? outX + GAP + w / 2
-          : outX - GAP - w / 2;
-        ty = outY;
+        // Horizontal run: snap this tile's input edge to prev tile's output edge
+        if (goingRight) {
+          // this LEFT edge = prev RIGHT edge + GAP
+          tx = (prev.x + prev.pw / 2) + GAP + w / 2;
+        } else {
+          // this RIGHT edge = prev LEFT edge - GAP
+          tx = (prev.x - prev.pw / 2) - GAP - w / 2;
+        }
+        ty = prev.y;  // same row
       }
     }
 
     const dir = inCorner ? 0 : (goingRight ? 1 : -1);
     positions.push({ x: tx, y: ty, pw: w, ph: h, inCorner, dir });
 
+    // After placing a corner tile, resume horizontal in new direction
     if (inCorner) {
-      // After corner: set output so next run tile's wall-side edge aligns with corner's
-      outX = goingRight
-        ? tx - w / 2 - GAP   // going right, left edges align
-        : tx + w / 2 + GAP;  // going left, right edges align
-      outY = ty + h / 2;
       inCorner = false;
-    } else {
-      // Normal output
-      if (isDbl) {
-        outX = tx; outY = ty;  // double: center
-      } else {
-        outX = goingRight ? tx + w / 2 : tx - w / 2;
-        outY = ty;
-      }
+      // direction already flipped when we decided to turn
+    }
 
-      // Check if next tile needs a corner turn
-      if (i + 1 < tiles.length) {
-        const nextIsDbl = tiles[i + 1].tile[0] === tiles[i + 1].tile[1];
-        const nw = nextIsDbl ? TW : TH;
-        let nextCx;
-        if (goingRight) {
-          nextCx = nextIsDbl ? outX + GAP : outX + GAP + nw / 2;
-          if (nextCx + nw / 2 > W - MARGIN) {
-            // Override output to edge (doubles use edge at corner, not center)
-            if (isDbl) outX = goingRight ? tx + w / 2 : tx - w / 2;
-            outY = ty + h / 2;
-            goingRight = !goingRight;
-            inCorner = true;
-          }
-        } else {
-          nextCx = nextIsDbl ? outX - GAP : outX - GAP - nw / 2;
-          if (nextCx - nw / 2 < MARGIN) {
-            if (isDbl) outX = goingRight ? tx + w / 2 : tx - w / 2;
-            outY = ty + h / 2;
-            goingRight = !goingRight;
-            inCorner = true;
-          }
+    // Check if the NEXT tile needs to turn (become a corner)
+    if (i + 1 < tiles.length && !inCorner) {
+      const nw = TH; // next run tile width
+      let nextEdge;
+      if (goingRight) {
+        // where would next tile's right edge land?
+        nextEdge = tx + w / 2 + GAP + nw;
+        if (nextEdge > W - MARGIN) {
+          goingRight = false;
+          inCorner = true;
+        }
+      } else {
+        // where would next tile's left edge land?
+        nextEdge = tx - w / 2 - GAP - nw;
+        if (nextEdge < MARGIN) {
+          goingRight = true;
+          inCorner = true;
         }
       }
     }
@@ -739,7 +719,7 @@ function renderBoard() {
     // Portrait = TW wide, TH tall
     // Horizontal run: doubles=portrait, normals=landscape
     // Corner: doubles=landscape, normals=portrait
-    const renderVertical = pos.inCorner ? true : isDbl;  // corner always portrait
+    const renderVertical = pos.inCorner;  // portrait only at corner, landscape everywhere else
 
     let displayTile = [...entry.tile];
     if (!isDbl) {
