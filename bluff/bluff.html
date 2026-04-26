@@ -833,6 +833,16 @@
     </div>
   </div>
 
+  <!-- SCREEN: Kicked -->
+  <div id="screen-kicked" class="screen">
+    <div class="text-center" style="padding: 2rem 0;">
+      <div style="font-size:4rem;margin-bottom:1rem;">🚪</div>
+      <div class="logo" style="font-size:2rem;margin-bottom:0.5rem;">Host Left</div>
+      <div class="text-muted" style="margin-bottom:2rem;">The host disconnected and the room was closed.</div>
+      <button class="btn btn-primary btn-lg" id="kicked-home-btn">Back to Home</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- TOAST CONTAINER -->
@@ -941,9 +951,10 @@ function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 function getOrCreateSession() {
-  let id = localStorage.getItem('hw_session');
-  if (!id) { id = uid(); localStorage.setItem('hw_session', id); }
-  return id;
+  // Session ID is ephemeral — lives only in memory for this tab.
+  // Rejoin is handled by Supabase (name + room code lookup), not local storage.
+  if (!state._sessionId) state._sessionId = uid();
+  return state._sessionId;
 }
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function showScreen(id) {
@@ -1074,26 +1085,18 @@ function pickObjective(settings) {
 // ══════════════════════════════════════════════════════
 function initHome() {
   state.sessionId = getOrCreateSession();
-
-  // Restore name
-  const saved = localStorage.getItem('hw_name');
-  if (saved) document.getElementById('player-name').value = saved;
-
-  const savedEmoji = localStorage.getItem('hw_emoji') || '🎭';
-  state.playerEmoji = savedEmoji;
-  document.getElementById('selected-emoji').textContent = savedEmoji;
+  state.playerEmoji = '🎭';
+  document.getElementById('selected-emoji').textContent = state.playerEmoji;
 
   document.getElementById('random-emoji-btn').onclick = () => {
     state.playerEmoji = randomFrom(EMOJIS);
     document.getElementById('selected-emoji').textContent = state.playerEmoji;
-    localStorage.setItem('hw_emoji', state.playerEmoji);
   };
 
   document.getElementById('create-room-btn').onclick = () => {
     const name = document.getElementById('player-name').value.trim();
     if (!name) { toast('Enter your name first!'); return; }
     state.playerName = name;
-    localStorage.setItem('hw_name', name);
     state.isSpectator = document.getElementById('spectator-toggle').checked;
     createRoom();
   };
@@ -1104,7 +1107,6 @@ function initHome() {
     if (!name) { toast('Enter your name first!'); return; }
     if (!code || code.length < 4) { toast('Enter a valid room code!'); return; }
     state.playerName = name;
-    localStorage.setItem('hw_name', name);
     state.isSpectator = document.getElementById('spectator-toggle').checked;
     joinRoom(code);
   };
@@ -1112,14 +1114,6 @@ function initHome() {
   document.getElementById('join-code').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('join-room-btn').click();
   });
-
-  // Check for rejoin
-  const savedRoom = sessionStorage.getItem('hw_room');
-  const savedCode = sessionStorage.getItem('hw_code');
-  if (savedRoom && savedCode) {
-    document.getElementById('join-code').value = savedCode;
-    toast('Welcome back! Tap Join to rejoin.', 4000);
-  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -1152,8 +1146,6 @@ async function createRoom() {
     };
     state.players = [me];
     demoAddPlayer(code, me);
-    sessionStorage.setItem('hw_room', code);
-    sessionStorage.setItem('hw_code', code);
     showLobby();
   } else {
     // Supabase: create room then join
@@ -1183,8 +1175,6 @@ async function joinRoom(code) {
     };
     demoAddPlayer(code, me);
     state.players = room.players;
-    sessionStorage.setItem('hw_room', code);
-    sessionStorage.setItem('hw_code', code);
     showLobby();
     toast(`Joined room ${code}!`);
   } else {
@@ -1812,6 +1802,12 @@ async function supabaseCreateRoom(code) {
     state.playerId = player.id;
 
     subscribeToRoom();
+
+    // Mark host as connected, and disconnect on leave
+    window.addEventListener('beforeunload', () => {
+      if (state.isHost && state.playerId && !DEMO_MODE) hostLeave();
+    });
+
     showLobby();
   } catch (e) { toast('Error creating room: ' + e.message); }
 }
@@ -1860,14 +1856,31 @@ async function supabaseJoinRoom(code) {
 function subscribeToRoom() {
   if (!sb) return;
   const channel = sb.channel(`room-${state.roomId}`)
-    // Players joining/leaving
+    // Players joining/leaving/disconnecting
     .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${state.roomId}` },
-      payload => { fetchPlayers(); })
+      payload => {
+        // If the host player was deleted or disconnected and I am not host → kicked
+        if (!state.isHost && payload.eventType === 'UPDATE' && payload.new.is_host && !payload.new.is_connected) {
+          handleHostLeft();
+          return;
+        }
+        fetchPlayers();
+      })
     // Game phase changes — filter by room_id so non-hosts catch it even before gameId is set
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `room_id=eq.${state.roomId}` },
       payload => {
         if (!state.gameId) state.gameId = payload.new.id;
+        // If game was ended by host leaving
+        if (!state.isHost && payload.new.phase === 'ended') {
+          handleHostLeft();
+          return;
+        }
         handleGameUpdate(payload.new);
+      })
+    // Room deleted = host left
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'rooms', filter: `id=eq.${state.roomId}` },
+      payload => {
+        if (!state.isHost) handleHostLeft();
       })
     .subscribe();
   state.subscriptions.push(channel);
@@ -1983,10 +1996,54 @@ async function handleGameUpdate(game) {
 }
 
 // ══════════════════════════════════════════════════════
+//  HOST LEAVE — kicks all players
+// ══════════════════════════════════════════════════════
+
+// Called when the host closes/leaves — marks room as closed in DB
+async function hostLeave() {
+  if (!sb || !state.isHost) return;
+  try {
+    // Mark all players disconnected and game as ended
+    await sb.from('players').update({ is_connected: false }).eq('room_id', state.roomId);
+    if (state.gameId) {
+      await sb.from('games').update({ phase: 'ended', ended_at: new Date().toISOString() }).eq('id', state.gameId);
+    }
+    // Delete the room — cascades to players/games via FK
+    await sb.from('rooms').delete().eq('id', state.roomId);
+  } catch(e) { console.error('hostLeave error:', e); }
+}
+
+// Called on non-host clients when they detect host has gone
+function handleHostLeft() {
+  clearTimers();
+  // Unsubscribe from all channels
+  state.subscriptions.forEach(s => { try { s.unsubscribe(); } catch(e) {} });
+  state.subscriptions = [];
+  // Reset state
+  state.roomId = null; state.gameId = null; state.playerId = null;
+  state.roomCode = null; state.phase = 'lobby';
+  showScreen('kicked');
+  document.getElementById('kicked-home-btn').onclick = () => {
+    showScreen('home');
+  };
+}
+
+// ══════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   initHome();
+
+  // When host closes tab/browser — fire hostLeave
+  window.addEventListener('beforeunload', () => {
+    if (state.isHost && state.roomId && !DEMO_MODE) {
+      // Use sendBeacon for reliable fire-and-forget on page close
+      const url = `${SUPABASE_URL}/rest/v1/rooms?id=eq.${state.roomId}`;
+      navigator.sendBeacon(url); // triggers the subscription delete handler on other clients
+      hostLeave();
+    }
+  });
+
   if (DEMO_MODE) {
     toast('🎮 Demo Mode — No Supabase configured. Add your credentials to go live!', 5000);
   }
