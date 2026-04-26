@@ -554,6 +554,21 @@
     100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
   }
 
+  /* ── EMOJI PICKER ── */
+  .emoji-pick-btn {
+    width: 42px; height: 42px;
+    font-size: 1.4rem;
+    background: var(--bg3);
+    border: 2px solid transparent;
+    border-radius: var(--r);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .emoji-pick-btn:hover { transform: scale(1.15); border-color: var(--border2); }
+  .emoji-pick-btn.selected { border-color: var(--accent); background: rgba(124,106,247,0.15); }
+
   /* ── UTILITY ── */
   .flex { display: flex; }
   .flex-col { flex-direction: column; }
@@ -595,9 +610,36 @@
     <div class="card" style="margin-top:1.5rem;">
       <label class="label">Your Name</label>
       <input type="text" id="player-name" class="input" placeholder="Enter your name…" maxlength="20">
-      <div class="flex gap-sm" style="margin-top:0.5rem;">
-        <button class="btn btn-outline text-xs btn-sm" id="random-emoji-btn">🎲 Random emoji</button>
-        <span id="selected-emoji" style="font-size:1.5rem;line-height:1;">🎭</span>
+      <div style="margin-top:0.75rem;">
+        <div class="label">Pick your avatar</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+          <button class="emoji-pick-btn" onclick="pickEmoji('🎭')">🎭</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🦊')">🦊</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🐙')">🐙</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🦄')">🦄</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🐸')">🐸</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🎃')">🎃</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('👻')">👻</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🤖')">🤖</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🦁')">🦁</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🐺')">🐺</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🦋')">🦋</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🎲')">🎲</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('👾')">👾</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🐼')">🐼</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🦝')">🦝</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🐯')">🐯</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🦈')">🦈</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🦅')">🦅</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🐲')">🐲</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🍄')">🍄</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🐻')">🐻</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🐳')">🐳</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🦸')">🦸</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🧙')">🧙</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🕵️')">🕵️</button>
+          <button class="emoji-pick-btn" onclick="pickEmoji('🧛')">🧛</button>
+        </div>
       </div>
     </div>
 
@@ -1079,14 +1121,23 @@ function setTimerEl(el, val) {
   el.textContent = val;
   el.classList.toggle('urgent', val <= 10);
 }
-function spawnReaction(emoji, x, y) {
+function spawnReaction(emoji, broadcast = true) {
+  // Render locally
   const el = document.createElement('div');
   el.className = 'floating-reaction';
   el.textContent = emoji;
-  el.style.left = (x || Math.random() * 80 + 10) + '%';
+  el.style.left = (Math.random() * 70 + 10) + '%';
   el.style.bottom = '80px';
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2000);
+  // Broadcast to other players via Supabase realtime
+  if (broadcast && !DEMO_MODE && state._reactionChannel) {
+    state._reactionChannel.send({
+      type: 'broadcast',
+      event: 'reaction',
+      payload: { emoji }
+    });
+  }
 }
 function confetti() {
   const colors = ['#7c6af7','#ff6eb4','#44ddaa','#ffaa44','#44ccff'];
@@ -1176,15 +1227,19 @@ function pickObjective(settings) {
 // ══════════════════════════════════════════════════════
 //  UI — HOME SCREEN
 // ══════════════════════════════════════════════════════
+window.pickEmoji = function(emoji) {
+  state.playerEmoji = emoji;
+  document.querySelectorAll('.emoji-pick-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.textContent === emoji);
+  });
+};
+
 function initHome() {
   state.sessionId = getOrCreateSession();
   state.playerEmoji = '🎭';
-  document.getElementById('selected-emoji').textContent = state.playerEmoji;
 
-  document.getElementById('random-emoji-btn').onclick = () => {
-    state.playerEmoji = randomFrom(EMOJIS);
-    document.getElementById('selected-emoji').textContent = state.playerEmoji;
-  };
+  // Select first emoji by default
+  pickEmoji('🎭');
 
   document.getElementById('create-room-btn').onclick = () => {
     const name = document.getElementById('player-name').value.trim();
@@ -2353,6 +2408,16 @@ function subscribeToRoom() {
       })
     .subscribe();
   state.subscriptions.push(gameEventsCh);
+
+  // Reaction broadcast channel — instant, no DB needed
+  const reactionCh = sb.channel(`reactions-${state.roomId}`)
+    .on('broadcast', { event: 'reaction' }, payload => {
+      spawnReaction(payload.payload.emoji, false); // false = don't re-broadcast
+    })
+    .subscribe();
+  state._reactionChannel = reactionCh;
+  state.subscriptions.push(reactionCh);
+
   // Keep _subscribeGameEvents as no-op so existing calls don't break
   window._subscribeGameEvents = function() {};
 }
@@ -2513,10 +2578,19 @@ async function leaveRoom() {
 async function hostLeave() {
   if (!sb || !state.isHost) return;
   try {
+    // Delete all game data for this room — cascade handles clues/votes/players
+    // Delete games first (clues/votes cascade from games)
     if (state.gameId) {
-      await sb.from('games').update({ phase: 'ended', ended_at: new Date().toISOString() }).eq('id', state.gameId);
+      await sb.from('clues').delete().eq('game_id', state.gameId);
+      await sb.from('votes').delete().eq('game_id', state.gameId);
+      await sb.from('imposter_guesses').delete().eq('game_id', state.gameId);
+      await sb.from('reactions').delete().eq('game_id', state.gameId);
+      await sb.from('chaos_events').delete().eq('game_id', state.gameId);
+      await sb.from('games').delete().eq('id', state.gameId);
     }
-    // Delete room — realtime DELETE event kicks all non-host clients
+    // Delete all players in room
+    await sb.from('players').delete().eq('room_id', state.roomId);
+    // Delete room last — this triggers realtime DELETE which kicks everyone
     await sb.from('rooms').delete().eq('id', state.roomId);
   } catch(e) { console.error('hostLeave error:', e); }
 }
