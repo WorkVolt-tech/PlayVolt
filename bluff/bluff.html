@@ -1643,7 +1643,7 @@ function showCluePhase2() {
   const timerEl = document.getElementById('clue-timer');
   startTimer('clue2', 60,
     s => setTimerEl(timerEl, s),
-    () => {
+    async () => {
       if (DEMO_MODE) { showDiscussionPhase(); }
       else if (state.isHost) { await sb.from('games').update({ phase: 'discussion' }).eq('id', state.gameId); }
     }
@@ -1837,7 +1837,7 @@ function showReviewPhase() {
   const timerEl = document.getElementById('review-timer');
   startTimer('review', 10,
     s => setTimerEl(timerEl, s),
-    () => {
+    async () => {
       // Reset clue state for round 2
       state.clues = [];
       state.myClueSent = false;
@@ -2535,17 +2535,10 @@ function handleHostLeft() {
 // ══════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   initHome();
 
-  // Try to restore a previous session (refresh/rejoin)
-  if (!DEMO_MODE) {
-    const restored = await restoreSession();
-    if (restored) return; // skip home screen, jumped straight back in
-  }
-
-  // ── Global reaction button handler via event delegation ──
-  // Wire once here so it works on every screen without re-binding
+  // ── Always wire these regardless of session state ──
   document.addEventListener('click', e => {
     const btn = e.target.closest('.reaction-btn');
     if (!btn) return;
@@ -2555,16 +2548,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     toast(emoji, 800);
   });
 
-  // When host closes tab/browser — fire hostLeave
   window.addEventListener('beforeunload', () => {
-    if (state.isHost && state.roomId && !DEMO_MODE) {
-      hostLeave();
-    }
+    if (state.isHost && state.roomId && !DEMO_MODE) hostLeave();
   });
 
   if (DEMO_MODE) {
     toast('🎮 Demo Mode — No Supabase configured. Add your credentials to go live!', 5000);
+    return;
   }
+
+  // Try to restore a previous session (refresh/rejoin)
+  restoreSession().then(restored => {
+    // If restored, we jumped back into the game — nothing else to do
+  }).catch(e => {
+    console.error('Session restore failed:', e);
+  });
 });
 </script>
 </body>
