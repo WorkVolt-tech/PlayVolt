@@ -663,8 +663,8 @@ function renderAll() {
   renderBoard();
   updateTurnState();
   renderScoreBar();
-  if (roomData.status === 'playing' && gameOver) {
-    // Round restarted — reset overlay for non-winner players
+  if ((roomData.status === 'playing' || roomData.status === 'restarting') && gameOver) {
+    // Round restarted — reset overlay for all players
     gameOver = false;
     document.getElementById('overlay-gameover').classList.add('hidden');
   }
@@ -1392,26 +1392,39 @@ function showGameOver(winningSeat) {
 }
 
 async function startNextRound() {
-  // Guard: make sure room is still in 'finished' state before restarting
-  const { data: check } = await db.from('domino_rooms').select('status').eq('id', myInfo.roomId).single();
-  if (!check || check.status !== 'finished') return;
+  // Atomically claim the restart — update status to 'restarting' first
+  // Only the first client to succeed will continue; others get 'restarting' back and stop
+  const { data: claimed, error: claimErr } = await db.from('domino_rooms')
+    .update({ status: 'restarting' })
+    .eq('id', myInfo.roomId)
+    .eq('status', 'finished')  // only succeeds if still 'finished'
+    .select('id')
+    .single();
+
+  if (claimErr || !claimed) return;  // another client got here first
+
   gameOver = false;
   document.getElementById('overlay-gameover').classList.add('hidden');
   document.getElementById('round-countdown').style.display = 'none';
 
+  // Deal new hands
   const tiles = shuffle(generateDominoSet());
   const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
   for (let i = 0; i < 4; i++)
     await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i);
 
+  // Clear events and reset board using upsert to avoid delete/insert race
   await db.from('game_events').delete().eq('room_id', myInfo.roomId);
-  await db.from('board').delete().eq('room_id', myInfo.roomId);
-  await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null });
+  await db.from('board').upsert({
+    room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null
+  }, { onConflict: 'room_id' });
 
+  // Find who has the 6|6
   let startingSeat = 0;
   for (let i = 0; i < 4; i++)
     if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break; }
 
+  // Set status to 'playing' — this triggers all clients to reload
   await db.from('domino_rooms').update({ status: 'playing', current_turn: startingSeat }).eq('id', myInfo.roomId);
 }
 
