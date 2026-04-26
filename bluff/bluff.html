@@ -1558,13 +1558,9 @@ function showCluePhase() {
   const timerEl = document.getElementById('clue-timer');
   startTimer('clue', 60,
     s => setTimerEl(timerEl, s),
-    () => {
-      // After round 1 clues — go to review, then round 2
-      if (!DEMO_MODE && state.isHost) {
-        sb.from('games').update({ phase: 'review' }).eq('id', state.gameId);
-      } else if (DEMO_MODE) {
-        showReviewPhase();
-      }
+    async () => {
+      if (DEMO_MODE) { showReviewPhase(); }
+      else if (state.isHost) { await sb.from('games').update({ phase: 'review' }).eq('id', state.gameId); }
     }
   );
 
@@ -1648,11 +1644,8 @@ function showCluePhase2() {
   startTimer('clue2', 60,
     s => setTimerEl(timerEl, s),
     () => {
-      if (!DEMO_MODE && state.isHost) {
-        sb.from('games').update({ phase: 'discussion' }).eq('id', state.gameId);
-      } else if (DEMO_MODE) {
-        showDiscussionPhase();
-      }
+      if (DEMO_MODE) { showDiscussionPhase(); }
+      else if (state.isHost) { await sb.from('games').update({ phase: 'discussion' }).eq('id', state.gameId); }
     }
   );
 }
@@ -1785,10 +1778,8 @@ function addClueToFeed(row) {
 
 // Shared: check if all players have voted and advance if so
 async function checkAllVoted() {
-  if (state.phase !== 'voting') return;
   const totalVotes = Object.values(state.votes).reduce((s,v) => s+v, 0);
   const expectedVoters = state.players.filter(p => !p.is_spectator && !p.isSpectator).length;
-  console.log(`Votes: ${totalVotes}/${expectedVoters}`);
   if (expectedVoters > 0 && totalVotes >= expectedVoters) {
     clearTimers();
     if (DEMO_MODE) {
@@ -1796,7 +1787,7 @@ async function checkAllVoted() {
     } else if (state.isHost) {
       await sb.from('games').update({ phase: 'reveal' }).eq('id', state.gameId);
     }
-    // Non-host waits for the realtime phase update from host
+    // Non-hosts: wait for realtime game UPDATE to trigger showRevealPhase
   }
 }
 
@@ -1850,11 +1841,8 @@ function showReviewPhase() {
       // Reset clue state for round 2
       state.clues = [];
       state.myClueSent = false;
-      if (!DEMO_MODE && state.isHost) {
-        sb.from('games').update({ phase: 'clue2' }).eq('id', state.gameId);
-      } else if (DEMO_MODE) {
-        showCluePhase2();
-      }
+      if (DEMO_MODE) { showCluePhase2(); }
+      else if (state.isHost) { await sb.from('games').update({ phase: 'clue2' }).eq('id', state.gameId); }
     }
   );
 }
@@ -1904,7 +1892,10 @@ function showDiscussionPhase() {
   const timerEl = document.getElementById('discussion-timer');
   startTimer('discussion', 90,
     s => setTimerEl(timerEl, s),
-    () => showVotingPhase()
+    async () => {
+      if (DEMO_MODE) { showVotingPhase(); }
+      else if (state.isHost) { await sb.from('games').update({ phase: 'voting' }).eq('id', state.gameId); }
+    }
   );
 }
 
@@ -1986,7 +1977,14 @@ function showVotingPhase() {
   const timerEl = document.getElementById('voting-timer');
   startTimer('voting', 30,
     s => setTimerEl(timerEl, s),
-    () => showRevealPhase()
+    async () => {
+      // Timer ran out — host pushes reveal, everyone else waits for realtime
+      if (DEMO_MODE) {
+        showRevealPhase();
+      } else if (state.isHost) {
+        await sb.from('games').update({ phase: 'reveal' }).eq('id', state.gameId);
+      }
+    }
   );
 }
 
@@ -2166,6 +2164,7 @@ async function supabaseCreateRoom(code) {
     }).select().single();
     state.playerId = player.id;
 
+    saveSession();
     subscribeToRoom();
     showLobby();
   } catch (e) { toast('Error creating room: ' + e.message); }
@@ -2206,10 +2205,85 @@ async function supabaseJoinRoom(code) {
     }
 
     state.playerId = player.id;
+    saveSession();
     subscribeToRoom();
     showLobby();
     toast(`Joined room ${code}!`);
   } catch (e) { toast('Error joining: ' + e.message); console.error(e); }
+}
+
+// ── Session persistence (survives refresh) ──
+function saveSession() {
+  sessionStorage.setItem('bluff_session', JSON.stringify({
+    roomId:    state.roomId,
+    roomCode:  state.roomCode,
+    gameId:    state.gameId,
+    playerId:  state.playerId,
+    sessionId: state.sessionId,
+    isHost:    state.isHost,
+    isSpectator: state.isSpectator,
+    playerName: state.playerName,
+    playerEmoji: state.playerEmoji,
+  }));
+}
+
+async function restoreSession() {
+  const raw = sessionStorage.getItem('bluff_session');
+  if (!raw || DEMO_MODE) return false;
+  try {
+    const saved = JSON.parse(raw);
+    if (!saved.roomId || !saved.playerId) return false;
+
+    // Check the room still exists
+    const { data: room } = await sb.from('rooms').select('id,code,current_game_id').eq('id', saved.roomId).maybeSingle();
+    if (!room) { sessionStorage.removeItem('bluff_session'); return false; }
+
+    // Check the player still exists
+    const { data: player } = await sb.from('players').select('*').eq('id', saved.playerId).maybeSingle();
+    if (!player) { sessionStorage.removeItem('bluff_session'); return false; }
+
+    // Restore state
+    state.roomId     = saved.roomId;
+    state.roomCode   = saved.roomCode;
+    state.gameId     = room.current_game_id || saved.gameId;
+    state.playerId   = saved.playerId;
+    state.sessionId  = saved.sessionId;
+    state.isHost     = saved.isHost;
+    state.isSpectator = saved.isSpectator;
+    state.playerName  = saved.playerName;
+    state.playerEmoji = saved.playerEmoji;
+
+    // Mark player as connected again
+    await sb.from('players').update({ is_connected: true, last_seen_at: new Date().toISOString() }).eq('id', state.playerId);
+
+    // Subscribe to room
+    subscribeToRoom();
+
+    // Check what phase the game is currently in and jump to it
+    if (state.gameId) {
+      const { data: game } = await sb.from('games').select('*').eq('id', state.gameId).maybeSingle();
+      if (game && game.phase && game.phase !== 'lobby' && game.phase !== 'ended') {
+        // Fetch my role and word
+        const { data: me } = await sb.from('players').select('role,word_shown,objective').eq('id', state.playerId).single();
+        if (me) {
+          state.myRole = me.role;
+          state.myWord = me.word_shown;
+        }
+        if (game.secret_word) state.secretWord = game.secret_word;
+        // Jump straight to the current phase
+        await handleGameUpdate(game);
+        return true;
+      }
+    }
+
+    // Otherwise go to lobby
+    showLobby();
+    return true;
+  } catch(e) {
+    console.error('restoreSession error:', e);
+    sessionStorage.removeItem('bluff_session');
+    return false;
+  }
 }
 
 function subscribeToRoom() {
@@ -2353,8 +2427,10 @@ async function handleGameUpdate(game) {
     // Update gameId whenever it changes (Play Again creates a new game row)
     if (game.id && game.id !== state.gameId) {
       state.gameId = game.id;
+      saveSession();
     } else if (!state.gameId) {
       state.gameId = game.id;
+      saveSession();
     }
     // Store secret word from game row — everyone can use this in reveal
     if (game.secret_word) state.secretWord = game.secret_word;
@@ -2442,6 +2518,7 @@ function resetState() {
   state.myWord = null; state.myObjective = null;
   state.players = []; state.clues = []; state.votes = {};
   state.myVote = null; state.myClueSent = false; state.chaosEvent = null;
+  sessionStorage.removeItem('bluff_session');
 }
 
 // Called on non-host clients when they detect host has gone
@@ -2458,8 +2535,14 @@ function handleHostLeft() {
 // ══════════════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initHome();
+
+  // Try to restore a previous session (refresh/rejoin)
+  if (!DEMO_MODE) {
+    const restored = await restoreSession();
+    if (restored) return; // skip home screen, jumped straight back in
+  }
 
   // ── Global reaction button handler via event delegation ──
   // Wire once here so it works on every screen without re-binding
