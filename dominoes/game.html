@@ -89,6 +89,42 @@ html, body {
   white-space: nowrap;
 }
 .player-tag.active-turn { border-color: var(--gold); background: rgba(201,168,76,0.1); color: var(--gold); }
+
+/* ── SCORE & ROUND ── */
+.score-bar {
+  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+  background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border);
+  padding: 5px 12px; font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ivory-dim);
+}
+.score-entry { display: flex; align-items: center; gap: 6px; }
+.score-name { color: var(--ivory-dim); }
+.score-pips { display: flex; gap: 3px; }
+.score-pip { width: 10px; height: 10px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+.score-pip.won { background: var(--gold); box-shadow: 0 0 6px rgba(201,168,76,0.7); }
+.score-pip.pending { background: rgba(201,168,76,0.3); border: 1px solid var(--gold); }
+.round-badge { color: var(--ivory-dim); font-size: 0.58rem; }
+.mode-badge { color: var(--gold); font-size: 0.58rem; font-weight: 600; }
+
+/* ── BLOCKED TIEBREAK MODAL ── */
+.tiebreak-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; flex-direction: column; gap: 1rem;
+}
+.tiebreak-overlay.hidden { display: none; }
+.tiebreak-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--gold); text-align: center; }
+.tiebreak-sub { font-size: 0.75rem; color: var(--ivory-dim); text-align: center; }
+.tiebreak-tiles { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.tiebreak-tile {
+  width: 44px; height: 80px; background: var(--ivory); border-radius: 6px;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center;
+  justify-content: center; font-size: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.tiebreak-tile:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(201,168,76,0.4); }
+.tiebreak-tile.flipped { background: var(--surface); cursor: default; }
+.tiebreak-tile.flipped:hover { transform: none; }
 .player-tag.is-me { border-color: var(--blue); color: var(--blue); }
 .player-tag.active-turn.is-me { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
 
@@ -443,6 +479,20 @@ html, body {
   </div>
 </div>
 
+<!-- SCORE BAR -->
+<div class="score-bar" id="score-bar">
+  <span class="round-badge" id="round-badge">Round 1</span>
+  <div id="score-entries"></div>
+  <span class="mode-badge" id="mode-badge"></span>
+</div>
+
+<!-- BLOCKED TIEBREAK MODAL -->
+<div class="tiebreak-overlay hidden" id="tiebreak-overlay">
+  <div class="tiebreak-title">🎲 Blocked Game — Tiebreak!</div>
+  <div class="tiebreak-sub" id="tiebreak-sub">Flip a tile — lowest pip count wins this round</div>
+  <div class="tiebreak-tiles" id="tiebreak-tiles"></div>
+</div>
+
 <div class="overlay hidden" id="overlay-gameover">
   <div class="modal">
     <h2 id="winner-title">Victory!</h2>
@@ -462,6 +512,8 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   
 let myInfo = null, roomData = null, players = [], boardData = null;
 let selectedTile = null, isMyTurn = false, gameOver = false, toastTimer = null;
+let gameMode = 'chien', aiDifficulty = 'beginner';
+let aiThinkTimer = null;
 
 // Tile dimensions
 const TILE_WIDTH = 34;   // narrow dimension (for doubles)
@@ -472,9 +524,12 @@ window.addEventListener('load', async () => {
   if (!raw) { location.href = 'index.html'; return; }
 
   myInfo = JSON.parse(raw);
+  gameMode = myInfo.gameMode || 'chien';
+  aiDifficulty = myInfo.aiDifficulty || 'beginner';
   document.getElementById('room-code-badge').textContent = myInfo.roomCode || '——';
   await loadGameState();
   subscribeToGame();
+  if (gameMode === 'solo') scheduleAI();
 });
 
 async function loadGameState() {
@@ -490,9 +545,10 @@ async function loadGameState() {
 function subscribeToGame() {
   db.channel('game-' + myInfo.roomId)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_rooms',       filter: `id=eq.${myInfo.roomId}` }, (payload) => {
-      if (payload.new.status === 'abandoned' && myInfo.seat !== 0) { handleRoomAbandoned(); return; }
-      loadGameState();
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_rooms',       filter: `id=eq.${myInfo.roomId}` }, async (payload) => {
+      if (payload.new.status === 'abandoned') { handleRoomAbandoned(); return; }
+      if (payload.new.status === 'tiebreak')  { await loadGameState(); showTiebreak(); return; }
+      await loadGameState();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'board',       filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
     .subscribe();
@@ -504,7 +560,53 @@ function renderAll() {
   renderHand();
   renderBoard();
   updateTurnState();
+  renderScoreBar();
   if (roomData.status === 'finished') showGameOver();
+  if (gameMode === 'solo') scheduleAI();
+}
+
+function renderScoreBar() {
+  if (!roomData) return;
+  const scores  = roomData.scores  || [0,0,0,0];
+  const streak  = roomData.streak  || { seat: null, team: null, count: 0 };
+  const round   = roomData.round   || 1;
+  const mode    = roomData.game_mode || gameMode;
+
+  document.getElementById('round-badge').textContent = `Round ${round}`;
+  document.getElementById('mode-badge').textContent =
+    mode === 'chien'  ? '🐶 Chien Manjé Chien' :
+    mode === 'asosye' ? '🤝 Asosyé' : '🤖 Solo';
+
+  const container = document.getElementById('score-entries');
+  container.innerHTML = '';
+
+  const makePips = (wins, streaking) =>
+    [0,1,2,3].map(i =>
+      `<div class="score-pip ${i < wins ? 'won' : (roomData.pending_point && streaking && i === wins ? 'pending' : '')}"></div>`
+    ).join('');
+
+  if (mode === 'asosye') {
+    const teamScores = [scores[0] + scores[2], scores[1] + scores[3]];
+    const teamNames  = [
+      `${players[0]?.nickname||'P1'} & ${players[2]?.nickname||'P3'}`,
+      `${players[1]?.nickname||'P2'} & ${players[3]?.nickname||'P4'}`
+    ];
+    [0,1].forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'score-entry';
+      d.innerHTML = `<span class="score-name">${escHtml(teamNames[t])}</span>
+        <div class="score-pips">${makePips(teamScores[t], streak.team === t)}</div>`;
+      container.appendChild(d);
+    });
+  } else {
+    players.slice().sort((a,b) => a.seat - b.seat).forEach(p => {
+      const d = document.createElement('div');
+      d.className = 'score-entry';
+      d.innerHTML = `<span class="score-name">${escHtml(p.nickname)}${p.seat===myInfo.seat?' (you)':''}</span>
+        <div class="score-pips">${makePips(scores[p.seat]||0, streak.seat === p.seat)}</div>`;
+      container.appendChild(d);
+    });
+  }
 }
 
 function renderPlayerTags() {
@@ -918,42 +1020,342 @@ async function advanceTurn(myNewHand) {
 }
 
 async function endGame(winningSeat) {
-  await db.from('domino_rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
-  if (myInfo.seat === 0) {
-    await db.from('game_events').delete().eq('room_id', myInfo.roomId);
+  // Only seat 0 (or lowest connected seat) handles scoring to avoid race conditions
+  const lowestSeat = Math.min(...players.map(p => p.seat));
+  if (myInfo.seat !== lowestSeat) return;
+
+  const mode    = roomData.game_mode || gameMode;
+  const scores  = [...(roomData.scores || [0,0,0,0])];
+  let   streak  = { ...(roomData.streak || { seat: null, team: null, count: 0 }) };
+  const pending = roomData.pending_point || false;
+  let   round   = roomData.round || 1;
+
+  // ── Determine round winner ──────────────────────────────────────
+  let roundWinnerSeat = winningSeat;
+
+  if (winningSeat === null) {
+    // Blocked game — find lowest pip count
+    const pipCounts = players.map(p => ({
+      seat: p.seat,
+      pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
+    }));
+    pipCounts.sort((a, b) => a.pips - b.pips);
+    const lowest = pipCounts[0].pips;
+    const tied = pipCounts.filter(p => p.pips === lowest);
+
+    if (tied.length === 1) {
+      roundWinnerSeat = tied[0].seat;
+    } else {
+      // Tie — handle by mode
+      if (mode === 'asosye') {
+        // Teams: check if tied players are on the same team
+        const tiedTeams = [...new Set(tied.map(p => p.seat % 2))];
+        if (tiedTeams.length === 1) {
+          roundWinnerSeat = tied[0].seat; // same team, pick first
+        } else {
+          // Different teams — point carries to next winner
+          await db.from('domino_rooms').update({
+            status: 'finished', pending_point: true, round: round + 1
+          }).eq('id', myInfo.roomId);
+          await db.from('game_events').delete().eq('room_id', myInfo.roomId);
+          return;
+        }
+      } else {
+        // Singles — tiebreak: flip a face-down tile
+        await db.from('domino_rooms').update({
+          status: 'tiebreak',
+          current_turn: -1
+        }).eq('id', myInfo.roomId);
+        await db.from('game_events').delete().eq('room_id', myInfo.roomId);
+        return;
+      }
+    }
   }
+
+  // ── Award point (+ pending if any) ─────────────────────────────
+  const pointsToAward = pending ? 2 : 1;
+  scores[roundWinnerSeat] = (scores[roundWinnerSeat] || 0) + pointsToAward;
+
+  // ── Update streak ───────────────────────────────────────────────
+  if (mode === 'asosye') {
+    const winTeam = roundWinnerSeat % 2;
+    if (streak.team === winTeam) {
+      streak.count += pointsToAward;
+    } else {
+      streak = { seat: null, team: winTeam, count: pointsToAward };
+    }
+  } else {
+    if (streak.seat === roundWinnerSeat) {
+      streak.count += pointsToAward;
+    } else {
+      streak = { seat: roundWinnerSeat, team: null, count: pointsToAward };
+    }
+  }
+
+  // ── Check for match win (4 consecutive) ─────────────────────────
+  const matchWon = streak.count >= 4;
+
+  await db.from('domino_rooms').update({
+    status: matchWon ? 'match_over' : 'finished',
+    scores,
+    streak,
+    pending_point: false,
+    round: round + 1,
+    match_winner: matchWon ? roundWinnerSeat : null,
+    current_turn: roundWinnerSeat
+  }).eq('id', myInfo.roomId);
+
+  await db.from('game_events').delete().eq('room_id', myInfo.roomId);
 }
 
 function showGameOver() {
   if (gameOver) return;
   gameOver = true;
-  
+
+  const mode   = roomData.game_mode || gameMode;
+  const status = roomData.status;
+
+  // ── Match over (4 consecutive wins) ────────────────────────────
+  if (status === 'match_over') {
+    const winnerSeat  = roomData.match_winner;
+    const winnerPlayer = players.find(p => p.seat === winnerSeat);
+    const isMe = winnerSeat === myInfo.seat;
+
+    if (mode === 'asosye') {
+      const winTeam = winnerSeat % 2;
+      const t0 = players.filter(p => p.seat % 2 === 0).map(p => p.nickname).join(' & ');
+      const t1 = players.filter(p => p.seat % 2 === 1).map(p => p.nickname).join(' & ');
+      const winTeamName = winTeam === 0 ? t0 : t1;
+      const isMyTeam = myInfo.seat % 2 === winTeam;
+      document.getElementById('winner-title').textContent = isMyTeam ? '🎉 Your Team Wins the Match!' : `${winTeamName} Win the Match!`;
+      document.getElementById('winner-desc').textContent = `${winTeamName} won 4 rounds in a row! 🏆`;
+    } else {
+      document.getElementById('winner-title').textContent = isMe ? '🎉 You Win the Match!' : `${winnerPlayer?.nickname||'?'} Wins the Match!`;
+      document.getElementById('winner-desc').textContent = `${winnerPlayer?.nickname||'?'} won 4 rounds in a row! 🏆`;
+    }
+
+    const tbody = document.getElementById('scores-body');
+    tbody.innerHTML = '';
+    const scores = roomData.scores || [0,0,0,0];
+    players.slice().sort((a,b) => (scores[b.seat]||0) - (scores[a.seat]||0)).forEach(p => {
+      const tr = document.createElement('tr');
+      if (p.seat === winnerSeat) tr.className = 'winner';
+      tr.innerHTML = `<td>${escHtml(p.nickname)}${p.seat===myInfo.seat?' (you)':''}</td><td>${p.seat+1}</td><td>${scores[p.seat]||0} rounds 👑</td>`;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('overlay-gameover').classList.remove('hidden');
+    return;
+  }
+
+  // ── Round over — show round result then auto-restart ───────────
+  const winningSeat = roomData.current_turn;
+  const winnerPlayer = players.find(p => p.seat === winningSeat);
+  const isMe = winningSeat === myInfo.seat;
+
   const results = players.map(p => ({
-    nickname: p.nickname,
-    seat: p.seat,
+    nickname: p.nickname, seat: p.seat,
     pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
   })).sort((a, b) => a.pips - b.pips);
-  
-  const winner = results[0];
-  const isMe = winner.seat === myInfo.seat;
-  
-  document.getElementById('winner-title').textContent = isMe ? '🎉 You Win!' : `${winner.nickname} Wins!`;
-  document.getElementById('winner-desc').textContent = `${winner.nickname} wins with the lowest pip count (${winner.pips} pips).`;
-  
+
+  if (mode === 'asosye') {
+    const winTeam = winningSeat % 2;
+    const teamName = players.filter(p => p.seat % 2 === winTeam).map(p => p.nickname).join(' & ');
+    const isMyTeam = myInfo.seat % 2 === winTeam;
+    document.getElementById('winner-title').textContent = isMyTeam ? '🎉 Your Team Wins the Round!' : `${teamName} Win the Round!`;
+    document.getElementById('winner-desc').textContent = roomData.pending_point ? '⏳ Pending point carried to this round.' : `Round ${(roomData.round||1)-1} complete.`;
+  } else {
+    document.getElementById('winner-title').textContent = isMe ? '🎉 You Win the Round!' : `${winnerPlayer?.nickname||'?'} Wins the Round!`;
+    document.getElementById('winner-desc').textContent = `Round ${(roomData.round||1)-1} complete.`;
+  }
+
   const tbody = document.getElementById('scores-body');
   tbody.innerHTML = '';
-  results.forEach((r, i) => {
+  const scores = roomData.scores || [0,0,0,0];
+  results.forEach(r => {
     const tr = document.createElement('tr');
-    if (i === 0) tr.className = 'winner';
-    tr.innerHTML = `<td>${escHtml(r.nickname)}${r.seat === myInfo.seat ? ' (you)' : ''}</td><td>${r.seat + 1}</td><td>${r.pips}${i === 0 ? ' 👑' : ''}</td>`;
+    if (r.seat === winningSeat) tr.className = 'winner';
+    tr.innerHTML = `<td>${escHtml(r.nickname)}${r.seat===myInfo.seat?' (you)':''}</td><td>${r.seat+1}</td><td>${r.pips} pips · ${scores[r.seat]||0} rounds</td>`;
     tbody.appendChild(tr);
   });
-  
+
   document.getElementById('overlay-gameover').classList.remove('hidden');
+
+  // Auto-restart next round after 5s if host
+  if (myInfo.seat === Math.min(...players.map(p => p.seat))) {
+    setTimeout(() => startNextRound(), 5000);
+  }
+}
+
+async function startNextRound() {
+  document.getElementById('overlay-gameover').classList.add('hidden');
+  gameOver = false;
+
+  const tiles = shuffle(generateDominoSet());
+  const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
+  for (let i = 0; i < 4; i++)
+    await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i);
+
+  await db.from('game_events').delete().eq('room_id', myInfo.roomId);
+  await db.from('board').delete().eq('room_id', myInfo.roomId);
+  await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null });
+
+  let startingSeat = 0;
+  for (let i = 0; i < 4; i++)
+    if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break; }
+
+  await db.from('domino_rooms').update({ status: 'playing', current_turn: startingSeat }).eq('id', myInfo.roomId);
+}
+
+function showTiebreak() {
+  // Generate 28 face-down tiles for the tiebreak flip
+  const allTiles = [];
+  for (let a = 0; a <= 6; a++) for (let b = a; b <= 6; b++) allTiles.push([a,b]);
+  const shuffled = shuffle(allTiles);
+
+  const overlay = document.getElementById('tiebreak-overlay');
+  const tilesDiv = document.getElementById('tiebreak-tiles');
+  tilesDiv.innerHTML = '';
+  overlay.classList.remove('hidden');
+
+  shuffled.slice(0, 10).forEach((tile, i) => {
+    const div = document.createElement('div');
+    div.className = 'tiebreak-tile';
+    div.textContent = '🀱';
+    div.onclick = async () => {
+      if (div.classList.contains('flipped')) return;
+      div.classList.add('flipped');
+      div.textContent = `${tile[0]}|${tile[1]}`;
+      // Store pick in game_events as a tiebreak action
+      await db.from('game_events').insert({
+        room_id: myInfo.roomId, player_seat: myInfo.seat,
+        action: 'tiebreak', tile
+      });
+      // Check if all tied players have picked
+      const { data: picks } = await db.from('game_events')
+        .select('*').eq('room_id', myInfo.roomId).eq('action', 'tiebreak');
+      if (picks && picks.length >= 2) {
+        // Lowest pip total wins
+        const winner = picks.reduce((best, p) =>
+          (p.tile[0]+p.tile[1]) < (best.tile[0]+best.tile[1]) ? p : best
+        );
+        overlay.classList.add('hidden');
+        await endGame(winner.player_seat);
+      }
+    };
+    tilesDiv.appendChild(div);
+  });
 }
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AI ENGINE
+   AI plays for any seat that has is_ai=true.
+   Beginner: plays first legal tile randomly.
+   Hard: avoids playing high-value tiles early, reads board ends.
+═══════════════════════════════════════════════════════════════ */
+function scheduleAI() {
+  if (aiThinkTimer) return;
+  if (!roomData || roomData.status !== 'playing') return;
+  if (gameMode !== 'solo') return;
+
+  const currentSeat = roomData.current_turn;
+  const aiPlayer = players.find(p => p.seat === currentSeat && p.is_ai);
+  if (!aiPlayer) return;  // human's turn
+
+  const delay = aiDifficulty === 'hard' ? 1200 : 600;
+  aiThinkTimer = setTimeout(() => {
+    aiThinkTimer = null;
+    runAITurn(aiPlayer);
+  }, delay);
+}
+
+async function runAITurn(aiPlayer) {
+  if (!boardData || !roomData || roomData.status !== 'playing') return;
+  if (roomData.current_turn !== aiPlayer.seat) return;
+
+  const hand   = aiPlayer.hand || [];
+  const tiles  = boardData.tiles || [];
+  const leftEnd  = boardData.left_end;
+  const rightEnd = boardData.right_end;
+
+  // Find playable tiles
+  let playable = [];
+  if (tiles.length === 0) {
+    playable = hand.map(tile => ({ tile, side: 'right' }));
+  } else {
+    hand.forEach(tile => {
+      if (tile[0] === leftEnd  || tile[1] === leftEnd)  playable.push({ tile, side: 'left' });
+      if (tile[0] === rightEnd || tile[1] === rightEnd) playable.push({ tile, side: 'right' });
+    });
+  }
+
+  if (playable.length === 0) {
+    // AI must pass
+    await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: aiPlayer.seat, action: 'pass', tile: null });
+    const nextSeat = (roomData.current_turn + 1) % 4;
+    const { data: events } = await db.from('game_events').select('*')
+      .eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4);
+    if (events && events.length === 4 && events.every(e => e.action === 'pass')) {
+      await endGame(null);
+    } else {
+      await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
+    }
+    return;
+  }
+
+  // Pick tile to play
+  let chosen;
+  if (aiDifficulty === 'beginner') {
+    chosen = playable[Math.floor(Math.random() * playable.length)];
+  } else {
+    // Hard: prefer tiles that block opponent, avoid high doubles early
+    // Simple heuristic: pick tile that plays on the side with more matching options
+    const handPipCount = {};
+    hand.forEach(t => { handPipCount[t[0]] = (handPipCount[t[0]]||0)+1; handPipCount[t[1]] = (handPipCount[t[1]]||0)+1; });
+    // Score: prefer playing pip values we have lots of (keeps options open)
+    playable.sort((a, b) => {
+      const scoreA = handPipCount[a.tile[0]] + handPipCount[a.tile[1]];
+      const scoreB = handPipCount[b.tile[0]] + handPipCount[b.tile[1]];
+      return scoreB - scoreA;
+    });
+    chosen = playable[0];
+  }
+
+  // Place the tile
+  const { tile, side } = chosen;
+  const newHand = hand.filter(t => !(t[0] === tile[0] && t[1] === tile[1]));
+  const currentTiles = [...(boardData?.tiles || [])];
+  let newLeft = leftEnd, newRight = rightEnd;
+
+  if (currentTiles.length === 0) {
+    currentTiles.push({ tile, flipped: false });
+    newLeft = tile[0]; newRight = tile[1];
+  } else if (side === 'right') {
+    const flipped = tile[1] === rightEnd;
+    const playedTile = flipped ? [tile[1], tile[0]] : tile;
+    currentTiles.push({ tile: playedTile, flipped });
+    newRight = flipped ? tile[0] : tile[1];
+  } else {
+    const flipped = tile[0] === leftEnd;
+    const playedTile = flipped ? [tile[1], tile[0]] : tile;
+    currentTiles.unshift({ tile: playedTile, flipped });
+    newLeft = flipped ? tile[1] : tile[0];
+  }
+
+  await db.from('board').update({ tiles: currentTiles, left_end: newLeft, right_end: newRight }).eq('room_id', myInfo.roomId);
+  await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', aiPlayer.seat);
+  await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: aiPlayer.seat, action: 'place', tile });
+
+  if (newHand.length === 0) {
+    await endGame(aiPlayer.seat);
+  } else {
+    const nextSeat = (roomData.current_turn + 1) % 4;
+    await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
+  }
 }
 
 async function leaveTable() {
