@@ -569,7 +569,7 @@ function renderAll() {
   renderBoard();
   updateTurnState();
   renderScoreBar();
-  if (roomData.status === 'finished' || roomData.status === 'match_over') showGameOver();
+  if (roomData.status === 'finished' || roomData.status === 'match_over') showGameOver(roomData.current_turn);
   if (gameMode === 'solo') scheduleAI();
 }
 
@@ -1049,11 +1049,16 @@ async function endGame(winningSeat) {
     .select('status').eq('id', myInfo.roomId).single();
   if (!currentRoom || currentRoom.status !== 'playing') return;
 
-  const mode    = roomData.game_mode || gameMode;
-  const scores  = [...(roomData.scores || [0,0,0,0])];
-  let   streak  = { ...(roomData.streak || { seat: null, team: null, count: 0 }) };
-  const pending = roomData.pending_point || false;
-  let   round   = roomData.round || 1;
+  // Read FRESH room data from DB to avoid using stale cache
+  const { data: freshRoom } = await db.from('domino_rooms')
+    .select('*').eq('id', myInfo.roomId).single();
+  if (!freshRoom) return;
+
+  const mode    = freshRoom.game_mode || gameMode;
+  const scores  = [...(freshRoom.scores || [0,0,0,0])];
+  let   streak  = { ...(freshRoom.streak || { seat: null, team: null, count: 0 }) };
+  const pending = freshRoom.pending_point || false;
+  let   round   = freshRoom.round || 1;
 
   // ── Determine round winner ──────────────────────────────────────
   let roundWinnerSeat = winningSeat;
@@ -1133,7 +1138,7 @@ async function endGame(winningSeat) {
   await db.from('game_events').delete().eq('room_id', myInfo.roomId);
 }
 
-function showGameOver() {
+function showGameOver(winningSeat) {
   if (gameOver) return;
   if (roomData.status === 'playing') return;  // already restarted
   gameOver = true;
@@ -1175,7 +1180,6 @@ function showGameOver() {
   }
 
   // ── Round over — show round result then auto-restart ───────────
-  const winningSeat = roomData.current_turn;
   const winnerPlayer = players.find(p => p.seat === winningSeat);
   const isMe = winningSeat === myInfo.seat;
 
@@ -1207,13 +1211,16 @@ function showGameOver() {
 
   document.getElementById('overlay-gameover').classList.remove('hidden');
 
-  // Auto-restart next round after 5s if host
-  if (myInfo.seat === Math.min(...players.map(p => p.seat))) {
+  // Auto-restart next round after 5s — only the round winner triggers it
+  if (myInfo.seat === winningSeat) {
     setTimeout(() => startNextRound(), 5000);
   }
 }
 
 async function startNextRound() {
+  // Guard: make sure room is still in 'finished' state before restarting
+  const { data: check } = await db.from('domino_rooms').select('status').eq('id', myInfo.roomId).single();
+  if (!check || check.status !== 'finished') return;
   gameOver = false;
   document.getElementById('overlay-gameover').classList.add('hidden');
 
