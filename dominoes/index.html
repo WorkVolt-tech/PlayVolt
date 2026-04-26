@@ -86,6 +86,36 @@ h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem, 8vw, 3.5re
 h1 span { color: var(--gold); }
 .subtitle { font-size: 0.65rem; letter-spacing: 0.25em; color: var(--ivory-dim); text-transform: uppercase; margin-top: 0.4rem; }
 
+/* ── MODE SELECTOR ── */
+.mode-selector { margin: 1.25rem 0 0.5rem; }
+.mode-label { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim); margin-bottom: 0.6rem; }
+.mode-options { display: flex; flex-direction: column; gap: 0.5rem; }
+.mode-btn {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 0.75rem 1rem; cursor: pointer;
+  transition: all 0.18s; text-align: left; width: 100%; color: var(--ivory);
+  font-family: 'DM Mono', monospace;
+}
+.mode-btn:hover { border-color: var(--gold); background: rgba(201,168,76,0.05); }
+.mode-btn.selected { border-color: var(--gold); background: rgba(201,168,76,0.1); }
+.mode-icon { font-size: 1.4rem; flex-shrink: 0; }
+.mode-name { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em; color: var(--ivory); }
+.mode-desc { font-size: 0.6rem; color: var(--ivory-dim); margin-top: 2px; letter-spacing: 0.03em; }
+.mode-ai { display: none; margin-top: 0.6rem; gap: 0.5rem; }
+.mode-ai.visible { display: flex; }
+.ai-btn {
+  flex: 1; padding: 0.5rem; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 6px; cursor: pointer; font-family: 'DM Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ivory-dim);
+  transition: all 0.18s;
+}
+.ai-btn:hover { border-color: var(--gold); color: var(--ivory); }
+.ai-btn.selected { border-color: var(--gold); background: rgba(201,168,76,0.1); color: var(--gold); }
+.streak-board { display: flex; justify-content: space-around; margin: 0.75rem 0; }
+.streak-pip { width: 18px; height: 18px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+.streak-pip.won { background: var(--gold); box-shadow: 0 0 8px rgba(201,168,76,0.6); }
+
 label { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim); display: block; margin-bottom: 0.4rem; }
 input[type="text"] {
   width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
@@ -153,7 +183,7 @@ hr { border: none; border-top: 1px solid var(--border); }
 <div class="wrapper">
   <div class="title-block">
     <img src="dekabess_logo.webp" alt="Dekabess!" style="
-      width: 350px;
+      width: 220px;
       filter: drop-shadow(0 0 20px rgba(201,168,76,0.4));
       animation: float 3s ease-in-out infinite;
       margin-bottom: 0.5rem;
@@ -188,6 +218,38 @@ hr { border: none; border-top: 1px solid var(--border); }
         <div class="waiting-status">
           <span class="conn-dot" id="conn-dot-create"></span>
           <span class="pulse"></span>Waiting for players…
+        </div>
+        <!-- Mode Selector — host only -->
+        <div class="mode-selector" id="mode-selector" style="display:none;">
+          <div class="mode-label">Game Mode</div>
+          <div class="mode-options">
+            <button class="mode-btn selected" onclick="selectMode('chien')" id="mode-chien">
+              <span class="mode-icon">🐶</span>
+              <div>
+                <div class="mode-name">Chien Manjé Chien</div>
+                <div class="mode-desc">Every man for himself · 4 players</div>
+              </div>
+            </button>
+            <button class="mode-btn" onclick="selectMode('asosye')" id="mode-asosye">
+              <span class="mode-icon">🤝</span>
+              <div>
+                <div class="mode-name">Asosyé</div>
+                <div class="mode-desc">Partners · Teams of 2 · Seats 0&2 vs 1&3</div>
+              </div>
+            </button>
+            <button class="mode-btn" onclick="selectMode('solo')" id="mode-solo">
+              <span class="mode-icon">🤖</span>
+              <div>
+                <div class="mode-name">Solo vs AI</div>
+                <div class="mode-desc">You vs 3 AI opponents · Every man for himself</div>
+              </div>
+            </button>
+          </div>
+          <div class="mode-ai" id="ai-difficulty">
+            <div style="font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ivory-dim);margin-bottom:0.3rem;width:100%;">AI Difficulty</div>
+            <button class="ai-btn selected" id="ai-beginner" onclick="selectAI('beginner')">🟢 Beginner</button>
+            <button class="ai-btn" id="ai-hard" onclick="selectAI('hard')">🔴 Hard</button>
+          </div>
         </div>
         <button class="btn btn-primary" id="btn-start" onclick="startGame()" disabled>Start Game (Need 4 Players)</button>
       </div>
@@ -237,6 +299,21 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let myPlayerId = null, myRoomId = null, myRoomCode = null, mySeat = null;
 let roomChannel = null, queueChannel = null;
+let selectedMode = 'chien', selectedAIDiff = 'beginner', amHost = false;
+
+function selectMode(mode) {
+  selectedMode = mode;
+  ['chien','asosye','solo'].forEach(m => {
+    document.getElementById('mode-' + m).classList.toggle('selected', m === mode);
+  });
+  document.getElementById('ai-difficulty').classList.toggle('visible', mode === 'solo');
+}
+
+function selectAI(diff) {
+  selectedAIDiff = diff;
+  document.getElementById('ai-beginner').classList.toggle('selected', diff === 'beginner');
+  document.getElementById('ai-hard').classList.toggle('selected', diff === 'hard');
+}
 
 function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -405,6 +482,8 @@ function subscribeToRoom(roomId, panel) {
           sessionStorage.setItem('domino_player', JSON.stringify({
             seat: mySeat, nickname: document.getElementById('nickname').value.trim(),
             roomId: myRoomId, roomCode: myRoomCode,
+            gameMode: payload.new.game_mode || 'chien',
+            aiDifficulty: payload.new.ai_difficulty || null,
           }));
           location.href = 'game.html';
         }
@@ -457,22 +536,51 @@ async function leaveQueue() {
 
 async function startGame() {
   if (!myRoomId) return;
-  const { data: players } = await db.from('domino_players').select('*').eq('room_id', myRoomId).order('seat');
-  if (!players || players.length < 4) { alert('Need 4 players to start!'); return; }
+
+  let players = (await db.from('domino_players').select('*').eq('room_id', myRoomId).order('seat')).data || [];
+
+  // Solo mode: fill empty seats with AI bots
+  if (selectedMode === 'solo') {
+    const aiNames = ['Bot Djo', 'Bot Marie', 'Bot Bobo'];
+    let botIdx = 0;
+    for (let seat = 0; seat < 4; seat++) {
+      if (!players.find(p => p.seat === seat)) {
+        await db.from('domino_players').insert({
+          room_id: myRoomId, seat, nickname: aiNames[botIdx++] || 'Bot',
+          hand: [], is_connected: true, is_ai: true
+        });
+      }
+    }
+    players = (await db.from('domino_players').select('*').eq('room_id', myRoomId).order('seat')).data || [];
+  } else if (players.length < 4) {
+    alert('Need 4 players to start!'); return;
+  }
+
   const tiles = shuffle(generateDominoSet());
   const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
   for (let i = 0; i < 4; i++)
     await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myRoomId).eq('seat', i);
-  // Clear any leftover events from a previous round before starting fresh
+
   await db.from('game_events').delete().eq('room_id', myRoomId);
-  // Reset board for a new round
   await db.from('board').delete().eq('room_id', myRoomId);
   const { error: bErr } = await db.from('board').insert({ room_id: myRoomId, tiles: [], left_end: null, right_end: null });
   if (bErr && !bErr.message.includes('unique')) console.warn('Board insert:', bErr.message);
+
   let startingSeat = 0;
   for (let i = 0; i < 4; i++)
     if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break; }
-  await db.from('domino_rooms').update({ status: 'playing', current_turn: startingSeat }).eq('id', myRoomId);
+
+  await db.from('domino_rooms').update({
+    status: 'playing',
+    current_turn: startingSeat,
+    game_mode: selectedMode,
+    ai_difficulty: selectedMode === 'solo' ? selectedAIDiff : null,
+    scores: [0,0,0,0],
+    streak: { seat: null, team: null, count: 0 },
+    pending_point: false,
+    round: 1,
+    match_winner: null
+  }).eq('id', myRoomId);
 }
 </script>
 </body>
