@@ -39,7 +39,7 @@ html, body {
 
 .game-layout {
   display: grid;
-  grid-template-rows: 50px 1fr 120px;
+  grid-template-rows: 50px 1fr 148px;
   height: 100vh;
 }
 
@@ -61,7 +61,6 @@ html, body {
   font-weight: 700;
   color: var(--gold);
 }
-.top-bar img { display: block; }
 
 .room-code-badge {
   font-size: 0.58rem;
@@ -89,136 +88,8 @@ html, body {
   white-space: nowrap;
 }
 .player-tag.active-turn { border-color: var(--gold); background: rgba(201,168,76,0.1); color: var(--gold); }
-
-/* ── DEKABESS EFFECTS ── */
-@keyframes dekabessLogo {
-  0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
-  20%  { transform: scale(1.3) rotate(4deg);  opacity: 1; }
-  50%  { transform: scale(1.1) rotate(-2deg); opacity: 1; }
-  75%  { transform: scale(1.15) rotate(1deg); opacity: 1; }
-  100% { transform: scale(2) rotate(0deg);   opacity: 0; }
-}
-@keyframes handSlam {
-  0%   { transform: translateY(-120px) rotate(-20deg); opacity: 0; }
-  30%  { transform: translateY(0px) rotate(-5deg);     opacity: 1; }
-  40%  { transform: translateY(-15px) rotate(-5deg);   opacity: 1; }
-  55%  { transform: translateY(0px) rotate(-5deg);     opacity: 1; }
-  65%  { transform: translateY(-10px) rotate(-5deg);   opacity: 1; }
-  80%  { transform: translateY(0px) rotate(-5deg);     opacity: 1; }
-  100% { transform: translateY(-120px) rotate(-20deg); opacity: 0; }
-}
-@keyframes tileScatter {
-  0%   { transform: translate(0,0) rotate(0deg); }
-  20%  { transform: translate(var(--sx),var(--sy)) rotate(var(--sr)); }
-  80%  { transform: translate(var(--sx),var(--sy)) rotate(var(--sr)); }
-  100% { transform: translate(0,0) rotate(0deg); }
-}
-@keyframes confettiFall {
-  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-}
-.dekabess-overlay {
-  position: fixed; inset: 0; z-index: 999;
-  pointer-events: none;
-  display: flex; align-items: center; justify-content: center;
-}
-.dekabess-logo-anim {
-  position: absolute;
-  width: 280px;
-  animation: dekabessLogo 2.5s ease-in-out forwards;
-  filter: drop-shadow(0 0 40px rgba(201,168,76,0.9));
-}
-.dekabess-hand {
-  position: absolute;
-  font-size: 5rem;
-  animation: handSlam 2s ease-in-out forwards;
-}
-.dekabess-hand.left  { left: 15%; animation-delay: 0.1s; transform-origin: bottom left; }
-.dekabess-hand.right { right: 15%; transform: scaleX(-1); animation-delay: 0.3s; transform-origin: bottom right; }
-.confetti-piece {
-  position: fixed;
-  width: 10px; height: 10px;
-  border-radius: 2px;
-  pointer-events: none;
-  animation: confettiFall linear forwards;
-}
-.dekabess-banner {
-  position: absolute;
-  bottom: 30%;
-  font-family: 'Bebas Neue', 'Impact', sans-serif;
-  font-size: 3.5rem;
-  letter-spacing: 0.15em;
-  color: var(--gold);
-  text-shadow: 0 0 30px rgba(201,168,76,0.8), 0 4px 0 rgba(0,0,0,0.8);
-  animation: dekabessLogo 2.5s ease-in-out forwards;
-  animation-delay: 0.2s;
-  opacity: 0;
-}
-
-/* ── BOARD END INDICATORS ── */
-.end-indicator {
-  position: absolute;
-  background: rgba(0,0,0,0.7);
-  border-radius: 5px;
-  padding: 3px 7px;
-  font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  pointer-events: none;
-  z-index: 100;
-  white-space: nowrap;
-  border: 1px solid;
-  transition: left 0.3s ease, top 0.3s ease;
-}
-.end-indicator.left-end  { color: #64b4ff; border-color: rgba(100,180,255,0.4); }
-.end-indicator.right-end { color: var(--gold); border-color: rgba(201,168,76,0.4); }
-
-/* ── SCORE & ROUND ── */
-.score-bar {
-  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
-  background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border);
-  padding: 5px 12px; font-size: 0.62rem; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--ivory-dim);
-}
-.score-entry { display: flex; align-items: center; gap: 6px; }
-.score-name { color: var(--ivory-dim); }
-.score-pips { display: flex; gap: 3px; }
-.score-pip { width: 10px; height: 10px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
-.score-pip.won { background: var(--gold); box-shadow: 0 0 6px rgba(201,168,76,0.7); }
-.score-pip.pending { background: rgba(201,168,76,0.3); border: 1px solid var(--gold); }
-.round-badge { color: var(--ivory-dim); font-size: 0.58rem; }
-.mode-badge { color: var(--gold); font-size: 0.58rem; font-weight: 600; }
-
-/* ── BLOCKED TIEBREAK MODAL ── */
-.tiebreak-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 200; flex-direction: column; gap: 1rem;
-}
-.tiebreak-overlay.hidden { display: none; }
-.tiebreak-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--gold); text-align: center; }
-.tiebreak-sub { font-size: 0.75rem; color: var(--ivory-dim); text-align: center; }
-.tiebreak-tiles { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.tiebreak-tile {
-  width: 44px; height: 80px; background: var(--ivory); border-radius: 6px;
-  cursor: pointer; transition: all 0.2s; display: flex; align-items: center;
-  justify-content: center; font-size: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-}
-.tiebreak-tile:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(201,168,76,0.4); }
-.tiebreak-tile.flipped { background: var(--surface); cursor: default; }
-.tiebreak-tile.flipped:hover { transform: none; }
 .player-tag.is-me { border-color: var(--blue); color: var(--blue); }
 .player-tag.active-turn.is-me { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
-.player-tag.is-teammate { border-color: rgba(100,180,255,0.4); background: rgba(100,180,255,0.05); }
-.team-badge { font-size: 0.52rem; letter-spacing: 0.08em; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-right: 3px; }
-.team-a { background: rgba(201,168,76,0.2); color: var(--gold); }
-.team-b { background: rgba(100,180,255,0.2); color: #64b4ff; }
-.player-tag.is-teammate { border-color: rgba(100,180,255,0.5); background: rgba(100,180,255,0.05); }
-.team-badge { font-size: 0.52rem; letter-spacing: 0.08em; padding: 1px 5px; border-radius: 3px; font-weight: 700; }
-.team-a { background: rgba(201,168,76,0.2); color: var(--gold); }
-.team-b { background: rgba(100,180,255,0.2); color: #64b4ff; }
 
 .tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .tag-tiles { opacity: 0.6; font-size: 0.52rem; }
@@ -536,7 +407,6 @@ html, body {
 <div class="turn-toast" id="turn-toast"></div>
 
 <div class="side-picker" id="side-picker">
-  <div id="dekabess-hint" style="display:none;font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.1em;text-align:center;margin-bottom:6px;">⚡ DEKABESS! Pick your side — 2 points!</div>
   <button class="side-btn" onclick="confirmPlace('left')">← Left</button>
   <button class="side-btn" onclick="confirmPlace('right')">Right →</button>
   <button class="side-btn side-btn-cancel" onclick="cancelSelection()">Cancel</button>
@@ -545,7 +415,7 @@ html, body {
 <div class="game-layout">
   <div class="top-bar">
     <div class="top-bar-left">
-      <img src="dekabess_logo.webp" alt="Dekabess!" style="height:36px;filter:drop-shadow(0 0 8px rgba(201,168,76,0.5));">
+      <span class="game-title">Dominos</span>
       <span class="room-code-badge" id="room-code-badge">——</span>
     </div>
     <div class="player-tags" id="player-tags"></div>
@@ -559,8 +429,6 @@ html, body {
     <div id="board-container" style="position:absolute;inset:0;">
       <!-- snake tiles rendered here -->
     </div>
-    <div class="end-indicator left-end"  id="indicator-left"  style="display:none">◀ LEFT</div>
-    <div class="end-indicator right-end" id="indicator-right" style="display:none">RIGHT ▶</div>
     <div class="drop-zone" id="drop-left"  style="display:none" onclick="handleDropZone('left')">← Left</div>
     <div class="drop-zone" id="drop-right" style="display:none" onclick="handleDropZone('right')">Right →</div>
   </div>
@@ -574,30 +442,15 @@ html, body {
   </div>
 </div>
 
-<!-- SCORE BAR -->
-<div class="score-bar" id="score-bar">
-  <span class="round-badge" id="round-badge">Round 1</span>
-  <div id="score-entries"></div>
-  <span class="mode-badge" id="mode-badge"></span>
-</div>
-
-<!-- BLOCKED TIEBREAK MODAL -->
-<div class="tiebreak-overlay hidden" id="tiebreak-overlay">
-  <div class="tiebreak-title">🎲 Blocked Game — Tiebreak!</div>
-  <div class="tiebreak-sub" id="tiebreak-sub">Flip a tile — lowest pip count wins this round</div>
-  <div class="tiebreak-tiles" id="tiebreak-tiles"></div>
-</div>
-
 <div class="overlay hidden" id="overlay-gameover">
   <div class="modal">
     <h2 id="winner-title">Victory!</h2>
     <p id="winner-desc"></p>
     <table class="scores-table">
-      <thead><tr><th>Player</th><th>Seat</th><th>Score</th></tr></thead>
+      <thead><tr><th>Player</th><th>Seat</th><th>Pips Left</th></tr></thead>
       <tbody id="scores-body"></tbody>
     </table>
-    <p id="round-countdown" style="display:none;color:var(--gold);font-size:0.85rem;margin:8px 0 0;text-align:center;"></p>
-    <button class="btn btn-primary" id="btn-back-lobby" onclick="location.href='index.html'" style="display:none;">Back to Lobby</button>
+    <button class="btn btn-primary" onclick="location.href='index.html'">Back to Lobby</button>
   </div>
 </div>
 
@@ -608,55 +461,39 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   
 let myInfo = null, roomData = null, players = [], boardData = null;
 let selectedTile = null, isMyTurn = false, gameOver = false, toastTimer = null;
-let gameMode = 'chien', aiDifficulty = 'beginner';
-let aiThinkTimer = null;
 
 // Tile dimensions
-const TILE_WIDTH = 34;   // narrow dimension (for doubles)
-const TILE_HEIGHT = 68;  // long dimension
+const TILE_WIDTH = 34;
+const TILE_HEIGHT = 68;
 
 window.addEventListener('load', async () => {
   const raw = sessionStorage.getItem('domino_player');
   if (!raw) { location.href = 'index.html'; return; }
 
   myInfo = JSON.parse(raw);
-  gameMode = myInfo.gameMode || 'chien';
-  aiDifficulty = myInfo.aiDifficulty || 'beginner';
   document.getElementById('room-code-badge').textContent = myInfo.roomCode || '——';
   await loadGameState();
   subscribeToGame();
-  if (gameMode === 'solo') scheduleAI();
 });
 
-let _loadDebounce = null;
 async function loadGameState() {
-  clearTimeout(_loadDebounce);
-  _loadDebounce = setTimeout(async () => {
-    const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
-      db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
-      db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
-      db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
-    ]);
-    roomData = room; players = pData || []; boardData = bData;
-    renderAll();
-  }, 80);
+  const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
+    db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
+    db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
+    db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
+  ]);
+  roomData = room; players = pData || []; boardData = bData;
+  renderAll();
 }
 
 function subscribeToGame() {
   db.channel('game-' + myInfo.roomId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_rooms',       filter: `id=eq.${myInfo.roomId}` }, async (payload) => {
-      if (payload.new.status === 'abandoned') { handleRoomAbandoned(); return; }
-      if (payload.new.status === 'tiebreak')  { await loadGameState(); showTiebreak(); return; }
-      await loadGameState();
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',       filter: `id=eq.${myInfo.roomId}` }, (payload) => {
+      if (payload.new.status === 'abandoned' && myInfo.seat !== 0) { handleRoomAbandoned(); return; }
+      loadGameState();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'board',       filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'game_events', filter: `room_id=eq.${myInfo.roomId}` }, (payload) => {
-      if (payload.new?.action === 'dekabess' && payload.new.player_seat !== myInfo.seat) {
-        const p = players.find(pl => pl.seat === payload.new.player_seat);
-        triggerDekabessEffect(p?.nickname || 'Player');
-      }
-    })
     .subscribe();
 }
 
@@ -666,88 +503,20 @@ function renderAll() {
   renderHand();
   renderBoard();
   updateTurnState();
-  renderScoreBar();
-  if (roomData.status === 'playing' && gameOver) {
-    // Round restarted — reset overlay for all players
-    gameOver = false;
-    document.getElementById('overlay-gameover').classList.add('hidden');
-  }
-  if (roomData.status === 'finished' || roomData.status === 'match_over') showGameOver(roomData.current_turn);
-  if (gameMode === 'solo') scheduleAI();
-}
-
-function renderScoreBar() {
-  if (!roomData) return;
-  const scores  = roomData.scores  || [0,0,0,0];
-  const streak  = roomData.streak  || { seat: null, team: null, count: 0 };
-  const round   = roomData.round   || 1;
-  const mode    = roomData.game_mode || gameMode;
-
-  document.getElementById('round-badge').textContent = `Round ${round}`;
-  document.getElementById('mode-badge').textContent =
-    mode === 'chien'  ? '🐶 Chien Manjé Chien' :
-    mode === 'asosye' ? '🤝 Asosyé' : '🤖 Solo';
-
-  const container = document.getElementById('score-entries');
-  container.innerHTML = '';
-
-  const makePips = (wins, streaking) =>
-    [0,1,2,3].map(i =>
-      `<div class="score-pip ${i < wins ? 'won' : (roomData.pending_point && streaking && i === wins ? 'pending' : '')}"></div>`
-    ).join('');
-
-  if (mode === 'asosye') {
-    const teamScores = [scores[0] + scores[2], scores[1] + scores[3]];
-    const bySeats = (s) => players.find(p => p.seat === s);
-    const teamNames  = [
-      `${bySeats(0)?.nickname||'P1'} & ${bySeats(2)?.nickname||'P3'}`,
-      `${bySeats(1)?.nickname||'P2'} & ${bySeats(3)?.nickname||'P4'}`
-    ];
-    [0,1].forEach(t => {
-      const d = document.createElement('div');
-      d.className = 'score-entry';
-      d.innerHTML = `<span class="score-name">${escHtml(teamNames[t])}</span>
-        <div class="score-pips">${makePips(teamScores[t], streak.team === t)}</div>`;
-      container.appendChild(d);
-    });
-  } else {
-    players.slice().sort((a,b) => a.seat - b.seat).forEach(p => {
-      const d = document.createElement('div');
-      d.className = 'score-entry';
-      d.innerHTML = `<span class="score-name">${escHtml(p.nickname)}${p.seat===myInfo.seat?' (you)':''}</span>
-        <div class="score-pips">${makePips(scores[p.seat]||0, streak.seat === p.seat)}</div>`;
-      container.appendChild(d);
-    });
-  }
+  if (roomData.status === 'finished') showGameOver();
 }
 
 function renderPlayerTags() {
   const container = document.getElementById('player-tags');
   container.innerHTML = '';
-  const mode   = roomData.game_mode || gameMode;
-  const myTeam = myInfo.seat % 2;
-
   for (const p of players) {
-    const isMe       = p.seat === myInfo.seat;
-    const isActive   = p.seat === roomData.current_turn;
-    const isTeammate = mode === 'asosye' && !isMe && (p.seat % 2 === myTeam);
+    const isMe     = p.seat === myInfo.seat;
+    const isActive = p.seat === roomData.current_turn;
     const div = document.createElement('div');
-    div.className = 'player-tag'
-      + (isActive   ? ' active-turn' : '')
-      + (isMe       ? ' is-me'       : '')
-      + (isTeammate ? ' is-teammate' : '');
-
-    let teamLabel = '';
-    if (mode === 'asosye') {
-      const team = p.seat % 2 === 0 ? 'A' : 'B';
-      const cls  = p.seat % 2 === 0 ? 'team-a' : 'team-b';
-      teamLabel  = `<span class="team-badge ${cls}">Team ${team}</span>`;
-    }
-
+    div.className = 'player-tag' + (isActive ? ' active-turn' : '') + (isMe ? ' is-me' : '');
     div.innerHTML = `
       <div class="tag-dot"></div>
-      ${teamLabel}
-      <span>${escHtml(p.nickname)}${isMe ? ' ★' : ''}${isTeammate ? ' 🤝' : ''}</span>
+      <span>${escHtml(p.nickname)}${isMe ? ' ★' : ''}</span>
       <span class="tag-tiles">${Array.isArray(p.hand) ? p.hand.length : 0}</span>`;
     container.appendChild(div);
   }
@@ -823,110 +592,116 @@ function renderHand() {
   passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
 }
 
-const TW = 34;   // narrow side
-const TH = 68;   // long side
-const GAP = 2;
+// Snake layout constants
+// Non-doubles: horizontal  → 88 wide, 44 tall  (two halves side by side)
+// Doubles:     vertical    → 44 wide, 88 tall  (two halves stacked)
+const TW = 34;
+const TH = 68;
+const GAP = 3;
 
+// Given a tile entry, return whether it renders vertically
+function isVert(entry) {
+  return entry.tile[0] === entry.tile[1];
+}
+// Return rendered width/height of a tile entry
+function tileDims(entry) {
+  return isVert(entry)
+    ? { w: TW, h: TH }
+    : { w: TH, h: TW };
+}
+
+// Compute snake positions for all tiles, centered on tile[0] (first played).
+// Returns array of {x, y, dir, pw, ph} matching boardData.tiles order.
+//
+// Orientation rules:
+//   Horizontal run : non-double → -- (88w×44h),  double → | (44w×88h)
+//   Corner column  : non-double → |  (44w×88h),  double → -- (88w×44h)
+//
+// Connection rule (the key to no gaps/overlaps):
+//   Each tile connects edge-to-edge with its neighbour.
+//   When a double (|) is in a horizontal run, the neighbour's connecting
+//   edge meets the double's CENTER (both share the same y).
+//   When a double (--) is in a corner column, the neighbour's connecting
+//   edge meets the double's CENTER (both share the same x).
+//   In all other cases tiles are simply flush edge-to-edge.
 function computeSnakePositions(tiles, W, H) {
-  if (tiles.length === 0) return [];
+  const MARGIN = 56;
+  const CORNER_STEPS = 3;
 
-  const MARGIN = 40;
-  const positions = [];
-  let goingRight = true;
-  let inCorner   = false;
-
-  // Every tile is landscape in a horizontal run: w=TH, h=TW
-  // Every tile is portrait  at a corner turn:    w=TW, h=TH
-  // (doubles and normals treated identically for sizing)
-
-  for (let i = 0; i < tiles.length; i++) {
-    const isDbl = tiles[i].tile[0] === tiles[i].tile[1];
-    const w = (inCorner || isDbl) ? TW : TH;
-    const h = (inCorner || isDbl) ? TH : TW;
-
-    let tx, ty;
-
-    if (i === 0) {
-      // First tile always at center
-      tx = W / 2;
-      ty = H / 2;
-    } else {
-      const prev = positions[i - 1];
-
-      if (inCorner) {
-        // CONNECTOR SNAP:
-        // Going right: corner top-RIGHT corner = prev tile bottom-RIGHT corner
-        //   tx + w/2 = prev.x + prev.pw/2  →  tx = prev.x + prev.pw/2 - w/2
-        //   ty - h/2 = prev.y + prev.ph/2  →  ty = prev.y + prev.ph/2 + h/2
-        // Going left: corner top-LEFT corner = prev tile bottom-LEFT corner
-        //   tx - w/2 = prev.x - prev.pw/2  →  tx = prev.x - prev.pw/2 + w/2
-        //   ty - h/2 = prev.y + prev.ph/2  →  ty = prev.y + prev.ph/2 + h/2
-        if (!goingRight) {
-          // came from right — corner on right side
-          tx = (prev.x + prev.pw / 2) - w / 2;
-        } else {
-          // came from left — corner on left side
-          tx = (prev.x - prev.pw / 2) + w / 2;
-        }
-        ty = (prev.y + prev.ph / 2) + h / 2;
-
-      } else if (prev.inCorner) {
-        // CONNECTOR SNAP after corner:
-        // Going right: new tile top-LEFT corner = corner tile bottom-LEFT corner
-        //   tx - w/2 = prev.x - prev.pw/2  →  tx = prev.x - prev.pw/2 + w/2
-        //   ty - h/2 = prev.y + prev.ph/2  →  ty = prev.y + prev.ph/2 + h/2
-        // Going left: new tile top-RIGHT corner = corner tile bottom-RIGHT corner
-        //   tx + w/2 = prev.x + prev.pw/2  →  tx = prev.x + prev.pw/2 - w/2
-        //   ty - h/2 = prev.y + prev.ph/2  →  ty = prev.y + prev.ph/2 + h/2
-        if (goingRight) {
-          tx = (prev.x - prev.pw / 2) + w / 2;
-        } else {
-          tx = (prev.x + prev.pw / 2) - w / 2;
-        }
-        ty = prev.y + prev.ph / 2 + h / 2;
-      } else {
-        // Normal horizontal run: left/right edge snaps to prev edge + GAP
-        if (goingRight) {
-          tx = (prev.x + prev.pw / 2) + GAP + w / 2;
-        } else {
-          tx = (prev.x - prev.pw / 2) - GAP - w / 2;
-        }
-        ty = prev.y;
-      }
-    }
-
-    const dir = inCorner ? 0 : (goingRight ? 1 : -1);
-    positions.push({ x: tx, y: ty, pw: w, ph: h, inCorner, dir });
-
-    // After placing a corner tile, resume horizontal in new direction
-    if (inCorner) {
-      inCorner = false;
-      // direction already flipped when we decided to turn
-    }
-
-    // Check if the NEXT tile needs to turn (become a corner)
-    if (i + 1 < tiles.length && !inCorner) {
-      const nw = TH; // next run tile width
-      let nextEdge;
-      if (goingRight) {
-        // where would next tile's right edge land?
-        nextEdge = tx + w / 2 + GAP + nw;
-        if (nextEdge > W - MARGIN) {
-          goingRight = false;
-          inCorner = true;
-        }
-      } else {
-        // where would next tile's left edge land?
-        nextEdge = tx - w / 2 - GAP - nw;
-        if (nextEdge < MARGIN) {
-          goingRight = true;
-          inCorner = true;
-        }
-      }
-    }
+  function renderDims(entry, inCorner) {
+    const isDbl = entry.tile[0] === entry.tile[1];
+    return inCorner
+      ? (isDbl ? { w: TH, h: TW } : { w: TW, h: TH })
+      : (isDbl ? { w: TW, h: TH } : { w: TH, h: TW });
   }
 
-  return positions;
+  // Walk tiles forward from startIdx, placing each one.
+  // startX/startY = center of the tile at startIdx.
+  // initDir: +1 going right, -1 going left.
+  // Returns positions array indexed from 0 = startIdx.
+  function walk(tiles, startIdx, startX, startY, initDir) {
+    const pos = [];
+    let x = startX, y = startY, dir = initDir, cornerLeft = 0;
+
+    for (let i = startIdx; i < tiles.length; i++) {
+      const entry = tiles[i];
+      const inCorner = cornerLeft > 0;
+      const { w, h } = renderDims(entry, inCorner);
+      pos.push({ x, y, dir: inCorner ? 0 : dir, pw: w, ph: h });
+
+      if (i === tiles.length - 1) break;
+      const next = tiles[i + 1];
+
+      if (inCorner) {
+        // Decrement FIRST so we know if the next tile is still in the corner
+        cornerLeft--;
+        const nextInCorner = cornerLeft > 0;
+        // Use the ACTUAL dims the next tile will render with
+        const { w: nw, h: nh } = renderDims(next, nextInCorner);
+
+        // When the LAST corner tile is a double (--), the next horizontal tile
+        // must align to its inner tip: shift x inward by (TH-TW)/2 = 22px
+        if (!nextInCorner && entry.tile[0] === entry.tile[1]) {
+          x = x + dir * (TH - TW) / 2;
+        }
+        // Strict edge-to-edge y step using actual rendered heights
+        y = y + h / 2 + GAP + nh / 2;
+
+      } else {
+        // Horizontal run
+        const { w: nw, h: nh } = renderDims(next, false);
+        const nextX = x + dir * (w / 2 + GAP + nw / 2);
+
+        if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
+          // Hit edge — enter corner column
+          // The first corner tile's actual dims
+          const firstCornerDims = renderDims(next, true);
+          // Pin x to the wall edge based on first corner tile's width
+          x = dir > 0
+            ? W - MARGIN - firstCornerDims.w / 2
+            : MARGIN + firstCornerDims.w / 2;
+          dir *= -1;
+          cornerLeft = CORNER_STEPS - 1;
+          // Exact edge-to-edge y step: bottom of current + gap + top of next
+          y = y + h / 2 + GAP + firstCornerDims.h / 2;
+        } else {
+          x = nextX;
+        }
+      }
+    }
+    return pos;
+  }
+
+  if (tiles.length === 0) return [];
+
+  // Center first tile on screen
+  const firstDims = renderDims(tiles[0], false);
+  const cx = W / 2;
+  const cy = H / 2;
+
+  // Walk right from tile 0
+  const rightPos = walk(tiles, 0, cx, cy, 1);
+  return rightPos;
 }
 
 function renderBoard() {
@@ -958,65 +733,67 @@ function renderBoard() {
   const positions = computeSnakePositions(tiles, W, H);
 
   tiles.forEach((entry, i) => {
-    const pos = positions[i];
     const isDbl = entry.tile[0] === entry.tile[1];
+    const tileDir = positions[i].dir; // +1 right, -1 left, 0 corner-down
+    const inCorner = tileDir === 0;
 
-    // Portrait = TW wide, TH tall
-    // Horizontal run: doubles=portrait, normals=landscape
-    // Corner: doubles=landscape, normals=portrait
-    const renderVertical = pos.inCorner || isDbl;  // portrait for doubles and corner tiles
+    // Orientation:
+    //   horizontal run: doubles → vertical (|), non-doubles → horizontal (--)
+    //   corner column:  doubles → horizontal (--), non-doubles → vertical (|)
+    const renderVertical = inCorner ? !isDbl : isDbl;
+
+    // Use the dims that were computed (and collision-checked) by computeSnakePositions
+    const rw = positions[i].pw;
+    const rh = positions[i].ph;
 
     let displayTile = [...entry.tile];
     if (!isDbl) {
-      const logicalFlip = !!entry.flipped;
-      const goingLeft   = pos.dir === -1;
-      if (logicalFlip !== goingLeft) displayTile = [entry.tile[1], entry.tile[0]];
+      // Logical flip: which pip end connects to the chain
+      // Visual mirror: needed when going left (-1) so connecting pip faces prev tile
+      const logicalFlip  = !!entry.flipped;
+      const visualMirror = tileDir === -1;
+      if (logicalFlip !== visualMirror) displayTile = [entry.tile[1], entry.tile[0]];
     }
 
     const tileEl = createTileElement(displayTile[0], displayTile[1], renderVertical, isDbl);
     tileEl.classList.add('board-tile');
     tileEl.classList.add(renderVertical ? 'vertical' : 'horizontal');
-    tileEl.style.left   = `${Math.round(pos.x - pos.pw / 2)}px`;
-    tileEl.style.top    = `${Math.round(pos.y - pos.ph / 2)}px`;
+    tileEl.style.left   = `${positions[i].x - rw / 2}px`;
+    tileEl.style.top    = `${positions[i].y - rh / 2}px`;
     tileEl.style.zIndex = i + 1;
     container.appendChild(tileEl);
   });
 
-  // Drop zones removed from board — side picker at bottom handles left/right choice
-  dropL.style.display = 'none';
-  dropR.style.display = 'none';
+  // Drop zones flanking the chain ends
+  const canLeft  = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
+  const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
+  const posL = positions[0];
+  const posR = positions[positions.length - 1];
+  const dimsL = tileDims(tiles[0]);
+  const dimsR = tileDims(tiles[tiles.length - 1]);
 
-  // ── END INDICATORS ──────────────────────────────────────────────
-  const indL = document.getElementById('indicator-left');
-  const indR = document.getElementById('indicator-right');
-
-  if (positions.length > 0) {
-    const posFirst = positions[0];
-    const posLast  = positions[positions.length - 1];
-
-    // LEFT indicator: above tile 0 (the first tile, always at center)
-    indL.style.display = 'block';
-    indL.style.left = `${Math.round(posFirst.x - posFirst.pw / 2)}px`;
-    indL.style.top  = `${Math.round(posFirst.y - posFirst.ph / 2 - 22)}px`;
-
-    // RIGHT indicator: follows the last tile placed
-    indR.style.display = 'block';
-    if (posLast.inCorner) {
-      // Corner tile — place indicator to the right of it
-      indR.style.left = `${Math.round(posLast.x + posLast.pw / 2 + 4)}px`;
-      indR.style.top  = `${Math.round(posLast.y - 10)}px`;
-    } else if (posLast.dir === -1) {
-      // Going left — indicator below last tile
-      indR.style.left = `${Math.round(posLast.x - posLast.pw / 2)}px`;
-      indR.style.top  = `${Math.round(posLast.y + posLast.ph / 2 + 4)}px`;
-    } else {
-      // Going right — indicator to the right of last tile
-      indR.style.left = `${Math.round(posLast.x + posLast.pw / 2 + 4)}px`;
-      indR.style.top  = `${Math.round(posLast.y - 10)}px`;
-    }
+  if (canLeft && posL) {
+    Object.assign(dropL.style, {
+      display: 'flex',
+      left:   `${Math.max(4, posL.x - posL.pw / 2 - 76)}px`,
+      top:    `${posL.y - 22}px`,
+      width:  '68px',
+      height: '44px'
+    });
   } else {
-    indL.style.display = 'none';
-    indR.style.display = 'none';
+    dropL.style.display = 'none';
+  }
+
+  if (canRight && posR) {
+    Object.assign(dropR.style, {
+      display: 'flex',
+      left:   `${Math.min(W - 76, posR.x + posR.pw / 2 + 4)}px`,
+      top:    `${posR.y - 22}px`,
+      width:  '68px',
+      height: '44px'
+    });
+  } else {
+    dropR.style.display = 'none';
   }
 }
 
@@ -1049,25 +826,14 @@ function selectTile(tile, idx) {
   
   renderBoard();
   
-  const me = players.find(p => p.seat === myInfo.seat);
-  const isLastTile = me && me.hand.length === 1;
-  const isDekabess = isLastTile && canLeft && canRight;
-
-  if (isDekabess) {
-    // DEKABESS! — last tile plays both sides — show special picker
+  if (canLeft && canRight && boardData.left_end !== boardData.right_end) {
     document.getElementById('side-picker').classList.add('visible');
-    document.getElementById('dekabess-hint').style.display = 'block';
+  } else if (canLeft) {
+    confirmPlace('left');
+  } else if (canRight) {
+    confirmPlace('right');
   } else {
-    document.getElementById('dekabess-hint').style.display = 'none';
-    if (canLeft && canRight && boardData.left_end !== boardData.right_end) {
-      document.getElementById('side-picker').classList.add('visible');
-    } else if (canLeft) {
-      confirmPlace('left');
-    } else if (canRight) {
-      confirmPlace('right');
-    } else {
-      cancelSelection();
-    }
+    cancelSelection();
   }
 }
 
@@ -1157,10 +923,6 @@ async function confirmPlace(side) {
 
   const newHand = me.hand.filter((_, i) => i !== idx);
 
-  // Check Dekabess BEFORE updating board — uses current board ends
-  const wasDekabess = me.hand.length === 1 &&
-    canPlayOnSide(tile, 'left') && canPlayOnSide(tile, 'right');
-
   await db.from('board').update({
     tiles: newTiles,
     left_end: newLeftEnd,
@@ -1169,20 +931,9 @@ async function confirmPlace(side) {
   
   await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
-
-  if (wasDekabess) {
-    triggerDekabessEffect(me.nickname);
-    // Broadcast Dekabess to other players via game_events
-    await db.from('game_events').insert({
-      room_id: myInfo.roomId, player_seat: myInfo.seat,
-      action: 'dekabess', tile
-    });
-  }
-
-  await advanceTurn(newHand, wasDekabess);
+  await advanceTurn(newHand);
   selectedTile = null;
   document.getElementById('side-picker').classList.remove('visible');
-  document.getElementById('dekabess-hint').style.display = 'none';
 }
 
 async function passMove() {
@@ -1191,14 +942,13 @@ async function passMove() {
   await advanceTurn(me.hand);
 }
 
-async function advanceTurn(myNewHand, isDekabess = false) {
-  if (myNewHand.length === 0) { await endGame(myInfo.seat, isDekabess); return; }
+async function advanceTurn(myNewHand) {
+  if (myNewHand.length === 0) { await endGame(myInfo.seat); return; }
   
   const { data: events } = await db.from('game_events').select('*')
     .eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4);
   
-  const passEvents = (events || []).filter(e => e.action === 'pass');
-  if (passEvents.length >= 4) {
+  if (events && events.length === 4 && events.every(e => e.action === 'pass')) {
     await endGame(null);
     return;
   }
@@ -1207,469 +957,43 @@ async function advanceTurn(myNewHand, isDekabess = false) {
   await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
 }
 
-async function endGame(winningSeat, isDekabess = false) {
-  // Check the game is still active before writing — first browser in wins, rest ignored
-  const { data: currentRoom } = await db.from('domino_rooms')
-    .select('status').eq('id', myInfo.roomId).single();
-  if (!currentRoom || currentRoom.status !== 'playing') return;
-
-  // Read FRESH room data from DB to avoid using stale cache
-  const { data: freshRoom } = await db.from('domino_rooms')
-    .select('*').eq('id', myInfo.roomId).single();
-  if (!freshRoom) return;
-
-  const mode    = freshRoom.game_mode || gameMode;
-  const scores  = [...(freshRoom.scores || [0,0,0,0])];
-  let   streak  = { ...(freshRoom.streak || { seat: null, team: null, count: 0 }) };
-  const pending = freshRoom.pending_point || false;
-  let   round   = freshRoom.round || 1;
-
-  // ── Determine round winner ──────────────────────────────────────
-  let roundWinnerSeat = winningSeat;
-
-  if (winningSeat === null) {
-    // Blocked game — find lowest pip count
-    const pipCounts = players.map(p => ({
-      seat: p.seat,
-      pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
-    }));
-    pipCounts.sort((a, b) => a.pips - b.pips);
-    const lowest = pipCounts[0].pips;
-    const tied = pipCounts.filter(p => p.pips === lowest);
-
-    if (tied.length === 1) {
-      roundWinnerSeat = tied[0].seat;
-    } else {
-      // Tie — handle by mode
-      if (mode === 'asosye') {
-        // Teams: check if tied players are on the same team
-        const tiedTeams = [...new Set(tied.map(p => p.seat % 2))];
-        if (tiedTeams.length === 1) {
-          roundWinnerSeat = tied[0].seat; // same team, pick first
-        } else {
-          // Different teams — point carries to next winner
-          await db.from('domino_rooms').update({
-            status: 'finished', pending_point: true, round: round + 1
-          }).eq('id', myInfo.roomId);
-          await db.from('game_events').delete().eq('room_id', myInfo.roomId);
-          return;
-        }
-      } else {
-        // Singles — tiebreak: flip a face-down tile
-        await db.from('domino_rooms').update({
-          status: 'tiebreak',
-          current_turn: -1
-        }).eq('id', myInfo.roomId);
-        await db.from('game_events').delete().eq('room_id', myInfo.roomId);
-        return;
-      }
-    }
+async function endGame(winningSeat) {
+  await db.from('domino_rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
+  if (myInfo.seat === 0) {
+    await db.from('game_events').delete().eq('room_id', myInfo.roomId);
   }
-
-  // ── Award point (+ pending if any) ─────────────────────────────
-  const pointsToAward = isDekabess ? (pending ? 3 : 2) : (pending ? 2 : 1);
-  scores[roundWinnerSeat] = (scores[roundWinnerSeat] || 0) + pointsToAward;
-
-  // ── Update streak ───────────────────────────────────────────────
-  if (mode === 'asosye') {
-    const winTeam = roundWinnerSeat % 2;
-    if (streak.team === winTeam) {
-      streak.count += pointsToAward;
-    } else {
-      streak = { seat: null, team: winTeam, count: pointsToAward };
-    }
-  } else {
-    if (streak.seat === roundWinnerSeat) {
-      streak.count += pointsToAward;
-    } else {
-      streak = { seat: roundWinnerSeat, team: null, count: pointsToAward };
-    }
-  }
-
-  // ── Check for match win (4 consecutive) ─────────────────────────
-  const matchWon = streak.count >= 4;
-
-  await db.from('domino_rooms').update({
-    status: matchWon ? 'match_over' : 'finished',
-    scores,
-    streak,
-    pending_point: false,
-    round: round + 1,
-    match_winner: matchWon ? roundWinnerSeat : null,
-    current_turn: roundWinnerSeat
-  }).eq('id', myInfo.roomId);
-
-  await db.from('game_events').delete().eq('room_id', myInfo.roomId);
 }
 
-function showGameOver(winningSeat) {
+function showGameOver() {
   if (gameOver) return;
-  if (roomData.status === 'playing') return;  // already restarted
   gameOver = true;
-
-  const mode   = roomData.game_mode || gameMode;
-  const status = roomData.status;
-
-  // ── Match over (4 consecutive wins) ────────────────────────────
-  if (status === 'match_over') {
-    const winnerSeat  = roomData.match_winner;
-    const winnerPlayer = players.find(p => p.seat === winnerSeat);
-    const isMe = winnerSeat === myInfo.seat;
-
-    if (mode === 'asosye') {
-      const winTeam = winnerSeat % 2;
-      const t0 = players.filter(p => p.seat % 2 === 0).map(p => p.nickname).join(' & ');
-      const t1 = players.filter(p => p.seat % 2 === 1).map(p => p.nickname).join(' & ');
-      const winTeamName = winTeam === 0 ? t0 : t1;
-      const isMyTeam = myInfo.seat % 2 === winTeam;
-      document.getElementById('winner-title').textContent = isMyTeam ? '🎉 Your Team Wins the Match!' : `${winTeamName} Win the Match!`;
-      document.getElementById('winner-desc').textContent = `${winTeamName} won 4 rounds in a row! 🏆`;
-    } else {
-      document.getElementById('winner-title').textContent = isMe ? '🎉 You Win the Match!' : `${winnerPlayer?.nickname||'?'} Wins the Match!`;
-      document.getElementById('winner-desc').textContent = `${winnerPlayer?.nickname||'?'} won 4 rounds in a row! 🏆`;
-    }
-
-    const tbody = document.getElementById('scores-body');
-    tbody.innerHTML = '';
-    const scores = roomData.scores || [0,0,0,0];
-    players.slice().sort((a,b) => (scores[b.seat]||0) - (scores[a.seat]||0)).forEach(p => {
-      const tr = document.createElement('tr');
-      if (p.seat === winnerSeat) tr.className = 'winner';
-      tr.innerHTML = `<td>${escHtml(p.nickname)}${p.seat===myInfo.seat?' (you)':''}</td><td>${p.seat+1}</td><td>${scores[p.seat]||0} rounds 👑</td>`;
-      tbody.appendChild(tr);
-    });
-
-    document.getElementById('btn-back-lobby').style.display = 'block';
-    document.getElementById('round-countdown').style.display = 'none';
-    document.getElementById('overlay-gameover').classList.remove('hidden');
-    return;
-  }
-
-  // ── Round over — show round result then auto-restart ───────────
-  const winnerPlayer = players.find(p => p.seat === winningSeat);
-  const isMe = winningSeat === myInfo.seat;
-
+  
   const results = players.map(p => ({
-    nickname: p.nickname, seat: p.seat,
+    nickname: p.nickname,
+    seat: p.seat,
     pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
   })).sort((a, b) => a.pips - b.pips);
-
-  if (mode === 'asosye') {
-    const winTeam = winningSeat % 2;
-    const teamName = players.filter(p => p.seat % 2 === winTeam).map(p => p.nickname).join(' & ');
-    const isMyTeam = myInfo.seat % 2 === winTeam;
-    document.getElementById('winner-title').textContent = isMyTeam ? '🎉 Your Team Wins the Round!' : `${teamName} Win the Round!`;
-    document.getElementById('winner-desc').textContent = roomData.pending_point ? '⏳ Pending point carried to this round.' : `Round ${(roomData.round||1)-1} complete.`;
-  } else {
-    document.getElementById('winner-title').textContent = isMe ? '🎉 You Win the Round!' : `${winnerPlayer?.nickname||'?'} Wins the Round!`;
-    document.getElementById('winner-desc').textContent = `Round ${(roomData.round||1)-1} complete.`;
-  }
-
+  
+  const winner = results[0];
+  const isMe = winner.seat === myInfo.seat;
+  
+  document.getElementById('winner-title').textContent = isMe ? '🎉 You Win!' : `${winner.nickname} Wins!`;
+  document.getElementById('winner-desc').textContent = `${winner.nickname} wins with the lowest pip count (${winner.pips} pips).`;
+  
   const tbody = document.getElementById('scores-body');
   tbody.innerHTML = '';
-  const scores = roomData.scores || [0,0,0,0];
-  results.forEach(r => {
+  results.forEach((r, i) => {
     const tr = document.createElement('tr');
-    if (r.seat === winningSeat) tr.className = 'winner';
-    tr.innerHTML = `<td>${escHtml(r.nickname)}${r.seat===myInfo.seat?' (you)':''}</td><td>${r.seat+1}</td><td>${r.pips} pips · ${scores[r.seat]||0} rounds</td>`;
+    if (i === 0) tr.className = 'winner';
+    tr.innerHTML = `<td>${escHtml(r.nickname)}${r.seat === myInfo.seat ? ' (you)' : ''}</td><td>${r.seat + 1}</td><td>${r.pips}${i === 0 ? ' 👑' : ''}</td>`;
     tbody.appendChild(tr);
   });
-
-  // Show countdown to all players
-  const countdownEl = document.getElementById('round-countdown');
-  if (countdownEl) {
-    let secs = 5;
-    countdownEl.textContent = `Next round in ${secs}s…`;
-    countdownEl.style.display = 'block';
-    const interval = setInterval(() => {
-      secs--;
-      if (secs > 0) {
-        countdownEl.textContent = `Next round in ${secs}s…`;
-      } else {
-        clearInterval(interval);
-        countdownEl.textContent = 'Starting…';
-      }
-    }, 1000);
-  }
-
+  
   document.getElementById('overlay-gameover').classList.remove('hidden');
-
-  // ALL players trigger restart after 5s — DB status check ensures only first one wins
-  setTimeout(() => startNextRound(), 5000);
-}
-
-async function startNextRound() {
-  // Atomically claim the restart — update status to 'restarting' first
-  // Only the first client to succeed will continue; others get 'restarting' back and stop
-  const { data: claimed, error: claimErr } = await db.from('domino_rooms')
-    .update({ status: 'restarting' })
-    .eq('id', myInfo.roomId)
-    .eq('status', 'finished')  // only succeeds if still 'finished'
-    .select('id')
-    .single();
-
-  if (claimErr || !claimed) return;  // another client got here first
-
-  gameOver = false;
-  document.getElementById('overlay-gameover').classList.add('hidden');
-  document.getElementById('round-countdown').style.display = 'none';
-
-  // Deal new hands
-  const tiles = shuffle(generateDominoSet());
-  const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
-  for (let i = 0; i < 4; i++)
-    await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i);
-
-  // Clear events and reset board using upsert to avoid delete/insert race
-  await db.from('game_events').delete().eq('room_id', myInfo.roomId);
-  await db.from('board').upsert({
-    room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null
-  }, { onConflict: 'room_id' });
-
-  // Find who has the 6|6
-  let startingSeat = 0;
-  for (let i = 0; i < 4; i++)
-    if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break; }
-
-  // Set status to 'playing' — this triggers all clients to reload
-  await db.from('domino_rooms').update({ status: 'playing', current_turn: startingSeat }).eq('id', myInfo.roomId);
-}
-
-function showTiebreak() {
-  // Generate 28 face-down tiles for the tiebreak flip
-  const allTiles = [];
-  for (let a = 0; a <= 6; a++) for (let b = a; b <= 6; b++) allTiles.push([a,b]);
-  const shuffled = shuffle(allTiles);
-
-  const overlay = document.getElementById('tiebreak-overlay');
-  const tilesDiv = document.getElementById('tiebreak-tiles');
-  tilesDiv.innerHTML = '';
-  overlay.classList.remove('hidden');
-
-  shuffled.slice(0, 10).forEach((tile, i) => {
-    const div = document.createElement('div');
-    div.className = 'tiebreak-tile';
-    div.textContent = '🀱';
-    div.onclick = async () => {
-      if (div.classList.contains('flipped')) return;
-      div.classList.add('flipped');
-      div.textContent = `${tile[0]}|${tile[1]}`;
-      // Store pick in game_events as a tiebreak action
-      await db.from('game_events').insert({
-        room_id: myInfo.roomId, player_seat: myInfo.seat,
-        action: 'tiebreak', tile
-      });
-      // Check if all tied players have picked
-      const { data: picks } = await db.from('game_events')
-        .select('*').eq('room_id', myInfo.roomId).eq('action', 'tiebreak');
-      if (picks && picks.length >= 2) {
-        // Lowest pip total wins
-        const winner = picks.reduce((best, p) =>
-          (p.tile[0]+p.tile[1]) < (best.tile[0]+best.tile[1]) ? p : best
-        );
-        overlay.classList.add('hidden');
-        await endGame(winner.player_seat);
-      }
-    };
-    tilesDiv.appendChild(div);
-  });
 }
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-/* ═══════════════════════════════════════════════════════════
-   DEKABESS! VISUAL EFFECTS
-═══════════════════════════════════════════════════════════ */
-function triggerDekabessEffect(playerName) {
-  // Create overlay
-  const overlay = document.createElement('div');
-  overlay.className = 'dekabess-overlay';
-  overlay.id = 'dekabess-overlay';
-
-  // Logo
-  const logo = document.createElement('img');
-  logo.src = 'dekabess_logo.webp';
-  logo.className = 'dekabess-logo-anim';
-  overlay.appendChild(logo);
-
-  // Banner text
-  const banner = document.createElement('div');
-  banner.className = 'dekabess-banner';
-  banner.textContent = playerName ? `${playerName} — DEKABESS!` : 'DEKABESS!';
-  overlay.appendChild(banner);
-
-  // Hands slamming
-  const handL = document.createElement('div');
-  handL.className = 'dekabess-hand left';
-  handL.textContent = '🤜';
-  overlay.appendChild(handL);
-
-  const handR = document.createElement('div');
-  handR.className = 'dekabess-hand right';
-  handR.textContent = '🤜';
-  overlay.appendChild(handR);
-
-  document.body.appendChild(overlay);
-
-  // Scatter board tiles
-  scatterTiles();
-
-  // Confetti burst
-  spawnConfetti();
-
-  // Remove overlay after animation
-  setTimeout(() => {
-    overlay.remove();
-    unscatterTiles();
-  }, 3000);
-}
-
-function scatterTiles() {
-  const tiles = document.querySelectorAll('.board-tile');
-  tiles.forEach(t => {
-    const sx = (Math.random() - 0.5) * 40;
-    const sy = (Math.random() - 0.5) * 30;
-    const sr = (Math.random() - 0.5) * 40;
-    t.style.setProperty('--sx', sx + 'px');
-    t.style.setProperty('--sy', sy + 'px');
-    t.style.setProperty('--sr', sr + 'deg');
-    t.style.animation = 'tileScatter 2.8s ease-in-out forwards';
-  });
-}
-
-function unscatterTiles() {
-  document.querySelectorAll('.board-tile').forEach(t => {
-    t.style.animation = '';
-  });
-}
-
-function spawnConfetti() {
-  const colors = ['#C9A84C','#FFD700','#FF6B6B','#64B4FF','#88FF88','#FF88FF'];
-  for (let i = 0; i < 80; i++) {
-    setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'confetti-piece';
-      el.style.left = Math.random() * 100 + 'vw';
-      el.style.top = '-10px';
-      el.style.background = colors[Math.floor(Math.random() * colors.length)];
-      el.style.width  = (6 + Math.random() * 8) + 'px';
-      el.style.height = (6 + Math.random() * 8) + 'px';
-      el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-      el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
-      el.style.animationDelay = '0s';
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 4000);
-    }, Math.random() * 800);
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   AI ENGINE
-   AI plays for any seat that has is_ai=true.
-   Beginner: plays first legal tile randomly.
-   Hard: avoids playing high-value tiles early, reads board ends.
-═══════════════════════════════════════════════════════════════ */
-function scheduleAI() {
-  if (aiThinkTimer) return;
-  if (!roomData || roomData.status !== 'playing') return;
-  if (gameMode !== 'solo') return;
-
-  const currentSeat = roomData.current_turn;
-  const aiPlayer = players.find(p => p.seat === currentSeat && p.is_ai);
-  if (!aiPlayer) return;  // human's turn
-
-  const delay = aiDifficulty === 'hard' ? 1200 : 600;
-  aiThinkTimer = setTimeout(() => {
-    aiThinkTimer = null;
-    runAITurn(aiPlayer);
-  }, delay);
-}
-
-async function runAITurn(aiPlayer) {
-  if (!boardData || !roomData || roomData.status !== 'playing') return;
-  if (roomData.current_turn !== aiPlayer.seat) return;
-
-  const hand   = aiPlayer.hand || [];
-  const tiles  = boardData.tiles || [];
-  const leftEnd  = boardData.left_end;
-  const rightEnd = boardData.right_end;
-
-  // Find playable tiles
-  let playable = [];
-  if (tiles.length === 0) {
-    playable = hand.map(tile => ({ tile, side: 'right' }));
-  } else {
-    hand.forEach(tile => {
-      if (tile[0] === leftEnd  || tile[1] === leftEnd)  playable.push({ tile, side: 'left' });
-      if (tile[0] === rightEnd || tile[1] === rightEnd) playable.push({ tile, side: 'right' });
-    });
-  }
-
-  if (playable.length === 0) {
-    // AI must pass
-    await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: aiPlayer.seat, action: 'pass', tile: null });
-    const nextSeat = (roomData.current_turn + 1) % 4;
-    const { data: events } = await db.from('game_events').select('*')
-      .eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4);
-    if (events && events.length === 4 && events.every(e => e.action === 'pass')) {
-      await endGame(null);
-    } else {
-      await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
-    }
-    return;
-  }
-
-  // Pick tile to play
-  let chosen;
-  if (aiDifficulty === 'beginner') {
-    chosen = playable[Math.floor(Math.random() * playable.length)];
-  } else {
-    // Hard: prefer tiles that block opponent, avoid high doubles early
-    // Simple heuristic: pick tile that plays on the side with more matching options
-    const handPipCount = {};
-    hand.forEach(t => { handPipCount[t[0]] = (handPipCount[t[0]]||0)+1; handPipCount[t[1]] = (handPipCount[t[1]]||0)+1; });
-    // Score: prefer playing pip values we have lots of (keeps options open)
-    playable.sort((a, b) => {
-      const scoreA = handPipCount[a.tile[0]] + handPipCount[a.tile[1]];
-      const scoreB = handPipCount[b.tile[0]] + handPipCount[b.tile[1]];
-      return scoreB - scoreA;
-    });
-    chosen = playable[0];
-  }
-
-  // Place the tile
-  const { tile, side } = chosen;
-  const newHand = hand.filter(t => !(t[0] === tile[0] && t[1] === tile[1]));
-  const currentTiles = [...(boardData?.tiles || [])];
-  let newLeft = leftEnd, newRight = rightEnd;
-
-  if (currentTiles.length === 0) {
-    currentTiles.push({ tile, flipped: false });
-    newLeft = tile[0]; newRight = tile[1];
-  } else if (side === 'right') {
-    const flipped = tile[1] === rightEnd;
-    const playedTile = flipped ? [tile[1], tile[0]] : tile;
-    currentTiles.push({ tile: playedTile, flipped });
-    newRight = flipped ? tile[0] : tile[1];
-  } else {
-    const flipped = tile[0] === leftEnd;
-    const playedTile = flipped ? [tile[1], tile[0]] : tile;
-    currentTiles.unshift({ tile: playedTile, flipped });
-    newLeft = flipped ? tile[1] : tile[0];
-  }
-
-  await db.from('board').update({ tiles: currentTiles, left_end: newLeft, right_end: newRight }).eq('room_id', myInfo.roomId);
-  await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', aiPlayer.seat);
-  await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: aiPlayer.seat, action: 'place', tile });
-
-  if (newHand.length === 0) {
-    await endGame(aiPlayer.seat);
-  } else {
-    const nextSeat = (roomData.current_turn + 1) % 4;
-    await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
-  }
 }
 
 async function leaveTable() {
