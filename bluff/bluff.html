@@ -2132,11 +2132,13 @@ function subscribeToRoom() {
 
   // Clues & votes — subscribed separately once we have a gameId
   // Called immediately AND again after gameId is resolved for late-joiners
+  if (!state._subscribedGameIds) state._subscribedGameIds = new Set();
   window._subscribeGameEvents = function() {
     if (!state.gameId) return;
-    // Avoid duplicate channels
+    // Avoid duplicate subscriptions for the same gameId
+    if (state._subscribedGameIds.has(state.gameId)) return;
+    state._subscribedGameIds.add(state.gameId);
     const chName = `game-${state.gameId}`;
-    if (state.subscriptions.find(s => s.topic === chName)) return;
     const gameCh = sb.channel(chName)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clues', filter: `game_id=eq.${state.gameId}` },
         payload => { addClueToFeed(payload.new); })
@@ -2189,6 +2191,7 @@ async function supabaseStartGame() {
     state.secretWord = wordData.word;
 
     // Re-subscribe game events channel for the new gameId
+    // (non-hosts will pick this up via handleGameUpdate when phase flips)
     if (window._subscribeGameEvents) window._subscribeGameEvents();
 
     // Update room's current_game_id so joiners can find it
@@ -2239,8 +2242,11 @@ async function supabaseCastVote(targetId) {
 async function handleGameUpdate(game) {
   if (game.phase !== state.phase) {
     state.phase = game.phase;
-    // Keep gameId current and subscribe to game events if we now have it
-    if (!state.gameId) {
+    // If gameId changed (new round via Play Again) — re-subscribe to new game channel
+    if (game.id && game.id !== state.gameId) {
+      state.gameId = game.id;
+      if (window._subscribeGameEvents) window._subscribeGameEvents();
+    } else if (!state.gameId) {
       state.gameId = game.id;
       if (window._subscribeGameEvents) window._subscribeGameEvents();
     }
