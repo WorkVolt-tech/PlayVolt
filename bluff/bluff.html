@@ -316,12 +316,12 @@
   }
 
   /* ── CLUE FEED ── */
-  .clue-feed { display: flex; flex-direction: column; gap: 0.5rem; }
+  .clue-feed { display: flex; flex-direction: column; gap: 0.6rem; }
   .clue-item {
     display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.9rem 1.1rem;
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: var(--r);
@@ -331,8 +331,9 @@
     from { opacity: 0; transform: translateX(-12px); }
     to   { opacity: 1; transform: translateX(0); }
   }
-  .clue-text { font-size: 0.95rem; flex: 1; }
-  .clue-author { font-size: 0.7rem; color: var(--text3); font-family: var(--font-mono); }
+  .clue-item-body { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
+  .clue-text { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+  .clue-author { font-size: 0.72rem; color: var(--text3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
 
   /* ── VOTE BUTTONS ── */
   .vote-grid { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -621,7 +622,10 @@
       </div>
       <div class="flex flex-col items-center gap-sm">
         <div id="lobby-player-count" class="text-muted2 text-xs mono">0 / 8 players</div>
-        <button class="btn btn-outline btn-sm" id="copy-code-btn">📋 Copy Code</button>
+        <div class="flex gap-sm">
+          <button class="btn btn-outline btn-sm" id="copy-code-btn">📋 Copy Code</button>
+          <button class="btn btn-danger btn-sm" id="lobby-leave-btn">🚪 Leave</button>
+        </div>
       </div>
     </div>
 
@@ -681,7 +685,10 @@
         <div class="phase-label">Phase 2 · Word Distribution</div>
         <div class="text-xs text-muted2 mt-sm">Memorize your word. Don't show anyone.</div>
       </div>
-      <div class="timer" id="word-timer">10</div>
+      <div class="flex items-center gap-md">
+        <div class="timer" id="word-timer">10</div>
+        <button class="btn btn-danger btn-sm" onclick="confirmLeave()">🚪</button>
+      </div>
     </div>
 
     <div id="word-display" class="word-card">
@@ -712,7 +719,10 @@
         <div class="phase-label">Phase 3 · Clue Phase</div>
         <div class="text-xs text-muted2 mt-sm">Give one clue. Be clever.</div>
       </div>
-      <div class="timer" id="clue-timer">60</div>
+      <div class="flex items-center gap-md">
+        <div class="timer" id="clue-timer">60</div>
+        <button class="btn btn-danger btn-sm" onclick="confirmLeave()">🚪</button>
+      </div>
     </div>
 
     <div id="chaos-banner-clue" style="display:none;"></div>
@@ -755,7 +765,10 @@
         <div class="phase-label">Phase 4 · Discussion</div>
         <div class="text-xs text-muted2 mt-sm">Who's the imposter? Discuss!</div>
       </div>
-      <div class="timer" id="discussion-timer">90</div>
+      <div class="flex items-center gap-md">
+        <div class="timer" id="discussion-timer">90</div>
+        <button class="btn btn-danger btn-sm" onclick="confirmLeave()">🚪</button>
+      </div>
     </div>
 
     <div id="chaos-banner-discussion" style="display:none;"></div>
@@ -788,7 +801,10 @@
         <div class="phase-label">Phase 5 · Voting</div>
         <div class="text-xs text-muted2 mt-sm">Vote for who you think is the Imposter.</div>
       </div>
-      <div class="timer" id="voting-timer">30</div>
+      <div class="flex items-center gap-md">
+        <div class="timer" id="voting-timer">30</div>
+        <button class="btn btn-danger btn-sm" onclick="confirmLeave()">🚪</button>
+      </div>
     </div>
 
     <div class="vote-grid" id="vote-grid"></div>
@@ -830,6 +846,19 @@
     <div class="flex gap-md">
       <button class="btn btn-outline btn-full" id="back-lobby-btn">Back to Lobby</button>
       <button class="btn btn-primary btn-full" id="play-again-btn" style="display:none;">Play Again</button>
+    </div>
+  </div>
+
+  <!-- CONFIRM LEAVE MODAL -->
+  <div id="leave-modal" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:1rem;">
+    <div class="card" style="max-width:360px;width:100%;text-align:center;gap:1rem;display:flex;flex-direction:column;">
+      <div style="font-size:2.5rem;">🚪</div>
+      <div id="leave-modal-title" class="bold" style="font-size:1.1rem;">Leave the room?</div>
+      <div id="leave-modal-desc" class="text-muted text-sm"></div>
+      <div class="flex gap-md">
+        <button class="btn btn-outline btn-full" id="leave-cancel-btn">Cancel</button>
+        <button class="btn btn-danger btn-full" id="leave-confirm-btn">Leave</button>
+      </div>
     </div>
   </div>
 
@@ -1191,6 +1220,7 @@ function showLobby() {
   document.getElementById('copy-code-btn').onclick = () => {
     navigator.clipboard.writeText(state.roomCode).then(() => toast('Code copied!'));
   };
+  document.getElementById('lobby-leave-btn').onclick = () => confirmLeave();
 
   // Host controls
   if (state.isHost) {
@@ -1415,7 +1445,12 @@ function showCluePhase() {
       </div>`;
   }
 
-  renderClueFeed('clue-feed', []);
+  if (DEMO_MODE) {
+    renderClueFeed('clue-feed', []);
+  } else {
+    // Load any clues already submitted before this player loaded the phase
+    fetchAndRenderClues('clue-feed');
+  }
 
   const inputSection = document.getElementById('clue-input-section');
   const submittedMsg = document.getElementById('clue-submitted-msg');
@@ -1523,21 +1558,56 @@ function submitClue() {
 
 function renderClueFeed(containerId, clues) {
   const container = document.getElementById(containerId);
-  if (!clues.length) {
+  if (!clues || !clues.length) {
     container.innerHTML = '<div class="text-muted2 text-sm text-center" style="padding:1rem 0;">Waiting for first clue…</div>';
     return;
   }
-
   const isBlind = state.chaosEvent?.type === 'blind_round';
   container.innerHTML = clues.map(c => `
     <div class="clue-item">
-      <div class="avatar" style="width:28px;height:28px;font-size:0.9rem;">${isBlind ? '?' : c.playerEmoji}</div>
-      <div>
-        <div class="clue-text">${c.text}</div>
-        <div class="clue-author">${isBlind ? 'Anonymous' : c.playerName}</div>
+      <div class="avatar" style="width:36px;height:36px;font-size:1.1rem;flex-shrink:0;">${isBlind ? '❓' : (c.playerEmoji || c.avatar_emoji || '🎭')}</div>
+      <div class="clue-item-body">
+        <div class="clue-text">${c.text || c.content}</div>
+        <div class="clue-author">${isBlind ? 'Anonymous' : (c.playerName || c.display_name || 'Player')}</div>
       </div>
     </div>
   `).join('');
+}
+
+// Fetch all clues from Supabase and render (used on discussion phase load)
+async function fetchAndRenderClues(containerId) {
+  if (!sb || !state.gameId) return;
+  const { data: clues } = await sb
+    .from('clues')
+    .select('content, player_id, players(display_name, avatar_emoji)')
+    .eq('game_id', state.gameId)
+    .order('submitted_at', { ascending: true });
+  if (clues) {
+    // Normalize joined player data
+    const normalized = clues.map(c => ({
+      text: c.content,
+      playerName: c.players?.display_name || 'Player',
+      playerEmoji: c.players?.avatar_emoji || '🎭',
+    }));
+    renderClueFeed(containerId, normalized);
+    // Cache for local use
+    state.clues = normalized;
+  }
+}
+
+// Called by realtime INSERT on clues table
+function addClueToFeed(row) {
+  // Find the player in state for name/emoji
+  const player = state.players.find(p => p.id === row.player_id);
+  const clue = {
+    text: row.content,
+    playerName: player?.display_name || player?.name || 'Player',
+    playerEmoji: player?.avatar_emoji || player?.emoji || '🎭',
+  };
+  state.clues = [...(state.clues || []), clue];
+  // Render into whichever feed is currently visible
+  const activeContainers = ['clue-feed', 'discussion-clue-feed'].filter(id => document.getElementById(id));
+  activeContainers.forEach(id => renderClueFeed(id, state.clues));
 }
 
 // ══════════════════════════════════════════════════════
@@ -1548,7 +1618,12 @@ function showDiscussionPhase() {
   state.phase = 'discussion';
 
   const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
-  if (room) renderClueFeed('discussion-clue-feed', room.clues);
+  if (DEMO_MODE && room) {
+    renderClueFeed('discussion-clue-feed', room.clues);
+  } else {
+    // Fetch all clues from DB — ensures everyone sees the full list
+    fetchAndRenderClues('discussion-clue-feed');
+  }
 
   // Chaos banner
   if (state.chaosEvent) {
@@ -1802,12 +1877,6 @@ async function supabaseCreateRoom(code) {
     state.playerId = player.id;
 
     subscribeToRoom();
-
-    // Mark host as connected, and disconnect on leave
-    window.addEventListener('beforeunload', () => {
-      if (state.isHost && state.playerId && !DEMO_MODE) hostLeave();
-    });
-
     showLobby();
   } catch (e) { toast('Error creating room: ' + e.message); }
 }
@@ -1996,36 +2065,78 @@ async function handleGameUpdate(game) {
 }
 
 // ══════════════════════════════════════════════════════
-//  HOST LEAVE — kicks all players
+//  LEAVE ROOM
 // ══════════════════════════════════════════════════════
 
-// Called when the host closes/leaves — marks room as closed in DB
+function confirmLeave() {
+  const modal = document.getElementById('leave-modal');
+  const title = document.getElementById('leave-modal-title');
+  const desc  = document.getElementById('leave-modal-desc');
+  if (state.isHost) {
+    title.textContent = 'Close the room?';
+    desc.textContent  = 'As the host, leaving will kick everyone out and end the game.';
+  } else {
+    title.textContent = 'Leave the room?';
+    desc.textContent  = 'You can rejoin with the same room code if the game is still running.';
+  }
+  modal.style.display = 'flex';
+  document.getElementById('leave-cancel-btn').onclick = () => { modal.style.display = 'none'; };
+  document.getElementById('leave-confirm-btn').onclick = () => { modal.style.display = 'none'; leaveRoom(); };
+}
+
+async function leaveRoom() {
+  if (DEMO_MODE) { resetState(); showScreen('home'); return; }
+  if (state.isHost) {
+    await hostLeave();
+  } else {
+    await playerLeave();
+  }
+  resetState();
+  showScreen('home');
+}
+
+// Host leaves — ends game, deletes room, kicks everyone
 async function hostLeave() {
   if (!sb || !state.isHost) return;
   try {
-    // Mark all players disconnected and game as ended
-    await sb.from('players').update({ is_connected: false }).eq('room_id', state.roomId);
     if (state.gameId) {
       await sb.from('games').update({ phase: 'ended', ended_at: new Date().toISOString() }).eq('id', state.gameId);
     }
-    // Delete the room — cascades to players/games via FK
+    // Delete room — realtime DELETE event kicks all non-host clients
     await sb.from('rooms').delete().eq('id', state.roomId);
   } catch(e) { console.error('hostLeave error:', e); }
+}
+
+// Non-host leaves cleanly — just removes their player row
+async function playerLeave() {
+  if (!sb || !state.playerId) return;
+  try {
+    await sb.from('players').delete().eq('id', state.playerId);
+  } catch(e) { console.error('playerLeave error:', e); }
+}
+
+// Reset all local state
+function resetState() {
+  clearTimers();
+  state.subscriptions.forEach(s => { try { s.unsubscribe(); } catch(e) {} });
+  state.subscriptions = [];
+  state.roomId = null; state.gameId = null; state.playerId = null;
+  state.roomCode = null; state.phase = 'lobby';
+  state.isHost = false; state.myRole = 'crewmate';
+  state.myWord = null; state.myObjective = null;
+  state.players = []; state.clues = []; state.votes = {};
+  state.myVote = null; state.myClueSent = false; state.chaosEvent = null;
 }
 
 // Called on non-host clients when they detect host has gone
 function handleHostLeft() {
   clearTimers();
-  // Unsubscribe from all channels
   state.subscriptions.forEach(s => { try { s.unsubscribe(); } catch(e) {} });
   state.subscriptions = [];
-  // Reset state
   state.roomId = null; state.gameId = null; state.playerId = null;
   state.roomCode = null; state.phase = 'lobby';
   showScreen('kicked');
-  document.getElementById('kicked-home-btn').onclick = () => {
-    showScreen('home');
-  };
+  document.getElementById('kicked-home-btn').onclick = () => { showScreen('home'); };
 }
 
 // ══════════════════════════════════════════════════════
