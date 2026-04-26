@@ -334,6 +334,23 @@
   .clue-item-body { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
   .clue-text { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
   .clue-author { font-size: 0.72rem; color: var(--text3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+  /* Imposter clue blur */
+  .clue-text-blurred {
+    filter: blur(7px);
+    user-select: none;
+    transition: filter 1.2s ease;
+    cursor: pointer;
+  }
+  .clue-text-blurred.revealed { filter: blur(0); }
+  .clue-item.imposter-clue { border-color: rgba(255,85,102,0.25); }
+  .imposter-clue-hint {
+    font-size: 0.68rem;
+    color: var(--red);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 0.2rem;
+  }
 
   /* ── VOTE BUTTONS ── */
   .vote-grid { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -645,28 +662,28 @@
           <div class="toggle-label">Chaos Events</div>
           <div class="text-xs text-muted2">Random mid-round twists</div>
         </div>
-        <label class="toggle"><input type="checkbox" id="setting-chaos" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+        <label class="toggle"><input type="checkbox" id="setting-chaos"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
       </div>
       <div class="toggle-row">
         <div>
           <div class="toggle-label">Special Roles</div>
           <div class="text-xs text-muted2">Detective, Confused Player</div>
         </div>
-        <label class="toggle"><input type="checkbox" id="setting-roles" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+        <label class="toggle"><input type="checkbox" id="setting-roles"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
       </div>
       <div class="toggle-row">
         <div>
           <div class="toggle-label">Variant Words</div>
           <div class="text-xs text-muted2">Similar but wrong words</div>
         </div>
-        <label class="toggle"><input type="checkbox" id="setting-variants" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+        <label class="toggle"><input type="checkbox" id="setting-variants"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
       </div>
       <div class="toggle-row">
         <div>
           <div class="toggle-label">Secret Objectives</div>
           <div class="text-xs text-muted2">Hidden mission cards</div>
         </div>
-        <label class="toggle"><input type="checkbox" id="setting-objectives" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+        <label class="toggle"><input type="checkbox" id="setting-objectives"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
       </div>
     </div>
 
@@ -740,6 +757,20 @@
     </div>
 
     <div id="chaos-banner-clue" style="display:none;"></div>
+
+    <!-- Imposter challenge notice (shown only to imposters) -->
+    <div id="imposter-challenge-notice" style="display:none;
+      background: linear-gradient(135deg, rgba(255,85,102,0.12), rgba(255,110,180,0.08));
+      border: 1px solid rgba(255,85,102,0.3);
+      border-radius: var(--r);
+      padding: 0.85rem 1.1rem;
+      display: flex; align-items: center; gap: 0.75rem;">
+      <div style="font-size:1.4rem;">😈</div>
+      <div>
+        <div style="font-size:0.8rem;font-weight:700;color:var(--red);">IMPOSTER MODE</div>
+        <div style="font-size:0.75rem;color:var(--text2);">Clues are blurred. They reveal briefly one by one — pay attention to patterns, not words.</div>
+      </div>
+    </div>
 
     <div class="card">
       <div class="label" style="margin-bottom:0.75rem;">Clues So Far</div>
@@ -975,7 +1006,7 @@ let state = {
   timers:      {},
   subscriptions: [],
   settings: {
-    chaos: true, roles: true, variants: true, objectives: true
+    chaos: false, roles: false, variants: false, objectives: false
   }
 };
 
@@ -1296,6 +1327,11 @@ function addDemoPlayers() {
 }
 
 function renderLobbyPlayers() {
+  // Show imposter challenge notice
+  const noticeEl = document.getElementById('imposter-challenge-notice');
+  const isImp = state.myRole === 'imposter' || state.myRole === 'double_imposter';
+  if (noticeEl) noticeEl.style.display = isImp ? 'flex' : 'none';
+
   const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
   const players = room ? room.players : state.players;
   const container = document.getElementById('lobby-players');
@@ -1589,17 +1625,57 @@ function renderClueFeed(containerId, clues) {
     container.innerHTML = '<div class="text-muted2 text-sm text-center" style="padding:1rem 0;">Waiting for first clue…</div>';
     return;
   }
-  const isBlind = state.chaosEvent?.type === 'blind_round';
-  container.innerHTML = clues.map(c => `
-    <div class="clue-item">
-      <div class="avatar" style="width:36px;height:36px;font-size:1.1rem;flex-shrink:0;">${isBlind ? '❓' : (c.playerEmoji || c.avatar_emoji || '🎭')}</div>
-      <div class="clue-item-body">
-        <div class="clue-text">${c.text || c.content}</div>
-        <div class="clue-author">${isBlind ? 'Anonymous' : (c.playerName || c.display_name || 'Player')}</div>
-      </div>
-    </div>
-  `).join('');
+  const isBlind   = state.chaosEvent?.type === 'blind_round';
+  const isImposter = state.myRole === 'imposter' || state.myRole === 'double_imposter';
+  // During clue phase, imposters see clues blurred; discussion phase — all revealed
+  const blurClues  = isImposter && state.phase === 'clue';
+
+  container.innerHTML = clues.map((c, i) => {
+    const text   = c.text || c.content;
+    const author = isBlind ? 'Anonymous' : (c.playerName || c.display_name || 'Player');
+    const emoji  = isBlind ? '❓' : (c.playerEmoji || c.avatar_emoji || '🎭');
+    if (blurClues) {
+      return `
+        <div class="clue-item imposter-clue" data-idx="${i}">
+          <div class="avatar" style="width:36px;height:36px;font-size:1.1rem;flex-shrink:0;">${emoji}</div>
+          <div class="clue-item-body">
+            <div class="clue-text clue-text-blurred" id="blur-clue-${containerId}-${i}" onclick="revealClue('${containerId}',${i})">${text}</div>
+            <div class="clue-author">${author}</div>
+            <div class="imposter-clue-hint">👆 Tap to reveal for 3s</div>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="clue-item">
+        <div class="avatar" style="width:36px;height:36px;font-size:1.1rem;flex-shrink:0;">${emoji}</div>
+        <div class="clue-item-body">
+          <div class="clue-text">${text}</div>
+          <div class="clue-author">${author}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Auto-unblur each clue one at a time with increasing delay (so imposter can't just read instantly)
+  if (blurClues) {
+    clues.forEach((_, i) => {
+      setTimeout(() => {
+        const el = document.getElementById(`blur-clue-${containerId}-${i}`);
+        if (el) {
+          el.classList.add('revealed');
+          setTimeout(() => el.classList.remove('revealed'), 3000); // re-blur after 3s
+        }
+      }, 8000 + i * 6000); // first clue reveals at 8s, then every 6s after
+    });
+  }
 }
+
+// Imposter manually taps a blurred clue to peek at it for 3 seconds
+window.revealClue = function(containerId, idx) {
+  const el = document.getElementById(`blur-clue-${containerId}-${idx}`);
+  if (!el) return;
+  el.classList.add('revealed');
+  setTimeout(() => el.classList.remove('revealed'), 3000);
+};
 
 // Fetch all clues from Supabase and render (used on discussion phase load)
 async function fetchAndRenderClues(containerId) {
