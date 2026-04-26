@@ -1044,9 +1044,13 @@ async function advanceTurn(myNewHand) {
 }
 
 async function endGame(winningSeat) {
-  // Only seat 0 (or lowest connected seat) handles scoring to avoid race conditions
-  const lowestSeat = Math.min(...players.map(p => p.seat));
-  if (myInfo.seat !== lowestSeat) return;
+  // If winner is known (player emptied hand), only THAT player handles scoring.
+  // If blocked (winningSeat=null), only lowest seat handles to avoid race conditions.
+  if (winningSeat !== null && myInfo.seat !== winningSeat) return;
+  if (winningSeat === null) {
+    const lowestSeat = Math.min(...players.map(p => p.seat));
+    if (myInfo.seat !== lowestSeat) return;
+  }
 
   const mode    = roomData.game_mode || gameMode;
   const scores  = [...(roomData.scores || [0,0,0,0])];
