@@ -213,7 +213,7 @@ hr { border: none; border-top: 1px solid var(--border); }
 <div class="wrapper">
   <div class="title-block">
     <img src="dekabess_logo.webp" alt="Dekabess!" style="
-      width: 350px;
+      width: 220px;
       filter: drop-shadow(0 0 20px rgba(201,168,76,0.4));
       animation: float 3s ease-in-out infinite;
       margin-bottom: 0.5rem;
@@ -622,12 +622,11 @@ function subscribeToRoom(roomId, panel) {
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
       async (payload) => {
         if (payload.new.status === 'playing') {
-          if (mySeat === null) {
-            // Player never claimed a seat — assign first free seat
-            const { data: taken } = await db.from('domino_players').select('seat').eq('room_id', myRoomId);
-            const takenSeats = (taken||[]).map(p=>p.seat);
-            const freeSeat = [0,1,2,3].find(s => !takenSeats.includes(s)) ?? 0;
-            mySeat = freeSeat;
+          // Read fresh seat from DB — host may have reassigned seats for Asosyé
+          if (myPlayerId) {
+            const { data: me } = await db.from('domino_players')
+              .select('seat').eq('id', myPlayerId).single();
+            if (me) mySeat = me.seat;
           }
           sessionStorage.setItem('domino_player', JSON.stringify({
             seat: mySeat,
@@ -699,6 +698,12 @@ async function startGame() {
     const others  = players.filter(p => p.id !== myPlayerId && p.seat !== selectedPartnerSeat);
 
     if (me && partner && others.length === 2) {
+      // Use temp seats (10-13) first to avoid unique constraint conflicts
+      await db.from('domino_players').update({ seat: 10 }).eq('id', me.id);
+      await db.from('domino_players').update({ seat: 11 }).eq('id', partner.id);
+      await db.from('domino_players').update({ seat: 12 }).eq('id', others[0].id);
+      await db.from('domino_players').update({ seat: 13 }).eq('id', others[1].id);
+      // Now assign final seats: host=0, partner=2 (across), opponents=1&3
       await db.from('domino_players').update({ seat: 0 }).eq('id', me.id);
       await db.from('domino_players').update({ seat: 2 }).eq('id', partner.id);
       await db.from('domino_players').update({ seat: 1 }).eq('id', others[0].id);
