@@ -794,13 +794,32 @@
 
     <div class="reaction-bar" id="reaction-bar-clue">
       <span class="text-xs text-muted2 mono" style="line-height:2;">React:</span>
-      <button class="reaction-btn" data-emoji="👀">👀</button>
-      <button class="reaction-btn" data-emoji="🤔">🤔</button>
-      <button class="reaction-btn" data-emoji="😂">😂</button>
-      <button class="reaction-btn" data-emoji="😤">😤</button>
-      <button class="reaction-btn" data-emoji="🎯">🎯</button>
-      <button class="reaction-btn" data-emoji="🚨">🚨</button>
+      <button class="reaction-btn" onclick="spawnReaction('👀')">👀</button>
+      <button class="reaction-btn" onclick="spawnReaction('🤔')">🤔</button>
+      <button class="reaction-btn" onclick="spawnReaction('😂')">😂</button>
+      <button class="reaction-btn" onclick="spawnReaction('😤')">😤</button>
+      <button class="reaction-btn" onclick="spawnReaction('🎯')">🎯</button>
+      <button class="reaction-btn" onclick="spawnReaction('🚨')">🚨</button>
     </div>
+  </div>
+
+  <!-- SCREEN: Review Phase (between round 1 and round 2 clues) -->
+  <div id="screen-review" class="screen">
+    <div class="phase-banner">
+      <div>
+        <div class="phase-label">Round 1 Review</div>
+        <div class="text-xs text-muted2 mt-sm">Look over everyone's first clues.</div>
+      </div>
+      <div class="flex items-center gap-md">
+        <div class="timer" id="review-timer">10</div>
+        <button class="btn btn-danger btn-sm" onclick="confirmLeave()">🚪</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label" style="margin-bottom:0.75rem;">Round 1 Clues</div>
+      <div class="clue-feed" id="review-clue-feed"></div>
+    </div>
+    <div class="card-sm text-center text-muted text-sm">Round 2 clues start when the timer ends…</div>
   </div>
 
   <!-- SCREEN: Discussion Phase -->
@@ -830,12 +849,12 @@
 
     <div class="reaction-bar">
       <span class="text-xs text-muted2 mono" style="line-height:2;">React:</span>
-      <button class="reaction-btn" data-emoji="🕵️">🕵️</button>
-      <button class="reaction-btn" data-emoji="😈">😈</button>
-      <button class="reaction-btn" data-emoji="🤡">🤡</button>
-      <button class="reaction-btn" data-emoji="💀">💀</button>
-      <button class="reaction-btn" data-emoji="🤫">🤫</button>
-      <button class="reaction-btn" data-emoji="🫵">🫵</button>
+      <button class="reaction-btn" onclick="spawnReaction('🕵️')">🕵️</button>
+      <button class="reaction-btn" onclick="spawnReaction('😈')">😈</button>
+      <button class="reaction-btn" onclick="spawnReaction('🤡')">🤡</button>
+      <button class="reaction-btn" onclick="spawnReaction('💀')">💀</button>
+      <button class="reaction-btn" onclick="spawnReaction('🤫')">🤫</button>
+      <button class="reaction-btn" onclick="spawnReaction('🫵')">🫵</button>
     </div>
   </div>
 
@@ -1539,7 +1558,14 @@ function showCluePhase() {
   const timerEl = document.getElementById('clue-timer');
   startTimer('clue', 60,
     s => setTimerEl(timerEl, s),
-    () => showDiscussionPhase()
+    () => {
+      // After round 1 clues — go to review, then round 2
+      if (!DEMO_MODE && state.isHost) {
+        sb.from('games').update({ phase: 'review' }).eq('id', state.gameId);
+      } else if (DEMO_MODE) {
+        showReviewPhase();
+      }
+    }
   );
 
   // Demo: simulate AI players submitting clues
@@ -1584,6 +1610,51 @@ function simulateDemoClues(room) {
     }, delay);
     delay += 1500 + Math.random() * 2000;
   });
+}
+
+function showCluePhase2() {
+  showScreen('clue');
+  state.phase = 'clue2';
+  state.myClueSent = false;
+  state.clues = [];
+
+  // Reset word reminder (same as clue phase)
+  const reminderEl = document.getElementById('clue-word-display');
+  if (state.myRole === 'imposter' || state.myRole === 'double_imposter') {
+    reminderEl.textContent = '???';
+    reminderEl.style.color = 'var(--red)';
+    reminderEl.onclick = null;
+    document.getElementById('imposter-challenge-notice').style.display = 'flex';
+  } else {
+    reminderEl.textContent = state.myWord || '???';
+    reminderEl.style.color = 'var(--accent2)';
+    document.getElementById('imposter-challenge-notice').style.display = 'none';
+  }
+
+  // Update phase label
+  const phaseLabel = document.querySelector('#screen-clue .phase-label');
+  if (phaseLabel) phaseLabel.textContent = 'Phase 3b · Round 2 Clues';
+
+  renderClueFeed('clue-feed', []);
+
+  const inputSection = document.getElementById('clue-input-section');
+  const submittedMsg = document.getElementById('clue-submitted-msg');
+  if (!state.isSpectator) {
+    inputSection.style.display = 'block';
+    submittedMsg.style.display = 'none';
+  }
+
+  const timerEl = document.getElementById('clue-timer');
+  startTimer('clue2', 60,
+    s => setTimerEl(timerEl, s),
+    () => {
+      if (!DEMO_MODE && state.isHost) {
+        sb.from('games').update({ phase: 'discussion' }).eq('id', state.gameId);
+      } else if (DEMO_MODE) {
+        showDiscussionPhase();
+      }
+    }
+  );
 }
 
 function submitClue() {
@@ -1750,6 +1821,42 @@ async function updateVoteCount(row) {
     }
     await checkAllVoted();
   }
+}
+
+// ══════════════════════════════════════════════════════
+//  REVIEW PHASE (between round 1 and round 2 clues)
+// ══════════════════════════════════════════════════════
+function showReviewPhase() {
+  showScreen('review');
+  state.phase = 'review';
+  // Show all round-1 clues unblurred to everyone
+  const feed = document.getElementById('review-clue-feed');
+  if (state.clues && state.clues.length) {
+    feed.innerHTML = state.clues.map(c => `
+      <div class="clue-item">
+        <div class="avatar" style="width:36px;height:36px;font-size:1.1rem;flex-shrink:0;">${c.playerEmoji || '🎭'}</div>
+        <div class="clue-item-body">
+          <div class="clue-text">${c.text}</div>
+          <div class="clue-author">${c.playerName || 'Player'} · Round 1</div>
+        </div>
+      </div>`).join('');
+  } else if (!DEMO_MODE && state.gameId) {
+    fetchAndRenderClues('review-clue-feed');
+  }
+  const timerEl = document.getElementById('review-timer');
+  startTimer('review', 10,
+    s => setTimerEl(timerEl, s),
+    () => {
+      // Reset clue state for round 2
+      state.clues = [];
+      state.myClueSent = false;
+      if (!DEMO_MODE && state.isHost) {
+        sb.from('games').update({ phase: 'clue2' }).eq('id', state.gameId);
+      } else if (DEMO_MODE) {
+        showCluePhase2();
+      }
+    }
+  );
 }
 
 // ══════════════════════════════════════════════════════
@@ -1938,8 +2045,15 @@ async function showRevealPhase() {
   const subEl   = document.getElementById('reveal-sub');
   const wordEl  = document.getElementById('reveal-word');
 
-  // Show the word to EVERYONE (including imposter) now that round is over
-  wordEl.textContent = secretWord;
+  // Show word to crew only — imposter must guess it
+  const isMyImposterCheck = imposterIds.includes(state.playerId);
+  if (isMyImposterCheck) {
+    wordEl.textContent = '???';
+    wordEl.style.color = 'var(--red)';
+  } else {
+    wordEl.textContent = secretWord;
+    wordEl.style.color = '';
+  }
 
   if (crewWins) {
     resultCard.className = 'reveal-card reveal-crew';
@@ -1980,7 +2094,7 @@ async function showRevealPhase() {
   }).join('');
 
   // ── Imposter comeback guess (only shown if imposter lost) ──
-  const isMyImposter = imposterIds.includes(state.playerId);
+  const isMyImposter = isMyImposterCheck;
   const guessSection = document.getElementById('imposter-guess-section');
   if (isMyImposter && crewWins) {
     // Imposter was caught — let them attempt a comeback guess
@@ -2258,6 +2372,8 @@ async function handleGameUpdate(game) {
       showWordPhase();
     }
     else if (game.phase === 'clue')       showCluePhase();
+    else if (game.phase === 'review')      showReviewPhase();
+    else if (game.phase === 'clue2')      { state.clues = []; state.myClueSent = false; showCluePhase2(); }
     else if (game.phase === 'discussion') showDiscussionPhase();
     else if (game.phase === 'voting')     { state.votes = {}; showVotingPhase(); }
     else if (game.phase === 'reveal')     showRevealPhase();
