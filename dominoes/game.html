@@ -90,6 +90,71 @@ html, body {
 }
 .player-tag.active-turn { border-color: var(--gold); background: rgba(201,168,76,0.1); color: var(--gold); }
 
+/* ── DEKABESS EFFECTS ── */
+@keyframes dekabessLogo {
+  0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
+  20%  { transform: scale(1.3) rotate(4deg);  opacity: 1; }
+  50%  { transform: scale(1.1) rotate(-2deg); opacity: 1; }
+  75%  { transform: scale(1.15) rotate(1deg); opacity: 1; }
+  100% { transform: scale(2) rotate(0deg);   opacity: 0; }
+}
+@keyframes handSlam {
+  0%   { transform: translateY(-120px) rotate(-20deg); opacity: 0; }
+  30%  { transform: translateY(0px) rotate(-5deg);     opacity: 1; }
+  40%  { transform: translateY(-15px) rotate(-5deg);   opacity: 1; }
+  55%  { transform: translateY(0px) rotate(-5deg);     opacity: 1; }
+  65%  { transform: translateY(-10px) rotate(-5deg);   opacity: 1; }
+  80%  { transform: translateY(0px) rotate(-5deg);     opacity: 1; }
+  100% { transform: translateY(-120px) rotate(-20deg); opacity: 0; }
+}
+@keyframes tileScatter {
+  0%   { transform: translate(0,0) rotate(0deg); }
+  20%  { transform: translate(var(--sx),var(--sy)) rotate(var(--sr)); }
+  80%  { transform: translate(var(--sx),var(--sy)) rotate(var(--sr)); }
+  100% { transform: translate(0,0) rotate(0deg); }
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+.dekabess-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.dekabess-logo-anim {
+  position: absolute;
+  width: 280px;
+  animation: dekabessLogo 2.5s ease-in-out forwards;
+  filter: drop-shadow(0 0 40px rgba(201,168,76,0.9));
+}
+.dekabess-hand {
+  position: absolute;
+  font-size: 5rem;
+  animation: handSlam 2s ease-in-out forwards;
+}
+.dekabess-hand.left  { left: 15%; animation-delay: 0.1s; transform-origin: bottom left; }
+.dekabess-hand.right { right: 15%; transform: scaleX(-1); animation-delay: 0.3s; transform-origin: bottom right; }
+.confetti-piece {
+  position: fixed;
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  pointer-events: none;
+  animation: confettiFall linear forwards;
+}
+.dekabess-banner {
+  position: absolute;
+  bottom: 30%;
+  font-family: 'Bebas Neue', 'Impact', sans-serif;
+  font-size: 3.5rem;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-shadow: 0 0 30px rgba(201,168,76,0.8), 0 4px 0 rgba(0,0,0,0.8);
+  animation: dekabessLogo 2.5s ease-in-out forwards;
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
 /* ── BOARD END INDICATORS ── */
 .end-indicator {
   position: absolute;
@@ -471,6 +536,7 @@ html, body {
 <div class="turn-toast" id="turn-toast"></div>
 
 <div class="side-picker" id="side-picker">
+  <div id="dekabess-hint" style="display:none;font-size:0.72rem;font-weight:700;color:var(--gold);letter-spacing:0.1em;text-align:center;margin-bottom:6px;">⚡ DEKABESS! Pick your side — 2 points!</div>
   <button class="side-btn" onclick="confirmPlace('left')">← Left</button>
   <button class="side-btn" onclick="confirmPlace('right')">Right →</button>
   <button class="side-btn side-btn-cancel" onclick="cancelSelection()">Cancel</button>
@@ -581,6 +647,12 @@ function subscribeToGame() {
       await loadGameState();
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'board',       filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'game_events', filter: `room_id=eq.${myInfo.roomId}` }, (payload) => {
+      if (payload.new?.action === 'dekabess' && payload.new.player_seat !== myInfo.seat) {
+        const p = players.find(pl => pl.seat === payload.new.player_seat);
+        triggerDekabessEffect(p?.nickname || 'Player');
+      }
+    })
     .subscribe();
 }
 
@@ -972,14 +1044,25 @@ function selectTile(tile, idx) {
   
   renderBoard();
   
-  if (canLeft && canRight && boardData.left_end !== boardData.right_end) {
+  const me = players.find(p => p.seat === myInfo.seat);
+  const isLastTile = me && me.hand.length === 1;
+  const isDekabess = isLastTile && canLeft && canRight;
+
+  if (isDekabess) {
+    // DEKABESS! — last tile plays both sides — show special picker
     document.getElementById('side-picker').classList.add('visible');
-  } else if (canLeft) {
-    confirmPlace('left');
-  } else if (canRight) {
-    confirmPlace('right');
+    document.getElementById('dekabess-hint').style.display = 'block';
   } else {
-    cancelSelection();
+    document.getElementById('dekabess-hint').style.display = 'none';
+    if (canLeft && canRight && boardData.left_end !== boardData.right_end) {
+      document.getElementById('side-picker').classList.add('visible');
+    } else if (canLeft) {
+      confirmPlace('left');
+    } else if (canRight) {
+      confirmPlace('right');
+    } else {
+      cancelSelection();
+    }
   }
 }
 
@@ -1077,9 +1160,23 @@ async function confirmPlace(side) {
   
   await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
-  await advanceTurn(newHand);
+  // Check if this was a Dekabess (last tile, could play both sides before placing)
+  const wasDekabess = me.hand.length === 1 &&
+    canPlayOnSide(tile, 'left') && canPlayOnSide(tile, 'right');
+
+  if (wasDekabess) {
+    triggerDekabessEffect(me.nickname);
+    // Broadcast Dekabess to other players via game_events
+    await db.from('game_events').insert({
+      room_id: myInfo.roomId, player_seat: myInfo.seat,
+      action: 'dekabess', tile
+    });
+  }
+
+  await advanceTurn(newHand, wasDekabess);
   selectedTile = null;
   document.getElementById('side-picker').classList.remove('visible');
+  document.getElementById('dekabess-hint').style.display = 'none';
 }
 
 async function passMove() {
@@ -1088,8 +1185,8 @@ async function passMove() {
   await advanceTurn(me.hand);
 }
 
-async function advanceTurn(myNewHand) {
-  if (myNewHand.length === 0) { await endGame(myInfo.seat); return; }
+async function advanceTurn(myNewHand, isDekabess = false) {
+  if (myNewHand.length === 0) { await endGame(myInfo.seat, isDekabess); return; }
   
   const { data: events } = await db.from('game_events').select('*')
     .eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4);
@@ -1103,7 +1200,7 @@ async function advanceTurn(myNewHand) {
   await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
 }
 
-async function endGame(winningSeat) {
+async function endGame(winningSeat, isDekabess = false) {
   // Check the game is still active before writing — first browser in wins, rest ignored
   const { data: currentRoom } = await db.from('domino_rooms')
     .select('status').eq('id', myInfo.roomId).single();
@@ -1163,7 +1260,7 @@ async function endGame(winningSeat) {
   }
 
   // ── Award point (+ pending if any) ─────────────────────────────
-  const pointsToAward = pending ? 2 : 1;
+  const pointsToAward = isDekabess ? (pending ? 3 : 2) : (pending ? 2 : 1);
   scores[roundWinnerSeat] = (scores[roundWinnerSeat] || 0) + pointsToAward;
 
   // ── Update streak ───────────────────────────────────────────────
@@ -1290,13 +1387,8 @@ function showGameOver(winningSeat) {
 
   document.getElementById('overlay-gameover').classList.remove('hidden');
 
-  // Winner triggers the actual restart — everyone else waits for DB update
-  if (myInfo.seat === winningSeat) {
-    setTimeout(() => startNextRound(), 5000);
-  } else {
-    // Non-winners: hide overlay when DB fires status='playing'
-    // (handled by renderAll → status check)
-  }
+  // ALL players trigger restart after 5s — DB status check ensures only first one wins
+  setTimeout(() => startNextRound(), 5000);
 }
 
 async function startNextRound() {
@@ -1365,6 +1457,92 @@ function showTiebreak() {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DEKABESS! VISUAL EFFECTS
+═══════════════════════════════════════════════════════════ */
+function triggerDekabessEffect(playerName) {
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'dekabess-overlay';
+  overlay.id = 'dekabess-overlay';
+
+  // Logo
+  const logo = document.createElement('img');
+  logo.src = 'dekabess_logo.webp';
+  logo.className = 'dekabess-logo-anim';
+  overlay.appendChild(logo);
+
+  // Banner text
+  const banner = document.createElement('div');
+  banner.className = 'dekabess-banner';
+  banner.textContent = playerName ? `${playerName} — DEKABESS!` : 'DEKABESS!';
+  overlay.appendChild(banner);
+
+  // Hands slamming
+  const handL = document.createElement('div');
+  handL.className = 'dekabess-hand left';
+  handL.textContent = '🤜';
+  overlay.appendChild(handL);
+
+  const handR = document.createElement('div');
+  handR.className = 'dekabess-hand right';
+  handR.textContent = '🤜';
+  overlay.appendChild(handR);
+
+  document.body.appendChild(overlay);
+
+  // Scatter board tiles
+  scatterTiles();
+
+  // Confetti burst
+  spawnConfetti();
+
+  // Remove overlay after animation
+  setTimeout(() => {
+    overlay.remove();
+    unscatterTiles();
+  }, 3000);
+}
+
+function scatterTiles() {
+  const tiles = document.querySelectorAll('.board-tile');
+  tiles.forEach(t => {
+    const sx = (Math.random() - 0.5) * 40;
+    const sy = (Math.random() - 0.5) * 30;
+    const sr = (Math.random() - 0.5) * 40;
+    t.style.setProperty('--sx', sx + 'px');
+    t.style.setProperty('--sy', sy + 'px');
+    t.style.setProperty('--sr', sr + 'deg');
+    t.style.animation = 'tileScatter 2.8s ease-in-out forwards';
+  });
+}
+
+function unscatterTiles() {
+  document.querySelectorAll('.board-tile').forEach(t => {
+    t.style.animation = '';
+  });
+}
+
+function spawnConfetti() {
+  const colors = ['#C9A84C','#FFD700','#FF6B6B','#64B4FF','#88FF88','#FF88FF'];
+  for (let i = 0; i < 80; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.top = '-10px';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.width  = (6 + Math.random() * 8) + 'px';
+      el.style.height = (6 + Math.random() * 8) + 'px';
+      el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      el.style.animationDelay = '0s';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }, Math.random() * 800);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
