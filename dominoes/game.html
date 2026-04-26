@@ -127,6 +127,14 @@ html, body {
 .tiebreak-tile.flipped:hover { transform: none; }
 .player-tag.is-me { border-color: var(--blue); color: var(--blue); }
 .player-tag.active-turn.is-me { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
+.player-tag.is-teammate { border-color: rgba(100,180,255,0.4); background: rgba(100,180,255,0.05); }
+.team-badge { font-size: 0.52rem; letter-spacing: 0.08em; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-right: 3px; }
+.team-a { background: rgba(201,168,76,0.2); color: var(--gold); }
+.team-b { background: rgba(100,180,255,0.2); color: #64b4ff; }
+.player-tag.is-teammate { border-color: rgba(100,180,255,0.5); background: rgba(100,180,255,0.05); }
+.team-badge { font-size: 0.52rem; letter-spacing: 0.08em; padding: 1px 5px; border-radius: 3px; font-weight: 700; }
+.team-a { background: rgba(201,168,76,0.2); color: var(--gold); }
+.team-b { background: rgba(100,180,255,0.2); color: #64b4ff; }
 
 .tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .tag-tiles { opacity: 0.6; font-size: 0.52rem; }
@@ -561,7 +569,7 @@ function renderAll() {
   renderBoard();
   updateTurnState();
   renderScoreBar();
-  if (roomData.status === 'finished') showGameOver();
+  if (roomData.status === 'finished' || roomData.status === 'match_over') showGameOver();
   if (gameMode === 'solo') scheduleAI();
 }
 
@@ -612,14 +620,30 @@ function renderScoreBar() {
 function renderPlayerTags() {
   const container = document.getElementById('player-tags');
   container.innerHTML = '';
+  const mode   = roomData.game_mode || gameMode;
+  const myTeam = myInfo.seat % 2;
+
   for (const p of players) {
-    const isMe     = p.seat === myInfo.seat;
-    const isActive = p.seat === roomData.current_turn;
+    const isMe       = p.seat === myInfo.seat;
+    const isActive   = p.seat === roomData.current_turn;
+    const isTeammate = mode === 'asosye' && !isMe && (p.seat % 2 === myTeam);
     const div = document.createElement('div');
-    div.className = 'player-tag' + (isActive ? ' active-turn' : '') + (isMe ? ' is-me' : '');
+    div.className = 'player-tag'
+      + (isActive   ? ' active-turn' : '')
+      + (isMe       ? ' is-me'       : '')
+      + (isTeammate ? ' is-teammate' : '');
+
+    let teamLabel = '';
+    if (mode === 'asosye') {
+      const team = p.seat % 2 === 0 ? 'A' : 'B';
+      const cls  = p.seat % 2 === 0 ? 'team-a' : 'team-b';
+      teamLabel  = `<span class="team-badge ${cls}">Team ${team}</span>`;
+    }
+
     div.innerHTML = `
       <div class="tag-dot"></div>
-      <span>${escHtml(p.nickname)}${isMe ? ' ★' : ''}</span>
+      ${teamLabel}
+      <span>${escHtml(p.nickname)}${isMe ? ' ★' : ''}${isTeammate ? ' 🤝' : ''}</span>
       <span class="tag-tiles">${Array.isArray(p.hand) ? p.hand.length : 0}</span>`;
     container.appendChild(div);
   }
@@ -1110,6 +1134,7 @@ async function endGame(winningSeat) {
 
 function showGameOver() {
   if (gameOver) return;
+  if (roomData.status === 'playing') return;  // already restarted
   gameOver = true;
 
   const mode   = roomData.game_mode || gameMode;
@@ -1188,8 +1213,8 @@ function showGameOver() {
 }
 
 async function startNextRound() {
-  document.getElementById('overlay-gameover').classList.add('hidden');
   gameOver = false;
+  document.getElementById('overlay-gameover').classList.add('hidden');
 
   const tiles = shuffle(generateDominoSet());
   const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
