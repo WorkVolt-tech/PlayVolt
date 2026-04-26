@@ -116,6 +116,36 @@ h1 span { color: var(--gold); }
 .streak-pip { width: 18px; height: 18px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
 .streak-pip.won { background: var(--gold); box-shadow: 0 0 8px rgba(201,168,76,0.6); }
 
+/* ── PLAYER LIST & PARTNER PICKER ── */
+.players-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 0.75rem; }
+.player-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 8px 12px;
+}
+.player-row.is-me { border-color: rgba(201,168,76,0.4); }
+.player-row-left { display: flex; align-items: center; gap: 8px; }
+.player-row-name { font-size: 0.82rem; font-weight: 600; color: var(--ivory); }
+.player-row-you { font-size: 0.58rem; color: var(--ivory-dim); }
+.partner-btn {
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em;
+  padding: 4px 10px; border-radius: 5px; cursor: pointer;
+  border: 1.5px solid var(--border); background: transparent;
+  color: var(--ivory-dim); transition: all 0.18s; white-space: nowrap;
+}
+.partner-btn:hover { border-color: var(--gold); color: var(--gold); }
+.partner-btn.selected { border-color: var(--gold); background: rgba(201,168,76,0.15); color: var(--gold); }
+.partner-btn.is-partner { border-color: var(--gold); background: rgba(201,168,76,0.12); color: var(--gold); }
+.team-display { display: flex; gap: 8px; margin-bottom: 0.75rem; }
+.team-box {
+  flex: 1; border-radius: 8px; padding: 8px 10px; min-height: 52px;
+}
+.team-box.a { border: 1.5px solid rgba(201,168,76,0.4); background: rgba(201,168,76,0.06); color: var(--gold); }
+.team-box.b { border: 1.5px solid rgba(100,180,255,0.4); background: rgba(100,180,255,0.06); color: #64b4ff; }
+.team-box-label { font-size: 0.52rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 4px; }
+.team-box-members { font-size: 0.78rem; font-weight: 600; }
+.partner-hint { font-size: 0.62rem; color: var(--ivory-dim); text-align: center; margin-bottom: 0.6rem; }
+
 label { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim); display: block; margin-bottom: 0.4rem; }
 input[type="text"] {
   width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
@@ -183,7 +213,7 @@ hr { border: none; border-top: 1px solid var(--border); }
 <div class="wrapper">
   <div class="title-block">
     <img src="dekabess_logo.webp" alt="Dekabess!" style="
-      width: 350px;
+      width: 220px;
       filter: drop-shadow(0 0 20px rgba(201,168,76,0.4));
       animation: float 3s ease-in-out infinite;
       margin-bottom: 0.5rem;
@@ -214,7 +244,7 @@ hr { border: none; border-top: 1px solid var(--border); }
         <button class="copy-btn" onclick="copyLink()">Copy Invite Link</button>
       </div>
       <div class="waiting-room" id="waiting-create">
-        <div class="players-grid" id="players-create"></div>
+        <div id="players-list-create"></div>
         <div class="waiting-status">
           <span class="conn-dot" id="conn-dot-create"></span>
           <span class="pulse"></span>Waiting for players…
@@ -266,7 +296,7 @@ hr { border: none; border-top: 1px solid var(--border); }
       </div>
       <button class="btn btn-primary" onclick="joinRoom()">Join Room</button>
       <div class="waiting-room" id="waiting-join">
-        <div class="players-grid" id="players-join"></div>
+        <div id="players-list-join"></div>
         <div class="waiting-status">
           <span class="conn-dot" id="conn-dot-join"></span>
           <span class="pulse"></span>Waiting for host to start…
@@ -307,6 +337,9 @@ function selectMode(mode) {
     document.getElementById('mode-' + m).classList.toggle('selected', m === mode);
   });
   document.getElementById('ai-difficulty').classList.toggle('visible', mode === 'solo');
+  // Re-render player list to show/hide partner picker
+  selectedPartnerSeat = null;
+  if (myRoomId) loadAndRenderPlayers(myRoomId, myPanel);
 }
 
 function selectAI(diff) {
@@ -376,37 +409,133 @@ function setConnected(panel, ok) {
 }
 
 let _loadingPlayers = false;
+
+// ── SEAT PICKER ──────────────────────────────────────────────────
 async function loadAndRenderPlayers(roomId, panel) {
   if (_loadingPlayers) return;
   _loadingPlayers = true;
   try {
     const { data: players } = await db.from('domino_players').select('*')
-      .eq('room_id', roomId).eq('is_connected', true).order('seat');
-    renderPlayers('players-' + panel, players || [], mySeat);
-    if (panel === 'create') {
+      .eq('room_id', roomId).order('seat');
+    renderPlayerList(panel, players || []);
+    if (panel === 'create' && amHost) {
       const startBtn = document.getElementById('btn-start');
-      const count = (players || []).length;
-      startBtn.disabled = count < 4;
-      startBtn.textContent = count >= 4 ? 'Start Game!' : `Start Game (${count}/4 Players)`;
+      const count = (players || []).filter(p => !p.is_ai).length;
+      const isSolo = selectedMode === 'solo';
+      startBtn.disabled = isSolo ? false : count < 4;
+      startBtn.textContent = isSolo
+        ? 'Start Solo Game'
+        : count < 4 ? `Start Game (${count}/4 Players)` : 'Start Game!';
     }
   } finally { _loadingPlayers = false; }
 }
 
-function renderPlayers(containerId, players, myS) {
-  const el = document.getElementById(containerId);
+let selectedPartnerSeat = null;  // seat of chosen partner (Asosyé only)
+
+function renderPlayerList(panel, occupants) {
+  const el = document.getElementById('players-list-' + panel);
+  if (!el) return;
   el.innerHTML = '';
-  for (let s = 0; s < 4; s++) {
-    const p = players.find(x => x.seat === s);
-    const isMe = p && p.seat === myS;
-    const div = document.createElement('div');
-    div.className = 'player-slot' + (p ? (isMe ? ' me' : ' occupied') : '');
-    div.innerHTML = `
-      <div class="seat-number">${s + 1}</div>
-      ${p ? `<div class="player-name">${escHtml(p.nickname)}${isMe ? ' (you)' : ''}</div>`
-          : `<div class="player-empty">Waiting…</div>`}`;
-    el.appendChild(div);
+
+  const isAsosye = selectedMode === 'asosye';
+  const meInRoom = occupants.find(p => p.id === myPlayerId);
+
+  // ── Team display (Asosyé only) ───────────────────────────────
+  if (isAsosye && occupants.length >= 2) {
+    const teams = buildTeams(occupants);
+    const teamDiv = document.createElement('div');
+    teamDiv.className = 'team-display';
+    teamDiv.innerHTML = `
+      <div class="team-box a">
+        <div class="team-box-label">🤝 Your Team</div>
+        <div class="team-box-members">${teams.mine.map(p => escHtml(p.nickname)).join(' & ') || '—'}</div>
+      </div>
+      <div class="team-box b">
+        <div class="team-box-label">⚔️ Opponents</div>
+        <div class="team-box-members">${teams.other.map(p => escHtml(p.nickname)).join(' & ') || '—'}</div>
+      </div>`;
+    el.appendChild(teamDiv);
+  }
+
+  // ── Player rows ───────────────────────────────────────────────
+  const listDiv = document.createElement('div');
+  listDiv.className = 'players-list';
+
+  if (occupants.length === 0) {
+    listDiv.innerHTML = '<div style="color:var(--ivory-dim);font-size:0.75rem;text-align:center;padding:12px;">Waiting for players to join…</div>';
+  }
+
+  occupants.forEach(p => {
+    const isMe = p.id === myPlayerId;
+    const isPartner = isAsosye && p.seat === selectedPartnerSeat;
+    const row = document.createElement('div');
+    row.className = 'player-row' + (isMe ? ' is-me' : '');
+
+    let actionBtn = '';
+    // Show "Pick as Partner" button in Asosyé mode for other players (not yourself)
+    if (isAsosye && !isMe && meInRoom) {
+      actionBtn = `<button class="partner-btn ${isPartner ? 'is-partner' : ''}"
+        onclick="togglePartner(${p.seat})">${isPartner ? '🤝 Partner' : 'Pick Partner'}</button>`;
+    }
+
+    row.innerHTML = `
+      <div class="player-row-left">
+        <div class="player-row-name">${escHtml(p.nickname)}</div>
+        ${isMe ? '<span class="player-row-you">(you)</span>' : ''}
+      </div>
+      ${actionBtn}`;
+    listDiv.appendChild(row);
+  });
+
+  // Empty slots
+  const emptyCount = 4 - occupants.length;
+  for (let i = 0; i < emptyCount; i++) {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.style.opacity = '0.4';
+    row.innerHTML = '<div class="player-row-name" style="color:var(--ivory-dim)">Waiting…</div>';
+    listDiv.appendChild(row);
+  }
+
+  el.appendChild(listDiv);
+
+  // Partner hint
+  if (isAsosye && meInRoom && !selectedPartnerSeat) {
+    const hint = document.createElement('div');
+    hint.className = 'partner-hint';
+    hint.textContent = '👆 Pick your partner for Asosyé mode';
+    el.appendChild(hint);
   }
 }
+
+function buildTeams(occupants) {
+  // My team = me + my chosen partner
+  // Other team = the other two
+  const me = occupants.find(p => p.id === myPlayerId);
+  if (!me) return { mine: occupants.slice(0,2), other: occupants.slice(2) };
+  const partner = occupants.find(p => p.seat === selectedPartnerSeat);
+  const mine  = [me, partner].filter(Boolean);
+  const other = occupants.filter(p => p.id !== myPlayerId && p.seat !== selectedPartnerSeat);
+  return { mine, other };
+}
+
+function togglePartner(seat) {
+  selectedPartnerSeat = (selectedPartnerSeat === seat) ? null : seat;
+  loadAndRenderPlayers(myRoomId, myPanel);
+}
+
+async function claimSeat(seat) {
+  // kept for compatibility but no longer used in partner mode
+}
+
+async function releaseSeat() {
+  if (!myPlayerId || !myRoomId) return;
+  await db.from('domino_players').delete().eq('id', myPlayerId);
+  myPlayerId = null; mySeat = null; selectedPartnerSeat = null;
+  await loadAndRenderPlayers(myRoomId, myPanel);
+}
+
+let myPanel = 'create';
 
 async function createRoom() {
   const nickname = getNickname(); if (!nickname) return;
@@ -417,12 +546,9 @@ async function createRoom() {
     const { data: room, error: rErr } = await db.from('domino_rooms')
       .insert({ code, status: 'waiting', current_turn: 0 }).select().single();
     if (rErr) throw rErr;
-    const { data: player, error: pErr } = await db.from('domino_players')
-      .insert({ room_id: room.id, seat: 0, nickname, hand: [], is_connected: true }).select().single();
-    if (pErr) throw pErr;
 
-    myPlayerId = player.id; myRoomId = room.id; myRoomCode = code; mySeat = 0;
-
+    myRoomId = room.id; myRoomCode = code; myPanel = 'create';
+    // Host starts unseated — picks seat from the picker
     document.getElementById('display-code').textContent = code;
     const url = `${location.origin}${location.pathname}?join=${code}`;
     document.getElementById('display-url').textContent = url;
@@ -431,7 +557,15 @@ async function createRoom() {
     document.getElementById('mode-selector').style.display = 'block';
     amHost = true;
     btn.style.display = 'none';
-    renderPlayers('players-create', [player], 0);
+    // Host joins the room immediately as a player (seat assigned at game start)
+    const nickname = getNickname();
+    if (nickname) {
+      const { data: player } = await db.from('domino_players')
+        .insert({ room_id: room.id, seat: 0, nickname, hand: [], is_connected: true })
+        .select().single();
+      if (player) { myPlayerId = player.id; mySeat = 0; }
+    }
+    renderPlayerList('create', myPlayerId ? [{ id: myPlayerId, seat: 0, nickname: getNickname() || '' }] : []);
     subscribeToRoom(room.id, 'create');
   } catch (e) {
     showMsg('msg-create', 'Error: ' + e.message, 'error');
@@ -458,15 +592,22 @@ async function joinRoom(codeOverride) {
     if (rErr || !room) { showMsg('msg-join', 'Room not found or game already started.', 'error'); return; }
 
     const { data: existing } = await db.from('domino_players').select('seat').eq('room_id', room.id);
-    const takenSeats = (existing || []).map(p => p.seat);
+    if ((existing || []).length >= 4) { showMsg('msg-join', 'Room is full!', 'error'); return; }
+
+    // Assign first free seat
+    const { data: existing2 } = await db.from('domino_players').select('seat').eq('room_id', room.id);
+    const takenSeats = (existing2 || []).map(p => p.seat);
     const freeSeat = [0,1,2,3].find(s => !takenSeats.includes(s));
     if (freeSeat === undefined) { showMsg('msg-join', 'Room is full!', 'error'); return; }
 
     const { data: player, error: pErr } = await db.from('domino_players')
-      .insert({ room_id: room.id, seat: freeSeat, nickname, hand: [], is_connected: true }).select().single();
+      .insert({ room_id: room.id, seat: freeSeat, nickname, hand: [], is_connected: true })
+      .select().single();
     if (pErr) throw pErr;
 
-    myPlayerId = player.id; myRoomId = room.id; myRoomCode = code; mySeat = freeSeat;
+    myPlayerId = player.id; myRoomId = room.id; myRoomCode = code;
+    mySeat = freeSeat; myPanel = 'join';
+
     document.getElementById('waiting-join').classList.add('visible');
     await loadAndRenderPlayers(room.id, 'join');
     subscribeToRoom(room.id, 'join');
@@ -479,10 +620,18 @@ function subscribeToRoom(roomId, panel) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players', filter: `room_id=eq.${roomId}` },
       async () => { await loadAndRenderPlayers(roomId, panel); })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
-      (payload) => {
+      async (payload) => {
         if (payload.new.status === 'playing') {
+          if (mySeat === null) {
+            // Player never claimed a seat — assign first free seat
+            const { data: taken } = await db.from('domino_players').select('seat').eq('room_id', myRoomId);
+            const takenSeats = (taken||[]).map(p=>p.seat);
+            const freeSeat = [0,1,2,3].find(s => !takenSeats.includes(s)) ?? 0;
+            mySeat = freeSeat;
+          }
           sessionStorage.setItem('domino_player', JSON.stringify({
-            seat: mySeat, nickname: document.getElementById('nickname').value.trim(),
+            seat: mySeat,
+            nickname: document.getElementById('nickname').value.trim(),
             roomId: myRoomId, roomCode: myRoomCode,
             gameMode: payload.new.game_mode || 'chien',
             aiDifficulty: payload.new.ai_difficulty || null,
@@ -540,6 +689,25 @@ async function startGame() {
   if (!myRoomId) return;
 
   let players = (await db.from('domino_players').select('*').eq('room_id', myRoomId).order('seat')).data || [];
+
+  // ── Asosyé: reassign seats based on partner selection ──────────
+  // Seats 0 & 2 = Team A (partners), Seats 1 & 3 = Team B (partners)
+  // Host = seat 0, host's partner = seat 2, others = seats 1 & 3
+  if (selectedMode === 'asosye' && selectedPartnerSeat !== null) {
+    const me      = players.find(p => p.id === myPlayerId);
+    const partner = players.find(p => p.seat === selectedPartnerSeat);
+    const others  = players.filter(p => p.id !== myPlayerId && p.seat !== selectedPartnerSeat);
+
+    if (me && partner && others.length === 2) {
+      await db.from('domino_players').update({ seat: 0 }).eq('id', me.id);
+      await db.from('domino_players').update({ seat: 2 }).eq('id', partner.id);
+      await db.from('domino_players').update({ seat: 1 }).eq('id', others[0].id);
+      await db.from('domino_players').update({ seat: 3 }).eq('id', others[1].id);
+      mySeat = 0;
+      // Refresh players with new seats
+      players = (await db.from('domino_players').select('*').eq('room_id', myRoomId).order('seat')).data || [];
+    }
+  }
 
   // Solo mode: fill empty seats with AI bots
   if (selectedMode === 'solo') {
