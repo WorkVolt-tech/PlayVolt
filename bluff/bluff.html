@@ -338,7 +338,7 @@
   .clue-text-blurred {
     filter: blur(7px);
     user-select: none;
-    transition: filter 1.2s ease;
+    transition: filter 3.2s ease;
     cursor: pointer;
   }
   .clue-text-blurred.revealed { filter: blur(0); }
@@ -1440,7 +1440,9 @@ function showWordPhase() {
   const wordHint = document.getElementById('word-hint');
 
   if (state.myRole === 'imposter' || state.myRole === 'double_imposter') {
-    wordText.textContent = '???';
+    // Imposter sees the word but is told they are the imposter
+    // They know what word to avoid referencing directly
+    wordText.textContent = state.secretWord || '???';
     wordText.style.color = 'var(--red)';
   } else {
     wordText.textContent = state.myWord || '???';
@@ -1483,13 +1485,19 @@ function showCluePhase() {
   const reminderEl = document.getElementById('clue-word-display');
   const reminderWrap = document.getElementById('clue-word-reminder');
   if (state.myRole === 'imposter' || state.myRole === 'double_imposter') {
-    reminderEl.textContent = '???';
-    reminderEl.style.color = 'var(--red)';
+    reminderEl.textContent = state.secretWord || '???';
+    reminderEl.style.cssText = 'font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;color:var(--red);filter:blur(6px);cursor:pointer;transition:filter 3.2s ease;';
+    reminderEl.title = 'Tap to peek';
+    reminderEl.onclick = () => {
+      reminderEl.style.filter = 'blur(0)';
+      setTimeout(() => { reminderEl.style.filter = 'blur(6px)'; }, 5000);
+    };
     reminderWrap.style.borderColor = 'rgba(255,85,102,0.35)';
     reminderWrap.style.background = 'linear-gradient(135deg, rgba(255,85,102,0.12), rgba(255,110,180,0.08))';
   } else {
     reminderEl.textContent = state.myWord || '???';
     reminderEl.style.color = 'var(--accent2)';
+    reminderEl.onclick = null;
   }
 
   const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
@@ -1531,13 +1539,7 @@ function showCluePhase() {
     if (e.key === 'Enter') submitClue();
   });
 
-  // Reaction buttons
-  document.querySelectorAll('#reaction-bar-clue .reaction-btn').forEach(btn => {
-    btn.onclick = () => {
-      spawnReaction(btn.dataset.emoji);
-      toast(btn.dataset.emoji, 1000);
-    };
-  });
+  // Reactions handled by global delegation in DOMContentLoaded
 
   // Timer
   const timerEl = document.getElementById('clue-timer');
@@ -1641,7 +1643,7 @@ function renderClueFeed(containerId, clues) {
           <div class="clue-item-body">
             <div class="clue-text clue-text-blurred" id="blur-clue-${containerId}-${i}" onclick="revealClue('${containerId}',${i})">${text}</div>
             <div class="clue-author">${author}</div>
-            <div class="imposter-clue-hint">👆 Tap to reveal for 3s</div>
+            <div class="imposter-clue-hint">👆 Tap to reveal for 8s</div>
           </div>
         </div>`;
     }
@@ -1662,7 +1664,7 @@ function renderClueFeed(containerId, clues) {
         const el = document.getElementById(`blur-clue-${containerId}-${i}`);
         if (el) {
           el.classList.add('revealed');
-          setTimeout(() => el.classList.remove('revealed'), 3000); // re-blur after 3s
+          setTimeout(() => el.classList.remove('revealed'), 10000); // re-blur after 10s
         }
       }, 8000 + i * 6000); // first clue reveals at 8s, then every 6s after
     });
@@ -1674,7 +1676,7 @@ window.revealClue = function(containerId, idx) {
   const el = document.getElementById(`blur-clue-${containerId}-${idx}`);
   if (!el) return;
   el.classList.add('revealed');
-  setTimeout(() => el.classList.remove('revealed'), 3000);
+  setTimeout(() => el.classList.remove('revealed'), 8000);
 };
 
 // Fetch all clues from Supabase and render (used on discussion phase load)
@@ -1698,19 +1700,59 @@ async function fetchAndRenderClues(containerId) {
   }
 }
 
-// Called by realtime INSERT on clues table
+// Called by realtime INSERT on clues table — fires for ALL players including imposter
 function addClueToFeed(row) {
-  // Find the player in state for name/emoji
   const player = state.players.find(p => p.id === row.player_id);
   const clue = {
     text: row.content,
     playerName: player?.display_name || player?.name || 'Player',
     playerEmoji: player?.avatar_emoji || player?.emoji || '🎭',
   };
-  state.clues = [...(state.clues || []), clue];
+  if (!state.clues) state.clues = [];
+  // Avoid duplicates
+  const already = state.clues.some(c => c.text === clue.text && c.playerName === clue.playerName);
+  if (!already) state.clues.push(clue);
   // Render into whichever feed is currently visible
-  const activeContainers = ['clue-feed', 'discussion-clue-feed'].filter(id => document.getElementById(id));
-  activeContainers.forEach(id => renderClueFeed(id, state.clues));
+  ['clue-feed', 'discussion-clue-feed'].forEach(id => {
+    if (document.getElementById(id)) renderClueFeed(id, state.clues);
+  });
+}
+
+// Called by realtime INSERT on votes table
+async function updateVoteCount(row) {
+  // Update local vote tally
+  state.votes[row.target_id] = (state.votes[row.target_id] || 0) + 1;
+  // Re-render vote buttons if on voting screen
+  if (state.phase === 'voting') {
+    const grid = document.getElementById('vote-grid');
+    if (grid) {
+      // Refresh vote bars
+      grid.querySelectorAll('.vote-btn').forEach(btn => {
+        const pid = btn.dataset.id;
+        const count = state.votes[pid] || 0;
+        const total = Object.values(state.votes).reduce((s,v) => s+v, 0);
+        const pct = total ? Math.round(count/total*100) : 0;
+        const bar = btn.querySelector('.vote-bar');
+        const countEl = btn.querySelector('.vote-count');
+        if (bar) bar.style.width = pct + '%';
+        if (countEl) countEl.textContent = count;
+      });
+    }
+    // Check if everyone has voted → auto-advance to reveal
+    // Count total votes cast (one per player), not vote weights
+    const totalVotes = Object.values(state.votes).reduce((s,v) => s+v, 0);
+    // Count eligible voters — handle both DB col name and JS local name
+    const expectedVoters = state.players.filter(p => !p.is_spectator && !p.isSpectator).length;
+    console.log(`Votes: ${totalVotes}/${expectedVoters}`);
+    if (expectedVoters > 0 && totalVotes >= expectedVoters) {
+      clearTimers();
+      if (state.isHost && !DEMO_MODE) {
+        await sb.from('games').update({ phase: 'reveal' }).eq('id', state.gameId);
+      } else if (DEMO_MODE) {
+        showRevealPhase();
+      }
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -1753,12 +1795,7 @@ function showDiscussionPhase() {
     </div>
   `).join('');
 
-  // Reactions
-  document.querySelectorAll('.reaction-btn').forEach(btn => {
-    btn.onclick = () => {
-      spawnReaction(btn.dataset.emoji);
-    };
-  });
+  // Reactions handled by global delegation in DOMContentLoaded
 
   const timerEl = document.getElementById('discussion-timer');
   startTimer('discussion', 90,
@@ -1850,105 +1887,139 @@ function showVotingPhase() {
 // ══════════════════════════════════════════════════════
 //  REVEAL PHASE
 // ══════════════════════════════════════════════════════
-function showRevealPhase() {
+async function showRevealPhase() {
   showScreen('reveal');
   state.phase = 'reveal';
   clearTimers();
 
   const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
-  const players = room?.players || state.players;
 
-  // Find imposter(s)
-  const imposters = players.filter(p => p.role?.includes('imposter'));
-  const word = room?.word || state.myWord || '???';
+  // ── Fetch everything from DB for Supabase mode ──
+  let players = room?.players || state.players;
+  let secretWord = room?.word || state.secretWord || state.myWord || '???';
 
-  // Tally votes
+  if (!DEMO_MODE && state.gameId) {
+    // Fetch the secret word directly from the game row (works for ALL players incl. imposter)
+    const { data: gameRow } = await sb.from('games').select('secret_word').eq('id', state.gameId).single();
+    if (gameRow?.secret_word) secretWord = gameRow.secret_word;
+
+    // Fetch all players with current roles
+    const { data: dbPlayers } = await sb.from('players').select('*').eq('room_id', state.roomId);
+    if (dbPlayers) {
+      players = dbPlayers.map(p => ({ ...p, name: p.display_name, emoji: p.avatar_emoji }));
+      state.players = players;
+    }
+
+    // Fetch authoritative vote tally from DB
+    const { data: dbVotes } = await sb.from('votes').select('target_id').eq('game_id', state.gameId);
+    if (dbVotes) {
+      state.votes = {};
+      dbVotes.forEach(v => { state.votes[v.target_id] = (state.votes[v.target_id] || 0) + 1; });
+    }
+  }
+
+  // ── Find imposters ──
+  const imposters = players.filter(p => (p.role || '').includes('imposter'));
+  const imposterIds = imposters.map(p => p.id);
+
+  // ── Majority vote wins: person with MOST votes is eliminated ──
   let maxVotes = 0;
   let mostVotedId = null;
   Object.entries(state.votes).forEach(([id, count]) => {
     if (count > maxVotes) { maxVotes = count; mostVotedId = id; }
   });
 
-  const imposterIds = imposters.map(p => p.id);
+  // Crew wins if the most-voted player is an imposter
   const crewWins = imposterIds.includes(mostVotedId);
 
-  // Result card
+  // ── Result card ──
   const resultCard = document.getElementById('reveal-result-card');
-  const emoji = document.getElementById('reveal-emoji');
-  const title = document.getElementById('reveal-title');
-  const sub   = document.getElementById('reveal-sub');
-  const wordEl = document.getElementById('reveal-word');
+  const emojiEl = document.getElementById('reveal-emoji');
+  const titleEl = document.getElementById('reveal-title');
+  const subEl   = document.getElementById('reveal-sub');
+  const wordEl  = document.getElementById('reveal-word');
 
-  wordEl.textContent = word;
+  // Show the word to EVERYONE (including imposter) now that round is over
+  wordEl.textContent = secretWord;
 
   if (crewWins) {
     resultCard.className = 'reveal-card reveal-crew';
-    emoji.textContent = '🎉';
-    title.textContent = 'Crew Wins!';
-    title.style.color = 'var(--green)';
-    sub.textContent = `The imposter was caught with ${maxVotes} vote${maxVotes !== 1 ? 's' : ''}!`;
+    emojiEl.textContent = '🎉';
+    titleEl.textContent = 'Crew Wins!';
+    titleEl.style.color = 'var(--green)';
+    const votedPlayer = players.find(p => p.id === mostVotedId);
+    subEl.textContent = `${votedPlayer?.name || 'The imposter'} was caught with ${maxVotes} vote${maxVotes !== 1 ? 's' : ''}!`;
     confetti();
   } else {
     resultCard.className = 'reveal-card reveal-imp';
-    emoji.textContent = '😈';
-    title.textContent = 'Imposter Wins!';
-    title.style.color = 'var(--red)';
-    sub.textContent = 'The crew failed to identify the imposter!';
+    emojiEl.textContent = '😈';
+    titleEl.textContent = 'Imposter Wins!';
+    titleEl.style.color = 'var(--red)';
+    const mostVotedPlayer = players.find(p => p.id === mostVotedId);
+    subEl.textContent = mostVotedId
+      ? `The crew voted out ${mostVotedPlayer?.name || 'someone'} — wrong call!`
+      : 'Nobody voted — the imposter escapes!';
   }
 
-  // Render players with reveals
+  // ── Player list with vote counts & roles revealed ──
   const container = document.getElementById('reveal-players');
-  container.innerHTML = players.filter(p => !p.isSpectator).map(p => {
-    const isImp = p.role?.includes('imposter');
+  const sortedPlayers = [...players].sort((a,b) => (state.votes[b.id]||0) - (state.votes[a.id]||0));
+  container.innerHTML = sortedPlayers.filter(p => !p.is_spectator && !p.isSpectator).map(p => {
+    const isImp = (p.role||'').includes('imposter');
     const voteCount = state.votes[p.id] || 0;
+    const isEliminated = p.id === mostVotedId;
     return `
-      <div class="player-chip${isImp ? ' imposter-revealed' : ''}">
-        <div class="avatar">${p.emoji}</div>
-        <div class="player-name">${p.name}</div>
-        <div style="display:flex;gap:0.4rem;align-items:center;">
+      <div class="player-chip${isImp ? ' imposter-revealed' : ''}${isEliminated ? '" style="border-color:var(--amber)' : ''}">
+        <div class="avatar">${p.emoji || p.avatar_emoji || '🎭'}</div>
+        <div class="player-name">${p.name || p.display_name}</div>
+        <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
           ${isImp ? '<span class="badge badge-red">Imposter</span>' : '<span class="badge badge-green">Crew</span>'}
-          ${p.role === 'confused' ? '<span class="badge badge-amber">Confused</span>' : ''}
-          ${p.role === 'detective' ? '<span class="badge badge-cyan">Detective</span>' : ''}
-          ${voteCount ? `<span class="badge badge-purple mono">${voteCount}v</span>` : ''}
+          ${isEliminated ? '<span class="badge badge-amber">Eliminated</span>' : ''}
+          ${voteCount ? `<span class="badge badge-purple mono">${voteCount} vote${voteCount!==1?'s':''}</span>` : ''}
         </div>
       </div>`;
   }).join('');
 
-  // Imposter comeback guess
+  // ── Imposter comeback guess (only shown if imposter lost) ──
   const isMyImposter = imposterIds.includes(state.playerId);
   const guessSection = document.getElementById('imposter-guess-section');
-  if (isMyImposter && !crewWins) {
+  if (isMyImposter && crewWins) {
+    // Imposter was caught — let them attempt a comeback guess
     guessSection.style.display = 'block';
+    guessSection.innerHTML = `
+      <div class="text-xs text-muted2 mono" style="margin-bottom:0.5rem;">COMEBACK — Guess the word to steal the win!</div>
+      <div class="flex gap-md">
+        <input type="text" id="imposter-guess-input" class="input" placeholder="What was the word?">
+        <button class="btn btn-danger" id="submit-guess-btn">Guess</button>
+      </div>`;
     document.getElementById('submit-guess-btn').onclick = () => {
-      const guess = document.getElementById('imposter-guess-input').value.trim();
+      const guess = document.getElementById('imposter-guess-input').value.trim().toLowerCase();
+      const correct = secretWord.trim().toLowerCase();
       if (!guess) return;
-      if (guess.toLowerCase() === word.toLowerCase()) {
+      if (guess === correct) {
         toast('🎉 Correct! Comeback win!', 3000);
         confetti();
-        guessSection.innerHTML = '<div class="text-center" style="color:var(--green);font-weight:700;padding:0.5rem;">✓ Correct! Imposter gets the comeback win!</div>';
+        guessSection.innerHTML = '<div class="text-center" style="color:var(--green);font-weight:700;padding:0.5rem;">✓ Correct guess! Imposter steals the win!</div>';
+        titleEl.textContent = 'Imposter Comeback!';
+        titleEl.style.color = 'var(--amber)';
       } else {
-        toast('❌ Wrong guess! Crew wins for real.', 3000);
-        guessSection.innerHTML = '<div class="text-center" style="color:var(--red);font-weight:700;padding:0.5rem;">✗ Wrong guess!</div>';
+        toast('❌ Wrong — crew wins!', 3000);
+        guessSection.innerHTML = `<div class="text-center" style="color:var(--red);font-weight:700;padding:0.5rem;">✗ Wrong! The word was "${secretWord}"</div>`;
       }
     };
   } else {
     guessSection.style.display = 'none';
   }
 
-  // Buttons
-  document.getElementById('back-lobby-btn').onclick = () => {
-    showScreen('lobby');
-    renderLobbyPlayers();
-  };
+  // ── Buttons ──
+  document.getElementById('back-lobby-btn').onclick = () => { showScreen('lobby'); renderLobbyPlayers(); };
   document.getElementById('play-again-btn').style.display = state.isHost ? 'flex' : 'none';
   document.getElementById('play-again-btn').onclick = () => {
     if (DEMO_MODE) {
-      const room = DemoRooms.get(state.roomCode);
-      if (room) { room.clues = []; room.votes = {}; room.phase = 'lobby'; }
-      state.chaosEvent = null;
-      state.myVote = null;
-      state.myClueSent = false;
+      const r = DemoRooms.get(state.roomCode);
+      if (r) { r.clues = []; r.votes = {}; r.phase = 'lobby'; }
     }
+    state.chaosEvent = null; state.myVote = null; state.myClueSent = false;
     startGame();
   };
 }
@@ -2058,17 +2129,21 @@ function subscribeToRoom() {
   state.subscriptions.push(channel);
 
   // Clues & votes — subscribed separately once we have a gameId
-  function subscribeGameEvents() {
+  // Called immediately AND again after gameId is resolved for late-joiners
+  window._subscribeGameEvents = function() {
     if (!state.gameId) return;
-    const gameCh = sb.channel(`game-${state.gameId}`)
+    // Avoid duplicate channels
+    const chName = `game-${state.gameId}`;
+    if (state.subscriptions.find(s => s.topic === chName)) return;
+    const gameCh = sb.channel(chName)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clues', filter: `game_id=eq.${state.gameId}` },
         payload => { addClueToFeed(payload.new); })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes', filter: `game_id=eq.${state.gameId}` },
         payload => { updateVoteCount(payload.new); })
       .subscribe();
     state.subscriptions.push(gameCh);
-  }
-  subscribeGameEvents();
+  };
+  window._subscribeGameEvents();
 }
 
 async function fetchPlayers() {
@@ -2093,15 +2168,13 @@ async function supabaseStartGame() {
     const wordData = shuffled[Math.floor(Math.random() * Math.min(shuffled.length, 20))];
     state.lastWordId = wordData.id; // remember to avoid repeat next round
 
-    // If no game exists yet, create one
-    let gameId = state.gameId;
-    if (!gameId) {
-      const { data: newGame, error: gErr } = await sb.from('games')
-        .insert({ room_id: state.roomId }).select().single();
-      if (gErr) throw gErr;
-      gameId = newGame.id;
-      state.gameId = gameId;
-    }
+    // Always create a FRESH game row on every start/play-again
+    // This ensures clean clues, votes, and roles — no bleed from previous round
+    const { data: newGame, error: gErr } = await sb.from('games')
+      .insert({ room_id: state.roomId }).select().single();
+    if (gErr) throw gErr;
+    const gameId = newGame.id;
+    state.gameId = gameId;
 
     // STEP 1: Write the word to the game FIRST so assign_roles can read it
     await sb.from('games').update({
@@ -2109,6 +2182,12 @@ async function supabaseStartGame() {
       secret_word: wordData.word,
       started_at: new Date().toISOString(),
     }).eq('id', gameId);
+
+    // Store secret word for imposter display
+    state.secretWord = wordData.word;
+
+    // Re-subscribe game events channel for the new gameId
+    if (window._subscribeGameEvents) window._subscribeGameEvents();
 
     // Update room's current_game_id so joiners can find it
     await sb.from('rooms').update({ current_game_id: gameId }).eq('id', state.roomId);
@@ -2158,10 +2237,16 @@ async function supabaseCastVote(targetId) {
 async function handleGameUpdate(game) {
   if (game.phase !== state.phase) {
     state.phase = game.phase;
-    // Always keep gameId current
-    if (!state.gameId) state.gameId = game.id;
+    // Keep gameId current and subscribe to game events if we now have it
+    if (!state.gameId) {
+      state.gameId = game.id;
+      if (window._subscribeGameEvents) window._subscribeGameEvents();
+    }
+    // Store secret word from game row — everyone can use this in reveal
+    if (game.secret_word) state.secretWord = game.secret_word;
 
     if (game.phase === 'word_distribution') {
+      state.clues = []; state.votes = {}; state.myVote = null; state.myClueSent = false;
       // Fetch this player's assigned role and word from DB
       const { data: me } = await sb.from('players')
         .select('role, word_shown, objective').eq('id', state.playerId).single();
@@ -2174,7 +2259,7 @@ async function handleGameUpdate(game) {
     }
     else if (game.phase === 'clue')       showCluePhase();
     else if (game.phase === 'discussion') showDiscussionPhase();
-    else if (game.phase === 'voting')     showVotingPhase();
+    else if (game.phase === 'voting')     { state.votes = {}; showVotingPhase(); }
     else if (game.phase === 'reveal')     showRevealPhase();
   }
 }
@@ -2260,12 +2345,20 @@ function handleHostLeft() {
 document.addEventListener('DOMContentLoaded', () => {
   initHome();
 
+  // ── Global reaction button handler via event delegation ──
+  // Wire once here so it works on every screen without re-binding
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.reaction-btn');
+    if (!btn) return;
+    const emoji = btn.dataset.emoji;
+    if (!emoji) return;
+    spawnReaction(emoji);
+    toast(emoji, 800);
+  });
+
   // When host closes tab/browser — fire hostLeave
   window.addEventListener('beforeunload', () => {
     if (state.isHost && state.roomId && !DEMO_MODE) {
-      // Use sendBeacon for reliable fire-and-forget on page close
-      const url = `${SUPABASE_URL}/rest/v1/rooms?id=eq.${state.roomId}`;
-      navigator.sendBeacon(url); // triggers the subscription delete handler on other clients
       hostLeave();
     }
   });
