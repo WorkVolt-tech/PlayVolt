@@ -338,7 +338,7 @@ function selectMode(mode) {
   });
   document.getElementById('ai-difficulty').classList.toggle('visible', mode === 'solo');
   // Re-render player list to show/hide partner picker
-  selectedPartnerSeat = null;
+  selectedPartnerId = null;
   if (myRoomId) loadAndRenderPlayers(myRoomId, myPanel);
 }
 
@@ -430,7 +430,7 @@ async function loadAndRenderPlayers(roomId, panel) {
   } finally { _loadingPlayers = false; }
 }
 
-let selectedPartnerSeat = null;  // seat of chosen partner (Asosyé only)
+let selectedPartnerId = null;  // ID of chosen partner (Asosyé only)
 
 function renderPlayerList(panel, occupants) {
   const el = document.getElementById('players-list-' + panel);
@@ -467,7 +467,7 @@ function renderPlayerList(panel, occupants) {
 
   occupants.forEach(p => {
     const isMe = p.id === myPlayerId;
-    const isPartner = isAsosye && p.seat === selectedPartnerSeat;
+    const isPartner = isAsosye && p.id === selectedPartnerId;
     const row = document.createElement('div');
     row.className = 'player-row' + (isMe ? ' is-me' : '');
 
@@ -475,7 +475,7 @@ function renderPlayerList(panel, occupants) {
     // Show "Pick as Partner" button in Asosyé mode for other players (not yourself)
     if (isAsosye && !isMe && meInRoom) {
       actionBtn = `<button class="partner-btn ${isPartner ? 'is-partner' : ''}"
-        onclick="togglePartner(${p.seat})">${isPartner ? '🤝 Partner' : 'Pick Partner'}</button>`;
+        onclick="togglePartner('${p.id}')">${isPartner ? '🤝 Partner' : 'Pick Partner'}</button>`;
     }
 
     row.innerHTML = `
@@ -500,7 +500,7 @@ function renderPlayerList(panel, occupants) {
   el.appendChild(listDiv);
 
   // Partner hint
-  if (isAsosye && meInRoom && !selectedPartnerSeat) {
+  if (isAsosye && meInRoom && !selectedPartnerId) {
     const hint = document.createElement('div');
     hint.className = 'partner-hint';
     hint.textContent = '👆 Pick your partner for Asosyé mode';
@@ -513,14 +513,14 @@ function buildTeams(occupants) {
   // Other team = the other two
   const me = occupants.find(p => p.id === myPlayerId);
   if (!me) return { mine: occupants.slice(0,2), other: occupants.slice(2) };
-  const partner = occupants.find(p => p.seat === selectedPartnerSeat);
+  const partner = occupants.find(p => p.id === selectedPartnerId);
   const mine  = [me, partner].filter(Boolean);
-  const other = occupants.filter(p => p.id !== myPlayerId && p.seat !== selectedPartnerSeat);
+  const other = occupants.filter(p => p.id !== myPlayerId && p.id !== selectedPartnerId);
   return { mine, other };
 }
 
-function togglePartner(seat) {
-  selectedPartnerSeat = (selectedPartnerSeat === seat) ? null : seat;
+function togglePartner(id) {
+  selectedPartnerId = (selectedPartnerId === id) ? null : id;
   loadAndRenderPlayers(myRoomId, myPanel);
 }
 
@@ -531,7 +531,7 @@ async function claimSeat(seat) {
 async function releaseSeat() {
   if (!myPlayerId || !myRoomId) return;
   await db.from('domino_players').delete().eq('id', myPlayerId);
-  myPlayerId = null; mySeat = null; selectedPartnerSeat = null;
+  myPlayerId = null; mySeat = null; selectedPartnerId = null;
   await loadAndRenderPlayers(myRoomId, myPanel);
 }
 
@@ -692,10 +692,10 @@ async function startGame() {
   // ── Asosyé: reassign seats based on partner selection ──────────
   // Seats 0 & 2 = Team A (partners), Seats 1 & 3 = Team B (partners)
   // Host = seat 0, host's partner = seat 2, others = seats 1 & 3
-  if (selectedMode === 'asosye' && selectedPartnerSeat !== null) {
+  if (selectedMode === 'asosye' && selectedPartnerId !== null) {
     const me      = players.find(p => p.id === myPlayerId);
-    const partner = players.find(p => p.seat === selectedPartnerSeat);
-    const others  = players.filter(p => p.id !== myPlayerId && p.seat !== selectedPartnerSeat);
+    const partner = players.find(p => p.id === selectedPartnerId);
+    const others  = players.filter(p => p.id !== myPlayerId && p.id !== selectedPartnerId);
 
     if (me && partner && others.length === 2) {
       // Use temp seats (10-13) first to avoid unique constraint conflicts
