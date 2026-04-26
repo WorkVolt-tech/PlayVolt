@@ -1044,13 +1044,10 @@ async function advanceTurn(myNewHand) {
 }
 
 async function endGame(winningSeat) {
-  // If winner is known (player emptied hand), only THAT player handles scoring.
-  // If blocked (winningSeat=null), only lowest seat handles to avoid race conditions.
-  if (winningSeat !== null && myInfo.seat !== winningSeat) return;
-  if (winningSeat === null) {
-    const lowestSeat = Math.min(...players.map(p => p.seat));
-    if (myInfo.seat !== lowestSeat) return;
-  }
+  // Check the game is still active before writing — first browser in wins, rest ignored
+  const { data: currentRoom } = await db.from('domino_rooms')
+    .select('status').eq('id', myInfo.roomId).single();
+  if (!currentRoom || currentRoom.status !== 'playing') return;
 
   const mode    = roomData.game_mode || gameMode;
   const scores  = [...(roomData.scores || [0,0,0,0])];
