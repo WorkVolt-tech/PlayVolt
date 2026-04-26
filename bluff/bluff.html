@@ -725,6 +725,20 @@
       </div>
     </div>
 
+    <!-- Word reminder — always visible during clue phase -->
+    <div id="clue-word-reminder" style="
+      background: linear-gradient(135deg, rgba(124,106,247,0.18), rgba(255,110,180,0.1));
+      border: 1px solid rgba(124,106,247,0.35);
+      border-radius: var(--r);
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    ">
+      <div class="text-xs text-muted2 mono" style="text-transform:uppercase;letter-spacing:0.1em;">Your Word</div>
+      <div id="clue-word-display" style="font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;color:var(--accent2);">???</div>
+    </div>
+
     <div id="chaos-banner-clue" style="display:none;"></div>
 
     <div class="card">
@@ -1429,6 +1443,19 @@ function showCluePhase() {
   showScreen('clue');
   state.phase = 'clue';
 
+  // Show word reminder
+  const reminderEl = document.getElementById('clue-word-display');
+  const reminderWrap = document.getElementById('clue-word-reminder');
+  if (state.myRole === 'imposter' || state.myRole === 'double_imposter') {
+    reminderEl.textContent = '???';
+    reminderEl.style.color = 'var(--red)';
+    reminderWrap.style.borderColor = 'rgba(255,85,102,0.35)';
+    reminderWrap.style.background = 'linear-gradient(135deg, rgba(255,85,102,0.12), rgba(255,110,180,0.08))';
+  } else {
+    reminderEl.textContent = state.myWord || '???';
+    reminderEl.style.color = 'var(--accent2)';
+  }
+
   const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
 
   // Show chaos event
@@ -1978,9 +2005,17 @@ async function fetchPlayers() {
 
 async function supabaseStartGame() {
   try {
-    // Pick random word
-    const { data: words } = await sb.from('words').select('id, word, variants, difficulty, category').limit(200);
-    const wordData = randomFrom(words);
+    // Pick a truly random word — order by random() in DB, take 1
+    // Also exclude the last used word to avoid repeats back-to-back
+    let wordQuery = sb.from('words').select('id, word, variants, difficulty, category');
+    // Exclude last word if we have one
+    if (state.lastWordId) wordQuery = wordQuery.neq('id', state.lastWordId);
+    const { data: wordPool } = await wordQuery;
+    if (!wordPool || !wordPool.length) { toast('No words found in database!'); return; }
+    // Shuffle client-side with a fresh random seed each call
+    const shuffled = wordPool.slice().sort(() => Math.random() - 0.5);
+    const wordData = shuffled[Math.floor(Math.random() * Math.min(shuffled.length, 20))];
+    state.lastWordId = wordData.id; // remember to avoid repeat next round
 
     // If no game exists yet, create one
     let gameId = state.gameId;
