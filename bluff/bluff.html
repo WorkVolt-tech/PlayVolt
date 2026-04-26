@@ -2027,13 +2027,20 @@ async function supabaseStartGame() {
       state.gameId = gameId;
     }
 
+    // STEP 1: Write the word to the game FIRST so assign_roles can read it
+    await sb.from('games').update({
+      word_id: wordData.id,
+      secret_word: wordData.word,
+      started_at: new Date().toISOString(),
+    }).eq('id', gameId);
+
     // Update room's current_game_id so joiners can find it
     await sb.from('rooms').update({ current_game_id: gameId }).eq('id', state.roomId);
 
     // Assign all players in room to this game
     await sb.from('players').update({ game_id: gameId }).eq('room_id', state.roomId);
 
-    // Assign roles via DB function
+    // STEP 2: NOW assign roles — assign_roles reads secret_word from games table
     await sb.rpc('assign_roles', {
       p_game_id: gameId,
       p_enable_double_imposter: state.settings.roles,
@@ -2041,20 +2048,17 @@ async function supabaseStartGame() {
       p_enable_detective: state.settings.roles
     });
 
-    // Fetch my assigned role & word
+    // STEP 3: Fetch MY role and word now that assign_roles has written them
     const { data: me } = await sb.from('players').select('role, word_shown').eq('id', state.playerId).single();
     if (me) { state.myRole = me.role; state.myWord = me.word_shown; }
 
-    // Chaos event
+    // Chaos event & objective
     state.chaosEvent = state.settings.chaos ? pickChaosEvent() : null;
     state.myObjective = state.settings.objectives ? pickObjective(state.settings) : null;
 
-    // Trigger phase change — this fires handleGameUpdate on ALL clients via realtime
+    // STEP 4: Flip phase — triggers handleGameUpdate on ALL clients via realtime
     await sb.from('games').update({
       phase: 'word_distribution',
-      word_id: wordData.id,
-      secret_word: wordData.word,
-      started_at: new Date().toISOString(),
       phase_ends_at: new Date(Date.now() + 10000).toISOString()
     }).eq('id', gameId);
 
