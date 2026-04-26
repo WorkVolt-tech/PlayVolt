@@ -628,14 +628,18 @@ window.addEventListener('load', async () => {
   if (gameMode === 'solo') scheduleAI();
 });
 
+let _loadDebounce = null;
 async function loadGameState() {
-  const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
-    db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
-    db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
-    db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
-  ]);
-  roomData = room; players = pData || []; boardData = bData;
-  renderAll();
+  clearTimeout(_loadDebounce);
+  _loadDebounce = setTimeout(async () => {
+    const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
+      db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
+      db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
+      db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
+    ]);
+    roomData = room; players = pData || []; boardData = bData;
+    renderAll();
+  }, 80);
 }
 
 function subscribeToGame() {
