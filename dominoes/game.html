@@ -658,8 +658,6 @@ function subscribeToGame() {
 
 function renderAll() {
   if (!roomData || !players.length) return;
-  // Skip rendering during restarting — board is mid-reset
-  if (roomData.status === 'restarting') return;
   renderPlayerTags();
   renderHand();
   renderBoard();
