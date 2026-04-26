@@ -658,12 +658,14 @@ function subscribeToGame() {
 
 function renderAll() {
   if (!roomData || !players.length) return;
+  // Skip rendering during restarting — board is mid-reset
+  if (roomData.status === 'restarting') return;
   renderPlayerTags();
   renderHand();
   renderBoard();
   updateTurnState();
   renderScoreBar();
-  if ((roomData.status === 'playing' || roomData.status === 'restarting') && gameOver) {
+  if (roomData.status === 'playing' && gameOver) {
     // Round restarted — reset overlay for all players
     gameOver = false;
     document.getElementById('overlay-gameover').classList.add('hidden');
@@ -694,9 +696,10 @@ function renderScoreBar() {
 
   if (mode === 'asosye') {
     const teamScores = [scores[0] + scores[2], scores[1] + scores[3]];
+    const bySeats = (s) => players.find(p => p.seat === s);
     const teamNames  = [
-      `${players[0]?.nickname||'P1'} & ${players[2]?.nickname||'P3'}`,
-      `${players[1]?.nickname||'P2'} & ${players[3]?.nickname||'P4'}`
+      `${bySeats(0)?.nickname||'P1'} & ${bySeats(2)?.nickname||'P3'}`,
+      `${bySeats(1)?.nickname||'P2'} & ${bySeats(3)?.nickname||'P4'}`
     ];
     [0,1].forEach(t => {
       const d = document.createElement('div');
@@ -1152,6 +1155,10 @@ async function confirmPlace(side) {
 
   const newHand = me.hand.filter((_, i) => i !== idx);
 
+  // Check Dekabess BEFORE updating board — uses current board ends
+  const wasDekabess = me.hand.length === 1 &&
+    canPlayOnSide(tile, 'left') && canPlayOnSide(tile, 'right');
+
   await db.from('board').update({
     tiles: newTiles,
     left_end: newLeftEnd,
@@ -1160,9 +1167,6 @@ async function confirmPlace(side) {
   
   await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
-  // Check if this was a Dekabess (last tile, could play both sides before placing)
-  const wasDekabess = me.hand.length === 1 &&
-    canPlayOnSide(tile, 'left') && canPlayOnSide(tile, 'right');
 
   if (wasDekabess) {
     triggerDekabessEffect(me.nickname);
@@ -1191,7 +1195,8 @@ async function advanceTurn(myNewHand, isDekabess = false) {
   const { data: events } = await db.from('game_events').select('*')
     .eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4);
   
-  if (events && events.length === 4 && events.every(e => e.action === 'pass')) {
+  const passEvents = (events || []).filter(e => e.action === 'pass');
+  if (passEvents.length >= 4) {
     await endGame(null);
     return;
   }
