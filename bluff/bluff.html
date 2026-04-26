@@ -1818,64 +1818,130 @@ async function supabaseCreateRoom(code) {
 
 async function supabaseJoinRoom(code) {
   try {
-    const { data: room } = await sb.from('rooms').select('*').eq('code', code).single();
-    if (!room) { toast('Room not found!'); return; }
+    const { data: room, error: roomErr } = await sb.from('rooms').select('*').eq('code', code).single();
+    if (roomErr || !room) { toast('Room not found! Check the code.'); return; }
     state.roomId = room.id;
-    state.gameId = room.current_game_id;
+    state.gameId = room.current_game_id; // may be null if game not started yet — that's OK
 
-    const { data: player } = await sb.from('players').insert({
-      room_id: room.id, game_id: state.gameId,
-      session_id: state.sessionId,
-      display_name: state.playerName, avatar_emoji: state.playerEmoji,
-      is_host: false, is_spectator: state.isSpectator
-    }).select().single();
+    // Check for existing session (rejoin)
+    const { data: existing } = await sb.from('players')
+      .select('*').eq('room_id', room.id).eq('session_id', state.sessionId).maybeSingle();
+
+    let player;
+    if (existing) {
+      // Rejoin — update connection status and name
+      const { data: updated } = await sb.from('players').update({
+        is_connected: true, last_seen_at: new Date().toISOString(),
+        display_name: state.playerName, avatar_emoji: state.playerEmoji
+      }).eq('id', existing.id).select().single();
+      player = updated || existing;
+      toast('Rejoined room!');
+    } else {
+      const { data: inserted, error: pErr } = await sb.from('players').insert({
+        room_id: room.id,
+        game_id: state.gameId,
+        session_id: state.sessionId,
+        display_name: state.playerName,
+        avatar_emoji: state.playerEmoji,
+        is_host: false,
+        is_spectator: state.isSpectator
+      }).select().single();
+      if (pErr) throw pErr;
+      player = inserted;
+    }
+
     state.playerId = player.id;
-
     subscribeToRoom();
     showLobby();
-  } catch (e) { toast('Error joining room: ' + e.message); }
+    toast(`Joined room ${code}!`);
+  } catch (e) { toast('Error joining: ' + e.message); console.error(e); }
 }
 
 function subscribeToRoom() {
   if (!sb) return;
-  // Subscribe to players changes
-  const playerSub = sb.channel(`room-${state.roomId}`)
+  const channel = sb.channel(`room-${state.roomId}`)
+    // Players joining/leaving
     .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${state.roomId}` },
       payload => { fetchPlayers(); })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${state.gameId}` },
-      payload => { handleGameUpdate(payload.new); })
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clues', filter: `game_id=eq.${state.gameId}` },
-      payload => { addClueToFeed(payload.new); })
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes', filter: `game_id=eq.${state.gameId}` },
-      payload => { updateVoteCount(payload.new); })
+    // Game phase changes — filter by room_id so non-hosts catch it even before gameId is set
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `room_id=eq.${state.roomId}` },
+      payload => {
+        if (!state.gameId) state.gameId = payload.new.id;
+        handleGameUpdate(payload.new);
+      })
     .subscribe();
-  state.subscriptions.push(playerSub);
+  state.subscriptions.push(channel);
+
+  // Clues & votes — subscribed separately once we have a gameId
+  function subscribeGameEvents() {
+    if (!state.gameId) return;
+    const gameCh = sb.channel(`game-${state.gameId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clues', filter: `game_id=eq.${state.gameId}` },
+        payload => { addClueToFeed(payload.new); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes', filter: `game_id=eq.${state.gameId}` },
+        payload => { updateVoteCount(payload.new); })
+      .subscribe();
+    state.subscriptions.push(gameCh);
+  }
+  subscribeGameEvents();
 }
 
 async function fetchPlayers() {
   const { data } = await sb.from('players').select('*').eq('room_id', state.roomId);
-  if (data) { state.players = data; renderLobbyPlayers(); }
+  if (data) {
+    state.players = data.map(p => ({ ...p, name: p.display_name, emoji: p.avatar_emoji }));
+    renderLobbyPlayers();
+  }
 }
 
 async function supabaseStartGame() {
-  // Pick random word
-  const { data: words } = await sb.from('words').select('*').limit(100);
-  const wordData = randomFrom(words);
+  try {
+    // Pick random word
+    const { data: words } = await sb.from('words').select('id, word, variants, difficulty, category').limit(200);
+    const wordData = randomFrom(words);
 
-  const { error } = await sb.from('games').update({
-    phase: 'word_distribution',
-    word_id: wordData.id,
-    secret_word: wordData.word,
-    phase_ends_at: new Date(Date.now() + 10000).toISOString()
-  }).eq('id', state.gameId);
+    // If no game exists yet, create one
+    let gameId = state.gameId;
+    if (!gameId) {
+      const { data: newGame, error: gErr } = await sb.from('games')
+        .insert({ room_id: state.roomId }).select().single();
+      if (gErr) throw gErr;
+      gameId = newGame.id;
+      state.gameId = gameId;
+    }
 
-  // Assign roles (use DB function)
-  await sb.rpc('assign_roles', {
-    p_game_id: state.gameId,
-    p_enable_double_imposter: state.settings.roles,
-    p_enable_confused: state.settings.variants,
-    p_enable_detective: state.settings.roles
-  });
+    // Update room's current_game_id so joiners can find it
+    await sb.from('rooms').update({ current_game_id: gameId }).eq('id', state.roomId);
+
+    // Assign all players in room to this game
+    await sb.from('players').update({ game_id: gameId }).eq('room_id', state.roomId);
+
+    // Assign roles via DB function
+    await sb.rpc('assign_roles', {
+      p_game_id: gameId,
+      p_enable_double_imposter: state.settings.roles,
+      p_enable_confused: state.settings.variants,
+      p_enable_detective: state.settings.roles
+    });
+
+    // Fetch my assigned role & word
+    const { data: me } = await sb.from('players').select('role, word_shown').eq('id', state.playerId).single();
+    if (me) { state.myRole = me.role; state.myWord = me.word_shown; }
+
+    // Chaos event
+    state.chaosEvent = state.settings.chaos ? pickChaosEvent() : null;
+    state.myObjective = state.settings.objectives ? pickObjective(state.settings) : null;
+
+    // Trigger phase change — this fires handleGameUpdate on ALL clients via realtime
+    await sb.from('games').update({
+      phase: 'word_distribution',
+      word_id: wordData.id,
+      secret_word: wordData.word,
+      started_at: new Date().toISOString(),
+      phase_ends_at: new Date(Date.now() + 10000).toISOString()
+    }).eq('id', gameId);
+
+  } catch(e) { toast('Error starting game: ' + e.message); console.error(e); }
 }
 
 async function supabaseSubmitClue(text) {
@@ -1892,14 +1958,27 @@ async function supabaseCastVote(targetId) {
   });
 }
 
-function handleGameUpdate(game) {
+async function handleGameUpdate(game) {
   if (game.phase !== state.phase) {
     state.phase = game.phase;
-    if (game.phase === 'word_distribution') showWordPhase();
-    else if (game.phase === 'clue') showCluePhase();
+    // Always keep gameId current
+    if (!state.gameId) state.gameId = game.id;
+
+    if (game.phase === 'word_distribution') {
+      // Fetch this player's assigned role and word from DB
+      const { data: me } = await sb.from('players')
+        .select('role, word_shown, objective').eq('id', state.playerId).single();
+      if (me) {
+        state.myRole = me.role;
+        state.myWord = me.word_shown;
+        state.myObjective = me.objective ? OBJECTIVES.find(o => o.type === me.objective) : null;
+      }
+      showWordPhase();
+    }
+    else if (game.phase === 'clue')       showCluePhase();
     else if (game.phase === 'discussion') showDiscussionPhase();
-    else if (game.phase === 'voting') showVotingPhase();
-    else if (game.phase === 'reveal') showRevealPhase();
+    else if (game.phase === 'voting')     showVotingPhase();
+    else if (game.phase === 'reveal')     showRevealPhase();
   }
 }
 
