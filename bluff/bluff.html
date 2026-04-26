@@ -1650,7 +1650,7 @@ function showCluePhase2() {
   );
 }
 
-function submitClue() {
+async function submitClue() {
   if (state.myClueSent) return;
   const input = document.getElementById('clue-input');
   const text = input.value.trim();
@@ -1676,7 +1676,10 @@ function submitClue() {
   document.getElementById('clue-submitted-msg').style.display = 'block';
   toast('Clue submitted! ✓');
 
-  if (!DEMO_MODE) supabaseSubmitClue(text);
+  if (!DEMO_MODE) {
+    await supabaseSubmitClue(text);
+    await checkAllCluesIn();
+  }
 }
 
 function renderClueFeed(containerId, clues) {
@@ -1688,7 +1691,7 @@ function renderClueFeed(containerId, clues) {
   const isBlind   = state.chaosEvent?.type === 'blind_round';
   const isImposter = state.myRole === 'imposter' || state.myRole === 'double_imposter';
   // During clue phase, imposters see clues blurred; discussion phase — all revealed
-  const blurClues  = isImposter && state.phase === 'clue';
+  const blurClues  = isImposter && (state.phase === 'clue' || state.phase === 'clue2');
 
   container.innerHTML = clues.map((c, i) => {
     const text   = c.text || c.content;
@@ -1759,7 +1762,7 @@ async function fetchAndRenderClues(containerId) {
 }
 
 // Called by realtime INSERT on clues table — fires for ALL players including imposter
-function addClueToFeed(row) {
+async function addClueToFeed(row) {
   const player = state.players.find(p => p.id === row.player_id);
   const clue = {
     text: row.content,
@@ -1774,6 +1777,24 @@ function addClueToFeed(row) {
   ['clue-feed', 'discussion-clue-feed'].forEach(id => {
     if (document.getElementById(id)) renderClueFeed(id, state.clues);
   });
+  // Check if all players have submitted — if so, host advances phase
+  await checkAllCluesIn();
+}
+
+async function checkAllCluesIn() {
+  if (state.phase !== 'clue' && state.phase !== 'clue2') return;
+  const expectedClues = state.players.filter(p => !p.is_spectator && !p.isSpectator).length;
+  const submitted = state.clues.length;
+  if (expectedClues > 0 && submitted >= expectedClues) {
+    clearTimers();
+    if (DEMO_MODE) {
+      if (state.phase === 'clue') showReviewPhase();
+      else showDiscussionPhase();
+    } else if (state.isHost) {
+      const nextPhase = state.phase === 'clue' ? 'review' : 'discussion';
+      await sb.from('games').update({ phase: nextPhase }).eq('id', state.gameId);
+    }
+  }
 }
 
 // Shared: check if all players have voted and advance if so
@@ -2408,9 +2429,10 @@ async function supabaseStartGame() {
 }
 
 async function supabaseSubmitClue(text) {
+  const round = state.phase === 'clue2' ? 2 : 1;
   await sb.from('clues').insert({
     game_id: state.gameId, player_id: state.playerId,
-    round: 1, content: text
+    round, content: text
   });
 }
 
