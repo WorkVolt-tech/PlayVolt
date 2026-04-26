@@ -90,6 +90,25 @@ html, body {
 }
 .player-tag.active-turn { border-color: var(--gold); background: rgba(201,168,76,0.1); color: var(--gold); }
 
+/* ── BOARD END INDICATORS ── */
+.end-indicator {
+  position: absolute;
+  background: rgba(0,0,0,0.7);
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+  border: 1px solid;
+  transition: left 0.3s ease, top 0.3s ease;
+}
+.end-indicator.left-end  { color: #64b4ff; border-color: rgba(100,180,255,0.4); }
+.end-indicator.right-end { color: var(--gold); border-color: rgba(201,168,76,0.4); }
+
 /* ── SCORE & ROUND ── */
 .score-bar {
   display: flex; align-items: center; justify-content: center; gap: 1.5rem;
@@ -474,6 +493,8 @@ html, body {
     <div id="board-container" style="position:absolute;inset:0;">
       <!-- snake tiles rendered here -->
     </div>
+    <div class="end-indicator left-end"  id="indicator-left"  style="display:none">◀ LEFT</div>
+    <div class="end-indicator right-end" id="indicator-right" style="display:none">RIGHT ▶</div>
     <div class="drop-zone" id="drop-left"  style="display:none" onclick="handleDropZone('left')">← Left</div>
     <div class="drop-zone" id="drop-right" style="display:none" onclick="handleDropZone('right')">Right →</div>
   </div>
@@ -506,10 +527,11 @@ html, body {
     <h2 id="winner-title">Victory!</h2>
     <p id="winner-desc"></p>
     <table class="scores-table">
-      <thead><tr><th>Player</th><th>Seat</th><th>Pips Left</th></tr></thead>
+      <thead><tr><th>Player</th><th>Seat</th><th>Score</th></tr></thead>
       <tbody id="scores-body"></tbody>
     </table>
-    <button class="btn btn-primary" onclick="location.href='index.html'">Back to Lobby</button>
+    <p id="round-countdown" style="display:none;color:var(--gold);font-size:0.85rem;margin:8px 0 0;text-align:center;"></p>
+    <button class="btn btn-primary" id="btn-back-lobby" onclick="location.href='index.html'" style="display:none;">Back to Lobby</button>
   </div>
 </div>
 
@@ -569,6 +591,11 @@ function renderAll() {
   renderBoard();
   updateTurnState();
   renderScoreBar();
+  if (roomData.status === 'playing' && gameOver) {
+    // Round restarted — reset overlay for non-winner players
+    gameOver = false;
+    document.getElementById('overlay-gameover').classList.add('hidden');
+  }
   if (roomData.status === 'finished' || roomData.status === 'match_over') showGameOver(roomData.current_turn);
   if (gameMode === 'solo') scheduleAI();
 }
@@ -881,6 +908,39 @@ function renderBoard() {
   // Drop zones removed from board — side picker at bottom handles left/right choice
   dropL.style.display = 'none';
   dropR.style.display = 'none';
+
+  // ── END INDICATORS ──────────────────────────────────────────────
+  const indL = document.getElementById('indicator-left');
+  const indR = document.getElementById('indicator-right');
+
+  if (positions.length > 0) {
+    const posFirst = positions[0];
+    const posLast  = positions[positions.length - 1];
+
+    // LEFT indicator: above tile 0 (the first tile, always at center)
+    indL.style.display = 'block';
+    indL.style.left = `${Math.round(posFirst.x - posFirst.pw / 2)}px`;
+    indL.style.top  = `${Math.round(posFirst.y - posFirst.ph / 2 - 22)}px`;
+
+    // RIGHT indicator: follows the last tile placed
+    indR.style.display = 'block';
+    if (posLast.inCorner) {
+      // Corner tile — place indicator to the right of it
+      indR.style.left = `${Math.round(posLast.x + posLast.pw / 2 + 4)}px`;
+      indR.style.top  = `${Math.round(posLast.y - 10)}px`;
+    } else if (posLast.dir === -1) {
+      // Going left — indicator below last tile
+      indR.style.left = `${Math.round(posLast.x - posLast.pw / 2)}px`;
+      indR.style.top  = `${Math.round(posLast.y + posLast.ph / 2 + 4)}px`;
+    } else {
+      // Going right — indicator to the right of last tile
+      indR.style.left = `${Math.round(posLast.x + posLast.pw / 2 + 4)}px`;
+      indR.style.top  = `${Math.round(posLast.y - 10)}px`;
+    }
+  } else {
+    indL.style.display = 'none';
+    indR.style.display = 'none';
+  }
 }
 
 function updateTurnState() {
@@ -1175,6 +1235,8 @@ function showGameOver(winningSeat) {
       tbody.appendChild(tr);
     });
 
+    document.getElementById('btn-back-lobby').style.display = 'block';
+    document.getElementById('round-countdown').style.display = 'none';
     document.getElementById('overlay-gameover').classList.remove('hidden');
     return;
   }
@@ -1209,11 +1271,31 @@ function showGameOver(winningSeat) {
     tbody.appendChild(tr);
   });
 
+  // Show countdown to all players
+  const countdownEl = document.getElementById('round-countdown');
+  if (countdownEl) {
+    let secs = 5;
+    countdownEl.textContent = `Next round in ${secs}s…`;
+    countdownEl.style.display = 'block';
+    const interval = setInterval(() => {
+      secs--;
+      if (secs > 0) {
+        countdownEl.textContent = `Next round in ${secs}s…`;
+      } else {
+        clearInterval(interval);
+        countdownEl.textContent = 'Starting…';
+      }
+    }, 1000);
+  }
+
   document.getElementById('overlay-gameover').classList.remove('hidden');
 
-  // Auto-restart next round after 5s — only the round winner triggers it
+  // Winner triggers the actual restart — everyone else waits for DB update
   if (myInfo.seat === winningSeat) {
     setTimeout(() => startNextRound(), 5000);
+  } else {
+    // Non-winners: hide overlay when DB fires status='playing'
+    // (handled by renderAll → status check)
   }
 }
 
@@ -1223,6 +1305,7 @@ async function startNextRound() {
   if (!check || check.status !== 'finished') return;
   gameOver = false;
   document.getElementById('overlay-gameover').classList.add('hidden');
+  document.getElementById('round-countdown').style.display = 'none';
 
   const tiles = shuffle(generateDominoSet());
   const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
