@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riot Roll — Dodge</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green:  #00FF88;
+    --yellow: #FFE000;
+    --red:    #FF2D2D;
+    --blue:   #00C2FF;
+    --dark:   #0A0A0A;
+    --mid:    #111111;
+    --text:   #F0F0F0;
+  }
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    padding-top: 16px;
+    touch-action: none;
+  }
+  #game-label { font-size: clamp(1.1rem, 4vw, 1.5rem); font-weight: 700; letter-spacing: 0.3em; color: var(--yellow); margin-bottom: 4px; }
+  #stake-label { font-size: 0.7rem; letter-spacing: 0.15em; opacity: 0.4; margin-bottom: 10px; }
+  #hud { display: flex; justify-content: space-between; width: min(360px, 92vw); font-size: 0.7rem; letter-spacing: 0.1em; opacity: 0.65; margin-bottom: 8px; }
+
+  /* Game canvas area */
+  #arena {
+    position: relative;
+    width: min(360px, 92vw);
+    height: min(480px, 60vh);
+    background: var(--mid);
+    border-radius: 12px;
+    border: 2px solid #222;
+    overflow: hidden;
+    cursor: none;
+  }
+
+  /* Player */
+  #player {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 20px rgba(0,194,255,0.6);
+    bottom: 20px;
+    transition: left 0.05s linear;
+    pointer-events: none;
+  }
+  #player.hit {
+    background: var(--red);
+    box-shadow: 0 0 30px rgba(255,45,45,0.8);
+    animation: player-hit 0.3s ease;
+  }
+  @keyframes player-hit {
+    0%,100% { transform: scale(1); }
+    50%     { transform: scale(1.5); }
+  }
+
+  /* Obstacles */
+  .obstacle {
+    position: absolute;
+    border-radius: 6px;
+    pointer-events: none;
+  }
+
+  /* Coins */
+  .coin {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--yellow);
+    box-shadow: 0 0 10px rgba(255,224,0,0.5);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  /* Lives */
+  #lives { display: flex; gap: 6px; }
+  .life  { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+  .life.lost { background: #333; }
+
+  /* Control zones (left / right tap) */
+  #controls {
+    display: flex;
+    width: min(360px, 92vw);
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .ctrl-btn {
+    flex: 1;
+    height: 52px;
+    background: var(--mid);
+    border: 2px solid #2a2a2a;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: background 0.07s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ctrl-btn:active { background: #2a2a2a; }
+
+  #timer-wrap { width: min(360px, 92vw); height: 3px; background: #1f1f1f; border-radius: 2px; overflow: hidden; margin-top: 8px; }
+  #timer-bar  { height: 100%; background: var(--yellow); width: 100%; transform-origin: left; }
+
+  #result-area { margin-top: 16px; text-align: center; min-height: 50px; }
+  #outcome { font-size: clamp(1.5rem, 7vw, 2.2rem); font-weight: 700; letter-spacing: 0.1em; display: none; }
+  #outcome.win  { color: var(--green); }
+  #outcome.lose { color: var(--red); }
+  #sub-result { font-size: 0.7rem; letter-spacing: 0.1em; opacity: 0.5; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div id="game-label">DODGE</div>
+<div id="stake-label">RENT AT STAKE: <span id="stake-amount">£0</span></div>
+<div id="hud">
+  <span>SCORE: <span id="score-display" style="color:var(--green)">0</span></span>
+  <div id="lives"></div>
+  <span id="timer-text" style="color:var(--yellow)">15s</span>
+</div>
+
+<div id="arena">
+  <div id="player"></div>
+</div>
+
+<div id="controls">
+  <div class="ctrl-btn" id="btn-left">◀</div>
+  <div class="ctrl-btn" id="btn-right">▶</div>
+</div>
+
+<div id="timer-wrap"><div id="timer-bar"></div></div>
+<div id="result-area">
+  <div id="outcome"></div>
+  <div id="sub-result"></div>
+</div>
+
+<script>
+  const p            = new URLSearchParams(location.search)
+  const MINIGAME_ID  = p.get('minigame_id') || 'demo'
+  const PLAYER_ID    = p.get('player_id')   || 'demo'
+  const RENT         = parseInt(p.get('rent') || '0')
+  const TOKEN        = p.get('token')        || ''
+  const SUPABASE_URL = p.get('url')          || ''
+  const SUPABASE_KEY = p.get('key')          || ''
+
+  document.getElementById('stake-amount').textContent = `£${RENT}`
+
+  const GAME_DURATION  = 15000
+  const PLAYER_SPEED   = 28        // px per move
+  const MAX_LIVES      = 3
+  const OBSTACLE_COLORS= ['#FF2D2D','#FF8C00','#FF2D9E']
+
+  const arena        = document.getElementById('arena')
+  const playerEl     = document.getElementById('player')
+  const scoreDisplay = document.getElementById('score-display')
+  const timerBar     = document.getElementById('timer-bar')
+  const timerText    = document.getElementById('timer-text')
+  const livesDiv     = document.getElementById('lives')
+  const outcome      = document.getElementById('outcome')
+  const subResult    = document.getElementById('sub-result')
+
+  const AW = arena.offsetWidth
+  const AH = arena.offsetHeight
+  const PW = 36
+
+  let playerX  = (AW - PW) / 2
+  let lives    = MAX_LIVES
+  let score    = 0
+  let finished = false
+  let startTime= performance.now()
+  let rafId    = null
+  let obstacles= []
+  let coins    = []
+  let spawnTimer = 0
+  let coinTimer  = 0
+  let invincible = false   // brief invincibility after hit
+  let pollId   = null
+
+  // Build lives display
+  for (let i = 0; i < MAX_LIVES; i++) {
+    const d = document.createElement('div')
+    d.className = 'life'
+    d.id = `life-${i}`
+    livesDiv.appendChild(d)
+  }
+
+  function updatePlayerPos() {
+    playerEl.style.left = playerX + 'px'
+  }
+  updatePlayerPos()
+
+  // ── Controls ────────────────────────────────────────────────
+  document.getElementById('btn-left').addEventListener('pointerdown', () => movePlayer(-1))
+  document.getElementById('btn-right').addEventListener('pointerdown', () => movePlayer(1))
+
+  // Swipe / drag support
+  let touchStartX = null
+  arena.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX }, { passive: true })
+  arena.addEventListener('touchmove', e => {
+    if (touchStartX === null) return
+    const dx = e.touches[0].clientX - touchStartX
+    if (Math.abs(dx) > 15) {
+      movePlayer(dx > 0 ? 1 : -1)
+      touchStartX = e.touches[0].clientX
+    }
+  }, { passive: true })
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft')  movePlayer(-1)
+    if (e.key === 'ArrowRight') movePlayer(1)
+  })
+
+  function movePlayer(dir) {
+    if (finished) return
+    playerX = Math.max(0, Math.min(AW - PW, playerX + dir * PLAYER_SPEED))
+    updatePlayerPos()
+  }
+
+  // ── Spawn obstacles ─────────────────────────────────────────
+  function spawnObstacle() {
+    const elapsed = (performance.now() - startTime) / 1000
+    const w = 20 + Math.random() * 40
+    const x = Math.random() * (AW - w)
+    const speed = 2.5 + elapsed * 0.3 + Math.random() * 1.5
+
+    const el = document.createElement('div')
+    el.className = 'obstacle'
+    el.style.cssText = `width:${w}px;height:${w * 0.5}px;left:${x}px;top:-30px;background:${OBSTACLE_COLORS[Math.floor(Math.random()*OBSTACLE_COLORS.length)]};`
+    arena.appendChild(el)
+    obstacles.push({ el, x, y: -30, w, h: w * 0.5, speed })
+  }
+
+  function spawnCoin() {
+    const x = 10 + Math.random() * (AW - 30)
+    const el = document.createElement('div')
+    el.className = 'coin'
+    el.textContent = '¢'
+    el.style.cssText = `left:${x}px;top:-25px;`
+    arena.appendChild(el)
+    coins.push({ el, x, y: -25, speed: 1.8 + Math.random() })
+  }
+
+  // ── Collision detection ─────────────────────────────────────
+  function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh, margin = 6) {
+    return ax + margin < bx + bw && ax + aw - margin > bx &&
+           ay + margin < by + bh && ay + ah - margin > by
+  }
+
+  function loseLife() {
+    if (invincible) return
+    lives--
+    invincible = true
+    playerEl.classList.add('hit')
+    document.getElementById(`life-${lives}`)?.classList.add('lost')
+    setTimeout(() => { playerEl.classList.remove('hit'); invincible = false }, 900)
+    if (lives <= 0) endGame()
+  }
+
+  // ── Main game loop ───────────────────────────────────────────
+  let lastTime = performance.now()
+  function gameLoop(now) {
+    if (finished) return
+    const dt = Math.min(now - lastTime, 50)
+    lastTime = now
+
+    const elapsed = now - startTime
+
+    // Timer
+    const rem = Math.max(0, 1 - elapsed / GAME_DURATION)
+    timerBar.style.transform = `scaleX(${rem})`
+    timerText.textContent = `${Math.ceil(rem * GAME_DURATION / 1000)}s`
+    if (rem <= 0.25) timerBar.style.background = 'var(--red)'
+    if (rem <= 0) { endGame(); return }
+
+    // Spawn
+    spawnTimer += dt
+    coinTimer  += dt
+    const spawnInterval = Math.max(400, 1200 - elapsed * 0.03)
+    if (spawnTimer > spawnInterval) { spawnObstacle(); spawnTimer = 0 }
+    if (coinTimer  > 2000)          { spawnCoin();     coinTimer  = 0 }
+
+    // Passive score over time
+    score += Math.round(dt * 0.05)
+    scoreDisplay.textContent = score
+
+    const py = AH - 20 - PW
+
+    // Move & check obstacles
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const o = obstacles[i]
+      o.y += o.speed * (dt / 16)
+      o.el.style.top = o.y + 'px'
+
+      // Collision
+      if (rectsOverlap(playerX, py, PW, PW, o.x, o.y, o.w, o.h)) {
+        loseLife()
+        o.el.remove()
+        obstacles.splice(i, 1)
+        continue
+      }
+      if (o.y > AH + 10) { o.el.remove(); obstacles.splice(i, 1) }
+    }
+
+    // Move & check coins
+    for (let i = coins.length - 1; i >= 0; i--) {
+      const c = coins[i]
+      c.y += c.speed * (dt / 16)
+      c.el.style.top = c.y + 'px'
+
+      if (rectsOverlap(playerX, py, PW, PW, c.x, c.y, 20, 20, 0)) {
+        score += 50
+        scoreDisplay.textContent = score
+        c.el.remove()
+        coins.splice(i, 1)
+        continue
+      }
+      if (c.y > AH + 10) { c.el.remove(); coins.splice(i, 1) }
+    }
+
+    rafId = requestAnimationFrame(gameLoop)
+  }
+
+  function endGame() {
+    if (finished) return
+    finished = true
+    cancelAnimationFrame(rafId)
+    submitScore(score)
+  }
+
+  async function submitScore(finalScore) {
+    subResult.textContent = `YOUR SCORE: ${finalScore}`
+    if (MINIGAME_ID === 'demo') {
+      const opp = 100 + Math.floor(Math.random() * 600)
+      setTimeout(() => showResult(finalScore >= opp ? 'win' : 'lose', finalScore), 800)
+      return
+    }
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+        body: JSON.stringify({ minigame_id: MINIGAME_ID, score: finalScore })
+      })
+      const data = await res.json()
+      if (data.resolved) {
+        showResult(data.winner_id === PLAYER_ID ? 'win' : 'lose', finalScore)
+      } else {
+        subResult.textContent = `SCORE: ${finalScore} — WAITING…`
+        pollId = setInterval(async () => {
+          try {
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/mini_games?id=eq.${MINIGAME_ID}&select=status,winner_id`,
+              { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${TOKEN}` } })
+            const [mg] = await r.json()
+            if (mg?.status === 'resolved') { clearInterval(pollId); showResult(mg.winner_id === PLAYER_ID ? 'win' : 'lose', finalScore) }
+          } catch(e) {}
+        }, 2000)
+        setTimeout(() => clearInterval(pollId), 25000)
+      }
+    } catch(err) { subResult.textContent = 'CONNECTION ERROR' }
+  }
+
+  function showResult(result, myScore) {
+    outcome.style.display = 'block'
+    outcome.className = result === 'win' ? 'win' : 'lose'
+    outcome.textContent = result === 'win' ? 'YOU WIN!' : 'YOU LOSE'
+    subResult.textContent = `SCORE: ${myScore} pts`
+    setTimeout(() => window.parent?.postMessage({ type: 'minigame_done', result, score: myScore }, '*'), 2500)
+  }
+
+  rafId = requestAnimationFrame(gameLoop)
+</script>
+</body>
+</html>

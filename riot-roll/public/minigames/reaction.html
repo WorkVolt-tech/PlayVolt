@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riot Roll — Reaction Test</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red:    #FF2D2D;
+    --green:  #00FF88;
+    --yellow: #FFE000;
+    --dark:   #0A0A0A;
+    --mid:    #1A1A1A;
+    --text:   #F0F0F0;
+  }
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #game-label {
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--yellow);
+    margin-bottom: 6px;
+  }
+  #stake-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    opacity: 0.4;
+    margin-bottom: 48px;
+  }
+  #arena {
+    position: relative;
+    width: min(340px, 85vw);
+    height: min(340px, 85vw);
+    border-radius: 50%;
+    background: var(--mid);
+    border: 3px solid #2a2a2a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  #arena.waiting {
+    border-color: var(--red);
+    box-shadow: 0 0 40px rgba(255,45,45,0.2);
+  }
+  #arena.go {
+    border-color: var(--green);
+    box-shadow: 0 0 80px rgba(0,255,136,0.4);
+    animation: pop 0.3s ease;
+  }
+  #arena.too-early {
+    border-color: var(--red);
+    box-shadow: 0 0 80px rgba(255,45,45,0.5);
+    animation: shake 0.4s ease;
+  }
+  #arena.done {
+    cursor: default;
+    border-color: var(--yellow);
+    box-shadow: 0 0 40px rgba(255,224,0,0.2);
+  }
+  @keyframes pop {
+    0%   { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25%     { transform: translateX(-10px); }
+    75%     { transform: translateX(10px); }
+  }
+  #big-text {
+    font-size: clamp(3rem, 15vw, 5rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-align: center;
+  }
+  #sub-text {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    opacity: 0.4;
+    margin-top: 12px;
+    text-align: center;
+    padding: 0 20px;
+  }
+  #progress-wrap {
+    width: min(340px, 85vw);
+    height: 3px;
+    background: #1f1f1f;
+    border-radius: 2px;
+    margin-top: 28px;
+    overflow: hidden;
+  }
+  #progress-bar {
+    height: 100%;
+    background: var(--yellow);
+    width: 100%;
+    transform-origin: left;
+  }
+  #result-area {
+    margin-top: 28px;
+    text-align: center;
+    min-height: 80px;
+  }
+  #outcome {
+    font-size: clamp(1.6rem, 8vw, 2.6rem);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    display: none;
+  }
+  #outcome.win  { color: var(--green); }
+  #outcome.lose { color: var(--red); }
+  #outcome.tie  { color: var(--yellow); }
+  #scores-list {
+    margin-top: 12px;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+    line-height: 2;
+  }
+  #waiting-msg {
+    margin-top: 16px;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    opacity: 0.4;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-label">REACTION TEST</div>
+<div id="stake-label">RENT AT STAKE: <span id="stake-amount">£0</span></div>
+
+<div id="arena" class="waiting">
+  <div id="big-text">WAIT</div>
+  <div id="sub-text">TAP WHEN IT TURNS GREEN</div>
+</div>
+
+<div id="progress-wrap">
+  <div id="progress-bar"></div>
+</div>
+
+<div id="result-area">
+  <div id="outcome"></div>
+  <div id="scores-list"></div>
+  <div id="waiting-msg">WAITING FOR OPPONENT…</div>
+</div>
+
+<script>
+  // ── URL params passed by the board ──────────────────────────
+  const p            = new URLSearchParams(location.search)
+  const MINIGAME_ID  = p.get('minigame_id') || 'demo'
+  const PLAYER_ID    = p.get('player_id')   || 'demo'
+  const RENT         = parseInt(p.get('rent') || '0')
+  const TOKEN        = p.get('token')        || ''
+  const SUPABASE_URL = p.get('url')          || ''
+  const SUPABASE_KEY = p.get('key')          || ''
+
+  document.getElementById('stake-amount').textContent = `£${RENT}`
+
+  // ── State ───────────────────────────────────────────────────
+  let phase       = 'idle'   // idle | waiting | go | done
+  let goTime      = 0
+  let waitTimer   = null
+  let myScore     = null
+  let gameExpiry  = null
+  let rafId       = null
+
+  const arena      = document.getElementById('arena')
+  const bigText    = document.getElementById('big-text')
+  const subText    = document.getElementById('sub-text')
+  const bar        = document.getElementById('progress-bar')
+  const outcome    = document.getElementById('outcome')
+  const scoresList = document.getElementById('scores-list')
+  const waitingMsg = document.getElementById('waiting-msg')
+
+  // ── Progress bar animation ──────────────────────────────────
+  function startProgressBar(durationMs) {
+    const start = performance.now()
+    function tick(now) {
+      const elapsed = now - start
+      const pct = Math.max(0, 1 - elapsed / durationMs)
+      bar.style.transform = `scaleX(${pct})`
+      if (pct > 0) rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+  }
+
+  function stopProgressBar() {
+    cancelAnimationFrame(rafId)
+  }
+
+  // ── Start the game ──────────────────────────────────────────
+  function startGame() {
+    phase = 'waiting'
+    arena.className = 'waiting'
+    bigText.textContent = '...'
+    subText.textContent = 'WAIT FOR GREEN'
+    subText.style.opacity = '0.4'
+
+    // Random delay 1.5s – 5s before going green
+    const delay = 1500 + Math.random() * 3500
+    waitTimer = setTimeout(() => {
+      if (phase !== 'waiting') return
+      phase = 'go'
+      goTime = performance.now()
+      arena.className = 'go'
+      bigText.textContent = 'GO!'
+      bigText.style.color = 'var(--green)'
+      subText.textContent = 'TAP NOW!'
+    }, delay)
+
+    startProgressBar(15000)
+  }
+
+  // ── Handle tap / click ──────────────────────────────────────
+  arena.addEventListener('pointerdown', () => {
+    if (phase === 'idle') {
+      startGame()
+      return
+    }
+
+    if (phase === 'waiting') {
+      // Too early!
+      clearTimeout(waitTimer)
+      stopProgressBar()
+      phase = 'done'
+      arena.className = 'too-early'
+      bigText.textContent = 'EARLY!'
+      bigText.style.color = 'var(--red)'
+      subText.textContent = 'YOU TAPPED TOO SOON'
+      // Submit a bad score (high ms = slow)
+      submitScore(9999)
+      return
+    }
+
+    if (phase === 'go') {
+      const reactionMs = Math.round(performance.now() - goTime)
+      myScore = reactionMs
+      phase = 'done'
+      stopProgressBar()
+      arena.className = 'done'
+      bigText.textContent = `${reactionMs}`
+      bigText.style.color = 'var(--yellow)'
+      subText.textContent = 'MILLISECONDS'
+      submitScore(reactionMs)
+    }
+  })
+
+  // ── Submit score to Edge Function ───────────────────────────
+  async function submitScore(score) {
+    waitingMsg.style.display = 'block'
+
+    // Demo mode — just show result locally
+    if (MINIGAME_ID === 'demo') {
+      setTimeout(() => showResult(score < 500 ? 'win' : 'lose', score), 1000)
+      return
+    }
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${TOKEN}`
+        },
+        body: JSON.stringify({ minigame_id: MINIGAME_ID, score })
+      })
+      const data = await res.json()
+
+      if (data.resolved) {
+        const won = data.winner_id === PLAYER_ID
+        showResult(won ? 'win' : 'lose', score, data.scores)
+      } else {
+        // Waiting for opponent — poll via Supabase Realtime instead
+        waitingMsg.textContent = `WAITING FOR OPPONENT… (${data.waiting_for} LEFT)`
+        listenForResolution()
+      }
+    } catch (err) {
+      console.error(err)
+      waitingMsg.textContent = 'CONNECTION ERROR'
+    }
+  }
+
+  // ── Listen for resolution via Supabase Realtime ─────────────
+  function listenForResolution() {
+    if (!SUPABASE_URL || !SUPABASE_KEY) return
+
+    // Use Supabase JS client loaded from CDN in index.html
+    // Here we poll every 2s as a simple fallback
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/mini_games?id=eq.${MINIGAME_ID}&select=status,winner_id,scores`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${TOKEN}` } }
+        )
+        const [mg] = await res.json()
+        if (mg?.status === 'resolved') {
+          clearInterval(poll)
+          const won = mg.winner_id === PLAYER_ID
+          showResult(won ? 'win' : 'lose', myScore, mg.scores)
+        }
+      } catch (e) { /* keep polling */ }
+    }, 2000)
+
+    // Stop polling after 20s regardless
+    setTimeout(() => clearInterval(poll), 20000)
+  }
+
+  // ── Show final result ────────────────────────────────────────
+  function showResult(result, myMs, allScores) {
+    waitingMsg.style.display = 'none'
+    outcome.style.display = 'block'
+
+    if (result === 'win') {
+      outcome.className = 'win'
+      outcome.textContent = 'YOU WIN!'
+    } else if (result === 'lose') {
+      outcome.className = 'lose'
+      outcome.textContent = 'YOU LOSE'
+    } else {
+      outcome.className = 'tie'
+      outcome.textContent = 'TIE!'
+    }
+
+    if (allScores) {
+      scoresList.innerHTML = Object.entries(allScores)
+        .sort((a, b) => a[1] - b[1])
+        .map(([pid, ms]) =>
+          `<div>${pid === PLAYER_ID ? '▶ YOU' : 'OPP'}: ${ms}ms</div>`
+        ).join('')
+    } else if (myMs) {
+      scoresList.innerHTML = `<div>YOUR TIME: ${myMs}ms</div>`
+    }
+
+    // Notify parent window (board) that mini-game is done
+    setTimeout(() => {
+      window.parent?.postMessage({ type: 'minigame_done', result, score: myMs }, '*')
+    }, 2500)
+  }
+
+  // ── Auto-start ───────────────────────────────────────────────
+  bigText.textContent = 'TAP'
+  subText.textContent = 'TO START'
+  subText.style.opacity = '0.4'
+</script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riot Roll — Aim Challenge</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green:  #00FF88;
+    --yellow: #FFE000;
+    --red:    #FF2D2D;
+    --dark:   #0A0A0A;
+    --mid:    #1A1A1A;
+    --text:   #F0F0F0;
+  }
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    padding-top: 20px;
+  }
+  #game-label {
+    font-size: clamp(1.1rem, 4vw, 1.6rem);
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--yellow);
+    margin-bottom: 4px;
+  }
+  #stake-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    opacity: 0.4;
+    margin-bottom: 12px;
+  }
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    width: min(400px, 96vw);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    opacity: 0.7;
+    margin-bottom: 10px;
+  }
+  #score-display { color: var(--green); }
+  #combo-display { color: var(--yellow); }
+  #hits-display  { color: var(--text); }
+
+  /* Arena */
+  #arena {
+    position: relative;
+    width: min(400px, 96vw);
+    height: min(400px, 60vh);
+    background: var(--mid);
+    border-radius: 12px;
+    border: 2px solid #2a2a2a;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  /* Target */
+  .target {
+    position: absolute;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.08s ease;
+    cursor: crosshair;
+    pointer-events: all;
+  }
+  .target::before {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    width: 60%;
+    height: 60%;
+    background: rgba(255,255,255,0.08);
+  }
+  .target.hit {
+    animation: hit-pop 0.25s ease forwards;
+    pointer-events: none;
+  }
+  .target.miss-flash {
+    animation: miss-flash 0.2s ease;
+  }
+  @keyframes hit-pop {
+    0%   { transform: scale(1); opacity: 1; }
+    60%  { transform: scale(1.4); opacity: 0.5; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+  @keyframes miss-flash {
+    0%,100% { filter: brightness(1); }
+    50%     { filter: brightness(2); }
+  }
+
+  /* Miss flash on arena */
+  #arena.miss-bg {
+    animation: bg-flash 0.15s ease;
+  }
+  @keyframes bg-flash {
+    0%,100% { background: var(--mid); }
+    50%     { background: #2a1010; }
+  }
+
+  /* Hit burst */
+  .burst {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 50%;
+    animation: burst-out 0.3s ease forwards;
+  }
+  @keyframes burst-out {
+    0%   { transform: scale(0); opacity: 0.8; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+
+  /* Timer bar */
+  #timer-wrap {
+    width: min(400px, 96vw);
+    height: 4px;
+    background: #1f1f1f;
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  #timer-bar {
+    height: 100%;
+    background: var(--yellow);
+    width: 100%;
+    transform-origin: left;
+  }
+
+  #result-area {
+    margin-top: 20px;
+    text-align: center;
+    min-height: 60px;
+  }
+  #outcome {
+    font-size: clamp(1.6rem, 8vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    display: none;
+  }
+  #outcome.win  { color: var(--green); }
+  #outcome.lose { color: var(--red); }
+  #sub-result {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-label">AIM CHALLENGE</div>
+<div id="stake-label">RENT AT STAKE: <span id="stake-amount">£0</span></div>
+
+<div id="hud">
+  <span>SCORE: <span id="score-display">0</span></span>
+  <span>COMBO: <span id="combo-display">x1</span></span>
+  <span>HITS: <span id="hits-display">0</span></span>
+</div>
+
+<div id="arena"></div>
+
+<div id="timer-wrap"><div id="timer-bar"></div></div>
+
+<div id="result-area">
+  <div id="outcome"></div>
+  <div id="sub-result"></div>
+</div>
+
+<script>
+  const p            = new URLSearchParams(location.search)
+  const MINIGAME_ID  = p.get('minigame_id') || 'demo'
+  const PLAYER_ID    = p.get('player_id')   || 'demo'
+  const RENT         = parseInt(p.get('rent') || '0')
+  const TOKEN        = p.get('token')        || ''
+  const SUPABASE_URL = p.get('url')          || ''
+  const SUPABASE_KEY = p.get('key')          || ''
+
+  document.getElementById('stake-amount').textContent = `£${RENT}`
+
+  const GAME_DURATION  = 15000  // 15 seconds
+  const BASE_SCORE     = 100    // points per hit
+  const TARGET_COLORS  = ['#FF2D2D','#00FF88','#00C2FF','#FFE000','#C97BFF']
+  const MIN_TARGET_MS  = 600    // target disappears after this long
+  const MAX_TARGET_MS  = 1800
+
+  let score     = 0
+  let hits      = 0
+  let combo     = 1
+  let missStreak= 0
+  let finished  = false
+  let startTime = performance.now()
+  let rafId     = null
+  let pollId    = null
+  let activeTargets = []
+
+  const arena        = document.getElementById('arena')
+  const scoreDisplay = document.getElementById('score-display')
+  const comboDisplay = document.getElementById('combo-display')
+  const hitsDisplay  = document.getElementById('hits-display')
+  const timerBar     = document.getElementById('timer-bar')
+  const outcome      = document.getElementById('outcome')
+  const subResult    = document.getElementById('sub-result')
+
+  // ── Spawn a target ───────────────────────────────────────────
+  function spawnTarget() {
+    if (finished) return
+
+    const arenaW = arena.offsetWidth
+    const arenaH = arena.offsetHeight
+
+    // Size: bigger = easier = less points. Gets smaller over time
+    const elapsed = performance.now() - startTime
+    const progress = elapsed / GAME_DURATION
+    const size = Math.max(36, 80 - progress * 35) // 80px → 36px over time
+
+    const x = size/2 + Math.random() * (arenaW - size)
+    const y = size/2 + Math.random() * (arenaH - size)
+    const color = TARGET_COLORS[Math.floor(Math.random() * TARGET_COLORS.length)]
+    const lifespan = MIN_TARGET_MS + Math.random() * (MAX_TARGET_MS - MIN_TARGET_MS)
+
+    const target = document.createElement('div')
+    target.className = 'target'
+    target.style.cssText = `
+      width: ${size}px;
+      height: ${size}px;
+      left: ${x - size/2}px;
+      top: ${y - size/2}px;
+      background: ${color};
+      opacity: 0.9;
+    `
+
+    // Shrink animation as it ages
+    const born = performance.now()
+    const shrinkRaf = requestAnimationFrame(function shrink() {
+      const age = performance.now() - born
+      const remaining = 1 - age / lifespan
+      if (remaining <= 0) {
+        if (target.parentNode) {
+          // Missed — penalize combo
+          combo = 1
+          missStreak++
+          comboDisplay.textContent = `x${combo}`
+          arena.classList.add('miss-bg')
+          setTimeout(() => arena.classList.remove('miss-bg'), 150)
+          target.remove()
+        }
+        return
+      }
+      target.style.opacity = Math.max(0.15, remaining * 0.9)
+      target.style.transform = `scale(${0.6 + remaining * 0.4})`
+      requestAnimationFrame(shrink)
+    })
+
+    target.addEventListener('pointerdown', (e) => {
+      e.stopPropagation()
+      if (target.classList.contains('hit')) return
+      target.classList.add('hit')
+
+      // Points: bigger target = less points
+      const pointsEarned = Math.round((BASE_SCORE * (60 / size)) * combo)
+      score += pointsEarned
+      hits++
+      combo = Math.min(8, combo + 1)
+      missStreak = 0
+
+      scoreDisplay.textContent = score
+      comboDisplay.textContent = `x${combo}`
+      hitsDisplay.textContent = hits
+
+      // Burst effect
+      const burst = document.createElement('div')
+      burst.className = 'burst'
+      burst.style.cssText = `
+        width: ${size}px; height: ${size}px;
+        left: ${parseFloat(target.style.left)}px;
+        top: ${parseFloat(target.style.top)}px;
+        background: ${color};
+      `
+      arena.appendChild(burst)
+      setTimeout(() => burst.remove(), 300)
+
+      setTimeout(() => target.remove(), 250)
+    })
+
+    arena.appendChild(target)
+
+    // Schedule next target
+    const nextDelay = 300 + Math.random() * 400
+    setTimeout(spawnTarget, nextDelay)
+  }
+
+  // ── Click on arena (miss) ────────────────────────────────────
+  arena.addEventListener('pointerdown', (e) => {
+    if (e.target === arena) {
+      combo = Math.max(1, combo - 1)
+      comboDisplay.textContent = `x${combo}`
+    }
+  })
+
+  // ── Timer ─────────────────────────────────────────────────────
+  function tick() {
+    const elapsed = performance.now() - startTime
+    const remaining = Math.max(0, 1 - elapsed / GAME_DURATION)
+    timerBar.style.transform = `scaleX(${remaining})`
+    if (remaining <= 0.33) timerBar.style.background = 'var(--red)'
+    if (remaining <= 0 && !finished) {
+      endGame()
+    } else if (!finished) {
+      rafId = requestAnimationFrame(tick)
+    }
+  }
+
+  // ── End ───────────────────────────────────────────────────────
+  function endGame() {
+    if (finished) return
+    finished = true
+    cancelAnimationFrame(rafId)
+    // Remove all remaining targets
+    arena.querySelectorAll('.target').forEach(t => t.remove())
+    submitScore(score)
+  }
+
+  // ── Submit ────────────────────────────────────────────────────
+  async function submitScore(finalScore) {
+    subResult.textContent = `YOUR SCORE: ${finalScore}`
+
+    if (MINIGAME_ID === 'demo') {
+      const oppScore = 200 + Math.floor(Math.random() * 800)
+      setTimeout(() => showResult(finalScore >= oppScore ? 'win' : 'lose', finalScore), 800)
+      return
+    }
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${TOKEN}`
+        },
+        body: JSON.stringify({ minigame_id: MINIGAME_ID, score: finalScore })
+      })
+      const data = await res.json()
+      if (data.resolved) {
+        showResult(data.winner_id === PLAYER_ID ? 'win' : 'lose', finalScore, data.scores)
+      } else {
+        subResult.textContent = `YOUR SCORE: ${finalScore} — WAITING FOR OPPONENT…`
+        listenForResolution(finalScore)
+      }
+    } catch (err) {
+      subResult.textContent = 'CONNECTION ERROR'
+    }
+  }
+
+  function listenForResolution(myFinalScore) {
+    pollId = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/mini_games?id=eq.${MINIGAME_ID}&select=status,winner_id,scores`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${TOKEN}` } }
+        )
+        const [mg] = await res.json()
+        if (mg?.status === 'resolved') {
+          clearInterval(pollId)
+          showResult(mg.winner_id === PLAYER_ID ? 'win' : 'lose', myFinalScore, mg.scores)
+        }
+      } catch (e) {}
+    }, 2000)
+    setTimeout(() => clearInterval(pollId), 25000)
+  }
+
+  function showResult(result, myScore, allScores) {
+    outcome.style.display = 'block'
+    if (result === 'win') {
+      outcome.className = 'win'
+      outcome.textContent = 'YOU WIN!'
+    } else {
+      outcome.className = 'lose'
+      outcome.textContent = 'YOU LOSE'
+    }
+    subResult.textContent = `YOUR SCORE: ${myScore} pts`
+    setTimeout(() => {
+      window.parent?.postMessage({ type: 'minigame_done', result, score: myScore }, '*')
+    }, 2500)
+  }
+
+  // ── Kick off ──────────────────────────────────────────────────
+  rafId = requestAnimationFrame(tick)
+  spawnTarget()
+</script>
+</body>
+</html>

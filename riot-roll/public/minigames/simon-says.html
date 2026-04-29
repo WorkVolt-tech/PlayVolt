@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riot Roll — Simon Says</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green:  #00FF88;
+    --yellow: #FFE000;
+    --red:    #FF2D2D;
+    --blue:   #00C2FF;
+    --purple: #C97BFF;
+    --dark:   #0A0A0A;
+    --mid:    #1A1A1A;
+    --text:   #F0F0F0;
+  }
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    padding: 16px;
+  }
+  #game-label { font-size: clamp(1.1rem, 4vw, 1.6rem); font-weight: 700; letter-spacing: 0.3em; color: var(--yellow); margin-bottom: 4px; }
+  #stake-label { font-size: 0.7rem; letter-spacing: 0.15em; opacity: 0.4; margin-bottom: 20px; }
+  #hud { display: flex; justify-content: space-between; width: min(340px, 90vw); font-size: 0.7rem; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 20px; }
+
+  #status-msg {
+    font-size: clamp(0.85rem, 3vw, 1.1rem);
+    letter-spacing: 0.2em;
+    font-weight: 700;
+    margin-bottom: 24px;
+    min-height: 24px;
+    text-align: center;
+    transition: color 0.2s;
+  }
+
+  /* 2x2 button grid */
+  #pad {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: min(300px, 80vw);
+    margin-bottom: 28px;
+  }
+  .pad-btn {
+    aspect-ratio: 1;
+    border-radius: 16px;
+    border: 3px solid transparent;
+    cursor: pointer;
+    opacity: 0.35;
+    transition: opacity 0.12s, transform 0.08s, border-color 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pad-btn:active { transform: scale(0.9); }
+  .pad-btn.lit    { opacity: 1; border-color: rgba(255,255,255,0.4); }
+  .pad-btn.active { opacity: 1; transform: scale(0.92); }
+  .pad-btn.wrong  { opacity: 1; border-color: var(--red); animation: btn-wrong 0.35s ease; }
+  @keyframes btn-wrong { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-6px); } 70% { transform: translateX(6px); } }
+  #btn-0 { background: var(--green); }
+  #btn-1 { background: var(--red); }
+  #btn-2 { background: var(--blue); }
+  #btn-3 { background: var(--yellow); }
+
+  #timer-wrap { width: min(340px, 90vw); height: 3px; background: #1f1f1f; border-radius: 2px; overflow: hidden; }
+  #timer-bar  { height: 100%; background: var(--yellow); width: 100%; transform-origin: left; }
+
+  #result-area { margin-top: 24px; text-align: center; min-height: 60px; }
+  #outcome { font-size: clamp(1.6rem, 8vw, 2.4rem); font-weight: 700; letter-spacing: 0.1em; display: none; }
+  #outcome.win  { color: var(--green); }
+  #outcome.lose { color: var(--red); }
+  #sub-result { font-size: 0.7rem; letter-spacing: 0.1em; opacity: 0.5; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div id="game-label">SIMON SAYS</div>
+<div id="stake-label">RENT AT STAKE: <span id="stake-amount">£0</span></div>
+
+<div id="hud">
+  <span>ROUND: <span id="round-display" style="color:var(--blue)">1</span></span>
+  <span>SCORE: <span id="score-display" style="color:var(--green)">0</span></span>
+  <span>BEST: <span id="best-display" style="color:var(--yellow)">0</span></span>
+</div>
+
+<div id="status-msg">WATCH THE SEQUENCE</div>
+
+<div id="pad">
+  <div class="pad-btn" id="btn-0" data-idx="0"></div>
+  <div class="pad-btn" id="btn-1" data-idx="1"></div>
+  <div class="pad-btn" id="btn-2" data-idx="2"></div>
+  <div class="pad-btn" id="btn-3" data-idx="3"></div>
+</div>
+
+<div id="timer-wrap"><div id="timer-bar"></div></div>
+<div id="result-area">
+  <div id="outcome"></div>
+  <div id="sub-result"></div>
+</div>
+
+<script>
+  const p            = new URLSearchParams(location.search)
+  const MINIGAME_ID  = p.get('minigame_id') || 'demo'
+  const PLAYER_ID    = p.get('player_id')   || 'demo'
+  const RENT         = parseInt(p.get('rent') || '0')
+  const TOKEN        = p.get('token')        || ''
+  const SUPABASE_URL = p.get('url')          || ''
+  const SUPABASE_KEY = p.get('key')          || ''
+
+  document.getElementById('stake-amount').textContent = `£${RENT}`
+
+  const GAME_DURATION = 60000
+  const FLASH_DURATION = 400
+  const FLASH_GAP      = 200
+
+  let sequence     = []
+  let playerInput  = []
+  let round        = 0
+  let bestRound    = 0
+  let score        = 0
+  let accepting    = false
+  let finished     = false
+  let startTime    = performance.now()
+  let rafId        = null
+  let pollId       = null
+
+  const statusMsg    = document.getElementById('status-msg')
+  const roundDisplay = document.getElementById('round-display')
+  const scoreDisplay = document.getElementById('score-display')
+  const bestDisplay  = document.getElementById('best-display')
+  const timerBar     = document.getElementById('timer-bar')
+  const outcome      = document.getElementById('outcome')
+  const subResult    = document.getElementById('sub-result')
+  const buttons      = document.querySelectorAll('.pad-btn')
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+
+  function lightBtn(idx, duration) {
+    return new Promise(async r => {
+      buttons[idx].classList.add('lit')
+      await sleep(duration)
+      buttons[idx].classList.remove('lit')
+      r()
+    })
+  }
+
+  async function playSequence() {
+    accepting = false
+    statusMsg.textContent = 'WATCH!'
+    statusMsg.style.color = 'var(--yellow)'
+    await sleep(500)
+    for (const idx of sequence) {
+      await lightBtn(idx, FLASH_DURATION)
+      await sleep(FLASH_GAP)
+    }
+    await sleep(200)
+    statusMsg.textContent = 'YOUR TURN'
+    statusMsg.style.color = 'var(--green)'
+    accepting = true
+    playerInput = []
+  }
+
+  function addRound() {
+    sequence.push(Math.floor(Math.random() * 4))
+    round++
+    roundDisplay.textContent = round
+    if (round > bestRound) {
+      bestRound = round
+      bestDisplay.textContent = bestRound
+    }
+    playSequence()
+  }
+
+  // Button press
+  document.getElementById('pad').addEventListener('pointerdown', async (e) => {
+    if (!accepting || finished) return
+    const btn = e.target.closest('.pad-btn')
+    if (!btn) return
+
+    const idx = parseInt(btn.dataset.idx)
+    btn.classList.add('active')
+    setTimeout(() => btn.classList.remove('active'), 150)
+
+    playerInput.push(idx)
+    const pos = playerInput.length - 1
+
+    if (playerInput[pos] !== sequence[pos]) {
+      // Wrong!
+      accepting = false
+      btn.classList.add('wrong')
+      statusMsg.textContent = 'WRONG!'
+      statusMsg.style.color = 'var(--red)'
+      await sleep(600)
+      btn.classList.remove('wrong')
+
+      // Deduct score for wrong, add for what they got right
+      const partialScore = Math.max(0, (round - 1) * 50)
+      score += partialScore
+      scoreDisplay.textContent = score
+
+      // Replay sequence and try again (no full reset — more forgiving)
+      await sleep(400)
+      playSequence()
+      return
+    }
+
+    if (playerInput.length === sequence.length) {
+      // Full sequence correct!
+      accepting = false
+      const roundBonus = round * 100
+      score += roundBonus
+      scoreDisplay.textContent = score
+      statusMsg.textContent = '✓ CORRECT!'
+      statusMsg.style.color = 'var(--green)'
+
+      // Flash all buttons
+      buttons.forEach(b => b.classList.add('lit'))
+      await sleep(300)
+      buttons.forEach(b => b.classList.remove('lit'))
+
+      await sleep(400)
+      addRound()
+    }
+  })
+
+  // Timer
+  function tick() {
+    const elapsed = performance.now() - startTime
+    const rem = Math.max(0, 1 - elapsed / GAME_DURATION)
+    timerBar.style.transform = `scaleX(${rem})`
+    if (rem <= 0.25) timerBar.style.background = 'var(--red)'
+    if (rem <= 0 && !finished) endGame()
+    else if (!finished) rafId = requestAnimationFrame(tick)
+  }
+
+  function endGame() {
+    if (finished) return
+    finished = true
+    accepting = false
+    cancelAnimationFrame(rafId)
+    submitScore(score)
+  }
+
+  async function submitScore(finalScore) {
+    subResult.textContent = `YOUR SCORE: ${finalScore}`
+    if (MINIGAME_ID === 'demo') {
+      const opp = 200 + Math.floor(Math.random() * 600)
+      setTimeout(() => showResult(finalScore >= opp ? 'win' : 'lose', finalScore), 800)
+      return
+    }
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}` },
+        body: JSON.stringify({ minigame_id: MINIGAME_ID, score: finalScore })
+      })
+      const data = await res.json()
+      if (data.resolved) {
+        showResult(data.winner_id === PLAYER_ID ? 'win' : 'lose', finalScore)
+      } else {
+        subResult.textContent = `SCORE: ${finalScore} — WAITING…`
+        pollId = setInterval(async () => {
+          try {
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/mini_games?id=eq.${MINIGAME_ID}&select=status,winner_id`,
+              { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${TOKEN}` } })
+            const [mg] = await r.json()
+            if (mg?.status === 'resolved') { clearInterval(pollId); showResult(mg.winner_id === PLAYER_ID ? 'win' : 'lose', finalScore) }
+          } catch(e) {}
+        }, 2000)
+        setTimeout(() => clearInterval(pollId), 70000)
+      }
+    } catch(err) { subResult.textContent = 'CONNECTION ERROR' }
+  }
+
+  function showResult(result, myScore) {
+    outcome.style.display = 'block'
+    outcome.className = result === 'win' ? 'win' : 'lose'
+    outcome.textContent = result === 'win' ? 'YOU WIN!' : 'YOU LOSE'
+    subResult.textContent = `SCORE: ${myScore} — BEST ROUND: ${bestRound}`
+    setTimeout(() => window.parent?.postMessage({ type: 'minigame_done', result, score: myScore }, '*'), 2500)
+  }
+
+  // Kick off
+  rafId = requestAnimationFrame(tick)
+  setTimeout(addRound, 800)
+</script>
+</body>
+</html>

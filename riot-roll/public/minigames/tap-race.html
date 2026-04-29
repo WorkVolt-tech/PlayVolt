@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riot Roll — Tap Race</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red:    #FF2D2D;
+    --green:  #00FF88;
+    --yellow: #FFE000;
+    --blue:   #00C2FF;
+    --dark:   #0A0A0A;
+    --mid:    #1A1A1A;
+    --text:   #F0F0F0;
+  }
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #game-label {
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--yellow);
+    margin-bottom: 6px;
+  }
+  #stake-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    opacity: 0.4;
+    margin-bottom: 32px;
+  }
+
+  /* Progress tracks */
+  #tracks {
+    width: min(360px, 90vw);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .track-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .track-name {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    width: 36px;
+    text-align: right;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  .track-bar-wrap {
+    flex: 1;
+    height: 20px;
+    background: #1f1f1f;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #2a2a2a;
+  }
+  .track-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 10px;
+    transition: width 0.05s linear;
+  }
+  #my-bar    { background: var(--blue); }
+  #their-bar { background: var(--red); }
+  .track-pct {
+    font-size: 0.65rem;
+    width: 36px;
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+
+  /* Tap button */
+  #tap-btn {
+    width: min(260px, 75vw);
+    height: min(260px, 75vw);
+    border-radius: 50%;
+    background: var(--mid);
+    border: 3px solid var(--blue);
+    box-shadow: 0 0 40px rgba(0,194,255,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.05s, box-shadow 0.05s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #tap-btn:active {
+    transform: scale(0.93);
+    box-shadow: 0 0 80px rgba(0,194,255,0.5);
+  }
+  #tap-btn.done {
+    cursor: default;
+    border-color: var(--yellow);
+    box-shadow: 0 0 40px rgba(255,224,0,0.2);
+  }
+  #tap-count {
+    font-size: clamp(3rem, 14vw, 5rem);
+    font-weight: 700;
+    color: var(--blue);
+    line-height: 1;
+  }
+  #tap-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    opacity: 0.4;
+    margin-top: 8px;
+  }
+
+  /* Timer bar */
+  #timer-wrap {
+    width: min(360px, 90vw);
+    height: 3px;
+    background: #1f1f1f;
+    border-radius: 2px;
+    margin-top: 28px;
+    overflow: hidden;
+  }
+  #timer-bar {
+    height: 100%;
+    background: var(--yellow);
+    width: 100%;
+    transform-origin: left;
+  }
+
+  #result-area {
+    margin-top: 24px;
+    text-align: center;
+    min-height: 60px;
+  }
+  #outcome {
+    font-size: clamp(1.6rem, 8vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    display: none;
+  }
+  #outcome.win  { color: var(--green); }
+  #outcome.lose { color: var(--red); }
+  #sub-result {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+    margin-top: 8px;
+  }
+  #start-msg {
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-label">TAP RACE</div>
+<div id="stake-label">RENT AT STAKE: <span id="stake-amount">£0</span></div>
+
+<div id="tracks">
+  <div class="track-row">
+    <div class="track-name">YOU</div>
+    <div class="track-bar-wrap"><div class="track-bar" id="my-bar"></div></div>
+    <div class="track-pct" id="my-pct">0%</div>
+  </div>
+  <div class="track-row">
+    <div class="track-name">OPP</div>
+    <div class="track-bar-wrap"><div class="track-bar" id="their-bar"></div></div>
+    <div class="track-pct" id="their-pct">0%</div>
+  </div>
+</div>
+
+<div id="tap-btn">
+  <div id="tap-count">0</div>
+  <div id="tap-label">TAPS</div>
+</div>
+
+<div id="timer-wrap"><div id="timer-bar"></div></div>
+
+<div id="result-area">
+  <div id="outcome"></div>
+  <div id="sub-result"></div>
+  <div id="start-msg">TAP TO START</div>
+</div>
+
+<script>
+  const p            = new URLSearchParams(location.search)
+  const MINIGAME_ID  = p.get('minigame_id') || 'demo'
+  const PLAYER_ID    = p.get('player_id')   || 'demo'
+  const RENT         = parseInt(p.get('rent') || '0')
+  const TOKEN        = p.get('token')        || ''
+  const SUPABASE_URL = p.get('url')          || ''
+  const SUPABASE_KEY = p.get('key')          || ''
+
+  document.getElementById('stake-amount').textContent = `£${RENT}`
+
+  const GAME_DURATION = 10000 // 10 seconds
+  const TARGET_TAPS   = 60    // fill bar at 60 taps
+
+  let started   = false
+  let finished  = false
+  let taps      = 0
+  let startTime = 0
+  let rafId     = null
+  let pollId    = null
+
+  const tapBtn   = document.getElementById('tap-btn')
+  const tapCount = document.getElementById('tap-count')
+  const myBar    = document.getElementById('my-bar')
+  const myPct    = document.getElementById('my-pct')
+  const theirBar = document.getElementById('their-bar')
+  const theirPct = document.getElementById('their-pct')
+  const timerBar = document.getElementById('timer-bar')
+  const outcome  = document.getElementById('outcome')
+  const subResult= document.getElementById('sub-result')
+  const startMsg = document.getElementById('start-msg')
+
+  // ── Timer bar ────────────────────────────────────────────────
+  function animateTimer() {
+    const elapsed = performance.now() - startTime
+    const remaining = Math.max(0, 1 - elapsed / GAME_DURATION)
+    timerBar.style.transform = `scaleX(${remaining})`
+    if (elapsed < GAME_DURATION && !finished) {
+      rafId = requestAnimationFrame(animateTimer)
+    } else if (!finished) {
+      endGame()
+    }
+  }
+
+  // ── Start ────────────────────────────────────────────────────
+  function startGame() {
+    started = true
+    startTime = performance.now()
+    startMsg.style.display = 'none'
+    rafId = requestAnimationFrame(animateTimer)
+
+    // In demo mode, simulate opponent tapping
+    if (MINIGAME_ID === 'demo') simulateOpponent()
+  }
+
+  // ── Register a tap ───────────────────────────────────────────
+  tapBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault()
+    if (finished) return
+    if (!started) startGame()
+
+    taps++
+    tapCount.textContent = taps
+
+    const pct = Math.min(100, Math.round((taps / TARGET_TAPS) * 100))
+    myBar.style.width = pct + '%'
+    myPct.textContent = pct + '%'
+
+    // Visual feedback
+    tapBtn.style.borderColor = 'var(--green)'
+    setTimeout(() => { tapBtn.style.borderColor = 'var(--blue)' }, 80)
+  })
+
+  // ── End game ─────────────────────────────────────────────────
+  function endGame() {
+    if (finished) return
+    finished = true
+    cancelAnimationFrame(rafId)
+    tapBtn.classList.add('done')
+    submitScore(taps)
+  }
+
+  // ── Demo opponent simulation ─────────────────────────────────
+  function simulateOpponent() {
+    let oppTaps = 0
+    const oppSpeed = 35 + Math.random() * 30 // 35–65 taps in 10s
+    const interval = setInterval(() => {
+      if (finished) { clearInterval(interval); return }
+      oppTaps++
+      const pct = Math.min(100, Math.round((oppTaps / TARGET_TAPS) * 100))
+      theirBar.style.width = pct + '%'
+      theirPct.textContent = pct + '%'
+    }, 10000 / oppSpeed)
+    setTimeout(() => clearInterval(interval), GAME_DURATION)
+  }
+
+  // ── Submit ───────────────────────────────────────────────────
+  async function submitScore(score) {
+    if (MINIGAME_ID === 'demo') {
+      const oppTaps = parseInt(theirPct.textContent) || 0
+      setTimeout(() => showResult(score >= oppTaps ? 'win' : 'lose', score), 800)
+      return
+    }
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${TOKEN}`
+        },
+        body: JSON.stringify({ minigame_id: MINIGAME_ID, score })
+      })
+      const data = await res.json()
+      if (data.resolved) {
+        showResult(data.winner_id === PLAYER_ID ? 'win' : 'lose', score, data.scores)
+      } else {
+        subResult.textContent = 'WAITING FOR OPPONENT…'
+        listenForResolution(score)
+      }
+    } catch (err) {
+      subResult.textContent = 'CONNECTION ERROR'
+    }
+  }
+
+  function listenForResolution(myFinalScore) {
+    pollId = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/mini_games?id=eq.${MINIGAME_ID}&select=status,winner_id,scores`,
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${TOKEN}` } }
+        )
+        const [mg] = await res.json()
+        if (mg?.status === 'resolved') {
+          clearInterval(pollId)
+          // Update opponent bar from real scores
+          const scores = mg.scores
+          const oppId = Object.keys(scores).find(id => id !== PLAYER_ID)
+          if (oppId) {
+            const oppPct = Math.min(100, Math.round((scores[oppId] / TARGET_TAPS) * 100))
+            theirBar.style.width = oppPct + '%'
+            theirPct.textContent = oppPct + '%'
+          }
+          showResult(mg.winner_id === PLAYER_ID ? 'win' : 'lose', myFinalScore, scores)
+        }
+      } catch (e) {}
+    }, 2000)
+    setTimeout(() => clearInterval(pollId), 25000)
+  }
+
+  function showResult(result, myTaps, allScores) {
+    outcome.style.display = 'block'
+    if (result === 'win') {
+      outcome.className = 'win'
+      outcome.textContent = 'YOU WIN!'
+    } else {
+      outcome.className = 'lose'
+      outcome.textContent = 'YOU LOSE'
+    }
+    subResult.textContent = `YOUR TAPS: ${myTaps}`
+    setTimeout(() => {
+      window.parent?.postMessage({ type: 'minigame_done', result, score: myTaps }, '*')
+    }, 2500)
+  }
+</script>
+</body>
+</html>
