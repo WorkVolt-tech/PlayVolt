@@ -1106,6 +1106,7 @@ const MINIGAME_FILES = {
 // ── State ────────────────────────────────────────────────────
 let state = {
   roomId:     null,
+  roomCode:   null,
   playerId:   null,
   authToken:  null,
   isHost:     false,
@@ -1255,17 +1256,18 @@ async function createGame(displayName) {
   try {
     state.myName = displayName
 
-    // Generate a short room code like the domino game
+    // Generate a short 6-character room code
     const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    // Create room directly in DB — no Edge Function needed
+    // Create room directly in DB
     const { data: room, error: roomErr } = await db
       .from('rooms')
       .insert({
         status: 'lobby',
         round: 0,
         phase: 'rolling',
-        board_seed: Math.floor(Math.random() * 1000000)
+        board_seed: Math.floor(Math.random() * 1000000),
+        code: roomCode
       })
       .select()
       .single()
@@ -1293,14 +1295,16 @@ async function createGame(displayName) {
     // Generate tiles for the room
     await generateTiles(room.id, room.board_seed)
 
-    state.roomId = room.id
-    state.isHost = true
-    state.myColor = PLAYER_COLORS[0]
+    state.roomId   = room.id
+    state.roomCode = room.code || roomCode
+    state.isHost   = true
+    state.myColor  = PLAYER_COLORS[0]
 
     // Save to sessionStorage like the domino game does
     sessionStorage.setItem('riotroll_player', JSON.stringify({
       playerId: state.playerId,
       roomId: state.roomId,
+      roomCode: state.roomCode,
       displayName,
       isHost: true
     }))
@@ -1323,11 +1327,12 @@ async function joinGame(displayName, roomCode) {
   try {
     state.myName = displayName
 
-    // Find the room directly in DB
+    // Find the room by short code
     const { data: room, error: roomErr } = await db
       .from('rooms')
       .select('*')
-      .eq('id', roomCode.trim())
+      .eq('code', roomCode.trim().toUpperCase())
+      .eq('status', 'lobby')
       .single()
 
     if (roomErr || !room) throw new Error('Room not found — check the code')
@@ -1357,12 +1362,14 @@ async function joinGame(displayName, roomCode) {
 
     if (playerErr) throw playerErr
 
-    state.roomId = room.id
-    state.isHost = false
+    state.roomId   = room.id
+    state.roomCode = room.code
+    state.isHost   = false
 
     sessionStorage.setItem('riotroll_player', JSON.stringify({
       playerId: state.playerId,
       roomId: state.roomId,
+      roomCode: state.roomCode,
       displayName,
       isHost: false
     }))
@@ -1384,7 +1391,7 @@ async function enterLobby() {
   showScreen('lobby')
 
   // Show room code
-  document.getElementById('lobby-room-code').textContent = state.roomId
+  document.getElementById('lobby-room-code').textContent = state.roomCode || state.roomId
 
   // Show start button only to host
   if (state.isHost) {
@@ -1439,7 +1446,7 @@ async function refreshPlayers() {
 }
 
 document.getElementById('btn-copy-code').addEventListener('click', () => {
-  navigator.clipboard.writeText(state.roomId).then(() => showToast('ROOM CODE COPIED!'))
+  navigator.clipboard.writeText(state.roomCode || state.roomId).then(() => showToast('ROOM CODE COPIED!'))
 })
 
 document.getElementById('btn-start-game').addEventListener('click', async () => {
@@ -2114,7 +2121,7 @@ async function showGameOver() {
 document.getElementById('btn-play-again').addEventListener('click', () => {
   db.removeAllChannels()
   Object.assign(state, {
-    roomId: null, playerId: null, isHost: false,
+    roomId: null, roomCode: null, playerId: null, isHost: false,
     players: [], tiles: [], properties: {},
     phase: 'rolling', round: 1, activeMinigame: null
   })
