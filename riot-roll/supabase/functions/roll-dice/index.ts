@@ -24,8 +24,15 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://workvolt-tech.github.io',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+
 // Mini-game types — chosen randomly when a player lands on an owned property
-const MINIGAME_TYPES = ['reaction', 'tap_race', 'memory', 'aim', 'color_match', 'number_scramble', 'simon_says', 'dodge']
+const MINIGAME_TYPES = ['reaction', 'tap_race', 'memory', 'aim']
 
 // Chaos event types — triggered by event tiles
 const EVENT_TYPES = [
@@ -57,7 +64,7 @@ function randomFrom<T>(arr: T[]): T {
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+    return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
   }
 
   try {
@@ -66,7 +73,7 @@ Deno.serve(async (req) => {
     if (!room_id) {
       return new Response(
         JSON.stringify({ error: 'room_id is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -82,7 +89,7 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Not authenticated' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -97,7 +104,7 @@ Deno.serve(async (req) => {
     if (playerError || !player) {
       return new Response(
         JSON.stringify({ error: 'Player not found in this room' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { status: 404, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -110,21 +117,21 @@ Deno.serve(async (req) => {
     if (roomError || !room) {
       return new Response(
         JSON.stringify({ error: 'Room not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { status: 404, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
     if (room.status !== 'playing') {
       return new Response(
         JSON.stringify({ error: 'Game is not in progress' }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
+        { status: 409, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
     if (room.phase !== 'rolling') {
       return new Response(
         JSON.stringify({ error: `Not the rolling phase — current phase: ${room.phase}` }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
+        { status: 409, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -335,14 +342,14 @@ Deno.serve(async (req) => {
         outcome_data: outcomeData,
         money_after: Math.max(0, player.money + moneyDelta),
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
 
   } catch (err) {
     console.error('roll-dice error:', err)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
   }
 })
