@@ -24,9 +24,16 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://workvolt-tech.github.io',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+    return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
   }
 
   try {
@@ -35,14 +42,14 @@ Deno.serve(async (req) => {
     if (!minigame_id || score === undefined) {
       return new Response(
         JSON.stringify({ error: 'minigame_id and score are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
     if (typeof score !== 'number' || score < 0 || score > 60_000) {
       return new Response(
         JSON.stringify({ error: 'Score must be a number between 0 and 60000' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -58,7 +65,7 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Not authenticated' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -72,14 +79,14 @@ Deno.serve(async (req) => {
     if (mgError || !minigame) {
       return new Response(
         JSON.stringify({ error: 'Mini-game not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { status: 404, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
     if (minigame.status === 'resolved') {
       return new Response(
         JSON.stringify({ error: 'Mini-game already resolved' }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
+        { status: 409, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -91,7 +98,7 @@ Deno.serve(async (req) => {
       }
       return new Response(
         JSON.stringify({ error: 'Mini-game has expired' }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
+        { status: 409, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -109,7 +116,7 @@ Deno.serve(async (req) => {
     if (!player || !minigame.participants.includes(player.id)) {
       return new Response(
         JSON.stringify({ error: 'You are not a participant in this mini-game' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
+        { status: 403, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -117,7 +124,7 @@ Deno.serve(async (req) => {
     if (minigame.scores[player.id] !== undefined) {
       return new Response(
         JSON.stringify({ error: 'You already submitted a score' }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
+        { status: 409, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -141,7 +148,7 @@ Deno.serve(async (req) => {
       )
       return new Response(
         JSON.stringify({ resolved: true, ...result }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -153,14 +160,14 @@ Deno.serve(async (req) => {
           (pid: string) => updatedScores[pid] === undefined
         ).length,
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
 
   } catch (err) {
     console.error('submit-score error:', err)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
   }
 })
