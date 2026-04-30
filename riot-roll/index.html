@@ -1402,7 +1402,7 @@ async function enterLobby() {
   await refreshPlayers()
 
   // Subscribe to player changes in this room
-  supabase
+  db
     .channel(`lobby-${state.roomId}`)
     .on('postgres_changes', {
       event: '*', schema: 'public', table: 'players',
@@ -1418,7 +1418,7 @@ async function enterLobby() {
 }
 
 async function refreshPlayers() {
-  const { data: players } = await supabase
+  const { data: players } = await db
     .from('players')
     .select('*')
     .eq('room_id', state.roomId)
@@ -1456,7 +1456,7 @@ document.getElementById('btn-start-game').addEventListener('click', async () => 
   btn.disabled = true
 
   // Update room status to playing + set first phase timer
-  const { error } = await supabase
+  const { error } = await db
     .from('rooms')
     .update({
       status: 'playing',
@@ -1484,7 +1484,7 @@ async function startGame() {
   showScreen('game')
 
   // Load tiles
-  const { data: tiles } = await supabase
+  const { data: tiles } = await db
     .from('tiles')
     .select('*')
     .eq('room_id', state.roomId)
@@ -1493,7 +1493,7 @@ async function startGame() {
   state.tiles = tiles || []
 
   // Load properties
-  const { data: props } = await supabase
+  const { data: props } = await db
     .from('properties')
     .select('*, tile:tile_id(room_id)')
 
@@ -1502,7 +1502,7 @@ async function startGame() {
   }
 
   // Load room state
-  const { data: room } = await supabase
+  const { data: room } = await db
     .from('rooms').select('*').eq('id', state.roomId).single()
   if (room) {
     state.phase      = room.phase
@@ -1517,7 +1517,7 @@ async function startGame() {
   updateActionBtn()
 
   // Subscribe to all realtime changes
-  supabase
+  db
     .channel(`game-${state.roomId}`)
     .on('postgres_changes', {
       event: 'UPDATE', schema: 'public', table: 'rooms',
@@ -1567,7 +1567,7 @@ function onRoomUpdate(room) {
 
 // ── Players update ────────────────────────────────────────────
 async function onPlayersUpdate() {
-  const { data: players } = await supabase
+  const { data: players } = await db
     .from('players')
     .select('*')
     .eq('room_id', state.roomId)
@@ -1593,7 +1593,7 @@ async function onPlayersUpdate() {
 
 // ── Properties update ─────────────────────────────────────────
 async function onPropertiesUpdate() {
-  const { data: props } = await supabase
+  const { data: props } = await db
     .from('properties')
     .select('*, tile:tile_id(room_id)')
 
@@ -2042,12 +2042,12 @@ async function buyProperty(tileId, price) {
   const me = state.players.find(p => p.id === state.playerId)
   if (!me || me.money < price) { showToast('NOT ENOUGH MONEY'); return }
 
-  const { error: moneyErr } = await supabase
+  const { error: moneyErr } = await db
     .from('players')
     .update({ money: me.money - price })
     .eq('id', state.playerId)
 
-  const { error: propErr } = await supabase
+  const { error: propErr } = await db
     .from('properties')
     .update({ owner_id: state.playerId })
     .eq('tile_id', tileId)
