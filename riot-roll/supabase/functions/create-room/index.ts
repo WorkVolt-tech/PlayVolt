@@ -19,6 +19,13 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://workvolt-tech.github.io',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+
 // TILE TEMPLATES — the 40 spaces that make up the board.
 // Properties have a base_price and color_group.
 // Special tiles (go, tax, event, bonus) have no price.
@@ -87,9 +94,14 @@ function seededShuffle<T>(array: T[], seed: number): T[] {
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 200, headers: CORS_HEADERS })
+  }
+
   // Only allow POST
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+  if (req.method !== 'POST' {
+    return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
   }
 
   try {
@@ -98,7 +110,7 @@ Deno.serve(async (req) => {
     if (!display_name || typeof display_name !== 'string') {
       return new Response(
         JSON.stringify({ error: 'display_name is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -117,7 +129,7 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Not authenticated' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -197,14 +209,14 @@ Deno.serve(async (req) => {
         board_seed: boardSeed,
         message: 'Room created. Share room_id with other players to join.',
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
 
   } catch (err) {
     console.error('create-room error:', err)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
   }
 })
