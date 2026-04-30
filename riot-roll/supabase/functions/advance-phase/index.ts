@@ -26,6 +26,13 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://workvolt-tech.github.io',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+
 // Phase durations in milliseconds
 const PHASE_DURATIONS = {
   rolling:   10_000,  // 10 seconds to roll dice
@@ -44,9 +51,14 @@ const GO_INCOME = 200
 const PASSIVE_INCOME_PER_PROPERTY = 10
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 200, headers: CORS_HEADERS })
+  }
+
   // This endpoint is called by cron or frontend — accepts GET or POST
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+  if (req.method !== 'GET' && req.method !== 'POST' {
+    return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
   }
 
   const supabase = createClient(
@@ -67,7 +79,7 @@ Deno.serve(async (req) => {
     if (!expiredRooms || expiredRooms.length === 0) {
       return new Response(
         JSON.stringify({ advanced: 0, message: 'No rooms need advancing' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -85,14 +97,14 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ advanced: results.length, results }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
 
   } catch (err) {
     console.error('advance-phase error:', err)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
   }
 })
