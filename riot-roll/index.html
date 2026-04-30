@@ -1073,11 +1073,11 @@ body::before {
 <div id="toast"></div>
 
 <!-- ══ SUPABASE + GAME LOGIC ════════════════════════════════ -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabaseClient.min.js"></script>
 <script>
 // ── CONFIG — replace these with your actual values ──────────
 // Get these from Supabase Dashboard → Settings → API
-const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co'
+const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabaseClient.co'
 const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'
 
 // Where your mini-game files are hosted
@@ -1127,7 +1127,7 @@ let state = {
 
 // ── Init Supabase ────────────────────────────────────────────
 function initSupabase() {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  supabase = window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 }
 
 // ── Screen navigation ────────────────────────────────────────
@@ -1186,7 +1186,7 @@ async function createGame(displayName) {
 
   try {
     // Sign in anonymously
-    const { data: authData } = await supabase.auth.signInAnonymously()
+    const { data: authData } = await supabaseClient.auth.signInAnonymously()
     state.authToken = authData.session.access_token
     state.myName = displayName
 
@@ -1221,7 +1221,7 @@ async function joinGame(displayName, roomCode) {
   btn.disabled = true
 
   try {
-    const { data: authData } = await supabase.auth.signInAnonymously()
+    const { data: authData } = await supabaseClient.auth.signInAnonymously()
     state.authToken = authData.session.access_token
     state.myName = displayName
 
@@ -1335,7 +1335,7 @@ document.getElementById('btn-start-game').addEventListener('click', async () => 
 })
 
 document.getElementById('btn-leave-lobby').addEventListener('click', () => {
-  supabase.removeAllChannels()
+  supabaseClient.removeAllChannels()
   showScreen('landing')
   state.roomId = null
   state.playerId = null
@@ -1925,7 +1925,7 @@ async function showGameOver() {
 }
 
 document.getElementById('btn-play-again').addEventListener('click', () => {
-  supabase.removeAllChannels()
+  supabaseClient.removeAllChannels()
   Object.assign(state, {
     roomId: null, playerId: null, isHost: false,
     players: [], tiles: [], properties: {},
