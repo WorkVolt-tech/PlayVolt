@@ -1073,7 +1073,26 @@ body::before {
 <div id="toast"></div>
 
 <!-- ══ SUPABASE + GAME LOGIC ════════════════════════════════ -->
-<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+// Load Supabase with multiple CDN fallbacks
+(function() {
+  const cdns = [
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+    'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js',
+    'https://esm.sh/@supabase/supabase-js@2/dist/umd/supabase.js'
+  ]
+  let tried = 0
+  function tryNext() {
+    if (tried >= cdns.length) return
+    const s = document.createElement('script')
+    s.src = cdns[tried++]
+    s.onload = () => { window._supabaseLoaded = true }
+    s.onerror = () => tryNext()
+    document.head.appendChild(s)
+  }
+  tryNext()
+})()
+</script>
 <script>
 // ── CONFIG — replace these with your actual values ──────────
 // Get these from Supabase Dashboard → Settings → API
@@ -1127,11 +1146,19 @@ let state = {
 
 // ── Init Supabase ────────────────────────────────────────────
 function initSupabase() {
-  if (typeof supabase === 'undefined') {
-    document.body.innerHTML = '<div style="color:#FF2D2D;font-family:monospace;padding:40px;text-align:center"><h2>FAILED TO LOAD SUPABASE</h2><p style="margin-top:16px;opacity:0.6">Check your internet connection and refresh.</p></div>'
-    return
-  }
-  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  // Poll until Supabase CDN script has loaded (max 8 seconds)
+  let attempts = 0
+  const interval = setInterval(() => {
+    attempts++
+    if (typeof supabase !== 'undefined' && supabase.createClient) {
+      clearInterval(interval)
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      console.log('Supabase loaded OK')
+    } else if (attempts > 40) {
+      clearInterval(interval)
+      document.body.innerHTML = '<div style="color:#FF2D2D;font-family:monospace;padding:40px;text-align:center;background:#080808;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center"><h2 style=\'font-size:1.5rem;letter-spacing:0.2em\'>FAILED TO LOAD SUPABASE</h2><p style=\'margin-top:16px;opacity:0.6;font-size:0.8rem\'>Your browser may be blocking CDN scripts.<br><br>Try: Settings → Privacy → turn off tracking prevention<br>or open in a different browser.</p><button onclick=\'location.reload()\' style=\'margin-top:24px;padding:12px 24px;background:#FFE000;color:#000;border:none;font-family:monospace;font-size:1rem;cursor:pointer;border-radius:4px\'>RETRY</button></div>'
+    }
+  }, 200)
 }
 
 // ── Screen navigation ────────────────────────────────────────
