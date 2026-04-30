@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>RIOT ROLL</title>
+<style>
+/* ── Fonts ─────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&display=swap');
+
+/* ── Reset + Root ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080808;
+  --surface:   #111111;
+  --surface2:  #1a1a1a;
+  --border:    #2a2a2a;
+  --yellow:    #FFE000;
+  --green:     #00FF88;
+  --red:       #FF2D2D;
+  --blue:      #00C2FF;
+  --purple:    #C97BFF;
+  --text:      #F0F0F0;
+  --muted:     rgba(240,240,240,0.35);
+  --font-head: 'Black Ops One', cursive;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Scanline overlay ───────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Screens ────────────────────────────────────────────────── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ══════════════════════════════════════════════════════════════
+   LANDING SCREEN
+══════════════════════════════════════════════════════════════ */
+#screen-landing {
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+}
+
+/* Animated grid background */
+#screen-landing::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background-image:
+    linear-gradient(rgba(255,224,0,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,224,0,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: grid-drift 20s linear infinite;
+  pointer-events: none;
+}
+@keyframes grid-drift {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(60px); }
+}
+
+.landing-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* Logo */
+.logo-wrap {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.logo-riot {
+  font-family: var(--font-head);
+  font-size: clamp(4rem, 18vw, 7rem);
+  line-height: 0.9;
+  color: var(--yellow);
+  text-shadow:
+    4px 4px 0 rgba(255,45,45,0.5),
+    8px 8px 0 rgba(255,45,45,0.2);
+  letter-spacing: 0.05em;
+  animation: logo-flicker 8s ease-in-out infinite;
+}
+.logo-roll {
+  font-family: var(--font-head);
+  font-size: clamp(4rem, 18vw, 7rem);
+  line-height: 0.9;
+  color: var(--text);
+  text-shadow: 4px 4px 0 rgba(0,194,255,0.3);
+  letter-spacing: 0.05em;
+}
+@keyframes logo-flicker {
+  0%,95%,100% { opacity: 1; }
+  96%          { opacity: 0.85; }
+  97%          { opacity: 1; }
+  98%          { opacity: 0.7; }
+  99%          { opacity: 1; }
+}
+
+.logo-tagline {
+  font-size: 0.65rem;
+  letter-spacing: 0.35em;
+  color: var(--muted);
+  margin-top: 12px;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+}
+
+/* Landing buttons */
+.btn-primary {
+  width: 100%;
+  height: 60px;
+  background: var(--yellow);
+  color: #080808;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-head);
+  font-size: 1.3rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+.btn-primary:active { transform: scale(0.97); box-shadow: none; }
+.btn-primary:hover  { box-shadow: 0 4px 24px rgba(255,224,0,0.4); }
+
+.btn-secondary {
+  width: 100%;
+  height: 56px;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-head);
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  margin-bottom: 12px;
+}
+.btn-secondary:hover { border-color: var(--blue); color: var(--blue); }
+.btn-secondary:active { transform: scale(0.97); }
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 4px 0 12px;
+  color: var(--muted);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Join form */
+#join-form {
+  width: 100%;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  animation: slide-down 0.2s ease;
+}
+#join-form.open { display: flex; }
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.input-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+.text-input {
+  width: 100%;
+  height: 52px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  padding: 0 16px;
+  outline: none;
+  transition: border-color 0.15s;
+  text-transform: uppercase;
+}
+.text-input:focus { border-color: var(--yellow); }
+.text-input::placeholder { color: var(--muted); text-transform: none; }
+
+/* ══════════════════════════════════════════════════════════════
+   LOBBY SCREEN
+══════════════════════════════════════════════════════════════ */
+#screen-lobby {
+  padding: 24px;
+  align-items: center;
+}
+.lobby-inner {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.screen-title {
+  font-family: var(--font-head);
+  font-size: clamp(1.4rem, 6vw, 2rem);
+  letter-spacing: 0.1em;
+  color: var(--yellow);
+  margin-bottom: 4px;
+}
+.room-code-box {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.room-code-label { font-size: 0.6rem; letter-spacing: 0.2em; color: var(--muted); }
+.room-code-value {
+  font-family: var(--font-head);
+  font-size: 1.5rem;
+  letter-spacing: 0.3em;
+  color: var(--yellow);
+}
+.copy-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.copy-btn:hover { color: var(--green); border-color: var(--green); }
+
+.players-list {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.players-list-header {
+  padding: 10px 16px;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  animation: row-in 0.2s ease;
+}
+.player-row:last-child { border-bottom: none; }
+@keyframes row-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.player-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.player-name { flex: 1; font-size: 0.9rem; letter-spacing: 0.05em; }
+.player-badge {
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+.player-badge.host { color: var(--yellow); }
+
+/* ══════════════════════════════════════════════════════════════
+   GAME SCREEN
+══════════════════════════════════════════════════════════════ */
+#screen-game {
+  flex-direction: column;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Top HUD */
+#game-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.hud-logo {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  color: var(--yellow);
+}
+.hud-phase {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-align: center;
+}
+.hud-phase span { color: var(--blue); }
+.hud-round {
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* Phase timer bar */
+#phase-timer-bar-wrap {
+  height: 3px;
+  background: #111;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+#phase-timer-bar {
+  height: 100%;
+  background: var(--yellow);
+  width: 100%;
+  transform-origin: left;
+  transition: transform 0.5s linear;
+}
+
+/* Board area */
+#board-wrap {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+/* ── Monopoly-style board ────────────────────────────────────── */
+#board {
+  position: relative;
+  width: min(420px, 96vw);
+  height: min(420px, 96vw);
+  flex-shrink: 0;
+}
+
+/* Corner tiles */
+.tile-corner {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  z-index: 2;
+}
+#corner-go    { bottom: 0; right: 0; border-color: var(--yellow); }
+#corner-jail  { bottom: 0; left: 0; }
+#corner-park  { top: 0; left: 0; }
+#corner-goto  { top: 0; right: 0; }
+
+.corner-label {
+  font-size: 0.45rem;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-top: 2px;
+  text-align: center;
+}
+
+/* Edge tile rows */
+.tile-edge {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: background 0.2s;
+  overflow: hidden;
+}
+.tile-edge:hover { background: var(--surface2); }
+.tile-edge.owned { border-color: var(--border); }
+
+/* Color bar on property tiles */
+.tile-color-bar {
+  position: absolute;
+  width: 100%;
+  height: 6px;
+}
+.bottom-row .tile-color-bar { top: 0; }
+.top-row    .tile-color-bar { bottom: 0; }
+.left-col   .tile-color-bar { right: 0; width: 6px; height: 100%; top: 0; }
+.right-col  .tile-color-bar { left: 0;  width: 6px; height: 100%; top: 0; }
+
+.tile-name {
+  font-size: 0.38rem;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.3;
+  padding: 2px;
+  word-break: break-word;
+}
+.tile-price {
+  font-size: 0.38rem;
+  color: var(--yellow);
+  margin-top: 1px;
+}
+.tile-icon { font-size: 0.7rem; }
+
+/* Bottom row — 9 tiles between corners */
+.bottom-row .tile-edge {
+  bottom: 0;
+  width: calc((min(420px, 96vw) - 120px) / 9);
+  height: 60px;
+}
+/* Top row */
+.top-row .tile-edge {
+  top: 0;
+  width: calc((min(420px, 96vw) - 120px) / 9);
+  height: 60px;
+}
+/* Left col */
+.left-col .tile-edge {
+  left: 0;
+  width: 60px;
+  height: calc((min(420px, 96vw) - 120px) / 9);
+}
+/* Right col */
+.right-col .tile-edge {
+  right: 0;
+  width: 60px;
+  height: calc((min(420px, 96vw) - 120px) / 9);
+}
+
+/* Board center */
+#board-center {
+  position: absolute;
+  top: 60px; left: 60px;
+  right: 60px; bottom: 60px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+}
+#center-title {
+  font-family: var(--font-head);
+  font-size: clamp(1rem, 4vw, 1.6rem);
+  color: var(--yellow);
+  letter-spacing: 0.1em;
+  text-align: center;
+  line-height: 1;
+}
+#center-sub {
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-align: center;
+}
+#center-event {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--red);
+  text-align: center;
+  padding: 4px 8px;
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  display: none;
+  max-width: 80%;
+}
+#center-event.active { display: block; animation: event-pop 0.3s ease; }
+@keyframes event-pop {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Player tokens on board */
+.token {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  z-index: 10;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+/* ── Bottom panel ────────────────────────────────────────────── */
+#bottom-panel {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 14px;
+  flex-shrink: 0;
+}
+
+/* Player stats row */
+#my-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+#my-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+#my-name {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  flex: 1;
+}
+#my-money {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  color: var(--green);
+  letter-spacing: 0.05em;
+}
+
+/* Action button */
+#action-btn {
+  width: 100%;
+  height: 54px;
+  background: var(--yellow);
+  color: #080808;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-head);
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: transform 0.08s, opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+#action-btn:active   { transform: scale(0.97); }
+#action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+#action-btn.danger   { background: var(--red); color: var(--text); }
+#action-btn.ghost    { background: transparent; border: 2px solid var(--border); color: var(--muted); }
+
+/* Scoreboard strip */
+#scoreboard {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+#scoreboard::-webkit-scrollbar { display: none; }
+.score-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  transition: border-color 0.2s;
+}
+.score-chip.me { border-color: var(--yellow); }
+.score-chip-dot { width: 8px; height: 8px; border-radius: 50%; }
+.score-chip-money { color: var(--green); }
+.score-chip-name { color: var(--muted); }
+
+/* ══════════════════════════════════════════════════════════════
+   OVERLAY — property buy prompt / tile info
+══════════════════════════════════════════════════════════════ */
+#overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 100;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 0 0;
+  animation: overlay-in 0.2s ease;
+}
+#overlay.open { display: flex; }
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.overlay-sheet {
+  background: var(--surface);
+  border-top: 2px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 20px 32px;
+  animation: sheet-up 0.25s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+@keyframes sheet-up {
+  from { transform: translateY(40px); }
+  to   { transform: translateY(0); }
+}
+.sheet-handle {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+.sheet-title {
+  font-family: var(--font-head);
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.sheet-sub {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.sheet-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+}
+.sheet-detail-row:last-of-type { border-bottom: none; margin-bottom: 16px; }
+.sheet-detail-label { color: var(--muted); }
+.sheet-detail-value { font-weight: 600; }
+.sheet-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.sheet-buttons .btn-primary  { margin: 0; flex: 2; height: 52px; font-size: 1.1rem; }
+.sheet-buttons .btn-secondary { margin: 0; flex: 1; height: 52px; font-size: 1rem; }
+
+/* ══════════════════════════════════════════════════════════════
+   MINIGAME OVERLAY
+══════════════════════════════════════════════════════════════ */
+#minigame-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  flex-direction: column;
+}
+#minigame-overlay.open { display: flex; }
+#minigame-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#minigame-title {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  color: var(--yellow);
+}
+#minigame-stake {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+#minigame-frame {
+  flex: 1;
+  border: none;
+  width: 100%;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GAME OVER SCREEN
+══════════════════════════════════════════════════════════════ */
+#screen-gameover {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+#screen-gameover::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background-image:
+    linear-gradient(rgba(255,224,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,224,0,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+.gameover-inner { position: relative; z-index: 1; max-width: 380px; width: 100%; }
+#gameover-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.4em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+#gameover-winner {
+  font-family: var(--font-head);
+  font-size: clamp(2.5rem, 12vw, 4rem);
+  color: var(--yellow);
+  line-height: 1;
+  margin-bottom: 4px;
+  text-shadow: 3px 3px 0 rgba(255,45,45,0.4);
+}
+#gameover-sub {
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+.final-scores {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  width: 100%;
+}
+.final-score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+.final-score-row:last-child { border-bottom: none; }
+.final-score-rank {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  width: 24px;
+  color: var(--muted);
+}
+.final-score-rank.gold   { color: var(--yellow); }
+.final-score-rank.silver { color: #aaa; }
+.final-score-rank.bronze { color: #cd7f32; }
+.final-score-name { flex: 1; }
+.final-score-money { color: var(--green); font-size: 0.9rem; }
+
+/* ── Utilities ──────────────────────────────────────────────── */
+.hidden { display: none !important; }
+.pulse  { animation: pulse-ring 1.5s ease-in-out infinite; }
+@keyframes pulse-ring {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,224,0,0.4); }
+  50%     { box-shadow: 0 0 0 8px rgba(255,224,0,0); }
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 9000;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Dice roll animation */
+#dice-display {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--surface);
+  border: 2px solid var(--yellow);
+  border-radius: 12px;
+  padding: 24px 32px;
+  text-align: center;
+  z-index: 300;
+  display: none;
+  animation: dice-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+#dice-display.show { display: block; }
+@keyframes dice-pop {
+  from { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+}
+#dice-numbers {
+  font-family: var(--font-head);
+  font-size: 3rem;
+  color: var(--yellow);
+  letter-spacing: 0.1em;
+}
+#dice-sub {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  margin-top: 4px;
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LANDING SCREEN ══════════════════════════════════════ -->
+<div id="screen-landing" class="screen active">
+  <div class="landing-inner">
+    <div class="logo-wrap">
+      <div class="logo-riot">RIOT</div>
+      <div class="logo-roll">ROLL</div>
+      <div class="logo-tagline">fast money · chaos board · 2–15 players</div>
+    </div>
+
+    <div class="input-group" style="width:100%;margin-bottom:12px;">
+      <div class="input-label">YOUR NAME</div>
+      <input type="text" class="text-input" id="input-display-name"
+             placeholder="Enter your name" maxlength="20" autocomplete="off">
+    </div>
+
+    <button class="btn-primary" id="btn-create-game">⚡ CREATE GAME</button>
+
+    <div class="divider">OR</div>
+
+    <button class="btn-secondary" id="btn-show-join">JOIN GAME</button>
+
+    <div id="join-form">
+      <div class="input-group">
+        <div class="input-label">ROOM CODE</div>
+        <input type="text" class="text-input" id="input-room-code"
+               placeholder="Enter room code" maxlength="36" autocomplete="off">
+      </div>
+      <button class="btn-primary" id="btn-join-game" style="margin-top:4px;">JOIN →</button>
+    </div>
+
+    <div style="margin-top:20px;font-size:0.6rem;letter-spacing:0.15em;color:var(--muted);text-align:center;">
+      A PARTY BOARD GAME FOR PEOPLE WHO HATE WAITING
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOBBY SCREEN ════════════════════════════════════════ -->
+<div id="screen-lobby" class="screen">
+  <div class="lobby-inner">
+    <div class="screen-title">LOBBY</div>
+
+    <div class="room-code-box">
+      <div>
+        <div class="room-code-label">ROOM CODE — SHARE WITH FRIENDS</div>
+        <div class="room-code-value" id="lobby-room-code">——</div>
+      </div>
+      <button class="copy-btn" id="btn-copy-code">COPY</button>
+    </div>
+
+    <div class="players-list">
+      <div class="players-list-header">PLAYERS (<span id="player-count">0</span>/15)</div>
+      <div id="players-list-body"></div>
+    </div>
+
+    <div style="font-size:0.6rem;letter-spacing:0.15em;color:var(--muted);text-align:center;">
+      HOST STARTS THE GAME WHEN EVERYONE IS READY
+    </div>
+
+    <button class="btn-primary hidden" id="btn-start-game">🎲 START GAME</button>
+    <button class="btn-secondary" id="btn-leave-lobby">LEAVE</button>
+  </div>
+</div>
+
+<!-- ══ GAME SCREEN ═════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+
+  <!-- HUD -->
+  <div id="game-hud">
+    <div class="hud-logo">RR</div>
+    <div class="hud-phase">PHASE: <span id="hud-phase-text">ROLLING</span></div>
+    <div class="hud-round">ROUND <span id="hud-round">1</span></div>
+  </div>
+
+  <!-- Phase timer bar -->
+  <div id="phase-timer-bar-wrap">
+    <div id="phase-timer-bar"></div>
+  </div>
+
+  <!-- Board -->
+  <div id="board-wrap">
+    <div id="board">
+      <!-- Corners -->
+      <div class="tile-corner" id="corner-go">
+        <div>🚀</div>
+        <div class="corner-label">GO</div>
+      </div>
+      <div class="tile-corner" id="corner-jail">
+        <div>⛓</div>
+        <div class="corner-label">JAIL</div>
+      </div>
+      <div class="tile-corner" id="corner-park">
+        <div>🌿</div>
+        <div class="corner-label">PARK</div>
+      </div>
+      <div class="tile-corner" id="corner-goto">
+        <div>💀</div>
+        <div class="corner-label">GO JAIL</div>
+      </div>
+
+      <!-- Edge tiles rendered by JS -->
+      <div id="tiles-bottom" class="bottom-row"></div>
+      <div id="tiles-top"    class="top-row"></div>
+      <div id="tiles-left"   class="left-col"></div>
+      <div id="tiles-right"  class="right-col"></div>
+
+      <!-- Center -->
+      <div id="board-center">
+        <div id="center-title">RIOT<br>ROLL</div>
+        <div id="center-sub">CHAOS BOARD</div>
+        <div id="center-event"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom panel -->
+  <div id="bottom-panel">
+    <div id="my-stats">
+      <div id="my-dot"></div>
+      <div id="my-name">YOU</div>
+      <div id="my-money">£1000</div>
+    </div>
+    <button id="action-btn" disabled>WAITING…</button>
+    <div id="scoreboard"></div>
+  </div>
+
+</div>
+
+<!-- ══ GAME OVER SCREEN ════════════════════════════════════ -->
+<div id="screen-gameover" class="screen">
+  <div class="gameover-inner">
+    <div id="gameover-label">GAME OVER — WINNER</div>
+    <div id="gameover-winner">—</div>
+    <div id="gameover-sub">FINAL STANDINGS</div>
+    <div class="final-scores" id="final-scores-list"></div>
+    <button class="btn-primary" id="btn-play-again">PLAY AGAIN</button>
+  </div>
+</div>
+
+<!-- ══ OVERLAYS ════════════════════════════════════════════ -->
+
+<!-- Property buy sheet -->
+<div id="overlay">
+  <div class="overlay-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-tile-name">Property</div>
+    <div class="sheet-sub" id="sheet-tile-group">Color Group</div>
+    <div class="sheet-detail-row">
+      <span class="sheet-detail-label">PRICE</span>
+      <span class="sheet-detail-value" id="sheet-price">£0</span>
+    </div>
+    <div class="sheet-detail-row">
+      <span class="sheet-detail-label">BASE RENT</span>
+      <span class="sheet-detail-value" id="sheet-rent">£0</span>
+    </div>
+    <div class="sheet-detail-row">
+      <span class="sheet-detail-label">YOUR BALANCE</span>
+      <span class="sheet-detail-value" id="sheet-balance">£0</span>
+    </div>
+    <div class="sheet-buttons">
+      <button class="btn-primary" id="btn-buy-property">BUY</button>
+      <button class="btn-secondary" id="btn-skip-property">SKIP</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mini-game overlay -->
+<div id="minigame-overlay">
+  <div id="minigame-header">
+    <div id="minigame-title">MINI-GAME</div>
+    <div id="minigame-stake">RENT AT STAKE: £0</div>
+  </div>
+  <iframe id="minigame-frame" src="" allow="autoplay"></iframe>
+</div>
+
+<!-- Dice display -->
+<div id="dice-display">
+  <div id="dice-numbers">🎲</div>
+  <div id="dice-sub">ROLLING…</div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ══ SUPABASE + GAME LOGIC ════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ── CONFIG — replace these with your actual values ──────────
+// Get these from Supabase Dashboard → Settings → API
+const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co'
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'
+
+// Where your mini-game files are hosted
+// If using GitHub Pages: 'https://yourname.github.io/your-repo/riot-roll/public/minigames'
+const MINIGAMES_BASE_URL = './public/minigames'
+
+// ── Player colors ────────────────────────────────────────────
+const PLAYER_COLORS = [
+  '#FFE000','#00FF88','#FF2D2D','#00C2FF',
+  '#C97BFF','#FF8C00','#FF2D9E','#00FFD1',
+  '#FFF','#7BFF6B','#FF6B6B','#6B9EFF',
+  '#FFD700','#E0FF00','#FF00C2'
+]
+
+// Mini-game file map
+const MINIGAME_FILES = {
+  reaction:        'reaction.html',
+  tap_race:        'tap-race.html',
+  memory:          'memory.html',
+  aim:             'aim.html',
+  color_match:     'color-match.html',
+  number_scramble: 'number-scramble.html',
+  simon_says:      'simon-says.html',
+  dodge:           'dodge.html',
+}
+
+// ── State ────────────────────────────────────────────────────
+let supabaseClient
+let state = {
+  roomId:     null,
+  playerId:   null,
+  authToken:  null,
+  isHost:     false,
+  myColor:    PLAYER_COLORS[0],
+  myMoney:    1000,
+  myPosition: 0,
+  myName:     '',
+  players:    [],
+  tiles:      [],
+  properties: {},   // tileId → property row
+  phase:      'rolling',
+  round:      1,
+  phaseEndsAt: null,
+  activeMinigame: null,
+  timerRaf:   null,
+}
+
+// ── Init Supabase ────────────────────────────────────────────
+function initSupabase() {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+}
+
+// ── Screen navigation ────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.getElementById(`screen-${id}`).classList.add('active')
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  setTimeout(() => t.classList.remove('show'), duration)
+}
+
+// ── Dice display ─────────────────────────────────────────────
+function showDice(die1, die2, total) {
+  const d = document.getElementById('dice-display')
+  document.getElementById('dice-numbers').textContent = `${die1} + ${die2}`
+  document.getElementById('dice-sub').textContent = `TOTAL: ${total}`
+  d.classList.add('show')
+  setTimeout(() => d.classList.remove('show'), 2000)
+}
+
+// ══════════════════════════════════════════════════════════════
+// LANDING SCREEN LOGIC
+// ══════════════════════════════════════════════════════════════
+
+document.getElementById('btn-show-join').addEventListener('click', () => {
+  const form = document.getElementById('join-form')
+  form.classList.toggle('open')
+  document.getElementById('btn-show-join').textContent =
+    form.classList.contains('open') ? 'CANCEL' : 'JOIN GAME'
+})
+
+document.getElementById('btn-create-game').addEventListener('click', async () => {
+  const name = document.getElementById('input-display-name').value.trim()
+  if (!name) { showToast('ENTER YOUR NAME FIRST'); return }
+  await createGame(name)
+})
+
+document.getElementById('btn-join-game').addEventListener('click', async () => {
+  const name = document.getElementById('input-display-name').value.trim()
+  const code = document.getElementById('input-room-code').value.trim()
+  if (!name) { showToast('ENTER YOUR NAME FIRST'); return }
+  if (!code) { showToast('ENTER A ROOM CODE'); return }
+  await joinGame(name, code)
+})
+
+// ── Create game ───────────────────────────────────────────────
+async function createGame(displayName) {
+  const btn = document.getElementById('btn-create-game')
+  btn.textContent = 'CREATING…'
+  btn.disabled = true
+
+  try {
+    // Sign in anonymously
+    const { data: authData } = await supabase.auth.signInAnonymously()
+    state.authToken = authData.session.access_token
+    state.myName = displayName
+
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/create-room`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.authToken}`
+      },
+      body: JSON.stringify({ display_name: displayName })
+    })
+    const data = await res.json()
+    if (data.error) throw new Error(data.error)
+
+    state.roomId   = data.room_id
+    state.playerId = data.player_id
+    state.isHost   = true
+    state.myColor  = PLAYER_COLORS[0]
+
+    enterLobby()
+  } catch (err) {
+    showToast('ERROR: ' + err.message)
+    btn.textContent = '⚡ CREATE GAME'
+    btn.disabled = false
+  }
+}
+
+// ── Join game ─────────────────────────────────────────────────
+async function joinGame(displayName, roomCode) {
+  const btn = document.getElementById('btn-join-game')
+  btn.textContent = 'JOINING…'
+  btn.disabled = true
+
+  try {
+    const { data: authData } = await supabase.auth.signInAnonymously()
+    state.authToken = authData.session.access_token
+    state.myName = displayName
+
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/join-room`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.authToken}`
+      },
+      body: JSON.stringify({ room_id: roomCode, display_name: displayName })
+    })
+    const data = await res.json()
+    if (data.error) throw new Error(data.error)
+
+    state.roomId   = data.room_id
+    state.playerId = data.player_id
+    state.isHost   = false
+
+    enterLobby()
+  } catch (err) {
+    showToast('ERROR: ' + err.message)
+    btn.textContent = 'JOIN →'
+    btn.disabled = false
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// LOBBY LOGIC
+// ══════════════════════════════════════════════════════════════
+
+async function enterLobby() {
+  showScreen('lobby')
+
+  // Show room code
+  document.getElementById('lobby-room-code').textContent = state.roomId
+
+  // Show start button only to host
+  if (state.isHost) {
+    document.getElementById('btn-start-game').classList.remove('hidden')
+  }
+
+  // Load existing players
+  await refreshPlayers()
+
+  // Subscribe to player changes in this room
+  supabase
+    .channel(`lobby-${state.roomId}`)
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'players',
+      filter: `room_id=eq.${state.roomId}`
+    }, () => refreshPlayers())
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'rooms',
+      filter: `id=eq.${state.roomId}`
+    }, (payload) => {
+      if (payload.new.status === 'playing') startGame()
+    })
+    .subscribe()
+}
+
+async function refreshPlayers() {
+  const { data: players } = await supabase
+    .from('players')
+    .select('*')
+    .eq('room_id', state.roomId)
+    .order('joined_at', { ascending: true })
+
+  if (!players) return
+  state.players = players
+
+  document.getElementById('player-count').textContent = players.length
+
+  const body = document.getElementById('players-list-body')
+  body.innerHTML = ''
+  players.forEach((p, i) => {
+    const color = PLAYER_COLORS[i % PLAYER_COLORS.length]
+    if (p.id === state.playerId) state.myColor = color
+    const row = document.createElement('div')
+    row.className = 'player-row'
+    row.innerHTML = `
+      <div class="player-dot" style="background:${color}"></div>
+      <div class="player-name">${p.display_name}</div>
+      <div class="player-badge ${i === 0 ? 'host' : ''}">${i === 0 ? 'HOST' : 'PLAYER'}</div>
+    `
+    body.appendChild(row)
+  })
+}
+
+document.getElementById('btn-copy-code').addEventListener('click', () => {
+  navigator.clipboard.writeText(state.roomId).then(() => showToast('ROOM CODE COPIED!'))
+})
+
+document.getElementById('btn-start-game').addEventListener('click', async () => {
+  if (state.players.length < 2) { showToast('NEED AT LEAST 2 PLAYERS'); return }
+  const btn = document.getElementById('btn-start-game')
+  btn.textContent = 'STARTING…'
+  btn.disabled = true
+
+  // Update room status to playing + set first phase timer
+  const { error } = await supabase
+    .from('rooms')
+    .update({
+      status: 'playing',
+      phase: 'rolling',
+      round: 1,
+      phase_ends_at: new Date(Date.now() + 10000).toISOString()
+    })
+    .eq('id', state.roomId)
+
+  if (error) { showToast('ERROR STARTING GAME'); btn.disabled = false; btn.textContent = '🎲 START GAME' }
+})
+
+document.getElementById('btn-leave-lobby').addEventListener('click', () => {
+  supabase.removeAllChannels()
+  showScreen('landing')
+  state.roomId = null
+  state.playerId = null
+})
+
+// ══════════════════════════════════════════════════════════════
+// GAME LOGIC
+// ══════════════════════════════════════════════════════════════
+
+async function startGame() {
+  showScreen('game')
+
+  // Load tiles
+  const { data: tiles } = await supabase
+    .from('tiles')
+    .select('*')
+    .eq('room_id', state.roomId)
+    .order('position', { ascending: true })
+
+  state.tiles = tiles || []
+
+  // Load properties
+  const { data: props } = await supabase
+    .from('properties')
+    .select('*, tile:tile_id(room_id)')
+
+  if (props) {
+    props.forEach(p => { state.properties[p.tile_id] = p })
+  }
+
+  // Load room state
+  const { data: room } = await supabase
+    .from('rooms').select('*').eq('id', state.roomId).single()
+  if (room) {
+    state.phase      = room.phase
+    state.round      = room.round
+    state.phaseEndsAt= room.phase_ends_at
+  }
+
+  renderBoard()
+  renderPlayers()
+  updateHUD()
+  startPhaseTimer()
+  updateActionBtn()
+
+  // Subscribe to all realtime changes
+  supabase
+    .channel(`game-${state.roomId}`)
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'rooms',
+      filter: `id=eq.${state.roomId}`
+    }, (payload) => onRoomUpdate(payload.new))
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'players',
+      filter: `room_id=eq.${state.roomId}`
+    }, () => onPlayersUpdate())
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'mini_games',
+      filter: `room_id=eq.${state.roomId}`
+    }, (payload) => onMinigameCreated(payload.new))
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'mini_games',
+      filter: `room_id=eq.${state.roomId}`
+    }, (payload) => onMinigameUpdated(payload.new))
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'properties'
+    }, () => onPropertiesUpdate())
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'events',
+      filter: `room_id=eq.${state.roomId}`
+    }, (payload) => onEventCreated(payload.new))
+    .subscribe()
+}
+
+// ── Room update ───────────────────────────────────────────────
+function onRoomUpdate(room) {
+  const phaseChanged = room.phase !== state.phase
+  state.phase       = room.phase
+  state.round       = room.round
+  state.phaseEndsAt = room.phase_ends_at
+
+  updateHUD()
+  startPhaseTimer()
+  updateActionBtn()
+
+  if (room.status === 'finished') {
+    showGameOver()
+  }
+
+  if (phaseChanged && room.phase === 'rolling') {
+    showToast(`ROUND ${room.round} — ROLL THE DICE!`)
+  }
+}
+
+// ── Players update ────────────────────────────────────────────
+async function onPlayersUpdate() {
+  const { data: players } = await supabase
+    .from('players')
+    .select('*')
+    .eq('room_id', state.roomId)
+    .order('joined_at', { ascending: true })
+
+  if (!players) return
+  state.players = players
+
+  const me = players.find(p => p.id === state.playerId)
+  if (me) {
+    state.myMoney    = me.money
+    state.myPosition = me.position
+  }
+
+  renderPlayers()
+  updateScoreboard()
+
+  const me2 = players.find(p => p.id === state.playerId)
+  if (me2) {
+    document.getElementById('my-money').textContent = `£${me2.money}`
+  }
+}
+
+// ── Properties update ─────────────────────────────────────────
+async function onPropertiesUpdate() {
+  const { data: props } = await supabase
+    .from('properties')
+    .select('*, tile:tile_id(room_id)')
+
+  if (props) {
+    props.forEach(p => { state.properties[p.tile_id] = p })
+    renderBoard() // re-render to show ownership colors
+  }
+}
+
+// ── Event created ─────────────────────────────────────────────
+function onEventCreated(event) {
+  const LABELS = {
+    swap_properties:    '🔄 SWAP PROPERTIES!',
+    steal_cash:         '💸 CASH STOLEN!',
+    reverse_board:      '🔁 BOARD REVERSED!',
+    double_rent:        '💰 DOUBLE RENT ACTIVE!',
+    everyone_moves_back:'⬅ EVERYONE MOVES BACK!',
+    powerup_drop:       '⚡ POWER-UP DROPPED!',
+  }
+  const label = LABELS[event.type] || event.type
+  const el = document.getElementById('center-event')
+  el.textContent = label
+  el.classList.add('active')
+  showToast(label, 3000)
+  setTimeout(() => el.classList.remove('active'), 4000)
+}
+
+// ── Minigame created ──────────────────────────────────────────
+function onMinigameCreated(mg) {
+  if (!mg.participants.includes(state.playerId)) return
+  state.activeMinigame = mg
+  openMinigame(mg)
+}
+
+function onMinigameUpdated(mg) {
+  if (mg.status !== 'resolved') return
+  closeMinigame()
+  state.activeMinigame = null
+
+  if (mg.winner_id === state.playerId) {
+    showToast('🏆 YOU WON THE MINI-GAME!', 3000)
+  } else {
+    showToast('💀 YOU LOST THE MINI-GAME', 3000)
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// BOARD RENDERING
+// ══════════════════════════════════════════════════════════════
+
+const COLOR_GROUP_HEX = {
+  'brown':     '#8B4513',
+  'light-blue':'#00C2FF',
+  'pink':      '#FF69B4',
+  'orange':    '#FF8C00',
+  'red':       '#FF2D2D',
+  'yellow':    '#FFE000',
+  'green':     '#00FF88',
+  'dark-blue': '#0033CC',
+  'station':   '#888',
+}
+
+const TILE_ICONS = {
+  property: '',
+  event:    '⚡',
+  tax:      '💸',
+  bonus:    '🎁',
+  go:       '🚀',
+}
+
+function renderBoard() {
+  // 40 tiles: positions 0–39
+  // Layout: bottom row = pos 1–9 (right to left)
+  //         left col   = pos 10–18 (bottom to top)
+  //         top row    = pos 19–27 (left to right... reversed)
+  //         right col  = pos 28–36 (top to bottom)
+  // Corners: 0=GO(br), 9.5=jail(bl), 19.5=park(tl), 29.5=goto(tr)
+
+  const bottomIds = [1,2,3,4,5,6,7,8,9]      // positions
+  const leftIds   = [10,11,12,13,14,15,16,17,18]
+  const topIds    = [27,26,25,24,23,22,21,20,19]  // reversed
+  const rightIds  = [36,35,34,33,32,31,30,29,28]  // reversed
+
+  renderEdge('tiles-bottom', bottomIds, 'bottom-row')
+  renderEdge('tiles-left',   leftIds,   'left-col')
+  renderEdge('tiles-top',    topIds,    'top-row')
+  renderEdge('tiles-right',  rightIds,  'right-col')
+
+  positionEdgeTiles()
+}
+
+function getTile(pos) {
+  return state.tiles.find(t => t.position === pos)
+}
+
+function renderEdge(containerId, positions, rowClass) {
+  const container = document.getElementById(containerId)
+  container.innerHTML = ''
+  positions.forEach(pos => {
+    const tile = getTile(pos)
+    if (!tile) return
+    const prop = state.properties[tile.id]
+    const ownerIdx = prop?.owner_id
+      ? state.players.findIndex(p => p.id === prop.owner_id)
+      : -1
+    const ownerColor = ownerIdx >= 0 ? PLAYER_COLORS[ownerIdx % PLAYER_COLORS.length] : null
+    const colorHex = COLOR_GROUP_HEX[tile.color_group] || null
+
+    const el = document.createElement('div')
+    el.className = `tile-edge ${rowClass}`
+    el.dataset.position = pos
+    el.dataset.tileId = tile.id
+
+    let colorBar = ''
+    if (colorHex) {
+      colorBar = `<div class="tile-color-bar" style="background:${colorHex}"></div>`
+    }
+    if (ownerColor) {
+      colorBar = `<div class="tile-color-bar" style="background:${ownerColor};opacity:0.7"></div>`
+    }
+
+    const icon = tile.type !== 'property' ? `<div class="tile-icon">${TILE_ICONS[tile.type] || ''}</div>` : ''
+    const shortName = tile.name.replace('Road','Rd').replace('Street','St').replace('Avenue','Ave')
+
+    el.innerHTML = `
+      ${colorBar}
+      ${icon}
+      <div class="tile-name">${shortName}</div>
+      ${tile.base_price ? `<div class="tile-price">£${tile.base_price}</div>` : ''}
+    `
+
+    // Tile zone badge
+    if (tile.zone) {
+      el.style.outline = `2px solid ${tile.zone === 'double_rent' ? '#FFE000' : tile.zone === 'no_buy' ? '#FF2D2D' : '#C97BFF'}`
+    }
+
+    container.appendChild(el)
+  })
+}
+
+function positionEdgeTiles() {
+  const boardSize = document.getElementById('board').offsetWidth
+  const CORNER    = 60
+  const tileW     = (boardSize - CORNER * 2) / 9
+
+  // Bottom row
+  document.querySelectorAll('#tiles-bottom .tile-edge').forEach((el, i) => {
+    el.style.right = (CORNER + i * tileW) + 'px'
+  })
+  // Top row
+  document.querySelectorAll('#tiles-top .tile-edge').forEach((el, i) => {
+    el.style.left = (CORNER + i * tileW) + 'px'
+  })
+  // Left col
+  document.querySelectorAll('#tiles-left .tile-edge').forEach((el, i) => {
+    el.style.bottom = (CORNER + i * tileW) + 'px'
+  })
+  // Right col
+  document.querySelectorAll('#tiles-right .tile-edge').forEach((el, i) => {
+    el.style.top = (CORNER + i * tileW) + 'px'
+  })
+}
+
+// ── Player tokens ─────────────────────────────────────────────
+function renderPlayers() {
+  // Remove old tokens
+  document.querySelectorAll('.token').forEach(t => t.remove())
+
+  state.players.forEach((p, i) => {
+    if (p.status === 'bankrupt') return
+    const color = PLAYER_COLORS[i % PLAYER_COLORS.length]
+    const pos = p.position
+    const coords = getTileCoords(pos, i, state.players.length)
+
+    const token = document.createElement('div')
+    token.className = 'token'
+    token.id = `token-${p.id}`
+    token.style.background = color
+    token.style.left = coords.x + 'px'
+    token.style.top  = coords.y + 'px'
+    if (p.id === state.playerId) token.classList.add('pulse')
+
+    document.getElementById('board').appendChild(token)
+  })
+
+  // Update my stats
+  const me = state.players.find(p => p.id === state.playerId)
+  if (me) {
+    document.getElementById('my-dot').style.background = state.myColor
+    document.getElementById('my-name').textContent = me.display_name
+    document.getElementById('my-money').textContent = `£${me.money}`
+  }
+
+  updateScoreboard()
+}
+
+function getTileCoords(position, playerIndex, totalPlayers) {
+  const boardSize = document.getElementById('board').offsetWidth
+  const CORNER = 60
+  const tileW  = (boardSize - CORNER * 2) / 9
+  const offset = (playerIndex % 3) * 5  // stagger tokens slightly
+
+  // Bottom row (positions 0–9, right to left)
+  if (position === 0) return { x: boardSize - CORNER/2 - 7, y: boardSize - CORNER/2 - 7 }
+  if (position >= 1 && position <= 9) {
+    const i = position - 1
+    return { x: boardSize - CORNER - tileW * i - tileW/2 - 7 + offset, y: boardSize - CORNER/2 - 7 }
+  }
+  // Left col (positions 10–18, bottom to top)
+  if (position >= 10 && position <= 18) {
+    const i = position - 10
+    return { x: CORNER/2 - 7, y: boardSize - CORNER - tileW * i - tileW/2 - 7 + offset }
+  }
+  // Corner jail
+  if (position === 9) return { x: CORNER/2 - 7, y: boardSize - CORNER/2 - 7 }
+  // Top row (positions 19–27, left to right)
+  if (position >= 19 && position <= 27) {
+    const i = position - 19
+    return { x: CORNER + tileW * i + tileW/2 - 7 + offset, y: CORNER/2 - 7 }
+  }
+  // Right col (positions 28–36, top to bottom)
+  if (position >= 28 && position <= 36) {
+    const i = position - 28
+    return { x: boardSize - CORNER/2 - 7, y: CORNER + tileW * i + tileW/2 - 7 + offset }
+  }
+  // Corners
+  if (position === 18) return { x: CORNER/2 - 7, y: CORNER/2 - 7 }
+  if (position === 27) return { x: boardSize - CORNER/2 - 7, y: CORNER/2 - 7 }
+
+  return { x: boardSize/2, y: boardSize/2 }
+}
+
+// ── Scoreboard ────────────────────────────────────────────────
+function updateScoreboard() {
+  const sb = document.getElementById('scoreboard')
+  sb.innerHTML = ''
+  const sorted = [...state.players].sort((a,b) => b.money - a.money)
+  sorted.forEach((p, i) => {
+    const color = PLAYER_COLORS[state.players.findIndex(pl => pl.id === p.id) % PLAYER_COLORS.length]
+    const chip = document.createElement('div')
+    chip.className = `score-chip ${p.id === state.playerId ? 'me' : ''}`
+    chip.innerHTML = `
+      <div class="score-chip-dot" style="background:${color}"></div>
+      <span class="score-chip-name">${p.display_name.slice(0,8)}</span>
+      <span class="score-chip-money">£${p.money}</span>
+    `
+    sb.appendChild(chip)
+  })
+}
+
+// ── HUD ───────────────────────────────────────────────────────
+function updateHUD() {
+  document.getElementById('hud-phase-text').textContent = state.phase.toUpperCase()
+  document.getElementById('hud-round').textContent = state.round
+}
+
+// ── Phase timer bar ───────────────────────────────────────────
+function startPhaseTimer() {
+  cancelAnimationFrame(state.timerRaf)
+  if (!state.phaseEndsAt) return
+
+  const bar = document.getElementById('phase-timer-bar')
+  const endTime = new Date(state.phaseEndsAt).getTime()
+
+  // Estimate total phase duration from phase type
+  const DURATIONS = { rolling: 10000, resolving: 5000, minigame: 15000, income: 3000 }
+  const totalDuration = DURATIONS[state.phase] || 10000
+  const startTime = endTime - totalDuration
+
+  function tick() {
+    const now = Date.now()
+    const rem = Math.max(0, (endTime - now) / totalDuration)
+    bar.style.transform = `scaleX(${rem})`
+    bar.style.background = rem < 0.3 ? 'var(--red)' : 'var(--yellow)'
+    if (rem > 0) state.timerRaf = requestAnimationFrame(tick)
+  }
+  state.timerRaf = requestAnimationFrame(tick)
+}
+
+// ── Action button ─────────────────────────────────────────────
+function updateActionBtn() {
+  const btn = document.getElementById('action-btn')
+  btn.className = ''
+  btn.onclick = null
+
+  const me = state.players.find(p => p.id === state.playerId)
+  if (!me || me.status !== 'active') {
+    btn.textContent = me?.status === 'bankrupt' ? '💀 BANKRUPT' : 'WAITING…'
+    btn.disabled = true
+    return
+  }
+
+  if (state.phase === 'rolling') {
+    const hasRolled = me.last_roll !== null
+    if (hasRolled) {
+      btn.textContent = '✓ ROLLED — WAITING'
+      btn.disabled = true
+    } else {
+      btn.textContent = '🎲 ROLL DICE'
+      btn.disabled = false
+      btn.onclick = rollDice
+    }
+  } else if (state.phase === 'minigame') {
+    btn.textContent = '⚡ MINI-GAME IN PROGRESS'
+    btn.disabled = true
+  } else {
+    btn.textContent = 'WAITING…'
+    btn.disabled = true
+  }
+}
+
+// ── Roll dice ─────────────────────────────────────────────────
+async function rollDice() {
+  const btn = document.getElementById('action-btn')
+  btn.textContent = 'ROLLING…'
+  btn.disabled = true
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/roll-dice`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.authToken}`
+      },
+      body: JSON.stringify({ room_id: state.roomId })
+    })
+    const data = await res.json()
+    if (data.error) { showToast('ERROR: ' + data.error); updateActionBtn(); return }
+
+    showDice(data.roll.die1, data.roll.die2, data.roll.total)
+
+    if (data.passed_go) showToast('🚀 PASSED GO — £200 COLLECTED!', 3000)
+
+    // Handle outcome
+    setTimeout(() => handleTileOutcome(data), 2100)
+
+  } catch (err) {
+    showToast('CONNECTION ERROR')
+    updateActionBtn()
+  }
+}
+
+function handleTileOutcome(data) {
+  const { outcome, outcome_data, tile } = data
+
+  if (outcome === 'unowned_property' && outcome_data.can_buy) {
+    showBuyPrompt(outcome_data)
+  } else if (outcome === 'minigame') {
+    // Mini-game overlay opens via realtime when mini_games row is inserted
+    showToast(`⚔ MINI-GAME: ${outcome_data.minigame_type.toUpperCase().replace('_',' ')}`, 2000)
+  } else if (outcome === 'tax') {
+    showToast(`💸 TAX PAID: £${outcome_data.amount}`, 2500)
+  } else if (outcome === 'bonus') {
+    showToast(`🎁 BONUS: +£${outcome_data.amount}`, 2500)
+  } else if (outcome === 'event') {
+    // Event toast shown by onEventCreated realtime listener
+  } else if (outcome === 'own_property') {
+    showToast('🏠 YOUR PROPERTY', 1500)
+  } else if (outcome === 'unowned_property' && !outcome_data.can_buy) {
+    showToast(`NOT ENOUGH MONEY TO BUY ${tile.name}`, 2000)
+  }
+}
+
+// ── Buy prompt ────────────────────────────────────────────────
+function showBuyPrompt(data) {
+  document.getElementById('sheet-tile-name').textContent = data.name
+  document.getElementById('sheet-tile-group').textContent = data.color_group?.toUpperCase() || 'PROPERTY'
+  document.getElementById('sheet-price').textContent = `£${data.price}`
+  document.getElementById('sheet-rent').textContent = `£${Math.floor(data.price * 0.1)}`
+  document.getElementById('sheet-balance').textContent = `£${state.myMoney}`
+
+  document.getElementById('overlay').classList.add('open')
+
+  document.getElementById('btn-buy-property').onclick = async () => {
+    document.getElementById('overlay').classList.remove('open')
+    await buyProperty(data.tile_id, data.price)
+  }
+  document.getElementById('btn-skip-property').onclick = () => {
+    document.getElementById('overlay').classList.remove('open')
+    showToast('SKIPPED')
+  }
+}
+
+async function buyProperty(tileId, price) {
+  // Deduct money and set owner via direct DB update
+  // In production you'd want an Edge Function for this
+  const me = state.players.find(p => p.id === state.playerId)
+  if (!me || me.money < price) { showToast('NOT ENOUGH MONEY'); return }
+
+  const { error: moneyErr } = await supabase
+    .from('players')
+    .update({ money: me.money - price })
+    .eq('id', state.playerId)
+
+  const { error: propErr } = await supabase
+    .from('properties')
+    .update({ owner_id: state.playerId })
+    .eq('tile_id', tileId)
+
+  if (moneyErr || propErr) { showToast('ERROR BUYING PROPERTY'); return }
+
+  showToast('🏠 PROPERTY PURCHASED!', 2000)
+}
+
+// ── Mini-game overlay ─────────────────────────────────────────
+function openMinigame(mg) {
+  const file = MINIGAME_FILES[mg.type]
+  if (!file) return
+
+  const params = new URLSearchParams({
+    minigame_id: mg.id,
+    player_id:   state.playerId,
+    rent:        '0',
+    token:       state.authToken,
+    url:         SUPABASE_URL,
+    key:         SUPABASE_ANON_KEY,
+  })
+
+  document.getElementById('minigame-title').textContent =
+    mg.type.toUpperCase().replace(/_/g, ' ')
+
+  document.getElementById('minigame-frame').src =
+    `${MINIGAMES_BASE_URL}/${file}?${params}`
+
+  document.getElementById('minigame-overlay').classList.add('open')
+}
+
+function closeMinigame() {
+  document.getElementById('minigame-overlay').classList.remove('open')
+  document.getElementById('minigame-frame').src = ''
+}
+
+// Listen for minigame completion message from iframe
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'minigame_done') closeMinigame()
+})
+
+// ── Game over ─────────────────────────────────────────────────
+async function showGameOver() {
+  await onPlayersUpdate()
+
+  const sorted = [...state.players].sort((a,b) => b.money - a.money)
+  const winner = sorted[0]
+
+  document.getElementById('gameover-winner').textContent = winner?.display_name || '—'
+
+  const list = document.getElementById('final-scores-list')
+  list.innerHTML = ''
+  const rankLabels = ['gold','silver','bronze']
+  sorted.forEach((p, i) => {
+    const color = PLAYER_COLORS[state.players.findIndex(pl => pl.id === p.id) % PLAYER_COLORS.length]
+    const row = document.createElement('div')
+    row.className = 'final-score-row'
+    row.innerHTML = `
+      <div class="final-score-rank ${rankLabels[i] || ''}">${i+1}</div>
+      <div class="player-dot" style="background:${color};width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+      <div class="final-score-name">${p.display_name}</div>
+      <div class="final-score-money">£${p.money}</div>
+    `
+    list.appendChild(row)
+  })
+
+  showScreen('gameover')
+}
+
+document.getElementById('btn-play-again').addEventListener('click', () => {
+  supabase.removeAllChannels()
+  Object.assign(state, {
+    roomId: null, playerId: null, isHost: false,
+    players: [], tiles: [], properties: {},
+    phase: 'rolling', round: 1, activeMinigame: null
+  })
+  document.getElementById('input-display-name').value = ''
+  showScreen('landing')
+})
+
+// ── Kick off ──────────────────────────────────────────────────
+initSupabase()
+</script>
+</body>
+</html>
