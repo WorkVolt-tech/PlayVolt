@@ -1073,11 +1073,11 @@ body::before {
 <div id="toast"></div>
 
 <!-- ══ SUPABASE + GAME LOGIC ════════════════════════════════ -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabaseClient.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // ── CONFIG — replace these with your actual values ──────────
 // Get these from Supabase Dashboard → Settings → API
-const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabaseClient.co'
+const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co'
 const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'
 
 // Where your mini-game files are hosted
@@ -1127,7 +1127,11 @@ let state = {
 
 // ── Init Supabase ────────────────────────────────────────────
 function initSupabase() {
-  supabase = window.supabaseClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  if (typeof supabase === 'undefined') {
+    document.body.innerHTML = '<div style="color:#FF2D2D;font-family:monospace;padding:40px;text-align:center"><h2>FAILED TO LOAD SUPABASE</h2><p style="margin-top:16px;opacity:0.6">Check your internet connection and refresh.</p></div>'
+    return
+  }
+  supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 }
 
 // ── Screen navigation ────────────────────────────────────────
@@ -1530,6 +1534,7 @@ const TILE_ICONS = {
 }
 
 function renderBoard() {
+  if (!state.tiles || state.tiles.length === 0) return
   // 40 tiles: positions 0–39
   // Layout: bottom row = pos 1–9 (right to left)
   //         left col   = pos 10–18 (bottom to top)
@@ -1600,7 +1605,9 @@ function renderEdge(containerId, positions, rowClass) {
 }
 
 function positionEdgeTiles() {
-  const boardSize = document.getElementById('board').offsetWidth
+  const boardEl = document.getElementById('board')
+  if (!boardEl || boardEl.offsetWidth === 0) return { x: 0, y: 0 }
+  const boardSize = boardEl.offsetWidth
   const CORNER    = 60
   const tileW     = (boardSize - CORNER * 2) / 9
 
