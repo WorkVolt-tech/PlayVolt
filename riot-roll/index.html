@@ -1073,34 +1073,14 @@ body::before {
 <div id="toast"></div>
 
 <!-- ══ SUPABASE + GAME LOGIC ════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// Load Supabase with multiple CDN fallbacks
-(function() {
-  const cdns = [
-    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-    'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js',
-    'https://esm.sh/@supabase/supabase-js@2/dist/umd/supabase.js'
-  ]
-  let tried = 0
-  function tryNext() {
-    if (tried >= cdns.length) return
-    const s = document.createElement('script')
-    s.src = cdns[tried++]
-    s.onload = () => { window._supabaseLoaded = true }
-    s.onerror = () => tryNext()
-    document.head.appendChild(s)
-  }
-  tryNext()
-})()
-</script>
-<script>
-// ── CONFIG — replace these with your actual values ──────────
-// Get these from Supabase Dashboard → Settings → API
+// ── CONFIG ──────────────────────────────────────────────────
 const SUPABASE_URL = 'https://eybzbtyfafmqbkulyvog.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8'
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // Where your mini-game files are hosted
-// If using GitHub Pages: 'https://yourname.github.io/your-repo/riot-roll/public/minigames'
 const MINIGAMES_BASE_URL = './public/minigames'
 
 // ── Player colors ────────────────────────────────────────────
@@ -1124,7 +1104,6 @@ const MINIGAME_FILES = {
 }
 
 // ── State ────────────────────────────────────────────────────
-let supabaseClient
 let state = {
   roomId:     null,
   playerId:   null,
@@ -1144,22 +1123,7 @@ let state = {
   timerRaf:   null,
 }
 
-// ── Init Supabase ────────────────────────────────────────────
-function initSupabase() {
-  // Poll until Supabase CDN script has loaded (max 8 seconds)
-  let attempts = 0
-  const interval = setInterval(() => {
-    attempts++
-    if (typeof supabase !== 'undefined' && supabase.createClient) {
-      clearInterval(interval)
-      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-      console.log('Supabase loaded OK')
-    } else if (attempts > 40) {
-      clearInterval(interval)
-      document.body.innerHTML = '<div style="color:#FF2D2D;font-family:monospace;padding:40px;text-align:center;background:#080808;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center"><h2 style=\'font-size:1.5rem;letter-spacing:0.2em\'>FAILED TO LOAD SUPABASE</h2><p style=\'margin-top:16px;opacity:0.6;font-size:0.8rem\'>Your browser may be blocking CDN scripts.<br><br>Try: Settings → Privacy → turn off tracking prevention<br>or open in a different browser.</p><button onclick=\'location.reload()\' style=\'margin-top:24px;padding:12px 24px;background:#FFE000;color:#000;border:none;font-family:monospace;font-size:1rem;cursor:pointer;border-radius:4px\'>RETRY</button></div>'
-    }
-  }, 200)
-}
+// Supabase initialized above as const db
 
 // ── Screen navigation ────────────────────────────────────────
 function showScreen(id) {
@@ -1209,6 +1173,79 @@ document.getElementById('btn-join-game').addEventListener('click', async () => {
   await joinGame(name, code)
 })
 
+
+// ── Generate 40 tiles for a new room ─────────────────────────
+const TILE_TEMPLATES = [
+  { type: 'go',       name: 'GO',             base_price: null, color_group: null },
+  { type: 'property', name: 'Old Kent Road',  base_price: 60,   color_group: 'brown' },
+  { type: 'event',    name: 'Chaos Card',     base_price: null, color_group: null },
+  { type: 'property', name: 'Whitechapel Rd', base_price: 60,   color_group: 'brown' },
+  { type: 'tax',      name: 'Income Tax',     base_price: null, color_group: null },
+  { type: 'property', name: 'Kings Cross',    base_price: 200,  color_group: 'station' },
+  { type: 'property', name: 'The Angel',      base_price: 100,  color_group: 'light-blue' },
+  { type: 'event',    name: 'Chaos Card',     base_price: null, color_group: null },
+  { type: 'property', name: 'Euston Road',    base_price: 100,  color_group: 'light-blue' },
+  { type: 'property', name: 'Pentonville Rd', base_price: 120,  color_group: 'light-blue' },
+  { type: 'bonus',    name: 'Free Parking',   base_price: null, color_group: null },
+  { type: 'property', name: 'Pall Mall',      base_price: 140,  color_group: 'pink' },
+  { type: 'event',    name: 'Chaos Card',     base_price: null, color_group: null },
+  { type: 'property', name: 'Whitehall',      base_price: 140,  color_group: 'pink' },
+  { type: 'property', name: 'Northumb Ave',   base_price: 160,  color_group: 'pink' },
+  { type: 'property', name: 'Marylebone',     base_price: 200,  color_group: 'station' },
+  { type: 'property', name: 'Bow Street',     base_price: 180,  color_group: 'orange' },
+  { type: 'event',    name: 'Chaos Card',     base_price: null, color_group: null },
+  { type: 'property', name: 'Marlborough St', base_price: 180,  color_group: 'orange' },
+  { type: 'property', name: 'Vine Street',    base_price: 200,  color_group: 'orange' },
+  { type: 'event',    name: 'Power-Up Drop',  base_price: null, color_group: null },
+  { type: 'property', name: 'Strand',         base_price: 220,  color_group: 'red' },
+  { type: 'event',    name: 'Chaos Card',     base_price: null, color_group: null },
+  { type: 'property', name: 'Fleet Street',   base_price: 220,  color_group: 'red' },
+  { type: 'property', name: 'Trafalgar Sq',   base_price: 240,  color_group: 'red' },
+  { type: 'property', name: 'Fenchurch St',   base_price: 200,  color_group: 'station' },
+  { type: 'property', name: 'Leicester Sq',   base_price: 260,  color_group: 'yellow' },
+  { type: 'property', name: 'Coventry St',    base_price: 260,  color_group: 'yellow' },
+  { type: 'tax',      name: 'Luxury Tax',     base_price: null, color_group: null },
+  { type: 'property', name: 'Piccadilly',     base_price: 280,  color_group: 'yellow' },
+  { type: 'bonus',    name: 'Payday',         base_price: null, color_group: null },
+  { type: 'property', name: 'Regent Street',  base_price: 300,  color_group: 'green' },
+  { type: 'event',    name: 'Chaos Card',     base_price: null, color_group: null },
+  { type: 'property', name: 'Oxford Street',  base_price: 300,  color_group: 'green' },
+  { type: 'property', name: 'Bond Street',    base_price: 320,  color_group: 'green' },
+  { type: 'property', name: 'Liverpool St',   base_price: 200,  color_group: 'station' },
+  { type: 'event',    name: 'Chaos Card',     base_price: null, color_group: null },
+  { type: 'property', name: 'Park Lane',      base_price: 350,  color_group: 'dark-blue' },
+  { type: 'tax',      name: 'Super Tax',      base_price: null, color_group: null },
+  { type: 'property', name: 'Mayfair',        base_price: 400,  color_group: 'dark-blue' },
+]
+
+async function generateTiles(roomId, seed) {
+  // Seeded shuffle so all clients see the same board
+  const arr = [...TILE_TEMPLATES]
+  let s = seed
+  for (let i = arr.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff
+    const j = Math.abs(s) % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  const tilesPayload = arr.map((t, i) => ({
+    room_id: roomId, position: i,
+    type: t.type, name: t.name,
+    base_price: t.base_price, color_group: t.color_group, zone: null
+  }))
+  const { data: tiles, error } = await db.from('tiles').insert(tilesPayload).select()
+  if (error) throw error
+  // Create property ownership rows
+  const propTiles = tiles.filter(t => t.type === 'property')
+  if (propTiles.length > 0) {
+    await db.from('properties').insert(
+      propTiles.map(t => ({
+        tile_id: t.id, owner_id: null, level: 0,
+        current_rent: Math.floor(t.base_price * 0.1)
+      }))
+    )
+  }
+}
+
 // ── Create game ───────────────────────────────────────────────
 async function createGame(displayName) {
   const btn = document.getElementById('btn-create-game')
@@ -1216,30 +1253,62 @@ async function createGame(displayName) {
   btn.disabled = true
 
   try {
-    // Sign in anonymously
-    const { data: authData } = await supabaseClient.auth.signInAnonymously()
-    state.authToken = authData.session.access_token
     state.myName = displayName
 
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/create-room`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${state.authToken}`
-      },
-      body: JSON.stringify({ display_name: displayName })
-    })
-    const data = await res.json()
-    if (data.error) throw new Error(data.error)
+    // Generate a short room code like the domino game
+    const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    state.roomId   = data.room_id
-    state.playerId = data.player_id
-    state.isHost   = true
-    state.myColor  = PLAYER_COLORS[0]
+    // Create room directly in DB — no Edge Function needed
+    const { data: room, error: roomErr } = await db
+      .from('rooms')
+      .insert({
+        status: 'lobby',
+        round: 0,
+        phase: 'rolling',
+        board_seed: Math.floor(Math.random() * 1000000)
+      })
+      .select()
+      .single()
+
+    if (roomErr) throw roomErr
+
+    // Generate a player ID
+    const playerId = crypto.randomUUID()
+    state.playerId = playerId
+
+    // Add host as first player
+    const { error: playerErr } = await db
+      .from('players')
+      .insert({
+        id: playerId,
+        room_id: room.id,
+        display_name: displayName.trim().slice(0, 20),
+        money: 1000,
+        position: 0,
+        status: 'active'
+      })
+
+    if (playerErr) throw playerErr
+
+    // Generate tiles for the room
+    await generateTiles(room.id, room.board_seed)
+
+    state.roomId = room.id
+    state.isHost = true
+    state.myColor = PLAYER_COLORS[0]
+
+    // Save to sessionStorage like the domino game does
+    sessionStorage.setItem('riotroll_player', JSON.stringify({
+      playerId: state.playerId,
+      roomId: state.roomId,
+      displayName,
+      isHost: true
+    }))
 
     enterLobby()
   } catch (err) {
     showToast('ERROR: ' + err.message)
+    console.error(err)
     btn.textContent = '⚡ CREATE GAME'
     btn.disabled = false
   }
@@ -1252,28 +1321,56 @@ async function joinGame(displayName, roomCode) {
   btn.disabled = true
 
   try {
-    const { data: authData } = await supabaseClient.auth.signInAnonymously()
-    state.authToken = authData.session.access_token
     state.myName = displayName
 
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/join-room`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${state.authToken}`
-      },
-      body: JSON.stringify({ room_id: roomCode, display_name: displayName })
-    })
-    const data = await res.json()
-    if (data.error) throw new Error(data.error)
+    // Find the room directly in DB
+    const { data: room, error: roomErr } = await db
+      .from('rooms')
+      .select('*')
+      .eq('id', roomCode.trim())
+      .single()
 
-    state.roomId   = data.room_id
-    state.playerId = data.player_id
-    state.isHost   = false
+    if (roomErr || !room) throw new Error('Room not found — check the code')
+    if (room.status !== 'lobby') throw new Error('Game already started')
+
+    // Check player count
+    const { count } = await db
+      .from('players')
+      .select('*', { count: 'exact', head: true })
+      .eq('room_id', room.id)
+
+    if ((count || 0) >= 15) throw new Error('Room is full')
+
+    const playerId = crypto.randomUUID()
+    state.playerId = playerId
+
+    const { error: playerErr } = await db
+      .from('players')
+      .insert({
+        id: playerId,
+        room_id: room.id,
+        display_name: displayName.trim().slice(0, 20),
+        money: 1000,
+        position: 0,
+        status: 'active'
+      })
+
+    if (playerErr) throw playerErr
+
+    state.roomId = room.id
+    state.isHost = false
+
+    sessionStorage.setItem('riotroll_player', JSON.stringify({
+      playerId: state.playerId,
+      roomId: state.roomId,
+      displayName,
+      isHost: false
+    }))
 
     enterLobby()
   } catch (err) {
     showToast('ERROR: ' + err.message)
+    console.error(err)
     btn.textContent = 'JOIN →'
     btn.disabled = false
   }
@@ -1366,7 +1463,7 @@ document.getElementById('btn-start-game').addEventListener('click', async () => 
 })
 
 document.getElementById('btn-leave-lobby').addEventListener('click', () => {
-  supabaseClient.removeAllChannels()
+  db.removeAllChannels()
   showScreen('landing')
   state.roomId = null
   state.playerId = null
@@ -1811,26 +1908,82 @@ async function rollDice() {
   btn.disabled = true
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/roll-dice`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${state.authToken}`
-      },
-      body: JSON.stringify({ room_id: state.roomId })
-    })
-    const data = await res.json()
-    if (data.error) { showToast('ERROR: ' + data.error); updateActionBtn(); return }
+    const die1 = Math.floor(Math.random() * 6) + 1
+    const die2 = Math.floor(Math.random() * 6) + 1
+    const roll = die1 + die2
 
-    showDice(data.roll.die1, data.roll.die2, data.roll.total)
+    const me = state.players.find(p => p.id === state.playerId)
+    if (!me) { updateActionBtn(); return }
 
-    if (data.passed_go) showToast('🚀 PASSED GO — £200 COLLECTED!', 3000)
+    const newPosition = (me.position + roll) % 40
+    const passedGo = newPosition < me.position
+    let moneyDelta = passedGo ? 200 : 0
 
-    // Handle outcome
-    setTimeout(() => handleTileOutcome(data), 2100)
+    // Find the tile
+    const tile = state.tiles.find(t => t.position === newPosition)
+    if (!tile) { updateActionBtn(); return }
+
+    // Resolve tile type
+    let outcome = 'nothing'
+    let outcome_data = {}
+
+    if (tile.type === 'go' || passedGo) {
+      moneyDelta += 200
+      outcome = 'go'
+    } else if (tile.type === 'bonus') {
+      moneyDelta += 50
+      outcome = 'bonus'
+      outcome_data = { amount: 50 }
+    } else if (tile.type === 'tax') {
+      moneyDelta -= 100
+      outcome = 'tax'
+      outcome_data = { amount: 100 }
+    } else if (tile.type === 'event') {
+      outcome = 'event'
+      const eventTypes = ['swap_properties','steal_cash','double_rent','everyone_moves_back','powerup_drop']
+      const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)]
+      await db.from('events').insert({ room_id: state.roomId, type: eventType, resolved: false })
+      outcome_data = { event_type: eventType }
+    } else if (tile.type === 'property') {
+      const prop = state.properties[tile.id]
+      if (!prop || !prop.owner_id) {
+        outcome = 'unowned_property'
+        outcome_data = { tile_id: tile.id, price: tile.base_price, name: tile.name, can_buy: me.money >= tile.base_price, color_group: tile.color_group }
+      } else if (prop.owner_id === state.playerId) {
+        outcome = 'own_property'
+      } else {
+        // Trigger mini-game
+        const types = ['reaction','tap_race','memory','aim','color_match','number_scramble','simon_says','dodge']
+        const mgType = types[Math.floor(Math.random() * types.length)]
+        const expires = new Date(Date.now() + 15000).toISOString()
+        const { data: mg } = await db.from('mini_games').insert({
+          room_id: state.roomId,
+          type: mgType,
+          participants: [state.playerId, prop.owner_id],
+          scores: {},
+          status: 'active',
+          expires_at: expires
+        }).select().single()
+        outcome = 'minigame'
+        outcome_data = { minigame_id: mg?.id, minigame_type: mgType, rent_at_stake: prop.current_rent }
+      }
+    }
+
+    // Update player in DB
+    const newMoney = Math.max(0, me.money + moneyDelta)
+    await db.from('players').update({
+      position: newPosition,
+      last_roll: roll,
+      money: newMoney
+    }).eq('id', state.playerId)
+
+    showDice(die1, die2, roll)
+    if (passedGo) showToast('🚀 PASSED GO — £200 COLLECTED!', 3000)
+    setTimeout(() => handleTileOutcome({ outcome, outcome_data, tile }), 2100)
 
   } catch (err) {
-    showToast('CONNECTION ERROR')
+    console.error(err)
+    showToast('ERROR ROLLING DICE')
     updateActionBtn()
   }
 }
@@ -1908,7 +2061,7 @@ function openMinigame(mg) {
     rent:        '0',
     token:       state.authToken,
     url:         SUPABASE_URL,
-    key:         SUPABASE_ANON_KEY,
+    key:         SUPABASE_KEY,
   })
 
   document.getElementById('minigame-title').textContent =
@@ -1959,7 +2112,7 @@ async function showGameOver() {
 }
 
 document.getElementById('btn-play-again').addEventListener('click', () => {
-  supabaseClient.removeAllChannels()
+  db.removeAllChannels()
   Object.assign(state, {
     roomId: null, playerId: null, isHost: false,
     players: [], tiles: [], properties: {},
@@ -1969,8 +2122,8 @@ document.getElementById('btn-play-again').addEventListener('click', () => {
   showScreen('landing')
 })
 
-// ── Kick off ──────────────────────────────────────────────────
-initSupabase()
+// ── Ready ────────────────────────────────────────────────────
+console.log('Riot Roll ready')
 </script>
 </body>
 </html>
