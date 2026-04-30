@@ -19,11 +19,18 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'https://workvolt-tech.github.io',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+
 const MAX_PLAYERS = 15
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+    return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
   }
 
   try {
@@ -32,7 +39,7 @@ Deno.serve(async (req) => {
     if (!room_id || !display_name) {
       return new Response(
         JSON.stringify({ error: 'room_id and display_name are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -48,7 +55,7 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Not authenticated' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -62,14 +69,14 @@ Deno.serve(async (req) => {
     if (roomError || !room) {
       return new Response(
         JSON.stringify({ error: 'Room not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { status: 404, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
     if (room.status !== 'lobby') {
       return new Response(
         JSON.stringify({ error: 'Game already started' }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
+        { status: 409, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -84,7 +91,7 @@ Deno.serve(async (req) => {
     if ((count ?? 0) >= MAX_PLAYERS) {
       return new Response(
         JSON.stringify({ error: 'Room is full' }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
+        { status: 409, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -100,7 +107,7 @@ Deno.serve(async (req) => {
       // Already in — just return their existing player ID
       return new Response(
         JSON.stringify({ player_id: existing.id, rejoined: true }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -125,14 +132,14 @@ Deno.serve(async (req) => {
         room_id,
         message: 'Joined successfully',
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
 
   } catch (err) {
     console.error('join-room error:', err)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
     )
   }
 })
