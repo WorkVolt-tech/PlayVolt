@@ -491,8 +491,8 @@ function scheduleReload() { clearTimeout(_reloadTimer); _reloadTimer = setTimeou
 
 function subscribeToGame() {
   db.channel('game-' + myInfo.roomId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${myInfo.roomId}` }, scheduleReload)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',   filter: `id=eq.${myInfo.roomId}` }, (payload) => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players', filter: `room_id=eq.${myInfo.roomId}` }, scheduleReload)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_rooms',   filter: `id=eq.${myInfo.roomId}` }, (payload) => {
       if (payload.new && payload.new.status === 'abandoned' && myInfo.seat !== 0) { handleRoomAbandoned(); return; }
       scheduleReload();
     })
