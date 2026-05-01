@@ -953,7 +953,9 @@ async function advanceTurn(myNewHand) {
     return;
   }
   
-  const nextSeat = (roomData.current_turn + 1) % 4;
+  // Always advance from the seat of the player who just acted (myInfo.seat),
+  // not from roomData.current_turn which may be a stale cached value.
+  const nextSeat = (myInfo.seat + 1) % 4;
   await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
 }
 
