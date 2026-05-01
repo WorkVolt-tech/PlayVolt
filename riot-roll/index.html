@@ -1450,6 +1450,7 @@ document.getElementById('btn-copy-code').addEventListener('click', () => {
 })
 
 document.getElementById('btn-start-game').addEventListener('click', async () => {
+  if (!state.isHost) { showToast('ONLY THE HOST CAN START'); return }
   if (state.players.length < 2) { showToast('NEED AT LEAST 2 PLAYERS'); return }
   const btn = document.getElementById('btn-start-game')
   btn.textContent = 'STARTING…'
@@ -1471,9 +1472,15 @@ document.getElementById('btn-start-game').addEventListener('click', async () => 
 
 document.getElementById('btn-leave-lobby').addEventListener('click', () => {
   db.removeAllChannels()
+  const startBtn = document.getElementById('btn-start-game')
+  startBtn.classList.add('hidden')
+  startBtn.disabled = false
+  startBtn.textContent = '🎲 START GAME'
+  Object.assign(state, {
+    roomId: null, roomCode: null, playerId: null, isHost: false,
+    players: [], tiles: [], properties: {}
+  })
   showScreen('landing')
-  state.roomId = null
-  state.playerId = null
 })
 
 // ══════════════════════════════════════════════════════════════
@@ -1482,6 +1489,23 @@ document.getElementById('btn-leave-lobby').addEventListener('click', () => {
 
 async function startGame() {
   showScreen('game')
+
+  // Load players first so board renders correctly
+  const { data: initialPlayers } = await db
+    .from('players')
+    .select('*')
+    .eq('room_id', state.roomId)
+    .order('joined_at', { ascending: true })
+  if (initialPlayers) {
+    state.players = initialPlayers
+    const me = initialPlayers.find(p => p.id === state.playerId)
+    if (me) {
+      state.myMoney = me.money
+      state.myPosition = me.position
+      const myIdx = initialPlayers.findIndex(p => p.id === state.playerId)
+      state.myColor = PLAYER_COLORS[myIdx % PLAYER_COLORS.length]
+    }
+  }
 
   // Load tiles
   const { data: tiles } = await db
@@ -1492,13 +1516,14 @@ async function startGame() {
 
   state.tiles = tiles || []
 
-  // Load properties
+  // Load properties for this room only
   const { data: props } = await db
     .from('properties')
-    .select('*, tile:tile_id(room_id)')
+    .select('*, tile:tile_id(id, room_id)')
+    .eq('tile.room_id', state.roomId)
 
   if (props) {
-    props.forEach(p => { state.properties[p.tile_id] = p })
+    props.filter(p => p.tile).forEach(p => { state.properties[p.tile_id] = p })
   }
 
   // Load room state
@@ -1548,6 +1573,8 @@ async function startGame() {
 // ── Room update ───────────────────────────────────────────────
 function onRoomUpdate(room) {
   const phaseChanged = room.phase !== state.phase
+  const roundChanged = room.round !== state.round
+
   state.phase       = room.phase
   state.round       = room.round
   state.phaseEndsAt = room.phase_ends_at
@@ -1558,10 +1585,13 @@ function onRoomUpdate(room) {
 
   if (room.status === 'finished') {
     showGameOver()
+    return
   }
 
-  if (phaseChanged && room.phase === 'rolling') {
-    showToast(`ROUND ${room.round} — ROLL THE DICE!`)
+  if (roundChanged) {
+    showToast(`🎲 ROUND ${room.round} — ROLL THE DICE!`, 3000)
+  } else if (phaseChanged && room.phase === 'rolling') {
+    showToast('🎲 ROLL THE DICE!')
   }
 }
 
@@ -1595,11 +1625,12 @@ async function onPlayersUpdate() {
 async function onPropertiesUpdate() {
   const { data: props } = await db
     .from('properties')
-    .select('*, tile:tile_id(room_id)')
+    .select('*, tile:tile_id(id, room_id)')
+    .eq('tile.room_id', state.roomId)
 
   if (props) {
-    props.forEach(p => { state.properties[p.tile_id] = p })
-    renderBoard() // re-render to show ownership colors
+    props.filter(p => p.tile).forEach(p => { state.properties[p.tile_id] = p })
+    renderBoard()
   }
 }
 
@@ -1623,9 +1654,12 @@ function onEventCreated(event) {
 
 // ── Minigame created ──────────────────────────────────────────
 function onMinigameCreated(mg) {
-  if (!mg.participants.includes(state.playerId)) return
-  state.activeMinigame = mg
-  openMinigame(mg)
+  if (!mg.participants || !mg.participants.includes(state.playerId)) return
+  // Merge any local rent_at_stake we stored
+  const enriched = { ...mg, rent_at_stake: state._pendingRent || 0 }
+  state.activeMinigame = enriched
+  state._pendingRent = null
+  openMinigame(enriched)
 }
 
 function onMinigameUpdated(mg) {
@@ -1737,7 +1771,7 @@ function renderEdge(containerId, positions, rowClass) {
 
 function positionEdgeTiles() {
   const boardEl = document.getElementById('board')
-  if (!boardEl || boardEl.offsetWidth === 0) return { x: 0, y: 0 }
+  if (!boardEl || boardEl.offsetWidth === 0) return
   const boardSize = boardEl.offsetWidth
   const CORNER    = 60
   const tileW     = (boardSize - CORNER * 2) / 9
@@ -1794,7 +1828,9 @@ function renderPlayers() {
 }
 
 function getTileCoords(position, playerIndex, totalPlayers) {
-  const boardSize = document.getElementById('board').offsetWidth
+  const boardEl = document.getElementById('board')
+  const boardSize = boardEl ? boardEl.offsetWidth : 0
+  if (!boardSize) return { x: 0, y: 0 }
   const CORNER = 60
   const tileW  = (boardSize - CORNER * 2) / 9
   const offset = (playerIndex % 3) * 5  // stagger tokens slightly
@@ -1923,7 +1959,7 @@ async function rollDice() {
     if (!me) { updateActionBtn(); return }
 
     const newPosition = (me.position + roll) % 40
-    const passedGo = newPosition < me.position
+    const passedGo = me.position > 0 && newPosition < me.position
     let moneyDelta = passedGo ? 200 : 0
 
     // Find the tile
@@ -1934,10 +1970,13 @@ async function rollDice() {
     let outcome = 'nothing'
     let outcome_data = {}
 
-    if (tile.type === 'go' || passedGo) {
+    if (tile.type === 'go') {
       moneyDelta += 200
       outcome = 'go'
-    } else if (tile.type === 'bonus') {
+    } else if (passedGo) {
+      // Already collected £200 above for passing GO — continue to resolve tile normally
+    }
+    if (tile.type === 'bonus') {
       moneyDelta += 50
       outcome = 'bonus'
       outcome_data = { amount: 50 }
@@ -1963,6 +2002,7 @@ async function rollDice() {
         const types = ['reaction','tap_race','memory','aim','color_match','number_scramble','simon_says','dodge']
         const mgType = types[Math.floor(Math.random() * types.length)]
         const expires = new Date(Date.now() + 15000).toISOString()
+        state._pendingRent = prop.current_rent
         const { data: mg } = await db.from('mini_games').insert({
           room_id: state.roomId,
           type: mgType,
@@ -1988,11 +2028,62 @@ async function rollDice() {
     if (passedGo) showToast('🚀 PASSED GO — £200 COLLECTED!', 3000)
     setTimeout(() => handleTileOutcome({ outcome, outcome_data, tile }), 2100)
 
+    // Check if all active players have rolled — if so advance the round
+    setTimeout(() => checkAllRolled(), 3000)
+
   } catch (err) {
     console.error(err)
     showToast('ERROR ROLLING DICE')
     updateActionBtn()
   }
+}
+
+// ── Check if all players rolled and advance round if so ───────
+async function checkAllRolled() {
+  const { data: players } = await db
+    .from('players')
+    .select('id, last_roll, status')
+    .eq('room_id', state.roomId)
+
+  if (!players) return
+
+  const activePlayers = players.filter(p => p.status === 'active')
+  const allRolled = activePlayers.every(p => p.last_roll !== null)
+
+  if (!allRolled) return
+
+  // Only the player with the lowest ID advances the round
+  // (cheap way to pick one client as coordinator without a server)
+  const sortedIds = activePlayers.map(p => p.id).sort()
+  if (sortedIds[0] !== state.playerId) return
+
+  // Advance: reset last_roll for everyone and increment round
+  const { data: room } = await db
+    .from('rooms').select('round').eq('id', state.roomId).single()
+  if (!room) return
+
+  const newRound = (room.round || 1) + 1
+
+  // Check win condition — game ends after round 10
+  if (newRound > 10) {
+    await db.from('rooms').update({ status: 'finished' }).eq('id', state.roomId)
+    return
+  }
+
+  // Reset all players last_roll
+  await db.from('players')
+    .update({ last_roll: null })
+    .eq('room_id', state.roomId)
+    .eq('status', 'active')
+
+  // Update room to new round
+  await db.from('rooms')
+    .update({
+      round: newRound,
+      phase: 'rolling',
+      phase_ends_at: new Date(Date.now() + 10000).toISOString()
+    })
+    .eq('id', state.roomId)
 }
 
 function handleTileOutcome(data) {
@@ -2037,8 +2128,6 @@ function showBuyPrompt(data) {
 }
 
 async function buyProperty(tileId, price) {
-  // Deduct money and set owner via direct DB update
-  // In production you'd want an Edge Function for this
   const me = state.players.find(p => p.id === state.playerId)
   if (!me || me.money < price) { showToast('NOT ENOUGH MONEY'); return }
 
@@ -2047,13 +2136,28 @@ async function buyProperty(tileId, price) {
     .update({ money: me.money - price })
     .eq('id', state.playerId)
 
+  if (moneyErr) { showToast('ERROR BUYING PROPERTY'); return }
+
   const { error: propErr } = await db
     .from('properties')
     .update({ owner_id: state.playerId })
     .eq('tile_id', tileId)
 
-  if (moneyErr || propErr) { showToast('ERROR BUYING PROPERTY'); return }
+  if (propErr) { showToast('ERROR BUYING PROPERTY'); return }
 
+  // Update local state immediately so board re-renders without waiting for realtime
+  if (state.properties[tileId]) {
+    state.properties[tileId].owner_id = state.playerId
+  } else {
+    state.properties[tileId] = { tile_id: tileId, owner_id: state.playerId, level: 0, current_rent: Math.floor(price * 0.1) }
+  }
+  // Update local money too
+  const meIdx = state.players.findIndex(p => p.id === state.playerId)
+  if (meIdx >= 0) state.players[meIdx].money = me.money - price
+  document.getElementById('my-money').textContent = `£${me.money - price}`
+
+  renderBoard()
+  updateScoreboard()
   showToast('🏠 PROPERTY PURCHASED!', 2000)
 }
 
@@ -2062,11 +2166,11 @@ function openMinigame(mg) {
   const file = MINIGAME_FILES[mg.type]
   if (!file) return
 
+  const rentAtStake = mg.rent_at_stake || 0
   const params = new URLSearchParams({
     minigame_id: mg.id,
     player_id:   state.playerId,
-    rent:        '0',
-    token:       state.authToken,
+    rent:        rentAtStake,
     url:         SUPABASE_URL,
     key:         SUPABASE_KEY,
   })
