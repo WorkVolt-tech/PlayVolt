@@ -460,7 +460,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   
 let myInfo = null, roomData = null, players = [], boardData = null;
-let selectedTile = null, isMyTurn = false, gameOver = false, toastTimer = null;
+let selectedTile = null, isMyTurn = false, gameOver = false, toastTimer = null, isProcessing = false;
 
 // Tile dimensions
 const TILE_WIDTH = 34;
@@ -677,15 +677,12 @@ function computeSnakePositions(tiles, W, H) {
 
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
           // Hit edge — enter corner column
-          // The first corner tile's actual dims
           const firstCornerDims = renderDims(next, true);
-          // Pin x to the wall edge based on first corner tile's width
-          x = dir > 0
-            ? W - MARGIN - firstCornerDims.w / 2
-            : MARGIN + firstCornerDims.w / 2;
+          // Align corner tile's center-x to the current tile's center-x
+          // (stack directly below/above, not re-pinned to margin)
+          x = x;
           dir *= -1;
           cornerLeft = CORNER_STEPS - 1;
-          // Exact edge-to-edge y step: bottom of current + gap + top of next
           y = y + h / 2 + GAP + firstCornerDims.h / 2;
         } else {
           x = nextX;
@@ -866,6 +863,7 @@ function canPlayOnSide(tile, side) {
 }
 
 async function placeFirstTile(tile) {
+  if (isProcessing) return; isProcessing = true;
   const me = players.find(p => p.seat === myInfo.seat);
   const newHand = me.hand.filter((_, i) => i !== selectedTile.idx);
   
@@ -878,12 +876,12 @@ async function placeFirstTile(tile) {
   await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
   await advanceTurn(newHand);
-  selectedTile = null;
+  selectedTile = null; isProcessing = false;
   document.getElementById('side-picker').classList.remove('visible');
 }
 
 async function confirmPlace(side) {
-  if (!selectedTile) return;
+  if (!selectedTile || isProcessing) return; isProcessing = true;
   
   const me = players.find(p => p.seat === myInfo.seat);
   const tile = selectedTile.tile;
@@ -935,7 +933,7 @@ async function confirmPlace(side) {
   await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
   await advanceTurn(newHand);
-  selectedTile = null;
+  selectedTile = null; isProcessing = false;
   document.getElementById('side-picker').classList.remove('visible');
 }
 
@@ -962,13 +960,11 @@ async function advanceTurn(myNewHand) {
 
 async function endGame(winningSeat) {
   await db.from('domino_rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
-  if (myInfo.seat === 0) {
-    // Host cleans up transient game data; the room row is kept so the scoreboard can display
-    await Promise.all([
-      db.from('game_events').delete().eq('room_id', myInfo.roomId),
-      db.from('board').delete().eq('room_id', myInfo.roomId),
-    ]);
-  }
+  // Winner (whoever triggered endGame) cleans up transient data
+  await Promise.all([
+    db.from('game_events').delete().eq('room_id', myInfo.roomId),
+    db.from('board').delete().eq('room_id', myInfo.roomId),
+  ]);
 }
 
 function showGameOver() {
