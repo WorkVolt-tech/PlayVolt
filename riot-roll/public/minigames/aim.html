@@ -159,6 +159,7 @@
     margin-top: 8px;
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -185,11 +186,16 @@
   const MINIGAME_ID  = p.get('minigame_id') || 'demo'
   const PLAYER_ID    = p.get('player_id')   || 'demo'
   const RENT         = parseInt(p.get('rent') || '0')
-  const TOKEN        = p.get('token')        || ''
   const SUPABASE_URL = p.get('url')          || ''
   const SUPABASE_KEY = p.get('key')          || ''
 
   document.getElementById('stake-amount').textContent = `£${RENT}`
+
+  // Init Supabase directly in the mini-game
+  if (SUPABASE_URL && SUPABASE_KEY && typeof supabase !== 'undefined') {
+    window._db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  }
+  const TYPE_LOWER_BETTER = false
 
   const GAME_DURATION  = 15000  // 15 seconds
   const BASE_SCORE     = 100    // points per hit
@@ -335,50 +341,73 @@
   }
 
   // ── Submit ────────────────────────────────────────────────────
-  async function submitScore(finalScore) {
-    subResult.textContent = `YOUR SCORE: ${finalScore}`
+async function submitScore(score) {
+    subResult.textContent = `YOUR SCORE: ${typeof score === 'number' && score < 1000 && MINIGAME_ID !== 'demo' ? score + 'ms' : score}`
 
     if (MINIGAME_ID === 'demo') {
-      const oppScore = 200 + Math.floor(Math.random() * 800)
-      setTimeout(() => showResult(finalScore >= oppScore ? 'win' : 'lose', finalScore), 800)
+      const opp = Math.floor(Math.random() * 800) + 100
+      const wonDemo = TYPE_LOWER_BETTER ? score < opp : score >= opp
+      setTimeout(() => showResult(wonDemo ? 'win' : 'lose', score), 800)
       return
     }
+
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${TOKEN}`
-        },
-        body: JSON.stringify({ minigame_id: MINIGAME_ID, score: finalScore })
-      })
-      const data = await res.json()
-      if (data.resolved) {
-        showResult(data.winner_id === PLAYER_ID ? 'win' : 'lose', finalScore, data.scores)
-      } else {
-        subResult.textContent = `YOUR SCORE: ${finalScore} — WAITING FOR OPPONENT…`
-        listenForResolution(finalScore)
+      // Submit score directly to Supabase — no Edge Function needed
+      const { data: mg, error: fetchErr } = await window._db
+        .from('mini_games')
+        .select('scores, participants, status, winner_id')
+        .eq('id', MINIGAME_ID)
+        .single()
+
+      if (fetchErr || !mg) { subResult.textContent = 'GAME NOT FOUND'; return }
+      if (mg.status === 'resolved') {
+        showResult(mg.winner_id === PLAYER_ID ? 'win' : 'lose', score)
+        return
       }
-    } catch (err) {
+
+      // Add our score
+      const updatedScores = { ...mg.scores, [PLAYER_ID]: score }
+      await window._db
+        .from('mini_games')
+        .update({ scores: updatedScores })
+        .eq('id', MINIGAME_ID)
+
+      // Check if all participants submitted
+      const allIn = mg.participants.every(pid => updatedScores[pid] !== undefined)
+
+      if (allIn) {
+        // Resolve winner locally
+        const entries = Object.entries(updatedScores)
+        let winnerId = entries[0][0]
+        let best = entries[0][1]
+        for (const [pid, s] of entries) {
+          if (TYPE_LOWER_BETTER ? s < best : s > best) { best = s; winnerId = pid }
+        }
+        await window._db
+          .from('mini_games')
+          .update({ status: 'resolved', winner_id: winnerId })
+          .eq('id', MINIGAME_ID)
+        showResult(winnerId === PLAYER_ID ? 'win' : 'lose', score)
+      } else {
+        subResult.textContent = `YOUR SCORE SUBMITTED — WAITING FOR OPPONENT…`
+        // Poll for resolution
+        const poll = setInterval(async () => {
+          const { data: resolved } = await window._db
+            .from('mini_games')
+            .select('status, winner_id')
+            .eq('id', MINIGAME_ID)
+            .single()
+          if (resolved?.status === 'resolved') {
+            clearInterval(poll)
+            showResult(resolved.winner_id === PLAYER_ID ? 'win' : 'lose', score)
+          }
+        }, 2000)
+        setTimeout(() => clearInterval(poll), 30000)
+      }
+    } catch(err) {
+      console.error(err)
       subResult.textContent = 'CONNECTION ERROR'
     }
-  }
-
-  function listenForResolution(myFinalScore) {
-    pollId = setInterval(async () => {
-      try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/mini_games?id=eq.${MINIGAME_ID}&select=status,winner_id,scores`,
-          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${TOKEN}` } }
-        )
-        const [mg] = await res.json()
-        if (mg?.status === 'resolved') {
-          clearInterval(pollId)
-          showResult(mg.winner_id === PLAYER_ID ? 'win' : 'lose', myFinalScore, mg.scores)
-        }
-      } catch (e) {}
-    }, 2000)
-    setTimeout(() => clearInterval(pollId), 25000)
   }
 
   function showResult(result, myScore, allScores) {

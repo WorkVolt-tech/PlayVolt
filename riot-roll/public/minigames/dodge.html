@@ -127,6 +127,7 @@
   #outcome.lose { color: var(--red); }
   #sub-result { font-size: 0.7rem; letter-spacing: 0.1em; opacity: 0.5; margin-top: 6px; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -158,11 +159,16 @@
   const MINIGAME_ID  = p.get('minigame_id') || 'demo'
   const PLAYER_ID    = p.get('player_id')   || 'demo'
   const RENT         = parseInt(p.get('rent') || '0')
-  const TOKEN        = p.get('token')        || ''
   const SUPABASE_URL = p.get('url')          || ''
   const SUPABASE_KEY = p.get('key')          || ''
 
   document.getElementById('stake-amount').textContent = `£${RENT}`
+
+  // Init Supabase directly in the mini-game
+  if (SUPABASE_URL && SUPABASE_KEY && typeof supabase !== 'undefined') {
+    window._db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  }
+  const TYPE_LOWER_BETTER = false
 
   const GAME_DURATION  = 15000
   const PLAYER_SPEED   = 28        // px per move
@@ -351,7 +357,7 @@
     subResult.textContent = `YOUR SCORE: ${finalScore}`
     if (MINIGAME_ID === 'demo') {
       const opp = 100 + Math.floor(Math.random() * 600)
-      setTimeout(() => showResult(finalScore >= opp ? 'win' : 'lose', finalScore), 800)
+      setTimeout(() => showResult(score >= opp ? 'win' : 'lose', finalScore), 800)
       return
     }
     try {
