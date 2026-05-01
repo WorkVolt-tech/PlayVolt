@@ -678,9 +678,8 @@ function computeSnakePositions(tiles, W, H) {
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
           // Hit edge — enter corner column
           const firstCornerDims = renderDims(next, true);
-          // Align corner tile's center-x to the current tile's center-x
-          // (stack directly below/above, not re-pinned to margin)
-          x = x;
+          // Corner tile's center-x aligns to the turning edge of the last horizontal tile
+          x = x + dir * (w / 2 - firstCornerDims.w / 2);
           dir *= -1;
           cornerLeft = CORNER_STEPS - 1;
           y = y + h / 2 + GAP + firstCornerDims.h / 2;
