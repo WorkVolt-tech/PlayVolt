@@ -739,7 +739,7 @@ function renderBoard() {
     // Orientation:
     //   horizontal run: doubles → vertical (|), non-doubles → horizontal (--)
     //   corner column:  doubles → horizontal (--), non-doubles → vertical (|)
-    const renderVertical = inCorner ? !isDbl : isDbl;
+    const renderVertical = inCorner ? true : isDbl;
 
     // Use the dims that were computed (and collision-checked) by computeSnakePositions
     const rw = positions[i].pw;
