@@ -486,14 +486,17 @@ async function loadGameState() {
   renderAll();
 }
 
+let _reloadTimer = null;
+function scheduleReload() { clearTimeout(_reloadTimer); _reloadTimer = setTimeout(loadGameState, 120); }
+
 function subscribeToGame() {
   db.channel('game-' + myInfo.roomId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'players',     filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',       filter: `id=eq.${myInfo.roomId}` }, (payload) => {
-      if (payload.new.status === 'abandoned' && myInfo.seat !== 0) { handleRoomAbandoned(); return; }
-      loadGameState();
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${myInfo.roomId}` }, scheduleReload)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms',   filter: `id=eq.${myInfo.roomId}` }, (payload) => {
+      if (payload.new && payload.new.status === 'abandoned' && myInfo.seat !== 0) { handleRoomAbandoned(); return; }
+      scheduleReload();
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'board',       filter: `room_id=eq.${myInfo.roomId}` }, loadGameState)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'board',   filter: `room_id=eq.${myInfo.roomId}` }, scheduleReload)
     .subscribe();
 }
 
@@ -953,8 +956,6 @@ async function advanceTurn(myNewHand) {
     return;
   }
   
-  // Always advance from the seat of the player who just acted (myInfo.seat),
-  // not from roomData.current_turn which may be a stale cached value.
   const nextSeat = (myInfo.seat + 1) % 4;
   await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
 }
@@ -962,7 +963,11 @@ async function advanceTurn(myNewHand) {
 async function endGame(winningSeat) {
   await db.from('domino_rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
   if (myInfo.seat === 0) {
-    await db.from('game_events').delete().eq('room_id', myInfo.roomId);
+    // Host cleans up transient game data; the room row is kept so the scoreboard can display
+    await Promise.all([
+      db.from('game_events').delete().eq('room_id', myInfo.roomId),
+      db.from('board').delete().eq('room_id', myInfo.roomId),
+    ]);
   }
 }
 
@@ -1002,7 +1007,13 @@ async function leaveTable() {
   if (!confirm('Leave this table?')) return;
   try {
     if (myInfo.seat === 0) {
-      await db.from('domino_rooms').update({ status: 'abandoned' }).eq('id', myInfo.roomId);
+      // Host leaving — purge all game data for this room to free DB space
+      await Promise.all([
+        db.from('game_events').delete().eq('room_id', myInfo.roomId),
+        db.from('board').delete().eq('room_id', myInfo.roomId),
+        db.from('domino_players').delete().eq('room_id', myInfo.roomId),
+      ]);
+      await db.from('domino_rooms').delete().eq('id', myInfo.roomId);
     } else {
       await db.from('domino_players').update({ is_connected: false }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
     }
