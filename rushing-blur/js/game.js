@@ -40,8 +40,9 @@ function initGame(localPlayerData, roomData, allPlayers) {
       boostFuel:   1,
       isBoosting:  false,
       lap:         0,
-      lastProgress: startPos.progress,
-      progress:    startPos.progress,
+      lastProgress:    0,
+      progress:        0,
+      nextCheckpoint:  0,
       finished:    false,
       finishTime:  null,
       dead:        false,
@@ -153,7 +154,7 @@ function _update(dt) {
   // ── LOCAL PLAYER PHYSICS ──
   if (local && !local.finished) {
     updateLocalPlayer(local, dt, state);
-    updateCarProgress(local);
+    updateCarCheckpoints(local);
     checkPickups(local, state);
 
     // Lap complete?
@@ -176,7 +177,7 @@ function _update(dt) {
   for (const car of Object.values(state.cars)) {
     if (!car || car.isLocal) continue;
     interpolateRemoteCar(car);
-    updateCarProgress(car);
+    updateCarCheckpoints(car);
 
     // Check if remote player finished
     if (car.lap >= state.totalLaps && !car.finished) {
@@ -298,9 +299,10 @@ function _getLocalSnapshot() {
     health:      car.health / car.maxHealth,  // normalized 0-1
     weapon:      car.weapon,
     shieldTimer: car.shieldTimer,
-    lap:         car.lap,
-    progress:    car.progress,
-    finished:    car.finished,
+    lap:            car.lap,
+    nextCheckpoint: car.nextCheckpoint,
+    progress:       car.progress,
+    finished:       car.finished,
   };
 }
 
@@ -316,7 +318,7 @@ function _updateHUD() {
   // Position
   const sorted = Object.values(GS.cars)
     .filter(c => c)
-    .sort((a, b) => (b.lap + b.progress) - (a.lap + a.progress));
+    .sort((a, b) => raceMetric(b) - raceMetric(a));
   const myPos = sorted.findIndex(c => c.isLocal) + 1;
   const suffixes = ['ST','ND','RD','TH','TH','TH'];
   document.getElementById('pos-num').textContent    = myPos;

@@ -10,8 +10,10 @@ const CARS = [
     desc: 'Maximum top speed, paper-thin armour. One bad hit can end your run — but nothing on the grid keeps up with you on a straight.',
     color: '#e8ff00', color2: '#aacc00',
     bodyW: 36, bodyH: 20,
+    // friction = lateral grip (0.97 = grippy, 0.88 = slidey)
+    // maxSpeed in world-units/frame, scaled for large track
     stats: { speed: 10, handling: 5, armour: 2, boost: 8, acceleration: 7 },
-    maxSpeed: 9.0, acceleration: 0.28, handling: 0.055, friction: 0.970,
+    maxSpeed: 28, acceleration: 1.8, handling: 0.048, friction: 0.930,
     maxHealth: 60,  boostMultiplier: 1.65, boostDrain: 0.018, boostRecharge: 0.004,
   },
   {
@@ -22,7 +24,7 @@ const CARS = [
     color: '#ff4400', color2: '#cc2200',
     bodyW: 42, bodyH: 24,
     stats: { speed: 5, handling: 3, armour: 10, boost: 4, acceleration: 4 },
-    maxSpeed: 5.5, acceleration: 0.15, handling: 0.028, friction: 0.960,
+    maxSpeed: 17, acceleration: 0.9, handling: 0.028, friction: 0.960,
     maxHealth: 220, boostMultiplier: 1.30, boostDrain: 0.025, boostRecharge: 0.003,
   },
   {
@@ -33,7 +35,7 @@ const CARS = [
     color: '#00aaff', color2: '#0077cc',
     bodyW: 34, bodyH: 18,
     stats: { speed: 6, handling: 10, armour: 5, boost: 6, acceleration: 8 },
-    maxSpeed: 6.8, acceleration: 0.26, handling: 0.085, friction: 0.975,
+    maxSpeed: 21, acceleration: 1.6, handling: 0.075, friction: 0.970,
     maxHealth: 120, boostMultiplier: 1.45, boostDrain: 0.020, boostRecharge: 0.005,
   },
   {
@@ -44,7 +46,7 @@ const CARS = [
     color: '#ff00aa', color2: '#cc0077',
     bodyW: 38, bodyH: 20,
     stats: { speed: 7, handling: 6, armour: 5, boost: 10, acceleration: 6 },
-    maxSpeed: 7.2, acceleration: 0.22, handling: 0.062, friction: 0.972,
+    maxSpeed: 22, acceleration: 1.3, handling: 0.055, friction: 0.940,
     maxHealth: 110, boostMultiplier: 1.90, boostDrain: 0.012, boostRecharge: 0.008,
   },
   {
@@ -55,7 +57,7 @@ const CARS = [
     color: '#aaffcc', color2: '#66cc88',
     bodyW: 36, bodyH: 20,
     stats: { speed: 7, handling: 7, armour: 6, boost: 7, acceleration: 7 },
-    maxSpeed: 7.0, acceleration: 0.22, handling: 0.065, friction: 0.973,
+    maxSpeed: 22, acceleration: 1.4, handling: 0.060, friction: 0.950,
     maxHealth: 140, boostMultiplier: 1.50, boostDrain: 0.016, boostRecharge: 0.005,
   },
   {
@@ -66,7 +68,7 @@ const CARS = [
     color: '#ff8800', color2: '#cc5500',
     bodyW: 38, bodyH: 19,
     stats: { speed: 8, handling: 8, armour: 4, boost: 7, acceleration: 9 },
-    maxSpeed: 8.0, acceleration: 0.32, handling: 0.075, friction: 0.958,
+    maxSpeed: 25, acceleration: 2.0, handling: 0.068, friction: 0.880,
     maxHealth: 90,  boostMultiplier: 1.55, boostDrain: 0.017, boostRecharge: 0.006,
   },
 ];
