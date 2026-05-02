@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rushing Blur — Jay's PlayVolt</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     SCREEN: INTRO / MAIN MENU
+══════════════════════════════════════ -->
+<div id="screen-intro" class="screen active">
+  <div class="intro-bg">
+    <div class="scanlines"></div>
+    <div class="intro-content">
+      <div class="logo-block">
+        <div class="logo-eyebrow">⚡ Jay's PlayVolt</div>
+        <div class="logo-main">RUSHING<br>BLUR</div>
+        <div class="logo-tagline">Race Online. Fight Dirty. Win.</div>
+      </div>
+      <div class="intro-actions">
+        <button class="btn-volt" id="btn-play">PLAY ONLINE</button>
+        <button class="btn-ghost" id="btn-leaderboard">🏆 Leaderboard</button>
+      </div>
+      <div class="intro-hint">WASD / Arrows · Shift = Boost · Space = Fire weapon</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: LOBBY SETUP (name + join/create)
+══════════════════════════════════════ -->
+<div id="screen-lobby-setup" class="screen">
+  <div class="setup-layout">
+    <div class="setup-header">
+      <button class="back-btn" id="btn-back-from-setup">← Back</button>
+      <div class="setup-title">JOIN A RACE</div>
+    </div>
+    <div class="setup-card">
+      <div class="field-group">
+        <label class="field-label">Your Racer Name</label>
+        <input type="text" id="input-name" placeholder="Enter your name" maxlength="16" autocomplete="off">
+      </div>
+      <div class="setup-divider"><span>then</span></div>
+      <div class="setup-split">
+        <div class="split-side">
+          <div class="split-label">Create a new room</div>
+          <button class="btn-volt" id="btn-create-room">CREATE ROOM</button>
+        </div>
+        <div class="split-divider">OR</div>
+        <div class="split-side">
+          <div class="split-label">Join with a code</div>
+          <input type="text" id="input-room-code" placeholder="ABC123" maxlength="6" class="code-input" autocomplete="off">
+          <button class="btn-ghost" id="btn-join-room">JOIN</button>
+        </div>
+      </div>
+      <div class="setup-msg hidden" id="setup-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: CAR SELECT
+══════════════════════════════════════ -->
+<div id="screen-car-select" class="screen">
+  <div class="carselect-layout">
+    <div class="carselect-header">
+      <button class="back-btn" id="btn-back-from-cars">← Back</button>
+      <div class="carselect-title">CHOOSE YOUR MACHINE</div>
+      <div class="carselect-sub">Pick a car — each one drives differently</div>
+    </div>
+    <div class="car-grid" id="car-grid"></div>
+    <div class="car-detail-panel" id="car-detail-panel">
+      <div class="car-detail-name" id="detail-name">—</div>
+      <div class="car-detail-type" id="detail-type">—</div>
+      <div class="car-stats" id="detail-stats"></div>
+      <div class="car-detail-desc" id="detail-desc">—</div>
+      <button class="btn-volt" id="btn-confirm-car">CONFIRM &amp; ENTER LOBBY</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: RACE LOBBY (waiting room)
+══════════════════════════════════════ -->
+<div id="screen-race-lobby" class="screen">
+  <div class="racelobby-layout">
+    <div class="racelobby-header">
+      <div>
+        <div class="racelobby-title">LOBBY</div>
+        <div class="racelobby-code">Code: <span id="lobby-code">———</span></div>
+      </div>
+      <div class="lobby-status-dot" id="lobby-dot"></div>
+    </div>
+    <div class="lobby-players-grid" id="lobby-players-grid">
+      <!-- populated by JS -->
+    </div>
+    <div class="lobby-settings" id="lobby-settings-host" style="display:none;">
+      <div class="settings-row">
+        <span class="settings-label">Laps</span>
+        <div class="settings-options" id="laps-options">
+          <div class="opt selected" data-laps="3">3</div>
+          <div class="opt" data-laps="5">5</div>
+          <div class="opt" data-laps="7">7</div>
+        </div>
+      </div>
+    </div>
+    <div class="lobby-bottom">
+      <div class="lobby-hint" id="lobby-hint">Waiting for host to start…</div>
+      <button class="btn-volt hidden" id="btn-start-race">START RACE</button>
+      <button class="btn-ghost" id="btn-leave-lobby">Leave</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: GAME
+══════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="hud-top">
+      <div id="hud-pos"><span id="pos-num">1</span><span id="pos-suffix">ST</span></div>
+      <div id="hud-center">
+        <div id="hud-lap">LAP <span id="lap-num">1</span> / <span id="lap-total">3</span></div>
+        <div id="hud-time"><span id="race-time">0:00.000</span></div>
+      </div>
+      <div id="hud-weapon">
+        <div id="weapon-icon">—</div>
+        <div id="weapon-label">NO WEAPON</div>
+      </div>
+    </div>
+    <div id="hud-bottom">
+      <div id="health-bar-wrap">
+        <div class="hud-label">ARMOUR</div>
+        <div class="bar-bg"><div id="health-bar"></div></div>
+      </div>
+      <div id="boost-bar-wrap">
+        <div class="hud-label">BOOST</div>
+        <div class="bar-bg"><div id="boost-bar"></div></div>
+      </div>
+      <div id="speedometer">
+        <div id="speed-num">0</div>
+        <div class="hud-label">KM/H</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live positions panel -->
+  <div id="live-positions">
+    <div class="lp-title">POSITIONS</div>
+    <div id="lp-list"></div>
+  </div>
+
+  <!-- Minimap -->
+  <div id="minimap-wrap">
+    <canvas id="minimap-canvas" width="130" height="130"></canvas>
+  </div>
+
+  <!-- Countdown -->
+  <div id="countdown" class="hidden"></div>
+
+  <!-- Damage flash -->
+  <div id="damage-flash" class="hidden"></div>
+
+  <!-- Kill feed -->
+  <div id="kill-feed"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: RESULTS
+══════════════════════════════════════ -->
+<div id="screen-results" class="screen">
+  <div class="results-layout">
+    <div class="results-eyebrow">⚡ RACE COMPLETE</div>
+    <div class="results-title">FINISH LINE</div>
+    <div id="podium"></div>
+    <div id="results-stats"></div>
+    <div class="results-actions">
+      <button class="btn-volt" id="btn-play-again">RACE AGAIN</button>
+      <button class="btn-ghost" id="btn-back-menu">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: LEADERBOARD
+══════════════════════════════════════ -->
+<div id="screen-leaderboard" class="screen">
+  <div class="lb-layout">
+    <button class="back-btn" id="btn-back-from-lb">← Back</button>
+    <div class="lb-title">🏆 Leaderboard</div>
+    <div class="lb-sub">Fastest race times across all rooms</div>
+    <div id="lb-list">
+      <div class="lb-loading">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/cars.js"></script>
+<script src="js/track.js"></script>
+<script src="js/weapons.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/network.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
