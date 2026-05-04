@@ -654,9 +654,16 @@ function computeSnakePositions(tiles, W, H) {
         // Just finished the single corner tile — resume horizontal in new dir
         inCorner = false;
         const { w: nw, h: nh } = renderDims(next, false);
-        // Step straight down — first tile of new row sits directly below corner tile
+        // Step down from corner bottom edge to next row center
         y = y + h / 2 + GAP + nh / 2;
-        // x stays the same as corner tile (no horizontal shift)
+        // The new row must not overlap the corner column.
+        // Corner occupies [x - TW/2 .. x + TW/2].
+        // New dir is already flipped. Place first tile edge-to-edge with corner:
+        //   if dir == -1 (going left): tile right edge = corner left edge
+        //     => tile center = corner center - TW/2 - GAP - nw/2
+        //   if dir == +1 (going right): tile left edge = corner right edge
+        //     => tile center = corner center + TW/2 + GAP + nw/2
+        x = x + dir * (TW / 2 + GAP + nw / 2);
       } else {
         // Horizontal run
         const { w: nw, h: nh } = renderDims(next, false);
