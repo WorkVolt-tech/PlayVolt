@@ -676,7 +676,7 @@ function computeSnakePositions(tiles, W, H) {
           inCorner = true;
           const cornerDims = renderDims(next, true);
           // Corner tile x-center: last tile outer edge minus half corner width
-          x = x + oldDir * (w / 2 - TW / 2);
+          x = x - oldDir * (w / 2 - TW / 2);
           y = y + h / 2 + GAP + cornerDims.h / 2;
         } else {
           x = nextX;
