@@ -651,33 +651,26 @@ function computeSnakePositions(tiles, W, H) {
       const next = tiles[i + 1];
 
       if (inCorner) {
-        // Just finished the single corner tile — resume horizontal in new dir
+        // Corner tile done — first tile of new row connects edge-to-edge below it
         inCorner = false;
         const { w: nw, h: nh } = renderDims(next, false);
-        // Step down from corner bottom edge to next row center
+        // y: edge-to-edge downward (corner h=TH, next h=nh)
         y = y + h / 2 + GAP + nh / 2;
-        // The new row must not overlap the corner column.
-        // Corner occupies [x - TW/2 .. x + TW/2].
-        // New dir is already flipped. Place first tile edge-to-edge with corner:
-        //   if dir == -1 (going left): tile right edge = corner left edge
-        //     => tile center = corner center - TW/2 - GAP - nw/2
-        //   if dir == +1 (going right): tile left edge = corner right edge
-        //     => tile center = corner center + TW/2 + GAP + nw/2
-        // first tile of new row sits directly below corner — same x, no shift
+        // x: edge-to-edge in the new direction (dir already flipped)
+        x = x + dir * (w / 2 + GAP + nw / 2);
       } else {
-        // Horizontal run
+        // Horizontal run — next tile edge-to-edge
         const { w: nw, h: nh } = renderDims(next, false);
         const nextX = x + dir * (w / 2 + GAP + nw / 2);
 
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
-          // Hit edge — save old dir BEFORE flipping
+          // Reached edge — corner tile goes below, edge-to-edge downward
           const oldDir = dir;
           dir *= -1;
           inCorner = true;
           const cornerDims = renderDims(next, true);
-          // Corner tile connects edge-to-edge with the last horizontal tile:
-          // corner center = last tile center + oldDir*(w/2 + GAP + TW/2)
-          x = x + oldDir * (w / 2 + GAP + TW / 2);
+          // x: corner aligns under last tile — same center x (corner is TW wide, centered under last tile's end)
+          x = x + oldDir * (w / 2 + GAP + cornerDims.w / 2);
           y = y + h / 2 + GAP + cornerDims.h / 2;
         } else {
           x = nextX;
