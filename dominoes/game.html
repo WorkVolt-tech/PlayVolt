@@ -663,7 +663,7 @@ function computeSnakePositions(tiles, W, H) {
         //     => tile center = corner center - TW/2 - GAP - nw/2
         //   if dir == +1 (going right): tile left edge = corner right edge
         //     => tile center = corner center + TW/2 + GAP + nw/2
-        x = x + dir * (TW / 2 + GAP + nw / 2);
+        // first tile of new row sits directly below corner — same x, no shift
       } else {
         // Horizontal run
         const { w: nw, h: nh } = renderDims(next, false);
@@ -675,8 +675,9 @@ function computeSnakePositions(tiles, W, H) {
           dir *= -1;
           inCorner = true;
           const cornerDims = renderDims(next, true);
-          // Corner tile x-center: last tile outer edge minus half corner width
-          x = x - oldDir * (w / 2 - TW / 2);
+          // Corner tile connects edge-to-edge with the last horizontal tile:
+          // corner center = last tile center + oldDir*(w/2 + GAP + TW/2)
+          x = x + oldDir * (w / 2 + GAP + TW / 2);
           y = y + h / 2 + GAP + cornerDims.h / 2;
         } else {
           x = nextX;
