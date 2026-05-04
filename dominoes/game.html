@@ -596,8 +596,8 @@ function renderHand() {
 }
 
 // Snake layout constants
-// Non-doubles: horizontal  → 88 wide, 44 tall  (two halves side by side)
-// Doubles:     vertical    → 44 wide, 88 tall  (two halves stacked)
+// Non-doubles: horizontal  → 56 wide, 28 tall  (two halves side by side)
+// Doubles:     vertical    → 28 wide, 56 tall  (two halves stacked)
 const TW = 28;
 const TH = 56;
 const GAP = 3;
@@ -628,27 +628,22 @@ function tileDims(entry) {
 //   edge meets the double's CENTER (both share the same x).
 //   In all other cases tiles are simply flush edge-to-edge.
 function computeSnakePositions(tiles, W, H) {
-  const MARGIN = 56;
-  const CORNER_STEPS = 1;
+  const MARGIN = 48;
 
   function renderDims(entry, inCorner) {
     const isDbl = entry.tile[0] === entry.tile[1];
+    // In corner: always render vertical (portrait) regardless of double
     return inCorner
-      ? (isDbl ? { w: TH, h: TW } : { w: TW, h: TH })
+      ? { w: TW, h: TH }
       : (isDbl ? { w: TW, h: TH } : { w: TH, h: TW });
   }
 
-  // Walk tiles forward from startIdx, placing each one.
-  // startX/startY = center of the tile at startIdx.
-  // initDir: +1 going right, -1 going left.
-  // Returns positions array indexed from 0 = startIdx.
   function walk(tiles, startIdx, startX, startY, initDir) {
     const pos = [];
-    let x = startX, y = startY, dir = initDir, cornerLeft = 0;
+    let x = startX, y = startY, dir = initDir, inCorner = false;
 
     for (let i = startIdx; i < tiles.length; i++) {
       const entry = tiles[i];
-      const inCorner = cornerLeft > 0;
       const { w, h } = renderDims(entry, inCorner);
       pos.push({ x, y, dir: inCorner ? 0 : dir, pw: w, ph: h });
 
@@ -656,32 +651,27 @@ function computeSnakePositions(tiles, W, H) {
       const next = tiles[i + 1];
 
       if (inCorner) {
-        cornerLeft--;
-        const nextInCorner = cornerLeft > 0;
-        const { w: nw, h: nh } = renderDims(next, nextInCorner);
-
-        if (!nextInCorner) {
-          // First tile of new row: its far edge must touch the corner's outer edge.
-          // Corner outer edge (in -dir, the old direction) = x + (-dir)*(TW/2)
-          // New tile far edge (in -dir) = newX + (-dir)*(nw/2)
-          // Set equal: newX = x + (-dir)*(TW/2) - (-dir)*(nw/2) = x - dir*(TW/2 - nw/2)
-          x = x - dir * (TW / 2 - nw / 2);
-        }
+        // Just finished the single corner tile — resume horizontal in new dir
+        inCorner = false;
+        const { w: nw, h: nh } = renderDims(next, false);
+        // Step down from corner bottom edge to next tile center
         y = y + h / 2 + GAP + nh / 2;
-
+        // Step sideways in the NEW direction from corner center
+        x = x + dir * (TW / 2 + GAP + nw / 2);
       } else {
         // Horizontal run
         const { w: nw, h: nh } = renderDims(next, false);
         const nextX = x + dir * (w / 2 + GAP + nw / 2);
 
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
-          // Hit edge — enter corner column
-          const firstCornerDims = renderDims(next, true);
-          // Corner tile's center-x aligns to the turning edge of the last horizontal tile
-          x = x + dir * (w / 2 - firstCornerDims.w / 2);
+          // Hit edge — save old dir BEFORE flipping
+          const oldDir = dir;
           dir *= -1;
-          cornerLeft = CORNER_STEPS - 1;
-          y = y + h / 2 + GAP + firstCornerDims.h / 2;
+          inCorner = true;
+          const cornerDims = renderDims(next, true);
+          // Corner tile x-center: last tile outer edge minus half corner width
+          x = x + oldDir * (w / 2 - TW / 2);
+          y = y + h / 2 + GAP + cornerDims.h / 2;
         } else {
           x = nextX;
         }
@@ -737,8 +727,8 @@ function renderBoard() {
 
     // Orientation:
     //   horizontal run: doubles → vertical (|), non-doubles → horizontal (--)
-    //   corner column:  doubles → horizontal (--), non-doubles → vertical (|)
-    const renderVertical = inCorner ? !isDbl : isDbl;
+    //   corner tile:    always vertical (|)
+    const renderVertical = inCorner ? true : isDbl;
 
     // Use the dims that were computed (and collision-checked) by computeSnakePositions
     const rw = positions[i].pw;
