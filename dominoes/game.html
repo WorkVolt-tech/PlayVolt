@@ -656,18 +656,17 @@ function computeSnakePositions(tiles, W, H) {
       const next = tiles[i + 1];
 
       if (inCorner) {
-        // Decrement FIRST so we know if the next tile is still in the corner
         cornerLeft--;
         const nextInCorner = cornerLeft > 0;
-        // Use the ACTUAL dims the next tile will render with
         const { w: nw, h: nh } = renderDims(next, nextInCorner);
 
-        // When the LAST corner tile is a double (--), the next horizontal tile
-        // must align to its inner tip: shift x inward by (TH-TW)/2 = 22px
-        if (!nextInCorner && entry.tile[0] === entry.tile[1]) {
-          x = x + dir * (TH - TW) / 2;
+        if (!nextInCorner) {
+          // First tile of new row: its far edge must touch the corner's outer edge.
+          // Corner outer edge (in -dir, the old direction) = x + (-dir)*(TW/2)
+          // New tile far edge (in -dir) = newX + (-dir)*(nw/2)
+          // Set equal: newX = x + (-dir)*(TW/2) - (-dir)*(nw/2) = x - dir*(TW/2 - nw/2)
+          x = x - dir * (TW / 2 - nw / 2);
         }
-        // Strict edge-to-edge y step using actual rendered heights
         y = y + h / 2 + GAP + nh / 2;
 
       } else {
