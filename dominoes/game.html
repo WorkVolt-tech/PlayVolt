@@ -656,8 +656,8 @@ function computeSnakePositions(tiles, W, H) {
         const { w: nw, h: nh } = renderDims(next, false);
         // y: edge-to-edge downward (corner h=TH, next h=nh)
         y = y + h / 2 + GAP + nh / 2;
-        // x: edge-to-edge in the new direction (dir already flipped)
-        x = x + dir * (w / 2 + GAP + nw / 2);
+        // x: first tile of new row flush against corner (no gap at the turn)
+        x = x + dir * (w / 2 + nw / 2);
       } else {
         // Horizontal run — next tile edge-to-edge
         const { w: nw, h: nh } = renderDims(next, false);
