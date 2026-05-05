@@ -446,11 +446,18 @@ html, body {
   <div class="modal">
     <h2 id="winner-title">Victory!</h2>
     <p id="winner-desc"></p>
+    <div id="streak-display" style="display:none;margin-bottom:1rem;">
+      <div style="font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ivory-dim);margin-bottom:0.5rem;">Streak</div>
+      <div id="streak-pips" style="display:flex;gap:6px;justify-content:center;"></div>
+    </div>
     <table class="scores-table">
       <thead><tr><th>Player</th><th>Seat</th><th>Pips Left</th></tr></thead>
       <tbody id="scores-body"></tbody>
     </table>
-    <button class="btn btn-primary" onclick="location.href='index.html'">Back to Lobby</button>
+    <div style="display:flex;gap:0.5rem;justify-content:center;">
+      <button class="btn btn-primary" id="btn-next-round" style="display:none;" onclick="hostStartNextRound()">Next Round</button>
+      <button class="btn btn-outline" id="btn-back-lobby" onclick="location.href='index.html'">Back to Lobby</button>
+    </div>
   </div>
 </div>
 
@@ -506,7 +513,7 @@ function renderAll() {
   renderHand();
   renderBoard();
   updateTurnState();
-  if (roomData.status === 'finished') showGameOver();
+  if (roomData.status === 'finished' || roomData.status === 'round_end') showGameOver();
 }
 
 function renderPlayerTags() {
@@ -864,7 +871,7 @@ async function placeFirstTile(tile) {
   
   await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
-  await advanceTurn(newHand);
+  await advanceTurn(newHand, tile);
   selectedTile = null; isProcessing = false;
   document.getElementById('side-picker').classList.remove('visible');
 }
@@ -921,7 +928,7 @@ async function confirmPlace(side) {
   
   await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
-  await advanceTurn(newHand);
+  await advanceTurn(newHand, tile);
   selectedTile = null; isProcessing = false;
   document.getElementById('side-picker').classList.remove('visible');
 }
@@ -932,14 +939,24 @@ async function passMove() {
   await advanceTurn(me.hand);
 }
 
-async function advanceTurn(myNewHand) {
-  if (myNewHand.length === 0) { await endGame(myInfo.seat); return; }
+async function advanceTurn(myNewHand, lastTilePlayed) {
+  if (myNewHand.length === 0) {
+    // Check for Dekabess: last tile is non-double AND both its pips match both open ends
+    let isDekabess = false;
+    if (lastTilePlayed && lastTilePlayed[0] !== lastTilePlayed[1] && boardData) {
+      const left = boardData.left_end, right = boardData.right_end;
+      isDekabess = (lastTilePlayed[0] === left && lastTilePlayed[1] === right) ||
+                  (lastTilePlayed[1] === left && lastTilePlayed[0] === right);
+    }
+    await endRound(myInfo.seat, isDekabess);
+    return;
+  }
   
   const { data: events } = await db.from('game_events').select('*')
     .eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4);
   
   if (events && events.length === 4 && events.every(e => e.action === 'pass')) {
-    await endGame(null);
+    await endRound(null, false);
     return;
   }
   
@@ -947,40 +964,193 @@ async function advanceTurn(myNewHand) {
   await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
 }
 
-async function endGame(winningSeat) {
-  await db.from('domino_rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
-  // Winner (whoever triggered endGame) cleans up transient data
+async function endRound(winningSeat, isDekabess) {
+  // Only the winning player (or seat 0 on a block) runs this logic
+  const { data: room } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single();
+  if (!room) return;
+
+  const mode = room.game_mode || 'chien';
+  const streak = room.streak || { seat: null, team: null, count: 0 };
+
+  // Determine winner identity for streak tracking
+  // In asosye: seats 0&2 = team A, seats 1&3 = team B
+  let winnerKey = winningSeat; // seat number for chien, 'A'/'B' for asosye
+  if (mode === 'asosye' && winningSeat !== null) {
+    winnerKey = (winningSeat === 0 || winningSeat === 2) ? 'A' : 'B';
+  }
+
+  // If blocked, find actual winner by pip count
+  let resolvedSeat = winningSeat;
+  if (winningSeat === null) {
+    const allPlayers = players;
+    const sorted = allPlayers.map(p => ({
+      seat: p.seat,
+      pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
+    })).sort((a, b) => a.pips - b.pips);
+    resolvedSeat = sorted[0].seat;
+    winnerKey = mode === 'asosye'
+      ? ((resolvedSeat === 0 || resolvedSeat === 2) ? 'A' : 'B')
+      : resolvedSeat;
+  }
+
+  // Update streak
+  let newStreak = { ...streak };
+  const sameWinner = (mode === 'asosye')
+    ? (streak.team === winnerKey)
+    : (streak.seat === winnerKey);
+
+  if (sameWinner) {
+    newStreak.count += isDekabess ? 2 : 1;
+  } else {
+    newStreak = {
+      seat: resolvedSeat,
+      team: winnerKey,
+      count: isDekabess ? 2 : 1
+    };
+  }
+
+  // Check for Vyej (4+ wins in streak)
+  const isVyej = newStreak.count >= 4;
+  // Dekabess on top of Vyej = Vyej+1 (already counted in streak, just flag it)
+  const isVyejPlus = isVyej && isDekabess && newStreak.count > 4;
+
+  // Clean up round data
   await Promise.all([
     db.from('game_events').delete().eq('room_id', myInfo.roomId),
     db.from('board').delete().eq('room_id', myInfo.roomId),
   ]);
+
+  if (isVyej) {
+    // Match over!
+    await db.from('domino_rooms').update({
+      status: 'finished',
+      current_turn: resolvedSeat,
+      streak: newStreak,
+      match_winner: winnerKey,
+      pending_point: isDekabess,
+    }).eq('id', myInfo.roomId);
+  } else {
+    // Round over, continue match
+    await db.from('domino_rooms').update({
+      status: 'round_end',
+      current_turn: resolvedSeat,
+      streak: newStreak,
+      pending_point: isDekabess,
+    }).eq('id', myInfo.roomId);
+  }
+}
+
+async function hostStartNextRound() {
+  // Only run by the player who sees the Next Round button (round winner)
+  document.getElementById('overlay-gameover').classList.add('hidden');
+  gameOver = false;
+
+  const { data: allPlayers } = await db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat');
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function generateDominoSet() {
+    const tiles = [];
+    for (let a = 0; a <= 6; a++)
+      for (let b = a; b <= 6; b++) tiles.push([a, b]);
+    return tiles;
+  }
+
+  const tiles = shuffle(generateDominoSet());
+  const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)];
+  for (let i = 0; i < 4; i++)
+    await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i);
+
+  await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null });
+
+  let startingSeat = 0;
+  for (let i = 0; i < 4; i++)
+    if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break; }
+
+  await db.from('domino_rooms').update({
+    status: 'playing',
+    current_turn: startingSeat,
+  }).eq('id', myInfo.roomId);
 }
 
 function showGameOver() {
   if (gameOver) return;
   gameOver = true;
-  
+
+  const isMatchOver = roomData.status === 'finished';
+  const isDekabess = roomData.pending_point;
+  const streak = roomData.streak || { seat: null, team: null, count: 0 };
+  const mode = myInfo.gameMode || 'chien';
+
+  // Find round winner by seat
+  const roundWinnerSeat = roomData.current_turn;
+  const roundWinner = players.find(p => p.seat === roundWinnerSeat);
+  const isMe = roundWinnerSeat === myInfo.seat;
+  const isMyTeamWin = mode === 'asosye' && (
+    (myInfo.seat === 0 || myInfo.seat === 2) === (roundWinnerSeat === 0 || roundWinnerSeat === 2)
+  );
+
+  // Title
+  let title, desc;
+  if (isDekabess) {
+    title = '🎯 Dekabess!';
+    desc = isMatchOver
+      ? `${escHtml(roundWinner?.nickname || '?')} wins with a Dekabess — Vyèj${streak.count > 4 ? '+1' : ''}! 🏆`
+      : `${escHtml(roundWinner?.nickname || '?')} plays a Dekabess! Counts as 2 wins. Streak: ${streak.count}/4`;
+  } else if (isMatchOver) {
+    title = (isMe || isMyTeamWin) ? '🏆 Vyèj!' : 'Vyèj!';
+    desc = `${escHtml(roundWinner?.nickname || '?')} wins the match with a Vyèj!`;
+  } else {
+    title = isMe || isMyTeamWin ? '✊ Round Won!' : 'Round Over';
+    desc = `${escHtml(roundWinner?.nickname || '?')} wins this round. Streak: ${streak.count}/4`;
+  }
+
+  document.getElementById('winner-title').textContent = title;
+  document.getElementById('winner-desc').textContent = desc;
+
+  // Streak pips
+  const streakDisplay = document.getElementById('streak-display');
+  const streakPips = document.getElementById('streak-pips');
+  streakDisplay.style.display = 'block';
+  streakPips.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const pip = document.createElement('div');
+    pip.style.cssText = `width:18px;height:18px;border-radius:50%;background:${i < streak.count ? 'var(--gold)' : 'var(--border)'};${i < streak.count ? 'box-shadow:0 0 8px rgba(201,168,76,0.6)' : ''}`;
+    streakPips.appendChild(pip);
+  }
+
+  // Scores table
   const results = players.map(p => ({
     nickname: p.nickname,
     seat: p.seat,
     pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
   })).sort((a, b) => a.pips - b.pips);
-  
-  const winner = results[0];
-  const isMe = winner.seat === myInfo.seat;
-  
-  document.getElementById('winner-title').textContent = isMe ? '🎉 You Win!' : `${winner.nickname} Wins!`;
-  document.getElementById('winner-desc').textContent = `${winner.nickname} wins with the lowest pip count (${winner.pips} pips).`;
-  
+
   const tbody = document.getElementById('scores-body');
   tbody.innerHTML = '';
   results.forEach((r, i) => {
     const tr = document.createElement('tr');
-    if (i === 0) tr.className = 'winner';
-    tr.innerHTML = `<td>${escHtml(r.nickname)}${r.seat === myInfo.seat ? ' (you)' : ''}</td><td>${r.seat + 1}</td><td>${r.pips}${i === 0 ? ' 👑' : ''}</td>`;
+    if (r.seat === roundWinnerSeat) tr.className = 'winner';
+    tr.innerHTML = `<td>${escHtml(r.nickname)}${r.seat === myInfo.seat ? ' (you)' : ''}</td><td>${r.seat + 1}</td><td>${r.pips}${r.seat === roundWinnerSeat ? ' 👑' : ''}</td>`;
     tbody.appendChild(tr);
   });
-  
+
+  // Buttons: only round winner (or seat 0 on blocked) starts next round
+  const nextBtn = document.getElementById('btn-next-round');
+  const lobbyBtn = document.getElementById('btn-back-lobby');
+  if (!isMatchOver && isMe) {
+    nextBtn.style.display = 'inline-block';
+  } else {
+    nextBtn.style.display = 'none';
+  }
+  lobbyBtn.textContent = isMatchOver ? 'Back to Lobby' : 'Leave Table';
+
   document.getElementById('overlay-gameover').classList.remove('hidden');
 }
 
