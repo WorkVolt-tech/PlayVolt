@@ -109,6 +109,13 @@ html, body {
   pointer-events: none;
 }
 
+#board-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .board-hint {
   position: absolute;
   top: 50%; left: 50%;
@@ -183,6 +190,7 @@ html, body {
   justify-content: center;
 }
 
+/* Domino tile composition using CSS Grid */
 .domino-tile {
   display: grid;
   grid-template-rows: 1fr 1fr;
@@ -209,11 +217,13 @@ html, body {
 }
 .domino-tile.not-playable { opacity: 0.38; cursor: not-allowed; }
 
+/* Hand tiles are vertical (portrait) */
 .hand-tile {
   width: 28px;
   height: 56px;
 }
 
+/* Board tiles — absolutely positioned for snake layout */
 .board-tile {
   position: absolute;
 }
@@ -230,6 +240,7 @@ html, body {
   grid-template-columns: 1fr 1fr;
 }
 
+/* Divider line */
 .domino-tile::after {
   content: '';
   position: absolute;
@@ -250,6 +261,7 @@ html, body {
   transform: translateX(-50%);
 }
 
+/* Pip containers */
 .pip-half {
   display: flex;
   align-items: center;
@@ -264,6 +276,7 @@ html, body {
   grid-column: 2;
 }
 
+/* Pip images */
 .pip-img {
   width: 70%;
   height: 70%;
@@ -413,7 +426,9 @@ html, body {
     <div class="board-hint" id="board-hint">
       <div class="board-hint-text" id="board-hint-text">Place the first tile</div>
     </div>
-    <div id="board-container" style="position:absolute;inset:0;"></div>
+    <div id="board-container" style="position:absolute;inset:0;">
+      <!-- snake tiles rendered here -->
+    </div>
     <div class="drop-zone" id="drop-left"  style="display:none" onclick="handleDropZone('left')">← Left</div>
     <div class="drop-zone" id="drop-right" style="display:none" onclick="handleDropZone('right')">Right →</div>
   </div>
@@ -447,9 +462,9 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let myInfo = null, roomData = null, players = [], boardData = null;
 let selectedTile = null, isMyTurn = false, gameOver = false, toastTimer = null, isProcessing = false;
 
-const TW = 28;
-const TH = 56;
-const GAP = 3;
+// Tile dimensions
+const TILE_WIDTH = 34;
+const TILE_HEIGHT = 68;
 
 window.addEventListener('load', async () => {
   const raw = sessionStorage.getItem('domino_player');
@@ -510,25 +525,30 @@ function renderPlayerTags() {
   }
 }
 
+// Create a domino tile element using pip images
 function createTileElement(top, bottom, isVertical = true, isDouble = false) {
   const tile = document.createElement('div');
   tile.className = 'domino-tile' + (isVertical ? ' vertical' : ' horizontal');
   
+  // Top/Left half
   const half1 = document.createElement('div');
   half1.className = 'pip-half';
   const img1 = document.createElement('img');
   img1.className = 'pip-img';
   img1.src = `tiles-white/${top}.png`;
   img1.alt = top;
+  
   if (!isVertical && top === 6) img1.style.transform = 'rotate(90deg)';
   half1.appendChild(img1);
   
+  // Bottom/Right half
   const half2 = document.createElement('div');
   half2.className = 'pip-half';
   const img2 = document.createElement('img');
   img2.className = 'pip-img';
   img2.src = `tiles-white/${bottom}.png`;
   img2.alt = bottom;
+  
   if (!isVertical && bottom === 6) img2.style.transform = 'rotate(90deg)';
   half2.appendChild(img2);
   
@@ -539,6 +559,7 @@ function createTileElement(top, bottom, isVertical = true, isDouble = false) {
     tile.appendChild(half1);
     tile.appendChild(half2);
   }
+  
   return tile;
 }
 
@@ -574,73 +595,116 @@ function renderHand() {
   passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
 }
 
-// ==================== LATEST CORNER FIX ====================
+// Snake layout constants
+// Non-doubles: horizontal  → 56 wide, 28 tall  (two halves side by side)
+// Doubles:     vertical    → 28 wide, 56 tall  (two halves stacked)
+const TW = 28;
+const TH = 56;
+const GAP = 3;
+
+// Given a tile entry, return whether it renders vertically
+function isVert(entry) {
+  return entry.tile[0] === entry.tile[1];
+}
+// Return rendered width/height of a tile entry
+function tileDims(entry) {
+  return isVert(entry)
+    ? { w: TW, h: TH }
+    : { w: TH, h: TW };
+}
+
+// Compute snake positions for all tiles, centered on tile[0] (first played).
+// Returns array of {x, y, dir, pw, ph} matching boardData.tiles order.
+//
+// Orientation rules:
+//   Horizontal run : non-double → -- (88w×44h),  double → | (44w×88h)
+//   Corner column  : non-double → |  (44w×88h),  double → -- (88w×44h)
+//
+// Connection rule (the key to no gaps/overlaps):
+//   Each tile connects edge-to-edge with its neighbour.
+//   When a double (|) is in a horizontal run, the neighbour's connecting
+//   edge meets the double's CENTER (both share the same y).
+//   When a double (--) is in a corner column, the neighbour's connecting
+//   edge meets the double's CENTER (both share the same x).
+//   In all other cases tiles are simply flush edge-to-edge.
 function computeSnakePositions(tiles, W, H) {
-  if (tiles.length === 0) return [];
+  const MARGIN = 48;
 
-  const MARGIN = 65;
-  const positions = [];
-  let x = W / 2;
-  let y = H / 2;
-  let dir = 1;
-  let inCorner = false;
+  function renderDims(entry, inCorner) {
+    const isDbl = entry.tile[0] === entry.tile[1];
+    // In corner: always render vertical (portrait) regardless of double
+    return inCorner
+      ? { w: TW, h: TH }
+      : (isDbl ? { w: TW, h: TH } : { w: TH, h: TW });
+  }
 
-  for (let i = 0; i < tiles.length; i++) {
-    const entry = tiles[i];
-    const isDouble = entry.tile[0] === entry.tile[1];
-    const renderVertical = inCorner || isDouble;
+  function walk(tiles, startIdx, startX, startY, initDir) {
+    const pos = [];
+    let x = startX, y = startY, dir = initDir, inCorner = false;
 
-    const w = renderVertical ? TW : TH;
-    const h = renderVertical ? TH : TW;
+    for (let i = startIdx; i < tiles.length; i++) {
+      const entry = tiles[i];
+      const { w, h } = renderDims(entry, inCorner);
+      pos.push({ x, y, dir: inCorner ? 0 : dir, pw: w, ph: h });
 
-    positions.push({ 
-      x: Math.round(x), 
-      y: Math.round(y), 
-      dir: inCorner ? 0 : dir, 
-      pw: w, 
-      ph: h,
-      renderVertical 
-    });
+      if (i === tiles.length - 1) break;
+      const next = tiles[i + 1];
 
-    if (i === tiles.length - 1) break;
-
-    const next = tiles[i + 1];
-    const nextIsDouble = next.tile[0] === next.tile[1];
-    const nw = (inCorner || nextIsDouble) ? TW : TH;
-    const nh = (inCorner || nextIsDouble) ? TH : TW;
-
-    if (inCorner) {
-      inCorner = false;
-      x = x + dir * (TW / 2 + GAP + nw / 2);
-    } else {
-      const nextX = x + dir * (w / 2 + GAP + nw / 2);
-
-      if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
-        // Corner turn (this is the red circle area)
-        inCorner = true;
-        dir *= -1;
-        x = x + dir * (w / 2 - TW / 2);
-        y = y + h / 2 + GAP + nh / 2 - 2;   // -2 to close the gap
+      if (inCorner) {
+        // Just finished the single corner tile — resume horizontal in new dir
+        inCorner = false;
+        const { w: nw, h: nh } = renderDims(next, false);
+        // Step straight down — first tile of new row sits directly below corner tile
+        y = y + h / 2 + GAP + nh / 2;
+        // x stays the same as corner tile (no horizontal shift)
       } else {
-        x = nextX;
+        // Horizontal run
+        const { w: nw, h: nh } = renderDims(next, false);
+        const nextX = x + dir * (w / 2 + GAP + nw / 2);
+
+        if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
+          // Hit edge — save old dir BEFORE flipping
+          const oldDir = dir;
+          dir *= -1;
+          inCorner = true;
+          const cornerDims = renderDims(next, true);
+          // Corner tile x-center: last tile outer edge minus half corner width
+          x = x + oldDir * (w / 2 - TW / 2);
+          y = y + h / 2 + GAP + cornerDims.h / 2;
+        } else {
+          x = nextX;
+        }
       }
     }
+    return pos;
   }
-  return positions;
+
+  if (tiles.length === 0) return [];
+
+  // Center first tile on screen
+  const firstDims = renderDims(tiles[0], false);
+  const cx = W / 2;
+  const cy = H / 2;
+
+  // Walk right from tile 0
+  const rightPos = walk(tiles, 0, cx, cy, 1);
+  return rightPos;
 }
 
 function renderBoard() {
   const container = document.getElementById('board-container');
-  const hint = document.getElementById('board-hint');
-  const dropL = document.getElementById('drop-left');
-  const dropR = document.getElementById('drop-right');
+  const hint      = document.getElementById('board-hint');
+  const dropL     = document.getElementById('drop-left');
+  const dropR     = document.getElementById('drop-right');
 
   container.innerHTML = '';
 
   const hasTiles = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
+
   if (!hasTiles) {
     hint.style.display = 'block';
-    document.getElementById('board-hint-text').textContent = isMyTurn ? 'Click a tile to place it' : 'Place the first tile';
+    document.getElementById('board-hint-text').textContent =
+      isMyTurn ? 'Click a tile to place it' : 'Place the first tile';
     dropL.style.display = 'none';
     dropR.style.display = 'none';
     return;
@@ -649,43 +713,58 @@ function renderBoard() {
   hint.style.display = 'none';
 
   const area = document.getElementById('board-area');
-  const W = area.clientWidth || 900;
-  const H = area.clientHeight || 500;
+  const W = area.clientWidth  || 800;
+  const H = area.clientHeight || 300;
 
   const tiles = boardData.tiles;
   const positions = computeSnakePositions(tiles, W, H);
 
   tiles.forEach((entry, i) => {
-    const pos = positions[i];
     const isDbl = entry.tile[0] === entry.tile[1];
+    const tileDir = positions[i].dir; // +1 right, -1 left, 0 corner-down
+    const inCorner = tileDir === 0;
+
+    // Orientation:
+    //   horizontal run: doubles → vertical (|), non-doubles → horizontal (--)
+    //   corner tile:    always vertical (|)
+    const renderVertical = inCorner ? true : isDbl;
+
+    // Use the dims that were computed (and collision-checked) by computeSnakePositions
+    const rw = positions[i].pw;
+    const rh = positions[i].ph;
 
     let displayTile = [...entry.tile];
     if (!isDbl) {
-      const logicalFlip = !!entry.flipped;
-      const visualMirror = pos.dir === -1;
+      // Logical flip: which pip end connects to the chain
+      // Visual mirror: needed when going left (-1) so connecting pip faces prev tile
+      const logicalFlip  = !!entry.flipped;
+      const visualMirror = tileDir === -1;
       if (logicalFlip !== visualMirror) displayTile = [entry.tile[1], entry.tile[0]];
     }
 
-    const tileEl = createTileElement(displayTile[0], displayTile[1], pos.renderVertical, isDbl);
+    const tileEl = createTileElement(displayTile[0], displayTile[1], renderVertical, isDbl);
     tileEl.classList.add('board-tile');
-    tileEl.classList.add(pos.renderVertical ? 'vertical' : 'horizontal');
-    tileEl.style.left = `${pos.x - pos.pw / 2}px`;
-    tileEl.style.top = `${pos.y - pos.ph / 2}px`;
+    tileEl.classList.add(renderVertical ? 'vertical' : 'horizontal');
+    tileEl.style.left   = `${positions[i].x - rw / 2}px`;
+    tileEl.style.top    = `${positions[i].y - rh / 2}px`;
     tileEl.style.zIndex = i + 1;
     container.appendChild(tileEl);
   });
 
-  const canLeft = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
+  // Drop zones flanking the chain ends
+  const canLeft  = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
   const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
   const posL = positions[0];
   const posR = positions[positions.length - 1];
+  const dimsL = tileDims(tiles[0]);
+  const dimsR = tileDims(tiles[tiles.length - 1]);
 
   if (canLeft && posL) {
     Object.assign(dropL.style, {
       display: 'flex',
-      left: `${Math.max(4, posL.x - posL.pw / 2 - 76)}px`,
-      top: `${posL.y - 22}px`,
-      width: '68px',
+      left:   `${Math.max(4, posL.x - posL.pw / 2 - 76)}px`,
+      top:    `${posL.y - 22}px`,
+      width:  '68px',
       height: '44px'
     });
   } else {
@@ -695,9 +774,9 @@ function renderBoard() {
   if (canRight && posR) {
     Object.assign(dropR.style, {
       display: 'flex',
-      left: `${Math.min(W - 76, posR.x + posR.pw / 2 + 4)}px`,
-      top: `${posR.y - 22}px`,
-      width: '68px',
+      left:   `${Math.min(W - 76, posR.x + posR.pw / 2 + 4)}px`,
+      top:    `${posR.y - 22}px`,
+      width:  '68px',
       height: '44px'
     });
   } else {
@@ -705,7 +784,6 @@ function renderBoard() {
   }
 }
 
-// === REST OF YOUR FUNCTIONS (unchanged) ===
 function updateTurnState() {
   const active = players.find(p => p.seat === roomData.current_turn);
   if (isMyTurn) showToast('Your turn!');
@@ -800,16 +878,32 @@ async function confirmPlace(side) {
   let flipped = false;
   let newOpenEnd;
   
+  // Determine flip and new open end
   if (side === 'right') {
-    if (tile[1] === end) { flipped = true; newOpenEnd = tile[0]; }
-    else if (tile[0] === end) { flipped = false; newOpenEnd = tile[1]; }
-    else { cancelSelection(); return; }
+    if (tile[1] === end) {
+      flipped = true;
+      newOpenEnd = tile[0];
+    } else if (tile[0] === end) {
+      flipped = false;
+      newOpenEnd = tile[1];
+    } else {
+      cancelSelection();
+      return;
+    }
   } else {
-    if (tile[0] === end) { flipped = true; newOpenEnd = tile[1]; }
-    else if (tile[1] === end) { flipped = false; newOpenEnd = tile[0]; }
-    else { cancelSelection(); return; }
+    if (tile[0] === end) {
+      flipped = true;
+      newOpenEnd = tile[1];
+    } else if (tile[1] === end) {
+      flipped = false;
+      newOpenEnd = tile[0];
+    } else {
+      cancelSelection();
+      return;
+    }
   }
   
+  // No coordinate storage needed — renderBoard computes positions from screen size
   const newEntry = { tile, flipped };
   const newTiles = side === 'left' ? [newEntry, ...boardData.tiles] : [...boardData.tiles, newEntry];
   const newLeftEnd  = side === 'left'  ? newOpenEnd : boardData.left_end;
@@ -853,6 +947,7 @@ async function advanceTurn(myNewHand) {
 
 async function endGame(winningSeat) {
   await db.from('domino_rooms').update({ status: 'finished', current_turn: winningSeat ?? 0 }).eq('id', myInfo.roomId);
+  // Winner (whoever triggered endGame) cleans up transient data
   await Promise.all([
     db.from('game_events').delete().eq('room_id', myInfo.roomId),
     db.from('board').delete().eq('room_id', myInfo.roomId),
@@ -895,6 +990,7 @@ async function leaveTable() {
   if (!confirm('Leave this table?')) return;
   try {
     if (myInfo.seat === 0) {
+      // Host leaving — purge all game data for this room to free DB space
       await Promise.all([
         db.from('game_events').delete().eq('room_id', myInfo.roomId),
         db.from('board').delete().eq('room_id', myInfo.roomId),
