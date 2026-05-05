@@ -690,14 +690,26 @@ function computeSnakePositions(tiles, W, H) {
 
   if (tiles.length === 0) return [];
 
-  // Center first tile on screen
-  const firstDims = renderDims(tiles[0], false);
-  const cx = W / 2;
-  const cy = H / 2;
+  // First pass: walk from origin to get bounding box
+  const rawPos = walk(tiles, 0, 0, 0, 1);
 
-  // Walk right from tile 0
-  const rightPos = walk(tiles, 0, cx, cy, 1);
-  return rightPos;
+  // Compute bounding box of all tiles
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  rawPos.forEach(p => {
+    minX = Math.min(minX, p.x - p.pw / 2);
+    maxX = Math.max(maxX, p.x + p.pw / 2);
+    minY = Math.min(minY, p.y - p.ph / 2);
+    maxY = Math.max(maxY, p.y + p.ph / 2);
+  });
+
+  // Offset so the chain is centered in the board area
+  const chainW = maxX - minX;
+  const chainH = maxY - minY;
+  const offsetX = (W - chainW) / 2 - minX;
+  const offsetY = (H - chainH) / 2 - minY;
+
+  rawPos.forEach(p => { p.x += offsetX; p.y += offsetY; });
+  return rawPos;
 }
 
 function renderBoard() {
