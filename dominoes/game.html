@@ -620,20 +620,7 @@ function tileDims(entry) {
     : { w: TH, h: TW };
 }
 
-// Compute snake positions for all tiles, centered on tile[0] (first played).
-// Returns array of {x, y, dir, pw, ph} matching boardData.tiles order.
-//
-// Orientation rules:
-//   Horizontal run : non-double → -- (88w×44h),  double → | (44w×88h)
-//   Corner column  : non-double → |  (44w×88h),  double → -- (88w×44h)
-//
-// Connection rule (the key to no gaps/overlaps):
-//   Each tile connects edge-to-edge with its neighbour.
-//   When a double (|) is in a horizontal run, the neighbour's connecting
-//   edge meets the double's CENTER (both share the same y).
-//   When a double (--) is in a corner column, the neighbour's connecting
-//   edge meets the double's CENTER (both share the same x).
-//   In all other cases tiles are simply flush edge-to-edge.
+
 function computeSnakePositions(tiles, W, H) {
   const MARGIN = 48;
 
