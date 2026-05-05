@@ -109,13 +109,6 @@ html, body {
   pointer-events: none;
 }
 
-#board-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
 .board-hint {
   position: absolute;
   top: 50%; left: 50%;
@@ -581,11 +574,11 @@ function renderHand() {
   passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
 }
 
-// ==================== FIXED CORNER LOGIC ====================
+// ==================== LATEST CORNER FIX ====================
 function computeSnakePositions(tiles, W, H) {
   if (tiles.length === 0) return [];
 
-  const MARGIN = 60;
+  const MARGIN = 65;
   const positions = [];
   let x = W / 2;
   let y = H / 2;
@@ -611,21 +604,23 @@ function computeSnakePositions(tiles, W, H) {
 
     if (i === tiles.length - 1) break;
 
-    const next = tiles[i+1];
+    const next = tiles[i + 1];
     const nextIsDouble = next.tile[0] === next.tile[1];
     const nw = (inCorner || nextIsDouble) ? TW : TH;
     const nh = (inCorner || nextIsDouble) ? TH : TW;
 
     if (inCorner) {
       inCorner = false;
-      x = x + dir * (TW/2 + GAP + nw/2);
+      x = x + dir * (TW / 2 + GAP + nw / 2);
     } else {
-      const nextX = x + dir * (w/2 + GAP + nw/2);
-      if (nextX - nw/2 < MARGIN || nextX + nw/2 > W - MARGIN) {
+      const nextX = x + dir * (w / 2 + GAP + nw / 2);
+
+      if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
+        // Corner turn (this is the red circle area)
         inCorner = true;
         dir *= -1;
-        x = x + dir * (w/2 - TW/2);
-        y = y + h/2 + GAP + nh/2;
+        x = x + dir * (w / 2 - TW / 2);
+        y = y + h / 2 + GAP + nh / 2 - 2;   // -2 to close the gap
       } else {
         x = nextX;
       }
@@ -680,7 +675,6 @@ function renderBoard() {
     container.appendChild(tileEl);
   });
 
-  // Drop zones
   const canLeft = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left');
   const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right');
   const posL = positions[0];
@@ -711,6 +705,7 @@ function renderBoard() {
   }
 }
 
+// === REST OF YOUR FUNCTIONS (unchanged) ===
 function updateTurnState() {
   const active = players.find(p => p.seat === roomData.current_turn);
   if (isMyTurn) showToast('Your turn!');
