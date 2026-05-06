@@ -104,11 +104,7 @@ html, body {
 .board-area:active { cursor: grabbing; }
 
 .reset-view-btn {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  z-index: 20;
-  background: rgba(26,24,20,0.85);
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--ivory-dim);
@@ -117,7 +113,8 @@ html, body {
   letter-spacing: 0.1em;
   padding: 5px 9px;
   cursor: pointer;
-  pointer-events: all;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .reset-view-btn:hover { border-color: var(--gold); color: var(--gold); }
 
@@ -476,13 +473,13 @@ html, body {
     <div id="drop-first"></div>
     <div class="drop-zone" id="drop-left"  style="display:none" onclick="handleDropZone('left')">← Left</div>
     <div class="drop-zone" id="drop-right" style="display:none" onclick="handleDropZone('right')">Right →</div>
-    <button class="reset-view-btn" onclick="resetBoardView()" title="Reset view">⌖ Reset</button>
   </div>
 
   <div class="hand-area">
     <div class="hand-label">Your Hand</div>
     <div class="hand-tiles" id="hand-tiles"></div>
     <div class="action-bar">
+      <button class="reset-view-btn" onclick="resetBoardView()">⌖ Center</button>
       <button class="btn btn-pass" id="btn-pass" onclick="passMove()" disabled>Pass</button>
     </div>
   </div>
@@ -622,7 +619,12 @@ async function loadGameState() {
   // Reset anchor if board is empty (new round started by another player)
   if (!bData || !Array.isArray(bData.tiles) || bData.tiles.length === 0) {
     anchorOriginalIndex = 0;
+  } else if (bData.tiles.length === 1) {
+    anchorOriginalIndex = 0;
   }
+  // Note: anchorOriginalIndex is updated by confirmPlace/placeFirstTile for the
+  // active player. For other players receiving via subscription it stays at 0
+  // (centering tile[0]), which is fine — they can pan/zoom as needed.
   renderAll();
 }
 
@@ -857,11 +859,11 @@ function computeSnakePositions(tiles, W, H) {
       : (isDbl ? { w: TW, h: TH } : { w: TH, h: TW });
   }
 
-  function walk(tiles, startIdx, startX, startY, initDir) {
+  function walk(tiles, startX, startY, initDir) {
     const pos = [];
     let x = startX, y = startY, dir = initDir, inCorner = false;
 
-    for (let i = startIdx; i < tiles.length; i++) {
+    for (let i = 0; i < tiles.length; i++) {
       const entry = tiles[i];
       const { w, h } = renderDims(entry, inCorner);
       pos.push({ x, y, dir: inCorner ? 0 : dir, pw: w, ph: h });
@@ -875,7 +877,7 @@ function computeSnakePositions(tiles, W, H) {
         y = y + h / 2 + GAP + nh / 2;
         x = x + TW / 2 - nw / 2;
       } else {
-        const { w: nw, h: nh } = renderDims(next, false);
+        const { w: nw } = renderDims(next, false);
         const nextX = x + dir * (w / 2 + GAP + nw / 2);
 
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
@@ -895,37 +897,21 @@ function computeSnakePositions(tiles, W, H) {
 
   if (tiles.length === 0) return [];
 
-  // ── Stable anchor: always center the ORIGINAL first tile (index 0 of
-  //    the very first render). When tiles are prepended (left-side plays),
-  //    anchorOriginalIndex grows, so we walk *backward* from the anchor to
-  //    place tiles 0..anchorIdx, then forward for anchorIdx..end.
-  //    This keeps the chain visually stable — no drift on left plays.
-  const anchorIdx = Math.min(anchorOriginalIndex, tiles.length - 1);
+  // Compute start X so the original-first-tile (anchorOriginalIndex) stays at cx.
+  // We do a dry-run walk to find where anchorIdx would land if we started at 0,
+  // then shift the whole chain so that position maps to cx.
   const cx = W / 2;
   const cy = H / 2;
 
-  // Walk rightward from anchor to the end
-  const rightPos = walk(tiles, anchorIdx, cx, cy, 1);  // positions[anchorIdx..end]
+  const anchorIdx = Math.min(anchorOriginalIndex, tiles.length - 1);
 
-  // Walk leftward from anchor to index 0 (if any tiles precede anchor)
-  // We do this by reversing the tile array from 0..anchorIdx and walking right,
-  // then mirror the x-positions about cx.
-  const leftPositions = [];
-  if (anchorIdx > 0) {
-    // Walk left means: start from anchor and step in -1 direction
-    // We simulate this by walking the reversed prefix rightward, then flip x
-    const prefix = tiles.slice(0, anchorIdx + 1).reverse(); // anchor is first element
-    const rawLeft = walk(prefix, 0, cx, cy, 1);
-    // rawLeft[0] = anchor (same as rightPos[0]), rawLeft[1..] = tiles going left
-    for (let i = 1; i < rawLeft.length; i++) {
-      // Mirror x about cx
-      const mirrored = { ...rawLeft[i], x: 2 * cx - rawLeft[i].x, dir: -rawLeft[i].dir };
-      leftPositions.unshift(mirrored); // build array in original order (0..anchorIdx-1)
-    }
-  }
+  // Dry-run: walk from x=0 to find relative position of anchor tile
+  const dryRun = walk(tiles, 0, cy, 1);
+  const anchorX = dryRun[anchorIdx].x;
 
-  // Combine: leftPositions (tiles 0..anchorIdx-1) + rightPos (tiles anchorIdx..end)
-  return [...leftPositions, ...rightPos];
+  // Real walk: shift startX so anchorX lands at cx
+  const startX = cx - anchorX;
+  return walk(tiles, startX, cy, 1);
 }
 
 function renderBoard() {
@@ -972,11 +958,9 @@ function renderBoard() {
 
     let displayTile = [...entry.tile];
     if (!isDbl) {
-      // Logical flip: which pip end connects to the chain
-      // Visual mirror: needed when going left (-1) so connecting pip faces prev tile
-      const logicalFlip  = !!entry.flipped;
-      const visualMirror = tileDir === -1;
-      if (logicalFlip !== visualMirror) displayTile = [entry.tile[1], entry.tile[0]];
+      // flipped=true means the tile was stored reversed relative to its natural order
+      // In all cases (left or right play), simply swap when flipped
+      if (entry.flipped) displayTile = [entry.tile[1], entry.tile[0]];
     }
 
     const tileEl = createTileElement(displayTile[0], displayTile[1], renderVertical, isDbl);
