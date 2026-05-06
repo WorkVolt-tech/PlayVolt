@@ -99,7 +99,27 @@ html, body {
   background-image: radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%);
   position: relative;
   overflow: hidden;
+  cursor: grab;
 }
+.board-area:active { cursor: grabbing; }
+
+.reset-view-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 20;
+  background: rgba(26,24,20,0.85);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--ivory-dim);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  padding: 5px 9px;
+  cursor: pointer;
+  pointer-events: all;
+}
+.reset-view-btn:hover { border-color: var(--gold); color: var(--gold); }
 
 .board-area::before {
   content: '';
@@ -449,13 +469,14 @@ html, body {
     <div class="board-hint" id="board-hint">
       <div class="board-hint-text" id="board-hint-text">Place the first tile</div>
     </div>
-    <div id="board-container" style="position:absolute;inset:0;">
+    <div id="board-container" style="position:absolute;inset:0;transform-origin:0 0;">
       <!-- snake tiles rendered here -->
     </div>
     <!-- Drop zone for first tile (entire board) -->
     <div id="drop-first"></div>
     <div class="drop-zone" id="drop-left"  style="display:none" onclick="handleDropZone('left')">← Left</div>
     <div class="drop-zone" id="drop-right" style="display:none" onclick="handleDropZone('right')">Right →</div>
+    <button class="reset-view-btn" onclick="resetBoardView()" title="Reset view">⌖ Reset</button>
   </div>
 
   <div class="hand-area">
@@ -498,12 +519,95 @@ let selectedTile = null, isMyTurn = false, gameOver = false, toastTimer = null, 
 const TILE_WIDTH = 34;
 const TILE_HEIGHT = 68;
 
+// ── Board pan/zoom state ──────────────────────────────────────────
+let boardTranslate = { x: 0, y: 0 };
+let boardScale = 1;
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+let pinchStartDist = 0;
+let pinchStartScale = 1;
+
+function initBoardGestures() {
+  const area = document.getElementById('board-area');
+
+  // Touch: single-finger pan, two-finger pinch-zoom
+  area.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      isPanning = true;
+      panStart = { x: e.touches[0].clientX - boardTranslate.x, y: e.touches[0].clientY - boardTranslate.y };
+    } else if (e.touches.length === 2) {
+      isPanning = false;
+      pinchStartDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      pinchStartScale = boardScale;
+    }
+  }, { passive: true });
+
+  area.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && isPanning) {
+      boardTranslate.x = e.touches[0].clientX - panStart.x;
+      boardTranslate.y = e.touches[0].clientY - panStart.y;
+      applyBoardTransform();
+    } else if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      boardScale = Math.min(2, Math.max(0.35, pinchStartScale * (dist / pinchStartDist)));
+      applyBoardTransform();
+    }
+  }, { passive: true });
+
+  area.addEventListener('touchend', () => { isPanning = false; }, { passive: true });
+
+  // Mouse: drag to pan
+  area.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.drop-zone') || e.target.closest('#drop-first')) return;
+    isPanning = true;
+    panStart = { x: e.clientX - boardTranslate.x, y: e.clientY - boardTranslate.y };
+    area.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    boardTranslate.x = e.clientX - panStart.x;
+    boardTranslate.y = e.clientY - panStart.y;
+    applyBoardTransform();
+  });
+  window.addEventListener('mouseup', () => { isPanning = false; area.style.cursor = ''; });
+
+  // Wheel to zoom
+  area.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    boardScale = Math.min(2, Math.max(0.35, boardScale * (e.deltaY < 0 ? 1.1 : 0.9)));
+    applyBoardTransform();
+  }, { passive: false });
+}
+
+function applyBoardTransform() {
+  document.getElementById('board-container').style.transform =
+    `translate(${boardTranslate.x}px, ${boardTranslate.y}px) scale(${boardScale})`;
+  document.getElementById('board-container').style.transformOrigin = '0 0';
+}
+
+function resetBoardView() {
+  boardTranslate = { x: 0, y: 0 };
+  boardScale = 1;
+  applyBoardTransform();
+}
+
+// Track which tile index in the DB array is the "original" first tile
+// so the anchor stays stable when tiles are prepended (left side plays)
+let anchorOriginalIndex = 0;
+
 window.addEventListener('load', async () => {
   const raw = sessionStorage.getItem('domino_player');
   if (!raw) { location.href = 'index.html'; return; }
 
   myInfo = JSON.parse(raw);
   document.getElementById('room-code-badge').textContent = myInfo.roomCode || '——';
+  initBoardGestures();
   await loadGameState();
   subscribeToGame();
 });
@@ -515,6 +619,10 @@ async function loadGameState() {
     db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle()
   ]);
   roomData = room; players = pData || []; boardData = bData;
+  // Reset anchor if board is empty (new round started by another player)
+  if (!bData || !Array.isArray(bData.tiles) || bData.tiles.length === 0) {
+    anchorOriginalIndex = 0;
+  }
   renderAll();
 }
 
@@ -744,7 +852,6 @@ function computeSnakePositions(tiles, W, H) {
 
   function renderDims(entry, inCorner) {
     const isDbl = entry.tile[0] === entry.tile[1];
-    // In corner: always render vertical (portrait) regardless of double
     return inCorner
       ? { w: TW, h: TH }
       : (isDbl ? { w: TW, h: TH } : { w: TH, h: TW });
@@ -763,26 +870,19 @@ function computeSnakePositions(tiles, W, H) {
       const next = tiles[i + 1];
 
       if (inCorner) {
-        // Just finished the single corner tile — resume horizontal in new dir
         inCorner = false;
         const { w: nw, h: nh } = renderDims(next, false);
-        // First tile of new row: shift so its right edge aligns with corner's right edge
-        // Corner right edge = x + TW/2. First tile right edge = newX + nw/2.
-        // newX = x + TW/2 - nw/2
         y = y + h / 2 + GAP + nh / 2;
         x = x + TW / 2 - nw / 2;
       } else {
-        // Horizontal run
         const { w: nw, h: nh } = renderDims(next, false);
         const nextX = x + dir * (w / 2 + GAP + nw / 2);
 
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
-          // Hit edge — save old dir BEFORE flipping
           const oldDir = dir;
           dir *= -1;
           inCorner = true;
           const cornerDims = renderDims(next, true);
-          // Corner tile x-center: last tile outer edge minus half corner width
           x = x + oldDir * (w / 2 - TW / 2);
           y = y + h / 2 + GAP + cornerDims.h / 2;
         } else {
@@ -795,14 +895,37 @@ function computeSnakePositions(tiles, W, H) {
 
   if (tiles.length === 0) return [];
 
-  // Center first tile on screen
-  const firstDims = renderDims(tiles[0], false);
+  // ── Stable anchor: always center the ORIGINAL first tile (index 0 of
+  //    the very first render). When tiles are prepended (left-side plays),
+  //    anchorOriginalIndex grows, so we walk *backward* from the anchor to
+  //    place tiles 0..anchorIdx, then forward for anchorIdx..end.
+  //    This keeps the chain visually stable — no drift on left plays.
+  const anchorIdx = Math.min(anchorOriginalIndex, tiles.length - 1);
   const cx = W / 2;
   const cy = H / 2;
 
-  // Walk right from tile 0
-  const rightPos = walk(tiles, 0, cx, cy, 1);
-  return rightPos;
+  // Walk rightward from anchor to the end
+  const rightPos = walk(tiles, anchorIdx, cx, cy, 1);  // positions[anchorIdx..end]
+
+  // Walk leftward from anchor to index 0 (if any tiles precede anchor)
+  // We do this by reversing the tile array from 0..anchorIdx and walking right,
+  // then mirror the x-positions about cx.
+  const leftPositions = [];
+  if (anchorIdx > 0) {
+    // Walk left means: start from anchor and step in -1 direction
+    // We simulate this by walking the reversed prefix rightward, then flip x
+    const prefix = tiles.slice(0, anchorIdx + 1).reverse(); // anchor is first element
+    const rawLeft = walk(prefix, 0, cx, cy, 1);
+    // rawLeft[0] = anchor (same as rightPos[0]), rawLeft[1..] = tiles going left
+    for (let i = 1; i < rawLeft.length; i++) {
+      // Mirror x about cx
+      const mirrored = { ...rawLeft[i], x: 2 * cx - rawLeft[i].x, dir: -rawLeft[i].dir };
+      leftPositions.unshift(mirrored); // build array in original order (0..anchorIdx-1)
+    }
+  }
+
+  // Combine: leftPositions (tiles 0..anchorIdx-1) + rightPos (tiles anchorIdx..end)
+  return [...leftPositions, ...rightPos];
 }
 
 function renderBoard() {
@@ -968,6 +1091,8 @@ async function placeFirstTile(tile) {
   const me = players.find(p => p.seat === myInfo.seat);
   const newHand = me.hand.filter((_, i) => i !== selectedTile.idx);
   
+  anchorOriginalIndex = 0; // first tile placed is always the stable anchor
+  
   await db.from('board').update({
     tiles: [{ tile, flipped: false }],
     left_end: tile[0],
@@ -1022,6 +1147,9 @@ async function confirmPlace(side) {
   const newTiles = side === 'left' ? [newEntry, ...boardData.tiles] : [...boardData.tiles, newEntry];
   const newLeftEnd  = side === 'left'  ? newOpenEnd : boardData.left_end;
   const newRightEnd = side === 'right' ? newOpenEnd : boardData.right_end;
+
+  // Keep anchor stable: left-side prepend shifts everything by 1
+  if (side === 'left') anchorOriginalIndex++;
 
   const newHand = me.hand.filter((_, i) => i !== idx);
 
@@ -1146,9 +1274,10 @@ async function endRound(winningSeat, isDekabess) {
 }
 
 async function hostStartNextRound() {
-  // Only run by the player who sees the Next Round button (round winner)
   document.getElementById('overlay-gameover').classList.add('hidden');
   gameOver = false;
+  anchorOriginalIndex = 0;
+  resetBoardView();
 
   const { data: allPlayers } = await db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat');
 
