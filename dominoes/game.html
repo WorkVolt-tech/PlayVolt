@@ -619,6 +619,7 @@ async function loadGameState() {
   // Reset anchor if board is empty (new round started by another player)
   if (!bData || !Array.isArray(bData.tiles) || bData.tiles.length === 0) {
     anchorOriginalIndex = 0;
+    _endingRound = false;
   } else if (bData.tiles.length === 1) {
     anchorOriginalIndex = 0;
   }
@@ -1085,7 +1086,7 @@ async function placeFirstTile(tile) {
   
   await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
-  await advanceTurn(newHand, tile);
+  await advanceTurn(newHand, tile, tile[0], tile[1]);
   selectedTile = null; isProcessing = false;
   document.getElementById('side-picker').classList.remove('visible');
 }
@@ -1145,7 +1146,7 @@ async function confirmPlace(side) {
   
   await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat);
   await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile });
-  await advanceTurn(newHand, tile);
+  await advanceTurn(newHand, tile, newLeftEnd, newRightEnd);
   selectedTile = null; isProcessing = false;
   document.getElementById('side-picker').classList.remove('visible');
 }
@@ -1156,14 +1157,15 @@ async function passMove() {
   await advanceTurn(me.hand);
 }
 
-async function advanceTurn(myNewHand, lastTilePlayed) {
+async function advanceTurn(myNewHand, lastTilePlayed, newLeftEnd, newRightEnd) {
   if (myNewHand.length === 0) {
     // Check for Dekabess: last tile is non-double AND both its pips match both open ends
+    // Use the ends passed in directly — boardData may still be stale at this point
     let isDekabess = false;
-    if (lastTilePlayed && lastTilePlayed[0] !== lastTilePlayed[1] && boardData) {
-      const left = boardData.left_end, right = boardData.right_end;
-      isDekabess = (lastTilePlayed[0] === left && lastTilePlayed[1] === right) ||
-                  (lastTilePlayed[1] === left && lastTilePlayed[0] === right);
+    if (lastTilePlayed && lastTilePlayed[0] !== lastTilePlayed[1] &&
+        newLeftEnd !== undefined && newRightEnd !== undefined) {
+      isDekabess = (lastTilePlayed[0] === newLeftEnd && lastTilePlayed[1] === newRightEnd) ||
+                  (lastTilePlayed[1] === newLeftEnd && lastTilePlayed[0] === newRightEnd);
     }
     await endRound(myInfo.seat, isDekabess);
     return;
@@ -1181,25 +1183,31 @@ async function advanceTurn(myNewHand, lastTilePlayed) {
   await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId);
 }
 
+let _endingRound = false;
+
 async function endRound(winningSeat, isDekabess) {
-  // Only the winning player (or seat 0 on a block) runs this logic
-  const { data: room } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single();
-  if (!room) return;
+  if (_endingRound) return;
+  _endingRound = true;
+  try {
+    const { data: room } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single();
+    if (!room || room.status !== 'playing') return; // already ended by another player
+
+    // Re-fetch fresh player data for pip count (in case local `players` is stale)
+    const { data: freshPlayers } = await db.from('domino_players').select('*').eq('room_id', myInfo.roomId);
+    const allPlayers = freshPlayers || players;
 
   const mode = room.game_mode || 'chien';
   const streak = room.streak || { seat: null, team: null, count: 0 };
 
   // Determine winner identity for streak tracking
-  // In asosye: seats 0&2 = team A, seats 1&3 = team B
-  let winnerKey = winningSeat; // seat number for chien, 'A'/'B' for asosye
+  let winnerKey = winningSeat;
   if (mode === 'asosye' && winningSeat !== null) {
     winnerKey = (winningSeat === 0 || winningSeat === 2) ? 'A' : 'B';
   }
 
-  // If blocked, find actual winner by pip count
+  // If blocked, find actual winner by pip count using fresh player data
   let resolvedSeat = winningSeat;
   if (winningSeat === null) {
-    const allPlayers = players;
     const sorted = allPlayers.map(p => ({
       seat: p.seat,
       pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0)
@@ -1226,10 +1234,7 @@ async function endRound(winningSeat, isDekabess) {
     };
   }
 
-  // Check for Vyej (4+ wins in streak)
   const isVyej = newStreak.count >= 4;
-  // Dekabess on top of Vyej = Vyej+1 (already counted in streak, just flag it)
-  const isVyejPlus = isVyej && isDekabess && newStreak.count > 4;
 
   // Clean up round data
   await Promise.all([
@@ -1238,7 +1243,6 @@ async function endRound(winningSeat, isDekabess) {
   ]);
 
   if (isVyej) {
-    // Match over!
     await db.from('domino_rooms').update({
       status: 'finished',
       current_turn: resolvedSeat,
@@ -1247,13 +1251,15 @@ async function endRound(winningSeat, isDekabess) {
       pending_point: isDekabess,
     }).eq('id', myInfo.roomId);
   } else {
-    // Round over, continue match
     await db.from('domino_rooms').update({
       status: 'round_end',
       current_turn: resolvedSeat,
       streak: newStreak,
       pending_point: isDekabess,
     }).eq('id', myInfo.roomId);
+  }
+  } finally {
+    _endingRound = false;
   }
 }
 
