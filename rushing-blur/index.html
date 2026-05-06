@@ -210,7 +210,7 @@ function makeTrackCurve() {
   return new THREE.CatmullRomCurve3(pts, true);
 }
 
-const TRACK_WIDTH = 24; // much wider road
+const TRACK_WIDTH = 36; // much wider road
 
 function buildTrack(scene, curve) {
   const W = TRACK_WIDTH, SEG = 800;
@@ -418,11 +418,13 @@ function fireMissile(fromPos,fromQuat,owner) {
   const vel=new THREE.Vector3(0,0,1).applyQuaternion(fromQuat).multiplyScalar(2.8);
   scene.add(mesh); projectiles.push({mesh,vel,owner,ttl:200});
 }
-function dropOil(pos) {
+function dropOil(pos,quat) {
+  const back = new THREE.Vector3(0, 0, -1).applyQuaternion(quat); // behind the car
+  const dropPos = pos.clone().addScaledVector(back, 3.5);
   const mesh=new THREE.Mesh(new THREE.CylinderGeometry(3,3,.15,12),
     new THREE.MeshStandardMaterial({color:0x111111,roughness:1,transparent:true,opacity:.8}));
   mesh.position.copy(pos); mesh.position.y=.1; scene.add(mesh);
-  oilSlicks.push({mesh,pos:pos.clone(),ttl:700});
+  oilSlicks.push({mesh,pos:dropPos.clone(),ttl:700});
 }
 function fireEMP(fromPos,owner) {
   const mesh=new THREE.Mesh(new THREE.RingGeometry(.5,1,.5,24),
@@ -517,7 +519,7 @@ function updatePlayer() {
   const tp=trkPts[player.trackIdx];
   const dx=playerCar.position.x-tp.x, dz=playerCar.position.z-tp.z;
   const distSq=dx*dx+dz*dz;
-  if (distSq>144) { // ~12 units
+  if (distSq>324) { // ~12 units
     const d=Math.sqrt(distSq);
     playerCar.position.x-=(dx/d)*.5; playerCar.position.z-=(dz/d)*.5;
     player.speed*=.92;
@@ -623,7 +625,7 @@ function useItem(item,owner,aiRef) {
     case 'missile': fireMissile(car.position.clone(),car.quaternion,owner); break;
     case 'shield': state.shielded=true; setTimeout(()=>{state.shielded=false;},6000); if(owner==='player')showNotif('Shield Active!'); break;
     case 'emp': fireEMP(car.position.clone(),owner); if(owner==='player')showNotif('EMP Fired!'); break;
-    case 'oil': dropOil(car.position.clone()); if(owner==='player')showNotif('Oil Dropped!'); break;
+    case 'oil': dropOil(car.position.clone(),car.quaternion); if(owner==='player')showNotif('Oil Dropped!'); break;
     case 'lightning':
       if(owner==='player'){for(const ai of aiCars){if(!ai.shielded){ai.slowTimer=180;ai.speed*=.3;}}showNotif('⚡ Lightning! All slowed!');}
       else if(!player.shielded){player.slowTimer=180;player.speed*=.3;flashEffect('hit');}
@@ -665,8 +667,8 @@ function updateOil() {
   for (let i=oilSlicks.length-1;i>=0;i--) {
     const o=oilSlicks[i]; o.ttl--;
     if(o.ttl<=0){scene.remove(o.mesh);oilSlicks.splice(i,1);continue;}
-    const op=o.pos,dx=playerCar.position.x-op.x,dz=playerCar.position.z-op.z;
-    if(dx*dx+dz*dz<10){player.spinTimer=50;player.speed*=.5;flashEffect('hit');}
+    const op=o.pos;pdx=playerCar.position.x-op.x,pdz=playerCar.position.z-op.z;
+    if(pdx*pdx+pdz*pdz<12&&player.spinTimer<=5){player.spinTimer = 45;player.speed*=.55;flashEffect('hit');}
     for(const ai of aiCars){const dx2=ai.car.position.x-op.x,dz2=ai.car.position.z-op.z;if(dx2*dx2+dz2*dz2<10){ai.spinTimer=50;ai.speed*=.5;}}
   }
 }
