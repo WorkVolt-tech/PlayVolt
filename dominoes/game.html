@@ -158,6 +158,28 @@ html, body {
   color: var(--gold);
 }
 
+/* First-tile drop zone covers the entire board */
+#drop-first {
+  position: absolute;
+  inset: 0;
+  border: 2px dashed rgba(201,168,76,0.25);
+  border-radius: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  color: rgba(201,168,76,0.35);
+  text-transform: uppercase;
+  z-index: 10;
+  cursor: default;
+}
+#drop-first.drag-over {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.06);
+  color: var(--gold);
+}
+
 .hand-area {
   background: var(--surface);
   border-top: 1px solid var(--border);
@@ -216,6 +238,7 @@ html, body {
   box-shadow: 0 16px 30px rgba(0,0,0,0.7), 0 0 25px rgba(201,168,76,0.6); 
 }
 .domino-tile.not-playable { opacity: 0.38; cursor: not-allowed; }
+.domino-tile.dragging { opacity: 0.4; cursor: grabbing; transform: translateY(-4px); }
 
 /* Hand tiles are vertical (portrait) */
 .hand-tile {
@@ -429,6 +452,8 @@ html, body {
     <div id="board-container" style="position:absolute;inset:0;">
       <!-- snake tiles rendered here -->
     </div>
+    <!-- Drop zone for first tile (entire board) -->
+    <div id="drop-first"></div>
     <div class="drop-zone" id="drop-left"  style="display:none" onclick="handleDropZone('left')">← Left</div>
     <div class="drop-zone" id="drop-right" style="display:none" onclick="handleDropZone('right')">Right →</div>
   </div>
@@ -591,7 +616,23 @@ function renderHand() {
     if (isSelected) tileEl.classList.add('selected');
     
     if (canPlay) {
+      // Click to select (existing behavior)
       tileEl.onclick = () => selectTile(tile, idx);
+
+      // Drag to play (new behavior)
+      tileEl.draggable = true;
+      tileEl.addEventListener('dragstart', (e) => {
+        if (!isMyTurn) { e.preventDefault(); return; }
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', JSON.stringify({ tile, idx }));
+        tileEl.classList.add('dragging');
+        // Show appropriate drop targets
+        showDragTargets(tile);
+      });
+      tileEl.addEventListener('dragend', () => {
+        tileEl.classList.remove('dragging');
+        hideDragTargets();
+      });
     }
     
     container.appendChild(tileEl);
@@ -601,6 +642,83 @@ function renderHand() {
   const hasTilesOnBoard = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
   passBtn.disabled = !(isMyTurn && playable.length === 0 && hasTilesOnBoard);
 }
+
+// Show drop targets during drag
+function showDragTargets(tile) {
+  const hasTiles = boardData && Array.isArray(boardData.tiles) && boardData.tiles.length > 0;
+
+  if (!hasTiles) {
+    // Show the full-board first-tile drop zone
+    const dropFirst = document.getElementById('drop-first');
+    dropFirst.style.display = 'flex';
+    dropFirst.textContent = 'Drop here to place first tile';
+    return;
+  }
+
+  // Re-render board so drop-left / drop-right are positioned,
+  // then force them visible if the tile can play on that side.
+  const canLeft  = canPlayOnSide(tile, 'left');
+  const canRight = canPlayOnSide(tile, 'right');
+
+  // Temporarily set selectedTile so renderBoard positions the zones
+  const prev = selectedTile;
+  selectedTile = { tile, idx: -1 };
+  renderBoard();
+  selectedTile = prev;
+
+  // Ensure zones stay visible during drag even though selectedTile is reset
+  const dropL = document.getElementById('drop-left');
+  const dropR = document.getElementById('drop-right');
+  if (!canLeft)  dropL.style.display = 'none';
+  if (!canRight) dropR.style.display = 'none';
+}
+
+function hideDragTargets() {
+  document.getElementById('drop-first').style.display = 'none';
+  // Re-render board to restore normal state
+  renderBoard();
+}
+
+// Wire up drag-over / drop on the drop zones
+function setupDropZone(el, onDrop) {
+  el.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    el.classList.add('drag-over');
+  });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', (e) => {
+    e.preventDefault();
+    el.classList.remove('drag-over');
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data) return;
+    const { tile, idx } = JSON.parse(data);
+    onDrop(tile, idx);
+  });
+}
+
+// Set up drop zones once on page load
+window.addEventListener('DOMContentLoaded', () => {
+  setupDropZone(document.getElementById('drop-first'), (tile, idx) => {
+    hideDragTargets();
+    selectedTile = { tile, idx };
+    placeFirstTile(tile);
+  });
+
+  setupDropZone(document.getElementById('drop-left'), (tile, idx) => {
+    hideDragTargets();
+    selectedTile = { tile, idx };
+    document.getElementById('side-picker').classList.remove('visible');
+    confirmPlace('left');
+  });
+
+  setupDropZone(document.getElementById('drop-right'), (tile, idx) => {
+    hideDragTargets();
+    selectedTile = { tile, idx };
+    document.getElementById('side-picker').classList.remove('visible');
+    confirmPlace('right');
+  });
+});
 
 // Snake layout constants
 // Non-doubles: horizontal  → 56 wide, 28 tall  (two halves side by side)
