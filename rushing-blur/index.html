@@ -1,1165 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Rushing Blur</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rushing Blur — Jay's PlayVolt</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/three@0.171.0/build/three.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{background:#000;overflow:hidden;font-family:'Nunito',sans-serif;}
-    canvas{display:block;}
-
-    /* ── START SCREEN ── */
-    #start-screen{
-      position:absolute;inset:0;display:flex;flex-direction:column;
-      align-items:center;justify-content:center;
-      background:linear-gradient(to bottom,#000,#0a0520,#000);z-index:10;
-    }
-    .logo-eyebrow{font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;
-      letter-spacing:.35em;color:#d4ff00;text-transform:uppercase;
-      filter:drop-shadow(0 0 12px #d4ff00);margin-bottom:8px;}
-    .logo-main{font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,14vw,160px);
-      color:#f0f0f0;line-height:.9;
-      text-shadow:0 0 80px rgba(212,255,0,.2),5px 5px 0 rgba(255,68,0,.6);}
-    .logo-tagline{font-size:13px;font-weight:700;letter-spacing:.2em;
-      color:#6b6b88;text-transform:uppercase;margin-top:8px;}
-    #start-btn{
-      margin-top:36px;padding:14px 52px;
-      font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.1em;
-      color:#000;background:#d4ff00;border:none;cursor:pointer;
-      clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
-      transition:box-shadow .2s,transform .1s;
-    }
-    #start-btn:hover{box-shadow:0 6px 28px rgba(212,255,0,.5);transform:translateY(-2px);}
-    .keys{margin-top:20px;display:flex;gap:24px;color:#4a4a60;font-size:12px;font-weight:700;}
-    .keys kbd{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
-      border-radius:5px;padding:3px 7px;margin-right:3px;color:#888;}
-
-    /* ── COUNTDOWN ── */
-    #countdown{
-      position:absolute;inset:0;display:none;
-      align-items:center;justify-content:center;z-index:9;pointer-events:none;
-    }
-    #countdown.active{display:flex;}
-    #countdown span{
-      font-family:'Bebas Neue',sans-serif;
-      font-size:clamp(120px,20vw,200px);color:#d4ff00;
-      text-shadow:0 0 80px rgba(212,255,0,.5);
-      animation:popIn .4s ease-out;
-    }
-    #countdown span.go{color:#ff6600;text-shadow:0 0 80px rgba(255,102,0,.7);}
-    @keyframes popIn{from{transform:scale(2);opacity:0;}to{transform:scale(1);opacity:1;}}
-
-    /* ── HUD ── */
-    #hud{position:absolute;inset:0;display:none;pointer-events:none;}
-    #hud.active{display:block;}
-
-    #hud-top{
-      position:absolute;top:0;left:0;right:0;
-      display:flex;justify-content:space-between;align-items:flex-start;
-      padding:14px 18px;
-    }
-    #hud-pos{
-      background:#d4ff00;color:#000;
-      padding:5px 10px;font-family:'Bebas Neue',sans-serif;line-height:1;
-      clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);
-    }
-    #pos-num{font-size:48px;}
-    #pos-suffix{font-size:20px;vertical-align:super;}
-    #hud-center{text-align:center;}
-    #hud-lap{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.15em;color:rgba(255,255,255,.6);}
-    #hud-time{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#d4ff00;letter-spacing:.05em;}
-    #hud-weapon{
-      text-align:right;background:rgba(8,8,15,.75);
-      border:1px solid rgba(255,255,255,.09);padding:7px 12px;min-width:110px;
-      clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);
-    }
-    #weapon-icon{font-size:26px;text-align:center;}
-    #weapon-label{font-size:10px;font-weight:800;letter-spacing:.15em;color:#d4ff00;text-transform:uppercase;text-align:center;margin-top:2px;}
-
-    #hud-bottom{
-      position:absolute;bottom:0;left:0;right:0;
-      display:flex;align-items:flex-end;gap:14px;padding:14px 18px;
-    }
-    .hud-label{font-size:10px;font-weight:800;letter-spacing:.15em;color:#6b6b88;text-transform:uppercase;margin-bottom:4px;}
-    .bar-bg{width:140px;height:7px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;}
-    #health-bar{height:100%;width:100%;background:#00ff88;border-radius:3px;transition:width .25s,background .25s;}
-    #boost-bar{height:100%;width:0%;background:#00aaff;border-radius:3px;transition:width .1s;}
-    #speedometer{
-      margin-left:auto;background:rgba(8,8,15,.75);
-      border:1px solid rgba(255,255,255,.09);padding:5px 12px;text-align:right;
-      clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);
-    }
-    #speed-num{font-family:'Bebas Neue',sans-serif;font-size:40px;color:#d4ff00;line-height:1;}
-
-    /* minimap */
-    #minimap-wrap{
-      position:fixed;bottom:76px;right:16px;z-index:10;
-      border:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.7);
-      border-radius:6px;overflow:hidden;
-    }
-    #minimap-canvas{display:block;}
-
-    /* positions */
-    #live-positions{
-      position:fixed;top:80px;right:16px;z-index:10;
-      background:rgba(8,8,15,.75);border:1px solid rgba(255,255,255,.09);
-      border-radius:10px;padding:10px 14px;min-width:160px;
-    }
-    .lp-title{font-size:9px;font-weight:800;letter-spacing:.18em;color:#6b6b88;text-transform:uppercase;margin-bottom:8px;}
-    .lp-row{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;font-weight:700;}
-    .lp-row.lp-me{background:rgba(212,255,0,.07);border-radius:4px;padding:3px 4px;margin:0 -4px;}
-    .lp-rank{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#6b6b88;width:16px;}
-    .lp-name{flex:1;}
-    .lp-lap{font-size:11px;color:#6b6b88;}
-
-    /* damage flash */
-    #damage-flash{
-      position:fixed;inset:0;z-index:15;
-      background:rgba(255,50,0,.3);pointer-events:none;
-      animation:flashOut .4s forwards;
-    }
-    @keyframes flashOut{to{opacity:0;}}
-
-    /* kill feed */
-    #kill-feed{position:fixed;top:80px;left:16px;z-index:10;display:flex;flex-direction:column;gap:6px;}
-    .kill-entry{
-      background:rgba(8,8,15,.75);border:1px solid rgba(255,255,255,.09);
-      border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;
-      animation:feedIn .3s ease-out,feedOut .4s ease-in 2.6s forwards;
-    }
-    @keyframes feedIn{from{opacity:0;transform:translateX(-12px);}}
-    @keyframes feedOut{to{opacity:0;transform:translateX(-12px);}}
-
-    /* countdown in race */
-    #countdown-overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:200px;color:#d4ff00;text-shadow:0 0 80px rgba(212,255,0,.5);pointer-events:none;animation:countPulse .5s ease-out;}
-    @keyframes countPulse{from{transform:scale(1.4);opacity:0;}to{transform:scale(1);opacity:1;}}
-
-    /* FINISH */
-    #finish-screen{
-      position:absolute;inset:0;display:none;
-      align-items:center;justify-content:center;
-      background:rgba(0,0,0,.85);backdrop-filter:blur(12px);z-index:10;
-    }
-    #finish-screen.active{display:flex;}
-    #finish-inner{text-align:center;}
-    .results-eyebrow{font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;letter-spacing:.3em;color:#d4ff00;text-transform:uppercase;filter:drop-shadow(0 0 10px #d4ff00);}
-    .results-title{font-family:'Bebas Neue',sans-serif;font-size:72px;color:#f0f0f0;letter-spacing:.05em;text-shadow:4px 4px 0 rgba(255,68,0,.5);}
-    .finish-stats{display:flex;gap:16px;justify-content:center;margin-top:28px;}
-    .finish-stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 24px;}
-    .finish-stat .label{font-size:9px;text-transform:uppercase;letter-spacing:.3em;color:#6b6b88;}
-    .finish-stat .val{font-size:1.4rem;font-weight:700;color:#fff;margin-top:4px;font-variant-numeric:tabular-nums;}
-    .finish-stat .val.accent{color:#d4ff00;}
-    #restart-btn{
-      margin-top:36px;padding:14px 52px;
-      font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.1em;
-      color:#000;background:#d4ff00;border:none;cursor:pointer;
-      clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
-      transition:box-shadow .2s;pointer-events:all;
-    }
-    #restart-btn:hover{box-shadow:0 6px 28px rgba(212,255,0,.5);}
-
-    #toast{
-      position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(12px);
-      background:#12121e;border:1px solid rgba(212,255,0,.25);
-      border-radius:10px;padding:10px 20px;
-      font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;
-      color:#f0f0f0;z-index:50;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;
-    }
-    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- START -->
-<div id="start-screen">
-  <div class="logo-eyebrow">⚡ Jay's PlayVolt</div>
-  <div class="logo-main">RUSHING<br>BLUR</div>
-  <div class="logo-tagline">Race Fast. Fight Dirty. Win.</div>
-  <button id="start-btn">START RACE</button>
-  <div class="keys">
-    <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Drive</div>
-    <div><kbd>Shift</kbd> Boost</div>
-    <div><kbd>Space</kbd> Fire weapon</div>
-    <div><kbd>↑↓←→</kbd> Also works</div>
+<!-- ══════════════════════════════════════
+     SCREEN: INTRO / MAIN MENU
+══════════════════════════════════════ -->
+<div id="screen-intro" class="screen active">
+  <div class="intro-bg">
+    <div class="scanlines"></div>
+    <div class="intro-content">
+      <div class="logo-block">
+        <div class="logo-eyebrow">⚡ Jay's PlayVolt</div>
+        <div class="logo-main">RUSHING<br>BLUR</div>
+        <div class="logo-tagline">Race Online. Fight Dirty. Win.</div>
+      </div>
+      <div class="intro-actions">
+        <button class="btn-volt" id="btn-play">PLAY ONLINE</button>
+        <button class="btn-ghost" id="btn-leaderboard">🏆 Leaderboard</button>
+      </div>
+      <div class="intro-hint">WASD / Arrows · Shift = Boost · Space = Fire weapon</div>
+    </div>
   </div>
 </div>
 
-<!-- COUNTDOWN -->
-<div id="countdown"><span id="countdown-val">3</span></div>
+<!-- ══════════════════════════════════════
+     SCREEN: LOBBY SETUP (name + join/create)
+══════════════════════════════════════ -->
+<div id="screen-lobby-setup" class="screen">
+  <div class="setup-layout">
+    <div class="setup-header">
+      <button class="back-btn" id="btn-back-from-setup">← Back</button>
+      <div class="setup-title">JOIN A RACE</div>
+    </div>
+    <div class="setup-card">
+      <div class="field-group">
+        <label class="field-label">Your Racer Name</label>
+        <input type="text" id="input-name" placeholder="Enter your name" maxlength="16" autocomplete="off">
+      </div>
+      <div class="setup-divider"><span>then</span></div>
+      <div class="setup-split">
+        <div class="split-side">
+          <div class="split-label">Create a new room</div>
+          <button class="btn-volt" id="btn-create-room">CREATE ROOM</button>
+        </div>
+        <div class="split-divider">OR</div>
+        <div class="split-side">
+          <div class="split-label">Join with a code</div>
+          <input type="text" id="input-room-code" placeholder="ABC123" maxlength="6" class="code-input" autocomplete="off">
+          <button class="btn-ghost" id="btn-join-room">JOIN</button>
+        </div>
+      </div>
+      <div class="setup-msg hidden" id="setup-msg"></div>
+    </div>
+  </div>
+</div>
 
-<!-- HUD -->
-<div id="hud">
-  <div id="hud-top">
-    <div id="hud-pos"><span id="pos-num">1</span><span id="pos-suffix">ST</span></div>
-    <div id="hud-center">
-      <div id="hud-lap">LAP <span id="lap-num">1</span> / <span id="lap-total">3</span></div>
-      <div id="hud-time"><span id="race-time">0:00.000</span></div>
+<!-- ══════════════════════════════════════
+     SCREEN: CAR SELECT
+══════════════════════════════════════ -->
+<div id="screen-car-select" class="screen">
+  <div class="carselect-layout">
+    <div class="carselect-header">
+      <button class="back-btn" id="btn-back-from-cars">← Back</button>
+      <div class="carselect-title">CHOOSE YOUR MACHINE</div>
+      <div class="carselect-sub">Pick a car — each one drives differently</div>
     </div>
-    <div id="hud-weapon">
-      <div id="weapon-icon">—</div>
-      <div id="weapon-label">NO WEAPON</div>
-    </div>
-  </div>
-  <div id="hud-bottom">
-    <div>
-      <div class="hud-label">ARMOUR</div>
-      <div class="bar-bg"><div id="health-bar"></div></div>
-    </div>
-    <div>
-      <div class="hud-label">BOOST</div>
-      <div class="bar-bg"><div id="boost-bar"></div></div>
-    </div>
-    <div id="speedometer">
-      <div id="speed-num">0</div>
-      <div class="hud-label">KM/H</div>
+    <div class="car-grid" id="car-grid"></div>
+    <div class="car-detail-panel" id="car-detail-panel">
+      <div class="car-detail-name" id="detail-name">—</div>
+      <div class="car-detail-type" id="detail-type">—</div>
+      <div class="car-stats" id="detail-stats"></div>
+      <div class="car-detail-desc" id="detail-desc">—</div>
+      <button class="btn-volt" id="btn-confirm-car">CONFIRM &amp; ENTER LOBBY</button>
     </div>
   </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: RACE LOBBY (waiting room)
+══════════════════════════════════════ -->
+<div id="screen-race-lobby" class="screen">
+  <div class="racelobby-layout">
+    <div class="racelobby-header">
+      <div>
+        <div class="racelobby-title">LOBBY</div>
+        <div class="racelobby-code">Code: <span id="lobby-code">———</span></div>
+      </div>
+      <div class="lobby-status-dot" id="lobby-dot"></div>
+    </div>
+    <div class="lobby-players-grid" id="lobby-players-grid">
+      <!-- populated by JS -->
+    </div>
+    <div class="lobby-settings" id="lobby-settings-host" style="display:none;">
+      <div class="settings-row">
+        <span class="settings-label">Laps</span>
+        <div class="settings-options" id="laps-options">
+          <div class="opt selected" data-laps="3">3</div>
+          <div class="opt" data-laps="5">5</div>
+          <div class="opt" data-laps="7">7</div>
+        </div>
+      </div>
+    </div>
+    <div class="lobby-bottom">
+      <div class="lobby-hint" id="lobby-hint">Waiting for host to start…</div>
+      <button class="btn-volt hidden" id="btn-start-race">START RACE</button>
+      <button class="btn-ghost" id="btn-leave-lobby">Leave</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: GAME
+══════════════════════════════════════ -->
+<div id="screen-game" class="screen">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="hud-top">
+      <div id="hud-pos"><span id="pos-num">1</span><span id="pos-suffix">ST</span></div>
+      <div id="hud-center">
+        <div id="hud-lap">LAP <span id="lap-num">1</span> / <span id="lap-total">3</span></div>
+        <div id="hud-time"><span id="race-time">0:00.000</span></div>
+      </div>
+      <div id="hud-weapon">
+        <div id="weapon-icon">—</div>
+        <div id="weapon-label">NO WEAPON</div>
+      </div>
+    </div>
+    <div id="hud-bottom">
+      <div id="health-bar-wrap">
+        <div class="hud-label">ARMOUR</div>
+        <div class="bar-bg"><div id="health-bar"></div></div>
+      </div>
+      <div id="boost-bar-wrap">
+        <div class="hud-label">BOOST</div>
+        <div class="bar-bg"><div id="boost-bar"></div></div>
+      </div>
+      <div id="speedometer">
+        <div id="speed-num">0</div>
+        <div class="hud-label">KM/H</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live positions panel -->
   <div id="live-positions">
     <div class="lp-title">POSITIONS</div>
     <div id="lp-list"></div>
   </div>
+
+  <!-- Minimap -->
   <div id="minimap-wrap">
     <canvas id="minimap-canvas" width="130" height="130"></canvas>
   </div>
+
+  <!-- Countdown -->
+  <div id="countdown" class="hidden"></div>
+
+  <!-- Damage flash -->
+  <div id="damage-flash" class="hidden"></div>
+
+  <!-- Kill feed -->
   <div id="kill-feed"></div>
 </div>
 
-<!-- FINISH -->
-<div id="finish-screen">
-  <div id="finish-inner">
-    <div class="results-eyebrow">⚡ Race Complete</div>
+<!-- ══════════════════════════════════════
+     SCREEN: RESULTS
+══════════════════════════════════════ -->
+<div id="screen-results" class="screen">
+  <div class="results-layout">
+    <div class="results-eyebrow">⚡ RACE COMPLETE</div>
     <div class="results-title">FINISH LINE</div>
-    <div class="finish-stats">
-      <div class="finish-stat"><div class="label">Total Time</div><div class="val" id="finish-total">--</div></div>
-      <div class="finish-stat"><div class="label">Best Lap</div><div class="val accent" id="finish-best">--</div></div>
-      <div class="finish-stat"><div class="label">Position</div><div class="val accent" id="finish-pos">--</div></div>
+    <div id="podium"></div>
+    <div id="results-stats"></div>
+    <div class="results-actions">
+      <button class="btn-volt" id="btn-play-again">RACE AGAIN</button>
+      <button class="btn-ghost" id="btn-back-menu">Main Menu</button>
     </div>
-    <button id="restart-btn">RACE AGAIN</button>
   </div>
 </div>
 
-<div id="damage-flash" style="display:none"></div>
+<!-- ══════════════════════════════════════
+     SCREEN: LEADERBOARD
+══════════════════════════════════════ -->
+<div id="screen-leaderboard" class="screen">
+  <div class="lb-layout">
+    <button class="back-btn" id="btn-back-from-lb">← Back</button>
+    <div class="lb-title">🏆 Leaderboard</div>
+    <div class="lb-sub">Fastest race times across all rooms</div>
+    <div id="lb-list">
+      <div class="lb-loading">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
 <div id="toast"></div>
 
-<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.171.0/build/three.module.js"}}</script>
-<script type="module">
-import * as THREE from 'three';
-
-// ═══════════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════════
-const CONFIG = {
-  TOTAL_LAPS: 3,
-  AI_COUNT:   4,
-  CAM_BEHIND: 16,
-  CAM_HEIGHT: 7,
-  CAM_LERP:   0.08,
-};
-
-// ═══════════════════════════════════════════════
-// TRACK — built from Rushing Blur waypoints
-// converted to Three.js (swap y↔z, scale down)
-// ═══════════════════════════════════════════════
-const RAW_WPS = [
-  {x:2000,y:3800},{x:2000,y:3400},{x:2000,y:3000},{x:2000,y:2600},{x:2000,y:2200},
-  {x:2000,y:1800},{x:2100,y:1500},{x:2350,y:1300},{x:2650,y:1200},
-  {x:3000,y:1200},{x:3350,y:1200},{x:3650,y:1200},{x:3900,y:1200},
-  {x:4100,y:1100},{x:4250,y:900},{x:4250,y:650},{x:4100,y:450},
-  {x:3850,y:350},{x:3600,y:380},{x:3450,y:550},{x:3400,y:750},
-  {x:3200,y:750},{x:2900,y:750},{x:2600,y:750},{x:2300,y:750},{x:2000,y:750},
-  {x:1700,y:750},{x:1500,y:650},{x:1300,y:550},{x:1100,y:600},{x:950,y:750},{x:850,y:950},
-  {x:700,y:1100},{x:600,y:1350},{x:550,y:1650},{x:550,y:1950},
-  {x:550,y:2250},{x:600,y:2550},{x:700,y:2800},{x:900,y:3000},
-  {x:1150,y:3100},{x:1400,y:3050},{x:1600,y:2900},{x:1750,y:2700},
-  {x:1850,y:2500},{x:1950,y:3000},{x:2000,y:3400},{x:2000,y:3800},
-];
-const SCALE   = 0.05;   // world → Three units
-const CX      = 2000 * SCALE / 2; // centre offset
-const WPS = RAW_WPS.map(p => new THREE.Vector3((p.x*SCALE)-CX, 0, (p.y*SCALE)-CX));
-const ROAD_HALF_3D = 250 * SCALE; // half road width in Three units
-
-// Build CatmullRom through waypoints
-const trackCurve = new THREE.CatmullRomCurve3(WPS, true, 'catmullrom', 0.5);
-const CURVE_PTS  = 400;
-const curvePts   = trackCurve.getPoints(CURVE_PTS);
-
-// Nearest point on curve to a 3D position
-function nearestCurvePoint(pos) {
-  let best = 0, bd = Infinity;
-  for (let i = 0; i < curvePts.length; i++) {
-    const d = curvePts[i].distanceToSquared(pos);
-    if (d < bd) { bd = d; best = i; }
-  }
-  return { index: best, point: curvePts[best], t: best / CURVE_PTS };
-}
-
-// Get forward tangent at curve index
-function curveTangent(idx) {
-  const a = curvePts[((idx - 1) + CURVE_PTS) % CURVE_PTS];
-  const b = curvePts[(idx + 1) % CURVE_PTS];
-  return new THREE.Vector3().subVectors(b, a).normalize();
-}
-
-// ═══════════════════════════════════════════════
-// SCENE
-// ═══════════════════════════════════════════════
-const renderer3 = new THREE.WebGLRenderer({ antialias: true });
-renderer3.setSize(window.innerWidth, window.innerHeight);
-renderer3.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer3.shadowMap.enabled = true;
-document.body.appendChild(renderer3.domElement);
-renderer3.domElement.style.position = 'absolute';
-renderer3.domElement.style.top = '0';
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0520);
-scene.fog = new THREE.FogExp2(0x0a0520, 0.018);
-
-const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 600);
-
-// Lights
-scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-sun.position.set(30, 60, 30); sun.castShadow = true; scene.add(sun);
-scene.add(new THREE.HemisphereLight(0x220a44, 0x0a0520, 0.6));
-
-// ── Ground ──
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(500, 500),
-  new THREE.MeshStandardMaterial({ color: 0x0e0820, roughness: 1 })
-);
-ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; scene.add(ground);
-
-// ── TRACK MESH ──
-function buildTrackMesh() {
-  const SEG = CURVE_PTS;
-  const verts = [], uvs = [], indices = [], kVerts = [], kIdx = [];
-
-  for (let i = 0; i <= SEG; i++) {
-    const t    = i / SEG;
-    const pt   = trackCurve.getPointAt(t);
-    const tan  = trackCurve.getTangentAt(t);
-    const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0,1,0)).normalize();
-
-    const L = pt.clone().addScaledVector(right, -ROAD_HALF_3D);
-    const R = pt.clone().addScaledVector(right,  ROAD_HALF_3D);
-    verts.push(L.x, 0.01, L.z,  R.x, 0.01, R.z);
-    uvs.push(0, t * 80,  1, t * 80);
-
-    if (i < SEG) {
-      const b = i * 2;
-      indices.push(b, b+1, b+2,  b+1, b+3, b+2);
-    }
-
-    // Kerb (slightly outside road)
-    const KW = ROAD_HALF_3D * 0.1;
-    const KL = pt.clone().addScaledVector(right, -(ROAD_HALF_3D + KW));
-    const KR = pt.clone().addScaledVector(right,  (ROAD_HALF_3D + KW));
-    kVerts.push(L.x, 0.02, L.z,  KL.x, 0.02, KL.z);  // left kerb inner/outer
-    kVerts.push(R.x, 0.02, R.z,  KR.x, 0.02, KR.z);  // right kerb inner/outer
-  }
-
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uvs, 2));
-  geo.setIndex(indices);
-  geo.computeVertexNormals();
-
-  // Road texture — dark asphalt with lane markings via canvas
-  const texCanvas = document.createElement('canvas');
-  texCanvas.width = 256; texCanvas.height = 512;
-  const tc = texCanvas.getContext('2d');
-  tc.fillStyle = '#1e1e2e'; tc.fillRect(0, 0, 256, 512);
-  // centre dashes
-  tc.fillStyle = 'rgba(212,255,0,0.7)';
-  for (let y = 0; y < 512; y += 80) tc.fillRect(120, y, 16, 40);
-  // edge lines
-  tc.fillStyle = 'rgba(255,255,255,0.25)';
-  tc.fillRect(4, 0, 6, 512); tc.fillRect(246, 0, 6, 512);
-  const tex = new THREE.CanvasTexture(texCanvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-
-  scene.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-    map: tex, roughness: 0.85, metalness: 0.05,
-  })));
-
-  // Kerb stripes — build kerb quads
-  const kGeo = new THREE.BufferGeometry();
-  const kv = [], ki = [], kc = [];
-  for (let i = 0; i <= CURVE_PTS; i++) {
-    const t    = i / CURVE_PTS;
-    const pt   = trackCurve.getPointAt(t);
-    const tan  = trackCurve.getTangentAt(t);
-    const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0,1,0)).normalize();
-    const KW = ROAD_HALF_3D * 0.08;
-    const band = Math.floor(i / 4) % 2;
-    const r = band ? 0.85 : 1, g = band ? 0.08 : 1, b2 = band ? 0.08 : 1;
-
-    // left kerb
-    const lI = pt.clone().addScaledVector(right, -ROAD_HALF_3D);
-    const lO = pt.clone().addScaledVector(right, -(ROAD_HALF_3D + KW));
-    kv.push(lI.x, 0.025, lI.z,  lO.x, 0.025, lO.z);
-    kc.push(r,g,b2, r,g,b2);
-    // right kerb
-    const rI = pt.clone().addScaledVector(right,  ROAD_HALF_3D);
-    const rO = pt.clone().addScaledVector(right,  ROAD_HALF_3D + KW);
-    kv.push(rI.x, 0.025, rI.z,  rO.x, 0.025, rO.z);
-    kc.push(r,g,b2, r,g,b2);
-
-    if (i < CURVE_PTS) {
-      const b = i * 4;
-      ki.push(b,b+1,b+4, b+1,b+5,b+4);       // left
-      ki.push(b+2,b+3,b+6, b+3,b+7,b+6);     // right
-    }
-  }
-  kGeo.setAttribute('position', new THREE.Float32BufferAttribute(kv, 3));
-  kGeo.setAttribute('color',    new THREE.Float32BufferAttribute(kc, 3));
-  kGeo.setIndex(ki); kGeo.computeVertexNormals();
-  scene.add(new THREE.Mesh(kGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5 })));
-
-  // Start/finish line
-  const sfPt = trackCurve.getPointAt(0);
-  const sfTan = trackCurve.getTangentAt(0);
-  const sfRight = new THREE.Vector3().crossVectors(sfTan, new THREE.Vector3(0,1,0)).normalize();
-  const sfCanvas = document.createElement('canvas');
-  sfCanvas.width = 256; sfCanvas.height = 64;
-  const sfc = sfCanvas.getContext('2d');
-  for (let col = 0; col < 8; col++) {
-    for (let row = 0; row < 2; row++) {
-      sfc.fillStyle = (col + row) % 2 === 0 ? '#fff' : '#111';
-      sfc.fillRect(col * 32, row * 32, 32, 32);
-    }
-  }
-  const sfTex = new THREE.CanvasTexture(sfCanvas);
-  const sfMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(ROAD_HALF_3D * 2, 0.8),
-    new THREE.MeshStandardMaterial({ map: sfTex, side: THREE.DoubleSide })
-  );
-  sfMesh.position.copy(sfPt); sfMesh.position.y = 0.03;
-  sfMesh.rotation.x = -Math.PI / 2;
-  sfMesh.rotation.z = -Math.atan2(sfTan.x, sfTan.z);
-  scene.add(sfMesh);
-}
-buildTrackMesh();
-
-// ── ENVIRONMENT ──
-// Glowing track-side lights
-function addTrackLights() {
-  for (let i = 0; i < CURVE_PTS; i += 20) {
-    const t    = i / CURVE_PTS;
-    const pt   = trackCurve.getPointAt(t);
-    const tan  = trackCurve.getTangentAt(t);
-    const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0,1,0)).normalize();
-    const colors = [0xd4ff00, 0xff4400, 0x00aaff, 0xff00aa];
-    const col = colors[Math.floor(i/20) % colors.length];
-
-    for (const side of [-1, 1]) {
-      const pos = pt.clone().addScaledVector(right, side * (ROAD_HALF_3D + 0.5));
-      const pole = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.04, 0.04, 1.2, 5),
-        new THREE.MeshStandardMaterial({ color: 0x333333 })
-      );
-      pole.position.copy(pos); pole.position.y = 0.6; scene.add(pole);
-
-      const light = new THREE.Mesh(
-        new THREE.SphereGeometry(0.12, 6, 6),
-        new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 2 })
-      );
-      light.position.copy(pos); light.position.y = 1.3; scene.add(light);
-    }
-  }
-}
-addTrackLights();
-
-// Glowing particles / stands (simple boxes for grandstands)
-function addEnvironment() {
-  // Purple glowing ground fog effect — just emissive plane rings
-  for (let i = 0; i < 8; i++) {
-    const t   = i / 8;
-    const pt  = trackCurve.getPointAt(t);
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(ROAD_HALF_3D + 1, ROAD_HALF_3D + 3, 32),
-      new THREE.MeshStandardMaterial({ color: 0x220044, emissive: 0x440088, emissiveIntensity: 0.5, side: THREE.DoubleSide, transparent: true, opacity: 0.4 })
-    );
-    ring.position.copy(pt); ring.position.y = 0.02;
-    ring.rotation.x = -Math.PI / 2; scene.add(ring);
-  }
-}
-addEnvironment();
-
-// ═══════════════════════════════════════════════
-// CAR FACTORY
-// ═══════════════════════════════════════════════
-const CAR_COLORS = [
-  { body: 0xff8800, stripe: 0xcc5500 },  // orange (player)
-  { body: 0xff2244, stripe: 0xcc0022 },  // red
-  { body: 0x00aaff, stripe: 0x0077cc },  // blue
-  { body: 0xd4ff00, stripe: 0xa8cc00 },  // volt
-  { body: 0xff00aa, stripe: 0xcc0077 },  // pink
-];
-
-function makeCar(colorIdx) {
-  const g    = new THREE.Group();
-  const col  = CAR_COLORS[colorIdx % CAR_COLORS.length];
-  const bMat = new THREE.MeshStandardMaterial({ color: col.body,   metalness: 0.6, roughness: 0.3 });
-  const sMat = new THREE.MeshStandardMaterial({ color: col.stripe, metalness: 0.4, roughness: 0.4 });
-  const dMat = new THREE.MeshStandardMaterial({ color: 0x111122,   metalness: 0.3, roughness: 0.5 });
-  const wMat = new THREE.MeshStandardMaterial({ color: 0x111111,   roughness: 0.9 });
-
-  // Body
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.45, 3.8), bMat);
-  body.position.y = 0.4; g.add(body);
-  // Cabin
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.38, 1.8), dMat);
-  cabin.position.set(0, 0.82, -0.1); g.add(cabin);
-  // Stripe
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.46, 3.82), sMat);
-  stripe.position.y = 0.4; g.add(stripe);
-  // Spoiler
-  const spoiler = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 0.4), sMat);
-  spoiler.position.set(0, 0.96, -1.7); g.add(spoiler);
-  // Wheels
-  const wGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.22, 12);
-  [[-0.95, 0.28, 1.2],[0.95, 0.28, 1.2],[-0.95, 0.28, -1.2],[0.95, 0.28, -1.2]].forEach(([x,y,z]) => {
-    const w = new THREE.Mesh(wGeo, wMat);
-    w.rotation.z = Math.PI / 2; w.position.set(x, y, z); g.add(w);
-  });
-  // Headlights glow
-  const hlMat = new THREE.MeshStandardMaterial({ color: 0xffffcc, emissive: 0xffffcc, emissiveIntensity: 3 });
-  [[-0.6, 0.42, 1.95],[0.6, 0.42, 1.95]].forEach(([x,y,z]) => {
-    const h = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), hlMat); h.position.set(x,y,z); g.add(h);
-  });
-  // Tail lights
-  const tlMat = new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: 0xff2200, emissiveIntensity: 3 });
-  [[-0.6, 0.42, -1.95],[0.6, 0.42, -1.95]].forEach(([x,y,z]) => {
-    const t = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), tlMat); t.position.set(x,y,z); g.add(t);
-  });
-
-  g.castShadow = true;
-  return g;
-}
-
-// ═══════════════════════════════════════════════
-// GAME STATE
-// ═══════════════════════════════════════════════
-const WEAPON_TYPES = {
-  bolt:   { label:'BOLT',   icon:'⚡', color:'#e8ff00' },
-  mine:   { label:'MINE',   icon:'💣', color:'#ff4400' },
-  shield: { label:'SHIELD', icon:'🛡️', color:'#00aaff' },
-  shunt:  { label:'SHUNT',  icon:'💥', color:'#ff00aa' },
-  repair: { label:'REPAIR', icon:'🔧', color:'#00ff88' },
-};
-const WEAPON_POOL = ['bolt','bolt','bolt','mine','mine','shield','shunt','repair'];
-function randomWeapon() { return WEAPON_POOL[Math.floor(Math.random()*WEAPON_POOL.length)]; }
-
-// Pickup spots (matched to curve sample points near original positions)
-const PICKUP_T_VALUES = [0.02, 0.18, 0.32, 0.50, 0.62, 0.74, 0.85, 0.95];
-const pickups = PICKUP_T_VALUES.map((t, i) => {
-  const pt = trackCurve.getPointAt(t);
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(0.6, 0.6, 0.6),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1, transparent: true, opacity: 0.9 })
-  );
-  mesh.position.copy(pt); mesh.position.y = 0.8;
-  scene.add(mesh);
-  return { mesh, t, active: true, weapon: randomWeapon(), respawnTimer: 0, pulse: Math.random()*Math.PI*2 };
-});
-
-// Projectiles
-const projectiles3 = [];
-function spawnProjectile(pos, dir, ownerId, weapon) {
-  const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.18, 6, 6),
-    new THREE.MeshStandardMaterial({ color: weapon==='bolt'?0xe8ff00:0xff00aa, emissive: weapon==='bolt'?0xe8ff00:0xff00aa, emissiveIntensity:3 })
-  );
-  mesh.position.copy(pos);
-  scene.add(mesh);
-  projectiles3.push({ mesh, vel: dir.clone().multiplyScalar(0.8), ownerId, life: 90, damage: weapon==='shunt'?20:35 });
-}
-
-// ── Car objects ──
-const carData = []; // { mesh, t(progress), speed, steer, lap, nextCp, weapon, health, boostFuel, isPlayer, name, shieldTimer }
-
-// Player car
-const playerMesh = makeCar(0);
-scene.add(playerMesh);
-
-// Start position
-const startT = 0.002;
-const startPt = trackCurve.getPointAt(startT);
-const startTan = trackCurve.getTangentAt(startT);
-playerMesh.position.copy(startPt); playerMesh.position.y = 0.3;
-playerMesh.lookAt(startPt.clone().add(startTan));
-
-// Car physics state (2D-style, mapped onto track)
-const player = {
-  mesh: playerMesh, isPlayer: true, name: 'YOU',
-  pos3: startPt.clone(),
-  vel: new THREE.Vector3(),
-  curveIdx: 0, t: startT,
-  speed: 0, steer: 0,
-  lap: 0, nextCp: 0,
-  health: 100, maxHealth: 100,
-  boostFuel: 1, isBoosting: false,
-  weapon: null, shieldTimer: 0,
-  colorIdx: 0, finished: false, finishTime: null,
-};
-carData.push(player);
-
-// AI cars
-const AI_NAMES = ['STRIKER','NEON','RAZOR','VOLT'];
-const AI_T_OFFSETS = [0.012, 0.016, 0.020, 0.024];
-for (let i = 0; i < CONFIG.AI_COUNT; i++) {
-  const t0   = AI_T_OFFSETS[i];
-  const pt0  = trackCurve.getPointAt(t0);
-  const tan0 = trackCurve.getTangentAt(t0);
-  const mesh = makeCar(i + 1);
-  mesh.position.copy(pt0); mesh.position.y = 0.3;
-  mesh.lookAt(pt0.clone().add(tan0));
-  scene.add(mesh);
-  carData.push({
-    mesh, isPlayer: false, name: AI_NAMES[i],
-    pos3: pt0.clone(), vel: new THREE.Vector3(),
-    curveIdx: Math.floor(t0 * CURVE_PTS), t: t0,
-    speed: 0, steer: 0,
-    lap: 0, nextCp: 0,
-    health: 100, maxHealth: 100,
-    boostFuel: 0.5, isBoosting: false,
-    weapon: null, shieldTimer: 0,
-    colorIdx: i + 1, finished: false, finishTime: null,
-    aggression: 0.3 + Math.random()*0.5,
-    wpNoise: 0, wpNoiseTimer: 0,
-  });
-}
-
-// Checkpoints — evenly spaced around track
-const NUM_CPS = 12;
-const CP_T = Array.from({length: NUM_CPS}, (_, i) => i / NUM_CPS);
-
-// ═══════════════════════════════════════════════
-// INPUT
-// ═══════════════════════════════════════════════
-const keys = {};
-window.addEventListener('keydown', e => { keys[e.code] = true; e.preventDefault(); });
-window.addEventListener('keyup',   e => { keys[e.code] = false; });
-
-// ═══════════════════════════════════════════════
-// PHYSICS — move car along track curve
-// ═══════════════════════════════════════════════
-const MAX_SPEED   = 0.0028;
-const ACCEL       = 0.00018;
-const BRAKE_FORCE = 0.00035;
-const DRAG        = 0.96;
-const STEER_MAX   = 0.0012;
-const STEER_LERP  = 0.15;
-const BOOST_MULTI = 1.65;
-const BOOST_DRAIN = 0.016;
-const BOOST_RECH  = 0.004;
-const AI_MAX_SPD  = MAX_SPEED * 0.88;
-
-function updatePlayer(dt) {
-  if (player.finished) return;
-
-  const up    = keys['ArrowUp']   || keys['KeyW'];
-  const down  = keys['ArrowDown'] || keys['KeyS'];
-  const left  = keys['ArrowLeft'] || keys['KeyA'];
-  const right = keys['ArrowRight']|| keys['KeyD'];
-  const boost = keys['ShiftLeft'] || keys['ShiftRight'];
-  const fire  = keys['Space'];
-
-  // Boost
-  player.boostFuel = Math.min(1, player.boostFuel + BOOST_RECH);
-  player.isBoosting = false;
-  if (boost && player.boostFuel > 0.05 && up) {
-    player.isBoosting = true;
-    player.boostFuel = Math.max(0, player.boostFuel - BOOST_DRAIN);
-  }
-  const bm = player.isBoosting ? BOOST_MULTI : 1;
-
-  if (up)   player.speed = Math.min(player.speed + ACCEL, MAX_SPEED * bm);
-  else if (down) player.speed = Math.max(player.speed - BRAKE_FORCE, -MAX_SPEED*0.3);
-  else      player.speed *= DRAG;
-
-  // Steer
-  const sf = Math.min(Math.abs(player.speed) / (MAX_SPEED * 0.4), 1);
-  let targetSteer = 0;
-  if (left)  targetSteer =  STEER_MAX * sf;
-  if (right) targetSteer = -STEER_MAX * sf;
-  player.steer += (targetSteer - player.steer) * STEER_LERP;
-
-  // Weapon fire
-  if (fire && player.weapon && !keys['_spacePrev']) {
-    firePlayerWeapon();
-  }
-  keys['_spacePrev'] = fire;
-
-  // Shield decay
-  if (player.shieldTimer > 0) player.shieldTimer -= dt;
-
-  advanceCar(player, dt);
-}
-
-function advanceCar(car, dt) {
-  // Move along curve by speed + steer offset
-  const newT = ((car.t + car.speed + car.steer + 1) % 1 + 1) % 1;
-  const prevT = car.t;
-  car.t = newT;
-
-  // Lateral offset from centre (simple sinusoidal drift for feel)
-  const pt  = trackCurve.getPointAt(car.t);
-  const tan = trackCurve.getTangentAt(car.t);
-  const right = new THREE.Vector3().crossVectors(tan, new THREE.Vector3(0,1,0)).normalize();
-
-  // Apply lateral offset based on steer accumulation (clamped)
-  const lateralDrift = car.steer * 800;
-  const clampedDrift = Math.max(-ROAD_HALF_3D * 0.7, Math.min(ROAD_HALF_3D * 0.7, lateralDrift));
-  car.pos3.copy(pt).addScaledVector(right, clampedDrift);
-  car.pos3.y = 0.3;
-
-  // Orient mesh
-  const lookAt = trackCurve.getPointAt((car.t + 0.005) % 1);
-  lookAt.y = car.pos3.y;
-  car.mesh.position.copy(car.pos3);
-  car.mesh.lookAt(lookAt);
-  car.mesh.rotation.x = 0;
-
-  // Lap / checkpoint
-  updateCheckpoints(car, prevT, newT);
-}
-
-function updateCheckpoints(car, prevT, newT) {
-  const cpT = CP_T[car.nextCp % NUM_CPS];
-  // Check if we crossed this checkpoint
-  const crossed = (prevT < cpT && newT >= cpT) || (prevT > 0.9 && newT < 0.1 && cpT < 0.1);
-  if (crossed) {
-    car.nextCp++;
-    if (car.nextCp >= NUM_CPS) {
-      car.nextCp = 0;
-      car.lap++;
-      if (car.isPlayer) {
-        const lapTime = raceElapsed - (lapTimes.length > 0 ? lapTimes.reduce((a,b)=>a+b,0) : 0);
-        lapTimes.push(lapTime);
-        if (car.lap < CONFIG.TOTAL_LAPS)
-          showToast(`Lap ${car.lap} — ${formatTime(lapTime)}`);
-      }
-      if (car.lap >= CONFIG.TOTAL_LAPS && !car.finished) {
-        car.finished = true;
-        car.finishTime = raceElapsed;
-        if (car.isPlayer) {
-          const pos = carData.filter(c => c.finished).length;
-          setTimeout(() => showFinish(pos), 1500);
-        }
-        if (car.isPlayer) showToast('🏆 RACE COMPLETE!');
-      }
-    }
-  }
-}
-
-function updateAI(car, dt) {
-  if (car.finished) return;
-
-  // Target next checkpoint
-  const cpT = CP_T[car.nextCp % NUM_CPS];
-  const myProgress = car.lap + car.t;
-  const playerProgress = player.lap + player.t;
-  const gap = playerProgress - myProgress;
-
-  // Rubber band
-  const rb = 1 + gap * 0.3;
-  const targetSpd = Math.max(AI_MAX_SPD * 0.7, Math.min(AI_MAX_SPD * 1.1, AI_MAX_SPD * rb));
-
-  // Steer toward checkpoint t
-  let dt2 = cpT - car.t;
-  if (dt2 < -0.5) dt2 += 1;
-  if (dt2 > 0.5)  dt2 -= 1;
-
-  if (--car.wpNoiseTimer <= 0) {
-    car.wpNoise = (Math.random() - 0.5) * 0.0004;
-    car.wpNoiseTimer = 30 + Math.random() * 40;
-  }
-
-  const targetSteer = Math.max(-STEER_MAX, Math.min(STEER_MAX, dt2 * 0.008 + car.wpNoise));
-  car.steer += (targetSteer - car.steer) * 0.12;
-  car.speed += (targetSpd - car.speed) * 0.04;
-
-  advanceCar(car, dt);
-}
-
-// ═══════════════════════════════════════════════
-// WEAPONS
-// ═══════════════════════════════════════════════
-function firePlayerWeapon() {
-  if (!player.weapon) return;
-  const fwd  = new THREE.Vector3(0, 0, 1).applyQuaternion(player.mesh.quaternion);
-  const pos  = player.pos3.clone().add(new THREE.Vector3(0, 0.5, 0));
-  switch (player.weapon) {
-    case 'bolt':
-      spawnProjectile(pos, fwd, 'player', 'bolt'); break;
-    case 'shunt':
-      for (let i = 0; i < 6; i++) {
-        const a = (i/6)*Math.PI*2;
-        const d = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
-        spawnProjectile(pos.clone(), d, 'player', 'shunt');
-      } break;
-    case 'mine':
-      const mPos = player.pos3.clone().addScaledVector(fwd, -2);
-      mPos.y = 0.2;
-      spawnMine(mPos); break;
-    case 'shield':
-      player.shieldTimer = 300; break;
-    case 'repair':
-      player.health = Math.min(player.maxHealth, player.health + player.maxHealth * 0.35); break;
-  }
-  player.weapon = null;
-}
-
-const mines3 = [];
-function spawnMine(pos) {
-  const mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.3, 8, 8),
-    new THREE.MeshStandardMaterial({ color: 0xff4400, emissive: 0xff4400, emissiveIntensity: 1.5 })
-  );
-  mesh.position.copy(pos);
-  scene.add(mesh);
-  mines3.push({ mesh, pos: pos.clone(), armed: false, armTimer: 60, life: 1800 });
-}
-
-// ═══════════════════════════════════════════════
-// GAME LOOP VARIABLES
-// ═══════════════════════════════════════════════
-let raceStarted  = false;
-let raceFinished = false;
-let raceElapsed  = 0;
-let lapTimes     = [];
-let lastTs       = 0;
-let damageFlash  = 0;
-
-// ═══════════════════════════════════════════════
-// UPDATE
-// ═══════════════════════════════════════════════
-function update(dt) {
-  if (!raceStarted || raceFinished) return;
-  raceElapsed += dt;
-
-  updatePlayer(dt);
-  for (const car of carData) { if (!car.isPlayer) updateAI(car, dt); }
-
-  // Pickup pickup logic
-  for (const pu of pickups) {
-    if (!pu.active) {
-      if (--pu.respawnTimer <= 0) { pu.active = true; pu.weapon = randomWeapon(); pu.mesh.visible = true; }
-      continue;
-    }
-    pu.pulse += 0.05;
-    pu.mesh.rotation.y += 0.04;
-    pu.mesh.position.y = 0.8 + Math.sin(pu.pulse) * 0.15;
-    // Check player collision
-    if (player.pos3.distanceTo(pu.mesh.position) < 1.2 && !player.weapon) {
-      player.weapon = pu.weapon;
-      pu.active = false; pu.respawnTimer = 300; pu.mesh.visible = false;
-      showToast('Picked up: ' + (WEAPON_TYPES[pu.weapon]?.icon || '') + ' ' + (WEAPON_TYPES[pu.weapon]?.label || ''));
-    }
-  }
-
-  // Projectiles
-  for (let i = projectiles3.length - 1; i >= 0; i--) {
-    const p = projectiles3[i];
-    p.mesh.position.add(p.vel);
-    p.life--;
-    if (p.life <= 0) { scene.remove(p.mesh); projectiles3.splice(i, 1); continue; }
-    // Hit AI
-    for (const car of carData) {
-      if (car.isPlayer) continue;
-      if (p.mesh.position.distanceTo(car.pos3) < 1.5) {
-        if (car.shieldTimer <= 0) {
-          car.health -= p.damage;
-          showKillFeed(`💥 ${car.name} hit!`);
-        }
-        scene.remove(p.mesh); projectiles3.splice(i, 1); break;
-      }
-    }
-  }
-
-  // Mines
-  for (let i = mines3.length - 1; i >= 0; i--) {
-    const m = mines3[i];
-    m.life--;
-    if (m.armTimer > 0) { m.armTimer--; continue; }
-    m.armed = true;
-    if (m.life <= 0) { scene.remove(m.mesh); mines3.splice(i, 1); continue; }
-    for (const car of carData) {
-      if (car.pos3.distanceTo(m.pos) < 2) {
-        if (car.shieldTimer <= 0) {
-          car.health -= 55;
-          if (car.isPlayer) { damageFlash = 20; }
-          showKillFeed(`💣 Mine!`);
-        }
-        scene.remove(m.mesh); mines3.splice(i, 1); break;
-      }
-    }
-  }
-
-  // Damage flash
-  const df = document.getElementById('damage-flash');
-  if (damageFlash > 0) { damageFlash--; df.style.display = 'block'; df.style.opacity = (damageFlash/20)*0.5; }
-  else df.style.display = 'none';
-
-  // AI weapon pickup (simple)
-  for (const car of carData) {
-    if (car.isPlayer) continue;
-    for (const pu of pickups) {
-      if (!pu.active) continue;
-      if (car.pos3.distanceTo(pu.mesh.position) < 1.5) {
-        car.weapon = pu.weapon;
-        pu.active = false; pu.respawnTimer = 300; pu.mesh.visible = false;
-      }
-    }
-  }
-
-  updateCamera();
-  updateHUD();
-}
-
-// ═══════════════════════════════════════════════
-// CAMERA
-// ═══════════════════════════════════════════════
-const camPos3  = new THREE.Vector3();
-const camLook3 = new THREE.Vector3();
-let camInitialized = false;
-
-function updateCamera() {
-  const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(player.mesh.quaternion);
-  const ideal = player.pos3.clone()
-    .addScaledVector(fwd, -CONFIG.CAM_BEHIND)
-    .add(new THREE.Vector3(0, CONFIG.CAM_HEIGHT, 0));
-
-  if (!camInitialized) {
-    camPos3.copy(ideal);
-    camLook3.copy(player.pos3);
-    camInitialized = true;
-  }
-
-  camPos3.lerp(ideal, CONFIG.CAM_LERP);
-  const lookTarget = player.pos3.clone().add(new THREE.Vector3(0, 1.5, 0));
-  camLook3.lerp(lookTarget, 0.12);
-
-  camera.position.copy(camPos3);
-  camera.lookAt(camLook3);
-}
-
-// ═══════════════════════════════════════════════
-// HUD
-// ═══════════════════════════════════════════════
-function formatTime(s) {
-  const m  = Math.floor(s / 60);
-  const ss = Math.floor(s % 60);
-  const ms = Math.floor((s % 1) * 1000);
-  return `${m}:${String(ss).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
-}
-
-function raceMetric(car) { return car.lap + car.t; }
-
-function updateHUD() {
-  const sorted = [...carData].sort((a,b) => raceMetric(b) - raceMetric(a));
-  const myPos  = sorted.findIndex(c => c.isPlayer) + 1;
-  const suffixes = ['ST','ND','RD','TH','TH','TH'];
-  document.getElementById('pos-num').textContent    = myPos;
-  document.getElementById('pos-suffix').textContent = suffixes[Math.min(myPos-1, 5)];
-
-  document.getElementById('lap-num').textContent   = Math.min(player.lap + 1, CONFIG.TOTAL_LAPS);
-  document.getElementById('lap-total').textContent = CONFIG.TOTAL_LAPS;
-  document.getElementById('race-time').textContent  = formatTime(raceElapsed);
-
-  const hp  = player.health / player.maxHealth;
-  const hb  = document.getElementById('health-bar');
-  hb.style.width      = (hp*100)+'%';
-  hb.style.background = hp>.5?'#00ff88':hp>.25?'#ffaa00':'#ff3300';
-  document.getElementById('boost-bar').style.width = (player.boostFuel*100)+'%';
-  document.getElementById('speed-num').textContent = Math.round(Math.abs(player.speed) / MAX_SPEED * 280);
-
-  if (player.weapon) {
-    const wt = WEAPON_TYPES[player.weapon];
-    document.getElementById('weapon-icon').textContent  = wt?.icon  || '?';
-    document.getElementById('weapon-label').textContent = wt?.label || player.weapon;
-  } else {
-    document.getElementById('weapon-icon').textContent  = '—';
-    document.getElementById('weapon-label').textContent = 'NO WEAPON';
-  }
-
-  // Live positions
-  document.getElementById('lp-list').innerHTML = sorted.map((c,i) => {
-    const col = CAR_COLORS[c.colorIdx % CAR_COLORS.length];
-    const hex  = '#'+col.body.toString(16).padStart(6,'0');
-    return `<div class="lp-row${c.isPlayer?' lp-me':''}">
-      <span class="lp-rank">${i+1}</span>
-      <span class="lp-name" style="color:${hex}">${c.name}</span>
-      <span class="lp-lap">L${Math.min(c.lap+1,CONFIG.TOTAL_LAPS)}</span>
-    </div>`;
-  }).join('');
-
-  updateMinimap(sorted);
-}
-
-// ── Minimap ──
-function updateMinimap(sorted) {
-  const mc = document.getElementById('minimap-canvas');
-  const mx = mc.getContext('2d');
-  const MW = mc.width, MH = mc.height, pad = 6;
-  mx.clearRect(0,0,MW,MH);
-  mx.fillStyle='rgba(4,2,12,0.88)'; mx.fillRect(0,0,MW,MH);
-
-  // Draw track outline from curve points
-  const toM = (x,z) => {
-    // curve pts range roughly ±7 in x and z
-    const range = 8;
-    return {
-      x: pad + ((x + range) / (range*2)) * (MW - pad*2),
-      y: pad + ((z + range) / (range*2)) * (MH - pad*2),
-    };
-  };
-  mx.strokeStyle='#3a2255'; mx.lineWidth=6; mx.lineCap='round'; mx.lineJoin='round';
-  mx.beginPath();
-  curvePts.forEach((p,i) => { const m=toM(p.x,p.z); i===0?mx.moveTo(m.x,m.y):mx.lineTo(m.x,m.y); });
-  mx.closePath(); mx.stroke();
-  mx.strokeStyle='#7755cc'; mx.lineWidth=2;
-  mx.beginPath();
-  curvePts.forEach((p,i) => { const m=toM(p.x,p.z); i===0?mx.moveTo(m.x,m.y):mx.lineTo(m.x,m.y); });
-  mx.closePath(); mx.stroke();
-
-  // Cars
-  for (const c of sorted) {
-    const m = toM(c.pos3.x, c.pos3.z);
-    const col = CAR_COLORS[c.colorIdx % CAR_COLORS.length];
-    const hex = '#'+col.body.toString(16).padStart(6,'0');
-    mx.shadowColor = c.isPlayer?'#d4ff00':hex;
-    mx.shadowBlur  = c.isPlayer?8:4;
-    mx.fillStyle   = c.isPlayer?'#d4ff00':hex;
-    mx.beginPath(); mx.arc(m.x,m.y,c.isPlayer?5:3,0,Math.PI*2); mx.fill();
-    mx.shadowBlur=0;
-  }
-}
-
-// ═══════════════════════════════════════════════
-// TOAST & KILLFEED
-// ═══════════════════════════════════════════════
-function showToast(msg, dur=3000) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), dur);
-}
-
-function showKillFeed(msg) {
-  const feed = document.getElementById('kill-feed');
-  const el   = document.createElement('div');
-  el.className = 'kill-entry'; el.textContent = msg;
-  feed.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-
-// ═══════════════════════════════════════════════
-// FINISH
-// ═══════════════════════════════════════════════
-function showFinish(pos) {
-  raceFinished = true;
-  document.getElementById('hud').classList.remove('active');
-  document.getElementById('finish-total').textContent = formatTime(raceElapsed);
-  const best = lapTimes.length ? formatTime(Math.min(...lapTimes)) : '--';
-  document.getElementById('finish-best').textContent  = best;
-  const suffixes = ['ST','ND','RD','TH','TH','TH'];
-  document.getElementById('finish-pos').textContent   = pos + (suffixes[Math.min(pos-1,5)]||'TH');
-  document.getElementById('finish-screen').classList.add('active');
-}
-
-// ═══════════════════════════════════════════════
-// RENDER LOOP
-// ═══════════════════════════════════════════════
-function loop(ts) {
-  requestAnimationFrame(loop);
-  const dt = Math.min((ts - lastTs) / 16.667, 3);
-  lastTs = ts;
-  update(dt);
-  renderer3.render(scene, camera);
-}
-requestAnimationFrame(loop);
-
-// ═══════════════════════════════════════════════
-// RESIZE
-// ═══════════════════════════════════════════════
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer3.setSize(window.innerWidth, window.innerHeight);
-});
-
-// ═══════════════════════════════════════════════
-// PHASE MANAGEMENT
-// ═══════════════════════════════════════════════
-function showCountdown(cb) {
-  const el  = document.getElementById('countdown');
-  const val = document.getElementById('countdown-val');
-  el.classList.add('active');
-  let n = 3;
-  val.textContent = n; val.className = '';
-
-  const tick = () => {
-    n--;
-    if (n === 0) {
-      val.textContent = 'GO!'; val.className = 'go';
-      setTimeout(() => { el.classList.remove('active'); cb(); }, 700);
-    } else {
-      val.textContent = n; val.className = '';
-      setTimeout(tick, 1000);
-    }
-  };
-  setTimeout(tick, 1000);
-}
-
-function startRace() {
-  document.getElementById('hud').classList.add('active');
-  raceStarted = true; raceElapsed = 0; lapTimes = [];
-}
-
-function resetRace() {
-  raceStarted = false; raceFinished = false; raceElapsed = 0; lapTimes = [];
-
-  // Reset all cars
-  for (const [i, car] of carData.entries()) {
-    const t0 = i === 0 ? 0.002 : AI_T_OFFSETS[i-1];
-    const pt0  = trackCurve.getPointAt(t0);
-    const tan0 = trackCurve.getTangentAt(t0);
-    car.t = t0; car.speed = 0; car.steer = 0;
-    car.lap = 0; car.nextCp = 0;
-    car.health = car.maxHealth; car.boostFuel = i===0?1:0.5;
-    car.weapon = null; car.shieldTimer = 0;
-    car.finished = false; car.finishTime = null;
-    car.pos3.copy(pt0);
-    car.mesh.position.copy(pt0); car.mesh.position.y = 0.3;
-    car.mesh.lookAt(pt0.clone().add(tan0));
-  }
-
-  // Reset pickups
-  for (const pu of pickups) { pu.active=true; pu.weapon=randomWeapon(); pu.mesh.visible=true; }
-  // Remove stray projectiles/mines
-  for (const p of projectiles3) scene.remove(p.mesh); projectiles3.length=0;
-  for (const m of mines3) scene.remove(m.mesh); mines3.length=0;
-
-  camInitialized = false; damageFlash = 0;
-}
-
-document.getElementById('start-btn').addEventListener('click', () => {
-  document.getElementById('start-screen').style.display = 'none';
-  showCountdown(startRace);
-});
-
-document.getElementById('restart-btn').addEventListener('click', () => {
-  document.getElementById('finish-screen').classList.remove('active');
-  resetRace();
-  showCountdown(startRace);
-});
-</script>
+<script src="js/config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/cars.js"></script>
+<script src="js/track.js"></script>
+<script src="js/weapons.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/network.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
 </body>
 </html>
