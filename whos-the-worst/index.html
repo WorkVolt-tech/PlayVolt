@@ -2234,7 +2234,7 @@ button:not(#muteBtn):active:not(:disabled) {
     // ==========================================
     // SOUND SYSTEM
     // ==========================================
-    const SOUND_BASE = 'https://raw.githubusercontent.com/WorkVolt-tech/PlayVolt/main/sounds/';
+    const SOUND_BASE = 'https://raw.githubusercontent.com/cheztvplus-tech/Who-s-The-Worst/main/sounds/';
 
     const SOUNDS = {
         cardFlip:    new Audio(SOUND_BASE + 'card-flip.opus'),
@@ -5603,6 +5603,107 @@ console.log('✨ Enhancement pack: Alive Players + Spotlight + Juicy Cards loade
 }
 #shopOpenBtn:hover { background: rgba(163,84,255,0.4); box-shadow: 0 4px 20px rgba(163,84,255,0.3); transform: translateY(-2px); }
 .shop-btn-ap { color: #feca57; font-size: 0.85rem; }
+
+/* Ability info button */
+#infoOpenBtn {
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 12px;
+    background: linear-gradient(135deg, rgba(72,219,251,0.25), rgba(72,219,251,0.1));
+    border: 1px solid rgba(72,219,251,0.4);
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #48dbfb;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+    margin: 0 6px 0 0;
+    transition: all 0.2s ease;
+}
+#infoOpenBtn:hover { background: rgba(72,219,251,0.4); box-shadow: 0 4px 20px rgba(72,219,251,0.3); transform: translateY(-2px); }
+
+/* Ability Info Modal */
+#abilityInfoModal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    padding: 16px;
+    backdrop-filter: blur(6px);
+}
+#abilityInfoModal.active { display: flex; }
+.info-panel {
+    background: linear-gradient(160deg, #0a1830 0%, #0f0f1a 100%);
+    border-radius: 24px;
+    padding: 22px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 88vh;
+    overflow-y: auto;
+    border: 1px solid rgba(72,219,251,0.25);
+    box-shadow: 0 0 60px rgba(72,219,251,0.25), 0 20px 60px rgba(0,0,0,0.6);
+    animation: shopSlideIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.info-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    background: linear-gradient(45deg, #48dbfb, #c39eff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+}
+.info-subtitle {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 14px;
+}
+.info-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.info-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+.info-item-icon {
+    font-size: 1.6rem;
+    line-height: 1.2;
+    flex-shrink: 0;
+    width: 38px;
+    text-align: center;
+}
+.info-item-body { flex: 1; min-width: 0; }
+.info-item-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+.info-item-name { font-weight: 800; font-size: 0.95rem; color: #fff; }
+.info-item-rarity {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 800;
+}
+.info-item-cost {
+    font-size: 0.72rem;
+    color: #feca57;
+    font-weight: 700;
+    margin-left: auto;
+}
+.info-item-desc { font-size: 0.8rem; color: rgba(255,255,255,0.75); line-height: 1.45; }
 </style>
 
 <!-- SHOP MODAL HTML -->
@@ -5637,6 +5738,16 @@ console.log('✨ Enhancement pack: Alive Players + Spotlight + Juicy Cards loade
     </div>
 </div>
 
+<!-- ABILITY INFO MODAL -->
+<div id="abilityInfoModal" onclick="closeAbilityInfo()">
+    <div class="info-panel" onclick="event.stopPropagation()">
+        <div class="info-title">ℹ️ Ability Guide</div>
+        <div class="info-subtitle">Tap any ability in your tray to activate it. Only one active ability per round (Dice Roll is instant).</div>
+        <div class="info-list" id="abilityInfoList"></div>
+        <button onclick="closeAbilityInfo()" class="btn-secondary" style="margin-top:4px;">Close</button>
+    </div>
+</div>
+
 <div id="streakBanner" class="streak-banner"></div>
 
 <script>
@@ -5663,7 +5774,7 @@ const ABILITIES = {
     },
     marked_target: {
         id: 'marked_target', icon: '🎯', name: 'Marked Target',
-        desc: 'Pick a player — anyone who votes for them gets +1 bonus point.',
+        desc: 'Pick a player. Anyone (including you) who correctly votes for them gets +1 bonus point.',
         rarity: 'common', cost: 40, type: 'offensive',
         useTiming: 'before_vote', needsTarget: true, showPill: true
     },
@@ -5675,25 +5786,25 @@ const ABILITIES = {
     },
     anon_strike: {
         id: 'anon_strike', icon: '🕶️', name: 'Anonymous',
-        desc: 'Your vote target is hidden from everyone in the results.',
+        desc: 'Your name AND your vote are hidden from everyone in the results.',
         rarity: 'common', cost: 35, type: 'offensive',
         useTiming: 'before_vote', showPill: true
     },
     immunity: {
         id: 'immunity', icon: '🛡️', name: 'Immunity',
-        desc: "You're removed from everyone's vote options this round.",
+        desc: "You're removed from everyone else's vote options this round (you can still vote).",
         rarity: 'rare', cost: 75, type: 'defensive',
         useTiming: 'before_vote', showPill: true
     },
     reflect: {
         id: 'reflect', icon: '🪞', name: 'Reflect',
-        desc: "Players who vote for you get their vote reflected back — they score/lose as if they voted for themselves.",
+        desc: "Anyone who votes for you has their vote nullified — they earn no points (Double Play penalties still apply).",
         rarity: 'epic', cost: 100, type: 'defensive',
         useTiming: 'before_vote', showPill: true
     },
     second_chance: {
         id: 'second_chance', icon: '❤️', name: 'Second Chance',
-        desc: "If you'd lose a point this round — cancel it.",
+        desc: "If your wrong Double Play would cost you points this round, cancel the penalty.",
         rarity: 'common', cost: 45, type: 'defensive',
         useTiming: 'before_vote', showPill: true
     },
@@ -5711,7 +5822,7 @@ const ABILITIES = {
     },
     kingmaker: {
         id: 'kingmaker', icon: '👑', name: 'Kingmaker',
-        desc: 'Choose who wins this round — they get all the points instead.',
+        desc: 'Override the round. The player YOU choose wins +2 points. All other voters get nothing.',
         rarity: 'legendary', cost: 150, type: 'rare',
         useTiming: 'before_vote', needsTarget: true, showPill: true
     }
@@ -5932,12 +6043,45 @@ function injectAbilityTray() {
     tray.id = 'abilityTray';
     tray.innerHTML = `
         <h4>⚡ Your Abilities <span id="myApLabel">0 AP</span>
+            <button id="infoOpenBtn" onclick="playSound('click'); openAbilityInfo()" title="What does each ability do?">ℹ️ Info</button>
             <button id="shopOpenBtn" onclick="playSound('openShop'); openShop()">🛒 Shop</button>
         </h4>
         <div class="ability-slots"></div>
     `;
     voterView.appendChild(tray);
     AP.renderTray();
+}
+
+/* ══════════════════════════════════════
+   ABILITY INFO MODAL
+══════════════════════════════════════ */
+function openAbilityInfo() {
+    const list = document.getElementById('abilityInfoList');
+    if (!list) return;
+    // Order: by rarity then by name
+    const rarityRank = { common: 0, rare: 1, epic: 2, legendary: 3 };
+    const sorted = Object.values(ABILITIES).sort((a, b) => {
+        return (rarityRank[a.rarity] || 0) - (rarityRank[b.rarity] || 0) || a.name.localeCompare(b.name);
+    });
+    list.innerHTML = sorted.map(ab => `
+        <div class="info-item">
+            <div class="info-item-icon">${ab.icon}</div>
+            <div class="info-item-body">
+                <div class="info-item-head">
+                    <span class="info-item-name">${ab.name}</span>
+                    <span class="info-item-rarity rarity-${ab.rarity}">${ab.rarity}</span>
+                    <span class="info-item-cost">⚡ ${ab.cost} AP</span>
+                </div>
+                <div class="info-item-desc">${ab.desc}</div>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('abilityInfoModal').classList.add('active');
+}
+
+function closeAbilityInfo() {
+    playSound('click');
+    document.getElementById('abilityInfoModal').classList.remove('active');
 }
 
 /* ══════════════════════════════════════
@@ -6290,13 +6434,34 @@ window.revealVotes = async function() {
         /* ── VOTE SHUFFLE: randomise targets ── */
         const shufflerEntry = Object.entries(abilityActions).find(([, a]) => a.abilityId === 'vote_shuffle');
         if (shufflerEntry) {
-            const targets = voterEntries.map(([, v]) => ({ ...v }));
-            const shuffledTargets = targets.map(v => v.target);
-            for (let i = shuffledTargets.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffledTargets[i], shuffledTargets[j]] = [shuffledTargets[j], shuffledTargets[i]];
+            const [shufflerId, shufflerAction] = shufflerEntry;
+            // If the shuffle has already been computed (idempotent across re-runs), reuse it.
+            // Otherwise compute a fresh permutation and persist it so every client (and showResults) sees it.
+            let shuffleMap = shufflerAction?.params?.shuffleMap;
+            if (!shuffleMap || typeof shuffleMap !== 'object') {
+                const voterIds = voterEntries.map(([id]) => id);
+                const shuffledTargets = voterEntries.map(([, v]) => v.target);
+                // Fisher–Yates
+                for (let i = shuffledTargets.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledTargets[i], shuffledTargets[j]] = [shuffledTargets[j], shuffledTargets[i]];
+                }
+                shuffleMap = {};
+                voterIds.forEach((id, i) => { shuffleMap[id] = shuffledTargets[i]; });
+                // Persist the map onto the shuffler's ability_action so showResults can re-apply it
+                abilityActions[shufflerId] = {
+                    ...shufflerAction,
+                    params: { ...(shufflerAction.params || {}), shuffleMap }
+                };
+                try {
+                    await supabaseClient
+                        .from('rooms')
+                        .update({ ability_actions: abilityActions })
+                        .eq('id', roomId);
+                } catch (e) { console.warn('vote_shuffle persist failed', e); }
             }
-            voterEntries = voterEntries.map(([id, vote], i) => [id, { ...vote, target: shuffledTargets[i] }]);
+            // Apply the (persisted) shuffle map to voterEntries for scoring
+            voterEntries = voterEntries.map(([id, vote]) => [id, { ...vote, target: shuffleMap[id] ?? vote.target }]);
         }
 
         // Immunity does not affect scoring — votes for immune players count normally
@@ -6349,12 +6514,11 @@ window.revealVotes = async function() {
                 const base   = vote.doubleDown ? 2 : 1;
                 let pts      = base * weight;
 
-                // MARKED TARGET: voter of the marked target gets +1 per other voter on same target
-                if (ab?.abilityId === 'marked_target') {
-                    const sameCount = voterEntries.filter(([oid, ov]) => oid !== voterId && ov.target === vote.target).length;
-                    pts += sameCount;
+                // MARKED TARGET (own use): marker gets +1 if they voted for their OWN marked target
+                if (ab?.abilityId === 'marked_target' && ab?.params?.targetId === vote.target) {
+                    pts += 1;
                 }
-                // Also: anyone voting for a marked-target player gets +1 (target is marked by someone else)
+                // MARKED TARGET (by someone else): anyone voting for a marked player gets +1
                 const markerEntry = Object.entries(abilityActions).find(([mid, a]) => mid !== voterId && a.abilityId === 'marked_target' && a.params?.targetId === vote.target);
                 if (markerEntry) {
                     pts += 1;
@@ -6409,9 +6573,9 @@ window.revealVotes = async function() {
                 if (correct) {
                     const base = vote.doubleDown ? 2 : 1;
                     let pts    = base * weight;
-                    if (ab?.abilityId === 'marked_target') {
-                        const sc = voterEntries.filter(([oid, ov]) => oid !== voterId && ov.target === vote.target).length;
-                        pts += sc;
+                    // MARKED TARGET (own use): marker gets +1 if they voted for their OWN marked target
+                    if (ab?.abilityId === 'marked_target' && ab?.params?.targetId === vote.target) {
+                        pts += 1;
                     }
                     const markerEntry = Object.entries(abilityActions).find(([mid, a]) => mid !== voterId && a.abilityId === 'marked_target' && a.params?.targetId === vote.target);
                     if (markerEntry) pts += 1;
@@ -6490,13 +6654,17 @@ window.showResults = function() {
     document.getElementById('instigatorPickDisplay').textContent = pickedPlayer ? pickedPlayer.name : '???';
 
     const abilityActions   = { ...(state.abilityActions || {}) };
-    const voterEntries     = Object.entries(state.votes).filter(([vid]) => vid !== state.currentReader);
+    let voterEntries       = Object.entries(state.votes).filter(([vid]) => vid !== state.currentReader);
     const instigatorTarget = state.instigatorVote;
     const penalty          = state.doubleDownPenalty || 'lose_card';
 
-    /* ── VOTE SHUFFLE detection (display only) ── */
+    /* ── VOTE SHUFFLE detection — apply persisted shuffle map so display matches scoring ── */
     const shufflerEntry = Object.entries(abilityActions).find(([, a]) => a.abilityId === 'vote_shuffle');
     const shufflerName  = shufflerEntry ? state.players.find(p => p.id === shufflerEntry[0])?.name : null;
+    const shuffleMap    = shufflerEntry?.[1]?.params?.shuffleMap;
+    if (shuffleMap && typeof shuffleMap === 'object') {
+        voterEntries = voterEntries.map(([id, vote]) => [id, { ...vote, target: shuffleMap[id] ?? vote.target }]);
+    }
 
     /* ── REFLECT set (display) ── */
     const reflectors    = new Set(Object.entries(abilityActions).filter(([,a]) => a.abilityId === 'reflect').map(([id]) => id));
@@ -6590,16 +6758,16 @@ window.showResults = function() {
         // Points calculation for display
         let pts = 0, penaltyText = '';
         if (kingTarget) {
-            // Kingmaker round — only kingmaker's chosen wins
-            correct = vote.target === kingTarget || voterId === kingEntry?.[0];
-            pts = voterId === kingEntry?.[0] ? 0 : vote.target === kingTarget ? (vote.doubleDown ? 2 : 1) : 0;
+            // Kingmaker round: only the chosen player wins (+2), all voters get 0
+            correct = false;
+            pts     = 0;
+            penaltyText = '👑 Kingmaker round — chosen player wins';
         } else if (correct) {
             const weight = isTriple ? 3 : 1;
             pts = (vote.doubleDown ? 2 : 1) * weight;
-            // Marked target: +1 per other voter on same target
-            if (isMarked) {
-                const sc = voterEntries.filter(([oid, ov]) => oid !== voterId && ov.target === vote.target).length;
-                pts += sc;
+            // MARKED TARGET (own use): marker gets +1 if they voted for their OWN marked target
+            if (isMarked && ab?.params?.targetId === vote.target) {
+                pts += 1;
             }
             const markerEntry2 = Object.entries(abilityActions).find(([mid, a]) => mid !== voterId && a.abilityId === 'marked_target' && a.params?.targetId === vote.target);
             if (markerEntry2) pts += 1;
@@ -6627,10 +6795,12 @@ window.showResults = function() {
         if (isAnon)                                     abilityTag = `<div style="font-size:0.68rem;color:#6c6c7e;margin-top:2px;">🕶️ Identity hidden</div>`;
         else if (isTriple && correct)                   abilityTag = `<div style="font-size:0.68rem;color:#48dbfb;margin-top:2px;">💥 Triple Threat ×3</div>`;
         else if (isTriple && !correct)                  abilityTag = `<div style="font-size:0.68rem;color:#ff4757;margin-top:2px;">💥 Triple Threat backfire −3</div>`;
-        else if (isMarked && correct) {
-            const sc = voterEntries.filter(([oid, ov]) => oid !== voterId && ov.target === vote.target).length;
-            if (sc > 0)                                 abilityTag = `<div style="font-size:0.68rem;color:#feca57;margin-top:2px;">🎯 Marked Target +${sc} bonus</div>`;
+        else if (isMarked && correct && ab?.params?.targetId === vote.target) {
+                                                         abilityTag = `<div style="font-size:0.68rem;color:#feca57;margin-top:2px;">🎯 Marked Target hit — +1 bonus</div>`;
         }
+        // Bonus tag for any voter (not the marker) who hit a marked target
+        const externalMarker = Object.entries(abilityActions).find(([mid, a]) => mid !== voterId && a.abilityId === 'marked_target' && a.params?.targetId === vote.target);
+        if (externalMarker && correct && !isAnon)        abilityTag += `<div style="font-size:0.68rem;color:#feca57;margin-top:2px;">🎯 Hit a marked target — +1 bonus</div>`;
         if (isReflected && !isAnon)                     abilityTag += `<div style="font-size:0.68rem;color:#c39eff;margin-top:2px;">🪞 Reflected — vote bounced back</div>`;
         if (isImmune && !isAnon && vote.target !== effectiveTarget)
                                                          abilityTag += `<div style="font-size:0.68rem;color:#54a0ff;margin-top:2px;">🛡️ Target was immune</div>`;
