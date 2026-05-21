@@ -47,7 +47,6 @@
     overflow-x: hidden;
   }
 
-  /* ── BACKGROUND GRID ── */
   body::before {
     content: '';
     position: fixed;
@@ -71,7 +70,6 @@
     padding: 1rem;
   }
 
-  /* ── SCREENS ── */
   .screen {
     display: none;
     width: 100%;
@@ -85,7 +83,6 @@
     to   { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  /* ── LOGO ── */
   .logo {
     font-size: clamp(2rem, 6vw, 3.5rem);
     font-weight: 800;
@@ -107,7 +104,6 @@
     font-family: var(--font-mono);
   }
 
-  /* ── CARDS ── */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -128,7 +124,6 @@
     padding: 1.5rem;
   }
 
-  /* ── BUTTONS ── */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -175,7 +170,6 @@
   .btn-full { width: 100%; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-  /* ── INPUTS ── */
   .input {
     width: 100%;
     background: var(--bg3);
@@ -195,7 +189,6 @@
   .input::placeholder { color: var(--text3); }
   .input-mono { font-family: var(--font-mono); letter-spacing: 0.1em; font-size: 1.5rem; text-align: center; text-transform: uppercase; }
 
-  /* ── LABELS ── */
   .label {
     font-size: 0.75rem;
     font-weight: 600;
@@ -206,7 +199,6 @@
     display: block;
   }
 
-  /* ── BADGES ── */
   .badge {
     display: inline-flex;
     align-items: center;
@@ -225,7 +217,6 @@
   .badge-cyan   { background: rgba(68,204,255,0.15); color: var(--cyan); border: 1px solid rgba(68,204,255,0.3); }
   .badge-pink   { background: rgba(255,110,180,0.15); color: var(--pink); border: 1px solid rgba(255,110,180,0.3); }
 
-  /* ── PLAYER CHIPS ── */
   .player-list { display: flex; flex-direction: column; gap: 0.5rem; }
   .player-chip {
     display: flex;
@@ -250,7 +241,6 @@
   .player-name { font-weight: 600; font-size: 0.95rem; flex: 1; }
   .player-meta { font-size: 0.75rem; color: var(--text3); font-family: var(--font-mono); }
 
-  /* ── PHASE BANNER ── */
   .phase-banner {
     display: flex;
     align-items: center;
@@ -269,7 +259,6 @@
     font-family: var(--font-mono);
   }
 
-  /* ── TIMER ── */
   .timer {
     font-family: var(--font-mono);
     font-size: 1.5rem;
@@ -280,7 +269,6 @@
   .timer.urgent { color: var(--red); animation: pulse 0.5s infinite alternate; }
   @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
 
-  /* ── WORD REVEAL ── */
   .word-card {
     text-align: center;
     padding: 2.5rem 2rem;
@@ -315,7 +303,6 @@
     z-index: 1;
   }
 
-  /* ── CLUE FEED ── */
   .clue-feed { display: flex; flex-direction: column; gap: 0.6rem; }
   .clue-item {
     display: flex;
@@ -334,7 +321,6 @@
   .clue-item-body { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
   .clue-text { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
   .clue-author { font-size: 0.72rem; color: var(--text3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
-  /* Imposter clue blur */
   .clue-text-blurred {
     filter: blur(7px);
     user-select: none;
@@ -352,7 +338,6 @@
     margin-top: 0.2rem;
   }
 
-  /* ── VOTE BUTTONS ── */
   .vote-grid { display: flex; flex-direction: column; gap: 0.5rem; }
   .vote-btn {
     display: flex;
@@ -376,7 +361,6 @@
   .vote-bar { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
   .vote-count { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text2); min-width: 2ch; }
 
-  /* ── REACTIONS ── */
   .reaction-bar {
     display: flex;
     gap: 0.4rem;
@@ -405,7 +389,6 @@
     100% { opacity: 0; transform: translateY(-120px) scale(1.4); }
   }
 
-  /* ── CHAOS EVENT BANNER ── */
   .chaos-banner {
     padding: 1rem 1.25rem;
     background: linear-gradient(135deg, rgba(255,170,68,0.15), rgba(255,85,102,0.1));
@@ -424,7 +407,6 @@
   .chaos-text { font-weight: 700; color: var(--amber); }
   .chaos-sub { font-size: 0.8rem; color: var(--text2); }
 
-  /* ── REVEAL SCREEN ── */
   .reveal-card {
     text-align: center;
     padding: 3rem 2rem;
@@ -442,7 +424,6 @@
   .reveal-title  { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
   .reveal-sub    { color: var(--text2); font-size: 0.9rem; }
 
-  /* ── PROGRESS DOTS ── */
   .phase-dots {
     display: flex;
     gap: 0.4rem;
@@ -458,7 +439,6 @@
   .phase-dot.active { width: 20px; border-radius: 3px; background: var(--accent); }
   .phase-dot.done { background: var(--accent2); opacity: 0.5; }
 
-  /* ── SETTINGS TOGGLES ── */
   .toggle-row {
     display: flex;
     align-items: center;
@@ -491,7 +471,6 @@
   .toggle input:checked ~ .toggle-track { background: var(--accent); border-color: var(--accent); }
   .toggle input:checked ~ .toggle-thumb { left: 23px; background: white; }
 
-  /* ── TOAST ── */
   #toast-container {
     position: fixed;
     bottom: 1.5rem;
@@ -515,7 +494,6 @@
   }
   @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 
-  /* ── GUESS INPUT (imposter comeback) ── */
   .guess-section {
     background: var(--red-dim);
     border: 1px solid rgba(255,85,102,0.3);
@@ -523,7 +501,6 @@
     padding: 1rem 1.25rem;
   }
 
-  /* ── TABS ── */
   .tab-row { display: flex; gap: 0.25rem; background: var(--bg3); padding: 0.25rem; border-radius: var(--r); }
   .tab-btn {
     flex: 1;
@@ -540,7 +517,6 @@
   }
   .tab-btn.active { background: var(--surface2); color: var(--text); }
 
-  /* ── CONFETTI ── */
   .confetti-piece {
     position: fixed;
     width: 8px; height: 8px;
@@ -554,7 +530,6 @@
     100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
   }
 
-  /* ── EMOJI PICKER ── */
   .emoji-pick-btn {
     width: 42px; height: 42px;
     font-size: 1.4rem;
@@ -569,7 +544,6 @@
   .emoji-pick-btn:hover { transform: scale(1.15); border-color: var(--border2); }
   .emoji-pick-btn.selected { border-color: var(--accent); background: rgba(124,106,247,0.15); }
 
-  /* ── UTILITY ── */
   .flex { display: flex; }
   .flex-col { flex-direction: column; }
   .items-center { align-items: center; }
@@ -589,7 +563,6 @@
   .mt-lg { margin-top: 1rem; }
   .divider { height: 1px; background: var(--border); margin: 0.5rem 0; }
 
-  /* ── MOBILE ── */
   @media (max-width: 480px) {
     .card, .card-glass { padding: 1.25rem; }
     .word-reveal { font-size: 2.5rem; }
@@ -696,7 +669,6 @@
       <div class="player-list" id="lobby-players"></div>
     </div>
 
-    <!-- Host: Settings -->
     <div class="card" id="host-settings" style="display:none;">
       <div class="label" style="margin-bottom:0.75rem;">⚙ Game Settings</div>
       <div class="toggle-row">
@@ -784,7 +756,6 @@
       </div>
     </div>
 
-    <!-- Word reminder — always visible during clue phase -->
     <div id="clue-word-reminder" style="
       background: linear-gradient(135deg, rgba(124,106,247,0.18), rgba(255,110,180,0.1));
       border: 1px solid rgba(124,106,247,0.35);
@@ -800,7 +771,6 @@
 
     <div id="chaos-banner-clue" style="display:none;"></div>
 
-    <!-- Imposter challenge notice (shown only to imposters) -->
     <div id="imposter-challenge-notice" style="display:none;
       background: linear-gradient(135deg, rgba(255,85,102,0.12), rgba(255,110,180,0.08));
       border: 1px solid rgba(255,85,102,0.3);
@@ -845,7 +815,7 @@
     </div>
   </div>
 
-  <!-- SCREEN: Review Phase (between round 1 and round 2 clues) -->
+  <!-- SCREEN: Review Phase -->
   <div id="screen-review" class="screen">
     <div class="phase-banner">
       <div>
@@ -940,14 +910,7 @@
       <div class="word-reveal" style="font-size:2.5rem;text-align:center;padding:1.5rem 0;" id="reveal-word">———</div>
     </div>
 
-    <!-- Imposter comeback guess -->
-    <div class="guess-section" id="imposter-guess-section" style="display:none;">
-      <div class="text-xs text-muted2 mono" style="margin-bottom:0.5rem;">IMPOSTER COMEBACK — Guess the word!</div>
-      <div class="flex gap-md">
-        <input type="text" id="imposter-guess-input" class="input" placeholder="What was the word?">
-        <button class="btn btn-danger" id="submit-guess-btn">Guess</button>
-      </div>
-    </div>
+    <div class="guess-section" id="imposter-guess-section" style="display:none;"></div>
 
     <div class="flex gap-md">
       <button class="btn btn-outline btn-full" id="back-lobby-btn">Back to Lobby</button>
@@ -956,7 +919,7 @@
   </div>
 
   <!-- CONFIRM LEAVE MODAL -->
-  <div id="leave-modal" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:1rem;">
+  <div id="leave-modal" style="display:none;position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:1rem;">
     <div class="card" style="max-width:360px;width:100%;text-align:center;gap:1rem;display:flex;flex-direction:column;">
       <div style="font-size:2.5rem;">🚪</div>
       <div id="leave-modal-title" class="bold" style="font-size:1.1rem;">Leave the room?</div>
@@ -980,19 +943,15 @@
 
 </div>
 
-<!-- TOAST CONTAINER -->
 <div id="toast-container"></div>
 
 <script>
 // ══════════════════════════════════════════════════════
-//  CONFIGURATION — Replace with your Supabase credentials
+//  CONFIGURATION
 // ══════════════════════════════════════════════════════
 const SUPABASE_URL  = 'https://eybzbtyfafmqbkulyvog.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
 
-// ══════════════════════════════════════════════════════
-//  OFFLINE / DEMO MODE (runs without Supabase)
-// ══════════════════════════════════════════════════════
 const DEMO_MODE = (SUPABASE_URL === 'YOUR_SUPABASE_URL');
 
 // ══════════════════════════════════════════════════════
@@ -1022,28 +981,27 @@ const WORD_DATA = [
 ];
 
 const CHAOS_EVENTS = [
-  { type:'swap_clues',         icon:'🔄', title:'Clue Swap!',        desc:'Two players swap their submitted clues.' },
-  { type:'reveal_first_letter',icon:'🔍', title:'Letter Reveal!',    desc:'The first letter of the word is revealed to everyone.' },
-  { type:'everyone_lies',      icon:'🃏', title:'Liar\'s Round!',    desc:'Everyone must give a misleading clue this round.' },
-  { type:'double_votes',       icon:'⚡', title:'Double Votes!',      desc:'Each player\'s vote counts twice this round.' },
-  { type:'mute_player',        icon:'🤫', title:'Silenced!',          desc:'One random player cannot submit a clue this round.' },
-  { type:'blind_round',        icon:'🙈', title:'Blind Round!',       desc:'Clue authors are hidden — you don\'t know who said what.' },
+  { type:'swap_clues',          icon:'🔄', title:'Clue Swap!',       desc:'Two players swap their submitted clues.' },
+  { type:'reveal_first_letter', icon:'🔍', title:'Letter Reveal!',   desc:'The first letter of the word is revealed to everyone.' },
+  { type:'everyone_lies',       icon:'🃏', title:"Liar's Round!",    desc:'Everyone must give a misleading clue this round.' },
+  { type:'double_votes',        icon:'⚡', title:'Double Votes!',     desc:"Each player's vote counts twice this round." },
+  { type:'mute_player',         icon:'🤫', title:'Silenced!',         desc:'One random player cannot submit a clue this round.' },
+  { type:'blind_round',         icon:'🙈', title:'Blind Round!',      desc:"Clue authors are hidden — you don't know who said what." },
 ];
 
 const OBJECTIVES = [
-  { type:'be_suspicious',  text:'Act suspicious without getting voted out',     icon:'🎭' },
-  { type:'accuse_specific',text:'Convince others to vote out the host',          icon:'🫵' },
-  { type:'misleading_clue',text:'Give a clue that points away from the word',    icon:'🎯' },
-  { type:'stay_quiet',     text:'Say as little as possible — stay invisible',    icon:'🤫' },
-  { type:'first_accuser',  text:'Be the first person to accuse someone',         icon:'🚨' },
+  { type:'be_suspicious',   text:'Act suspicious without getting voted out',    icon:'🎭' },
+  { type:'accuse_specific', text:'Convince others to vote out the host',         icon:'🫵' },
+  { type:'misleading_clue', text:'Give a clue that points away from the word',   icon:'🎯' },
+  { type:'stay_quiet',      text:'Say as little as possible — stay invisible',   icon:'🤫' },
+  { type:'first_accuser',   text:'Be the first person to accuse someone',        icon:'🚨' },
 ];
-
-const EMOJIS = ['🎭','🦊','🐙','🦄','🐸','🎃','👻','🤖','🦁','🐺','🦋','🎲'];
 
 // ══════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════
 let state = {
+  _sessionId:  null,
   sessionId:   null,
   playerName:  '',
   playerEmoji: '🎭',
@@ -1057,6 +1015,8 @@ let state = {
   myRole:      'crewmate',
   myWord:      null,
   myObjective: null,
+  secretWord:  null,
+  lastWordId:  null,
   players:     [],
   clues:       [],
   votes:       {},
@@ -1066,6 +1026,7 @@ let state = {
   revealData:  null,
   timers:      {},
   subscriptions: [],
+  _reactionChannel: null,
   settings: {
     chaos: false, roles: false, variants: false, objectives: false
   }
@@ -1085,17 +1046,19 @@ if (!DEMO_MODE) {
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
+
 function getOrCreateSession() {
-  // Session ID is ephemeral — lives only in memory for this tab.
-  // Rejoin is handled by Supabase (name + room code lookup), not local storage.
   if (!state._sessionId) state._sessionId = uid();
   return state._sessionId;
 }
+
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
 }
+
 function toast(msg, duration = 2500) {
   const t = document.createElement('div');
   t.className = 'toast';
@@ -1103,10 +1066,12 @@ function toast(msg, duration = 2500) {
   document.getElementById('toast-container').appendChild(t);
   setTimeout(() => t.remove(), duration);
 }
+
 function clearTimers() {
   Object.values(state.timers).forEach(clearInterval);
   state.timers = {};
 }
+
 function startTimer(id, seconds, onTick, onEnd) {
   clearInterval(state.timers[id]);
   let remaining = seconds;
@@ -1117,12 +1082,13 @@ function startTimer(id, seconds, onTick, onEnd) {
     if (remaining <= 0) { clearInterval(state.timers[id]); onEnd(); }
   }, 1000);
 }
+
 function setTimerEl(el, val) {
   el.textContent = val;
   el.classList.toggle('urgent', val <= 10);
 }
+
 function spawnReaction(emoji, broadcast = true) {
-  // Render locally
   const el = document.createElement('div');
   el.className = 'floating-reaction';
   el.textContent = emoji;
@@ -1130,7 +1096,6 @@ function spawnReaction(emoji, broadcast = true) {
   el.style.bottom = '80px';
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2000);
-  // Broadcast to other players via Supabase realtime
   if (broadcast && !DEMO_MODE && state._reactionChannel) {
     state._reactionChannel.send({
       type: 'broadcast',
@@ -1139,6 +1104,7 @@ function spawnReaction(emoji, broadcast = true) {
     });
   }
 }
+
 function confetti() {
   const colors = ['#7c6af7','#ff6eb4','#44ddaa','#ffaa44','#44ccff'];
   for (let i = 0; i < 60; i++) {
@@ -1151,13 +1117,13 @@ function confetti() {
 }
 
 // ══════════════════════════════════════════════════════
-//  DEMO MODE — Local multiplayer simulation
+//  DEMO MODE
 // ══════════════════════════════════════════════════════
-const DemoRooms = new Map(); // code → room data
+const DemoRooms = new Map();
 
 function demoCreateRoom(code) {
   const room = {
-    code, hostId: state.sessionId,
+    code, hostId: state.playerId,
     players: [], clues: [], votes: {},
     phase: 'lobby', word: null, wordVariants: [],
     imposterId: null, chaosEvent: null,
@@ -1187,18 +1153,16 @@ function onLobbyUpdate(code, fn) {
 }
 
 // ══════════════════════════════════════════════════════
-//  GAME LOGIC (works in demo mode)
+//  GAME LOGIC
 // ══════════════════════════════════════════════════════
 function assignRolesAndWords(players, wordData, settings) {
   const shuffled = [...players].sort(() => Math.random() - 0.5);
   const result = {};
   const word = wordData.word;
 
-  // Determine imposter count
   let imposterCount = 1;
   if (settings.roles && players.length >= 7 && Math.random() > 0.5) imposterCount = 2;
 
-  // Assign roles
   shuffled.forEach((p, i) => {
     if (i < imposterCount) {
       result[p.id] = { role: 'imposter', word: null };
@@ -1230,15 +1194,15 @@ function pickObjective(settings) {
 window.pickEmoji = function(emoji) {
   state.playerEmoji = emoji;
   document.querySelectorAll('.emoji-pick-btn').forEach(btn => {
-    btn.classList.toggle('selected', btn.textContent === emoji);
+    btn.classList.toggle('selected', btn.textContent.trim() === emoji);
   });
 };
 
 function initHome() {
-  state.sessionId = getOrCreateSession();
-  state.playerEmoji = '🎭';
+  // Initialise both sessionId fields to be safe
+  state._sessionId = getOrCreateSession();
+  state.sessionId  = state._sessionId;
 
-  // Select first emoji by default
   pickEmoji('🎭');
 
   document.getElementById('create-room-btn').onclick = () => {
@@ -1277,7 +1241,7 @@ function generateCode() {
 async function createRoom() {
   const code = generateCode();
   state.roomCode = code;
-  state.isHost = true;
+  state.isHost   = true;
   state.playerId = uid();
 
   if (DEMO_MODE) {
@@ -1296,14 +1260,13 @@ async function createRoom() {
     demoAddPlayer(code, me);
     showLobby();
   } else {
-    // Supabase: create room then join
     await supabaseCreateRoom(code);
   }
 }
 
 async function joinRoom(code) {
   state.roomCode = code.toUpperCase();
-  state.isHost = false;
+  state.isHost   = false;
   state.playerId = uid();
 
   if (DEMO_MODE) {
@@ -1341,14 +1304,12 @@ function showLobby() {
   };
   document.getElementById('lobby-leave-btn').onclick = () => confirmLeave();
 
-  // Host controls
   if (state.isHost) {
     document.getElementById('host-settings').style.display = 'block';
     document.getElementById('start-btn-wrap').style.display = 'block';
     document.getElementById('waiting-msg').style.display = 'none';
     document.getElementById('start-game-btn').onclick = startGame;
 
-    // Settings
     ['chaos','roles','variants','objectives'].forEach(key => {
       const el = document.getElementById('setting-' + key);
       el.checked = state.settings[key];
@@ -1367,7 +1328,6 @@ function showLobby() {
     });
     renderLobbyPlayers();
 
-    // Simulate other players joining in demo
     if (state.isHost) {
       setTimeout(() => addDemoPlayers(), 1000);
     }
@@ -1401,11 +1361,6 @@ function addDemoPlayers() {
 }
 
 function renderLobbyPlayers() {
-  // Show imposter challenge notice
-  const noticeEl = document.getElementById('imposter-challenge-notice');
-  const isImp = state.myRole === 'imposter' || state.myRole === 'double_imposter';
-  if (noticeEl) noticeEl.style.display = isImp ? 'flex' : 'none';
-
   const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
   const players = room ? room.players : state.players;
   const container = document.getElementById('lobby-players');
@@ -1415,11 +1370,11 @@ function renderLobbyPlayers() {
     const chip = document.createElement('div');
     chip.className = 'player-chip' + (p.id === state.playerId ? ' highlighted' : '');
     chip.innerHTML = `
-      <div class="avatar">${p.emoji}</div>
-      <div class="player-name">${p.name}${p.id === state.playerId ? ' <span class="badge badge-purple">You</span>' : ''}</div>
+      <div class="avatar">${p.emoji || p.avatar_emoji || '🎭'}</div>
+      <div class="player-name">${p.name || p.display_name}${p.id === state.playerId ? ' <span class="badge badge-purple">You</span>' : ''}</div>
       <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
-        ${p.isHost ? '<span class="badge badge-amber">Host</span>' : ''}
-        ${p.isSpectator ? '<span class="badge badge-cyan">Spectator</span>' : ''}
+        ${p.isHost || p.is_host ? '<span class="badge badge-amber">Host</span>' : ''}
+        ${p.isSpectator || p.is_spectator ? '<span class="badge badge-cyan">Spectator</span>' : ''}
       </div>
     `;
     container.appendChild(chip);
@@ -1435,7 +1390,7 @@ function renderLobbyPlayers() {
       startBtn.textContent = `🚀 Start Game (${count} players)`;
     } else {
       startBtn.disabled = true;
-      startBtn.textContent = `Start Game (need ${4-count} more)`;
+      startBtn.textContent = `Start Game (need ${4 - count} more)`;
     }
   }
 }
@@ -1449,22 +1404,17 @@ function startGame() {
   const room = DemoRooms.get(state.roomCode);
   if (!room || room.players.length < 4) { toast('Need at least 4 players!'); return; }
 
-  // Pick word
   const wordData = randomFrom(WORD_DATA);
-  room.word = wordData.word;
+  room.word     = wordData.word;
   room.wordData = wordData;
 
-  // Assign roles
   const assignments = assignRolesAndWords(room.players, wordData, state.settings);
   room.players.forEach(p => {
-    p.role = assignments[p.id].role;
+    p.role      = assignments[p.id].role;
     p.wordShown = assignments[p.id].word;
   });
 
-  // Chaos event
   room.chaosEvent = state.settings.chaos ? pickChaosEvent() : null;
-
-  // Objectives
   room.players.forEach(p => {
     if (!p.isSpectator) {
       p.objective = state.settings.objectives ? pickObjective(state.settings) : null;
@@ -1475,13 +1425,13 @@ function startGame() {
   room.clues = [];
   room.votes = {};
 
-  // Update my local state
   const me = room.players.find(p => p.id === state.playerId);
   if (me) {
-    state.myRole = me.role;
-    state.myWord = me.wordShown;
+    state.myRole      = me.role;
+    state.myWord      = me.wordShown;
     state.myObjective = me.objective;
-    state.chaosEvent = room.chaosEvent;
+    state.chaosEvent  = room.chaosEvent;
+    state.secretWord  = room.word;
   }
 
   broadcastLobbyUpdate(state.roomCode);
@@ -1493,21 +1443,21 @@ function startGame() {
 // ══════════════════════════════════════════════════════
 function showWordPhase() {
   showScreen('word');
-  state.phase = 'word_distribution';
-  state.myClueSent = false;
-  state.myVote = null;
+  state.phase        = 'word_distribution';
+  state.myClueSent   = false;
+  state.myVote       = null;
 
   const roleConfigs = {
-    crewmate:        { badge:'badge-green',  label:'Crewmate',     hint:'Your secret word — give clues without being obvious' },
-    detective:       { badge:'badge-cyan',   label:'Detective',    hint:'You know there\'s an imposter — find them!' },
-    confused:        { badge:'badge-amber',  label:'Confused',     hint:'Your word is similar but different — be careful!' },
-    imposter:        { badge:'badge-red',    label:'Imposter',     hint:'You don\'t know the word — blend in!' },
-    double_imposter: { badge:'badge-pink',   label:'Imposter',     hint:'You\'re one of two imposters — stay hidden!' },
+    crewmate:        { badge:'badge-green', label:'Crewmate',  hint:'Your secret word — give clues without being obvious' },
+    detective:       { badge:'badge-cyan',  label:'Detective', hint:"You know there's an imposter — find them!" },
+    confused:        { badge:'badge-amber', label:'Confused',  hint:'Your word is similar but different — be careful!' },
+    imposter:        { badge:'badge-red',   label:'Imposter',  hint:"You don't know the word — blend in!" },
+    double_imposter: { badge:'badge-pink',  label:'Imposter',  hint:"You're one of two imposters — stay hidden!" },
   };
 
-  const cfg = roleConfigs[state.myRole] || roleConfigs.crewmate;
+  const cfg   = roleConfigs[state.myRole] || roleConfigs.crewmate;
   const badge = document.getElementById('word-role-badge');
-  badge.className = 'badge ' + cfg.badge;
+  badge.className   = 'badge ' + cfg.badge;
   badge.textContent = cfg.label;
 
   const wordText = document.getElementById('word-text');
@@ -1522,7 +1472,6 @@ function showWordPhase() {
   }
   wordHint.textContent = cfg.hint;
 
-  // Objective card
   const objCard = document.getElementById('objective-card');
   if (state.myObjective) {
     objCard.style.display = 'block';
@@ -1532,14 +1481,12 @@ function showWordPhase() {
     objCard.style.display = 'none';
   }
 
-  // Chaos preview
   if (state.chaosEvent) {
     setTimeout(() => toast(`⚡ Chaos Event incoming: ${state.chaosEvent.title}`, 3000), 2000);
   }
 
-  // Timer
-  const timerEl = document.getElementById('word-timer');
-  const countEl = document.getElementById('word-countdown-num');
+  const timerEl  = document.getElementById('word-timer');
+  const countEl  = document.getElementById('word-countdown-num');
   startTimer('word', 10,
     s => { setTimerEl(timerEl, s); countEl.textContent = s; },
     () => showCluePhase()
@@ -1553,24 +1500,24 @@ function showCluePhase() {
   showScreen('clue');
   state.phase = 'clue';
 
-  // Show word reminder
-  const reminderEl = document.getElementById('clue-word-display');
+  const reminderEl   = document.getElementById('clue-word-display');
   const reminderWrap = document.getElementById('clue-word-reminder');
+  const noticeEl     = document.getElementById('imposter-challenge-notice');
+
   if (state.myRole === 'imposter' || state.myRole === 'double_imposter') {
     reminderEl.textContent = '???';
     reminderEl.style.cssText = 'font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;color:var(--red);';
-    reminderEl.onclick = null;
     reminderWrap.style.borderColor = 'rgba(255,85,102,0.35)';
-    reminderWrap.style.background = 'linear-gradient(135deg, rgba(255,85,102,0.12), rgba(255,110,180,0.08))';
+    reminderWrap.style.background  = 'linear-gradient(135deg, rgba(255,85,102,0.12), rgba(255,110,180,0.08))';
+    noticeEl.style.display = 'flex';
   } else {
     reminderEl.textContent = state.myWord || '???';
-    reminderEl.style.color = 'var(--accent2)';
-    reminderEl.onclick = null;
+    reminderEl.style.cssText = 'font-size:1.6rem;font-weight:800;letter-spacing:-0.02em;color:var(--accent2);';
+    reminderWrap.style.borderColor = '';
+    reminderWrap.style.background  = '';
+    noticeEl.style.display = 'none';
   }
 
-  const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
-
-  // Show chaos event
   if (state.chaosEvent) {
     const bannerEl = document.getElementById('chaos-banner-clue');
     bannerEl.style.display = 'block';
@@ -1587,19 +1534,22 @@ function showCluePhase() {
   if (DEMO_MODE) {
     renderClueFeed('clue-feed', []);
   } else {
-    // Load any clues already submitted before this player loaded the phase
     fetchAndRenderClues('clue-feed');
   }
 
-  const inputSection = document.getElementById('clue-input-section');
-  const submittedMsg = document.getElementById('clue-submitted-msg');
+  // Reset phase label in case it was changed by clue2
+  const phaseLabel = document.querySelector('#screen-clue .phase-label');
+  if (phaseLabel) phaseLabel.textContent = 'Phase 3 · Clue Phase';
+
+  const inputSection  = document.getElementById('clue-input-section');
+  const submittedMsg  = document.getElementById('clue-submitted-msg');
 
   if (state.isSpectator || state.myClueSent) {
-    inputSection.style.display = 'none';
-    submittedMsg.style.display = 'block';
+    inputSection.style.display  = 'none';
+    submittedMsg.style.display  = 'block';
   } else {
-    inputSection.style.display = 'block';
-    submittedMsg.style.display = 'none';
+    inputSection.style.display  = 'block';
+    submittedMsg.style.display  = 'none';
   }
 
   document.getElementById('submit-clue-btn').onclick = submitClue;
@@ -1607,9 +1557,6 @@ function showCluePhase() {
     if (e.key === 'Enter') submitClue();
   });
 
-  // Reactions handled by global delegation in DOMContentLoaded
-
-  // Timer
   const timerEl = document.getElementById('clue-timer');
   startTimer('clue', 60,
     s => setTimerEl(timerEl, s),
@@ -1619,22 +1566,22 @@ function showCluePhase() {
     }
   );
 
-  // Demo: simulate AI players submitting clues
-  if (DEMO_MODE && room) {
-    simulateDemoClues(room);
+  if (DEMO_MODE) {
+    const room = DemoRooms.get(state.roomCode);
+    if (room) simulateDemoClues(room);
   }
 }
 
 function simulateDemoClues(room) {
   const demoClues = {
-    Piano:    ['keys','music','concert','Beethoven','black and white'],
+    Piano:      ['keys','music','concert','Beethoven','black and white'],
     Lighthouse: ['coast','beam','ships','rocky','keeper'],
-    Compass:  ['north','direction','explorer','navigate','needle'],
-    Flamingo: ['pink','one leg','tropical','wading','feathers'],
-    Croissant: ['buttery','flaky','Paris','breakfast','pastry'],
-    Tornado:  ['funnel','Dorothy','Kansas','spin','shelter'],
-    Hammock:  ['relax','swing','tropical','between trees','lazy'],
-    Submarine: ['deep','yellow','silent','depth','periscope'],
+    Compass:    ['north','direction','explorer','navigate','needle'],
+    Flamingo:   ['pink','one leg','tropical','wading','feathers'],
+    Croissant:  ['buttery','flaky','Paris','breakfast','pastry'],
+    Tornado:    ['funnel','Dorothy','Kansas','spin','shelter'],
+    Hammock:    ['relax','swing','tropical','between trees','lazy'],
+    Submarine:  ['deep','yellow','silent','depth','periscope'],
   };
   const wordClues = demoClues[room.word] || ['thing','object','concept','stuff','idea'];
 
@@ -1645,11 +1592,9 @@ function simulateDemoClues(room) {
     setTimeout(() => {
       let clue;
       if (p.role === 'imposter' || p.role === 'double_imposter') {
-        // Imposter gives vague clue
         const vagueClues = ['interesting','mysterious','complex','special','unique'];
         clue = randomFrom(vagueClues);
       } else if (p.role === 'confused') {
-        // Confused gives slightly off clue
         clue = wordClues[i % wordClues.length] + '?';
       } else {
         clue = wordClues[i % wordClues.length];
@@ -1665,24 +1610,23 @@ function simulateDemoClues(room) {
 
 function showCluePhase2() {
   showScreen('clue');
-  state.phase = 'clue2';
+  state.phase      = 'clue2';
   state.myClueSent = false;
-  state.clues = [];
+  state.clues      = [];
 
-  // Reset word reminder (same as clue phase)
   const reminderEl = document.getElementById('clue-word-display');
+  const noticeEl   = document.getElementById('imposter-challenge-notice');
+
   if (state.myRole === 'imposter' || state.myRole === 'double_imposter') {
     reminderEl.textContent = '???';
     reminderEl.style.color = 'var(--red)';
-    reminderEl.onclick = null;
-    document.getElementById('imposter-challenge-notice').style.display = 'flex';
+    noticeEl.style.display = 'flex';
   } else {
     reminderEl.textContent = state.myWord || '???';
     reminderEl.style.color = 'var(--accent2)';
-    document.getElementById('imposter-challenge-notice').style.display = 'none';
+    noticeEl.style.display = 'none';
   }
 
-  // Update phase label
   const phaseLabel = document.querySelector('#screen-clue .phase-label');
   if (phaseLabel) phaseLabel.textContent = 'Phase 3b · Round 2 Clues';
 
@@ -1708,15 +1652,14 @@ function showCluePhase2() {
 async function submitClue() {
   if (state.myClueSent) return;
   const input = document.getElementById('clue-input');
-  const text = input.value.trim();
+  const text  = input.value.trim();
   if (!text) { toast('Write a clue first!'); return; }
 
   const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
-  const me = room?.players.find(p => p.id === state.playerId);
 
   const clue = {
-    playerId: state.playerId,
-    playerName: state.playerName,
+    playerId:    state.playerId,
+    playerName:  state.playerName,
     playerEmoji: state.playerEmoji,
     text,
     role: state.myRole
@@ -1739,13 +1682,13 @@ async function submitClue() {
 
 function renderClueFeed(containerId, clues) {
   const container = document.getElementById(containerId);
+  if (!container) return;
   if (!clues || !clues.length) {
     container.innerHTML = '<div class="text-muted2 text-sm text-center" style="padding:1rem 0;">Waiting for first clue…</div>';
     return;
   }
-  const isBlind   = state.chaosEvent?.type === 'blind_round';
+  const isBlind    = state.chaosEvent?.type === 'blind_round';
   const isImposter = state.myRole === 'imposter' || state.myRole === 'double_imposter';
-  // During clue phase, imposters see clues blurred; discussion phase — all revealed
   const blurClues  = isImposter && (state.phase === 'clue' || state.phase === 'clue2');
 
   container.innerHTML = clues.map((c, i) => {
@@ -1773,21 +1716,19 @@ function renderClueFeed(containerId, clues) {
       </div>`;
   }).join('');
 
-  // Auto-unblur each clue one at a time with increasing delay (so imposter can't just read instantly)
   if (blurClues) {
     clues.forEach((_, i) => {
       setTimeout(() => {
         const el = document.getElementById(`blur-clue-${containerId}-${i}`);
         if (el) {
           el.classList.add('revealed');
-          setTimeout(() => el.classList.remove('revealed'), 10000); // re-blur after 10s
+          setTimeout(() => el.classList.remove('revealed'), 10000);
         }
-      }, 8000 + i * 6000); // first clue reveals at 8s, then every 6s after
+      }, 8000 + i * 6000);
     });
   }
 }
 
-// Imposter manually taps a blurred clue to peek at it for 3 seconds
 window.revealClue = function(containerId, idx) {
   const el = document.getElementById(`blur-clue-${containerId}-${idx}`);
   if (!el) return;
@@ -1795,7 +1736,6 @@ window.revealClue = function(containerId, idx) {
   setTimeout(() => el.classList.remove('revealed'), 8000);
 };
 
-// Fetch all clues from Supabase and render (used on discussion phase load)
 async function fetchAndRenderClues(containerId) {
   if (!sb || !state.gameId) return;
   const { data: clues } = await sb
@@ -1804,42 +1744,36 @@ async function fetchAndRenderClues(containerId) {
     .eq('game_id', state.gameId)
     .order('submitted_at', { ascending: true });
   if (clues) {
-    // Normalize joined player data
     const normalized = clues.map(c => ({
-      text: c.content,
-      playerName: c.players?.display_name || 'Player',
+      text:        c.content,
+      playerName:  c.players?.display_name || 'Player',
       playerEmoji: c.players?.avatar_emoji || '🎭',
     }));
     renderClueFeed(containerId, normalized);
-    // Cache for local use
     state.clues = normalized;
   }
 }
 
-// Called by realtime INSERT on clues table — fires for ALL players including imposter
 async function addClueToFeed(row) {
   const player = state.players.find(p => p.id === row.player_id);
   const clue = {
-    text: row.content,
-    playerName: player?.display_name || player?.name || 'Player',
+    text:        row.content,
+    playerName:  player?.display_name || player?.name || 'Player',
     playerEmoji: player?.avatar_emoji || player?.emoji || '🎭',
   };
   if (!state.clues) state.clues = [];
-  // Avoid duplicates
   const already = state.clues.some(c => c.text === clue.text && c.playerName === clue.playerName);
   if (!already) state.clues.push(clue);
-  // Render into whichever feed is currently visible
-  ['clue-feed', 'discussion-clue-feed'].forEach(id => {
+  ['clue-feed','discussion-clue-feed'].forEach(id => {
     if (document.getElementById(id)) renderClueFeed(id, state.clues);
   });
-  // Check if all players have submitted — if so, host advances phase
   await checkAllCluesIn();
 }
 
 async function checkAllCluesIn() {
   if (state.phase !== 'clue' && state.phase !== 'clue2') return;
   const expectedClues = state.players.filter(p => !p.is_spectator && !p.isSpectator).length;
-  const submitted = state.clues.length;
+  const submitted     = state.clues.length;
   if (expectedClues > 0 && submitted >= expectedClues) {
     clearTimers();
     if (DEMO_MODE) {
@@ -1852,9 +1786,8 @@ async function checkAllCluesIn() {
   }
 }
 
-// Shared: check if all players have voted and advance if so
 async function checkAllVoted() {
-  const totalVotes = Object.values(state.votes).reduce((s,v) => s+v, 0);
+  const totalVotes    = Object.values(state.votes).reduce((s, v) => s + v, 0);
   const expectedVoters = state.players.filter(p => !p.is_spectator && !p.isSpectator).length;
   if (expectedVoters > 0 && totalVotes >= expectedVoters) {
     clearTimers();
@@ -1863,26 +1796,23 @@ async function checkAllVoted() {
     } else if (state.isHost) {
       await sb.from('games').update({ phase: 'reveal' }).eq('id', state.gameId);
     }
-    // Non-hosts: wait for realtime game UPDATE to trigger showRevealPhase
   }
 }
 
-// Called by realtime INSERT on votes table
 async function updateVoteCount(row) {
-  // Skip own vote — already counted in castVote
   if (row.voter_id === state.playerId) return;
   state.votes[row.target_id] = (state.votes[row.target_id] || 0) + 1;
   if (state.phase === 'voting') {
     const grid = document.getElementById('vote-grid');
     if (grid) {
       grid.querySelectorAll('.vote-btn').forEach(btn => {
-        const pid = btn.dataset.id;
-        const count = state.votes[pid] || 0;
-        const total = Object.values(state.votes).reduce((s,v) => s+v, 0);
-        const pct = total ? Math.round(count/total*100) : 0;
-        const bar = btn.querySelector('.vote-bar');
+        const pid    = btn.dataset.id;
+        const count  = state.votes[pid] || 0;
+        const total  = Object.values(state.votes).reduce((s, v) => s + v, 0);
+        const pct    = total ? Math.round(count / total * 100) : 0;
+        const bar    = btn.querySelector('.vote-bar');
         const countEl = btn.querySelector('.vote-count');
-        if (bar) bar.style.width = pct + '%';
+        if (bar)    bar.style.width    = pct + '%';
         if (countEl) countEl.textContent = count;
       });
     }
@@ -1891,12 +1821,12 @@ async function updateVoteCount(row) {
 }
 
 // ══════════════════════════════════════════════════════
-//  REVIEW PHASE (between round 1 and round 2 clues)
+//  REVIEW PHASE
 // ══════════════════════════════════════════════════════
 function showReviewPhase() {
   showScreen('review');
   state.phase = 'review';
-  // Show all round-1 clues unblurred to everyone
+
   const feed = document.getElementById('review-clue-feed');
   if (state.clues && state.clues.length) {
     feed.innerHTML = state.clues.map(c => `
@@ -1910,12 +1840,12 @@ function showReviewPhase() {
   } else if (!DEMO_MODE && state.gameId) {
     fetchAndRenderClues('review-clue-feed');
   }
+
   const timerEl = document.getElementById('review-timer');
   startTimer('review', 10,
     s => setTimerEl(timerEl, s),
     async () => {
-      // Reset clue state for round 2
-      state.clues = [];
+      state.clues      = [];
       state.myClueSent = false;
       if (DEMO_MODE) { showCluePhase2(); }
       else if (state.isHost) { await sb.from('games').update({ phase: 'clue2' }).eq('id', state.gameId); }
@@ -1934,11 +1864,9 @@ function showDiscussionPhase() {
   if (DEMO_MODE && room) {
     renderClueFeed('discussion-clue-feed', room.clues);
   } else {
-    // Fetch all clues from DB — ensures everyone sees the full list
     fetchAndRenderClues('discussion-clue-feed');
   }
 
-  // Chaos banner
   if (state.chaosEvent) {
     const bannerEl = document.getElementById('chaos-banner-discussion');
     bannerEl.style.display = 'block';
@@ -1952,18 +1880,15 @@ function showDiscussionPhase() {
       </div>`;
   }
 
-  // Players list
   const container = document.getElementById('discussion-players');
-  const players = room?.players || state.players;
-  container.innerHTML = players.filter(p => !p.isSpectator).map(p => `
+  const players   = room?.players || state.players;
+  container.innerHTML = players.filter(p => !p.isSpectator && !p.is_spectator).map(p => `
     <div class="player-chip">
-      <div class="avatar">${p.emoji}</div>
-      <div class="player-name">${p.name}</div>
+      <div class="avatar">${p.emoji || p.avatar_emoji || '🎭'}</div>
+      <div class="player-name">${p.name || p.display_name}</div>
       ${p.id === state.playerId ? '<span class="badge badge-purple">You</span>' : ''}
     </div>
   `).join('');
-
-  // Reactions handled by global delegation in DOMContentLoaded
 
   const timerEl = document.getElementById('discussion-timer');
   startTimer('discussion', 90,
@@ -1983,21 +1908,21 @@ function showVotingPhase() {
   state.phase = 'voting';
   state.votes = {};
 
-  const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
-  const players = (room?.players || state.players).filter(p => !p.isSpectator);
-  const voteGrid = document.getElementById('vote-grid');
-  const otherPlayers = players.filter(p => p.id !== state.playerId);
+  const room    = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
+  const players = (room?.players || state.players).filter(p => !p.isSpectator && !p.is_spectator);
+  const voteGrid      = document.getElementById('vote-grid');
+  const otherPlayers  = players.filter(p => p.id !== state.playerId);
 
   function renderVotes() {
     const totalVotes = Object.values(state.votes).reduce((s, v) => s + v, 0);
     voteGrid.innerHTML = otherPlayers.map(p => {
       const voteCount = state.votes[p.id] || 0;
-      const pct = totalVotes ? Math.round(voteCount / totalVotes * 100) : 0;
+      const pct       = totalVotes ? Math.round(voteCount / totalVotes * 100) : 0;
       return `
         <button class="vote-btn${state.myVote === p.id ? ' voted' : ''}" data-id="${p.id}" onclick="castVote('${p.id}')">
-          <div class="avatar" style="width:32px;height:32px;">${p.emoji}</div>
+          <div class="avatar" style="width:32px;height:32px;">${p.emoji || p.avatar_emoji || '🎭'}</div>
           <div style="flex:1;">
-            <div style="font-weight:600;font-size:0.9rem;">${p.name}</div>
+            <div style="font-weight:600;font-size:0.9rem;">${p.name || p.display_name}</div>
           </div>
           <div class="vote-bar-wrap"><div class="vote-bar" style="width:${pct}%"></div></div>
           <div class="vote-count">${voteCount}</div>
@@ -2006,22 +1931,19 @@ function showVotingPhase() {
   }
   renderVotes();
 
-  // Demo: simulate votes after delay
   if (DEMO_MODE && room) {
-    const imposterIds = room.players.filter(p => p.role.includes('imposter')).map(p => p.id);
+    const imposterIds = room.players.filter(p => p.role && p.role.includes('imposter')).map(p => p.id);
     setTimeout(() => {
       room.players.filter(p => p.id !== state.playerId && !p.isSpectator).forEach(p => {
         let targetId;
-        if (p.role.includes('imposter')) {
-          // Imposter votes for random crewmate
+        if (p.role && p.role.includes('imposter')) {
           const crew = room.players.filter(c => !c.role.includes('imposter') && c.id !== p.id);
           targetId = randomFrom(crew)?.id;
         } else {
-          // Crewmate might vote correctly (60% chance) or randomly
           if (Math.random() > 0.4 && imposterIds.length) {
             targetId = randomFrom(imposterIds);
           } else {
-            const others = room.players.filter(c => c.id !== p.id && !p.isSpectator);
+            const others = room.players.filter(c => c.id !== p.id && !c.isSpectator);
             targetId = randomFrom(others)?.id;
           }
         }
@@ -2031,9 +1953,9 @@ function showVotingPhase() {
         }
       });
 
-      const voteIn = document.getElementById('votes-in');
+      const voteIn    = document.getElementById('votes-in');
       const voteTotal = document.getElementById('votes-total');
-      if (voteIn) voteIn.textContent = otherPlayers.length + (state.myVote ? 1 : 0);
+      if (voteIn)    voteIn.textContent    = otherPlayers.length + (state.myVote ? 1 : 0);
       if (voteTotal) voteTotal.textContent = players.length;
     }, 3000 + Math.random() * 4000);
   }
@@ -2046,7 +1968,6 @@ function showVotingPhase() {
     document.getElementById('voted-msg').style.display = 'block';
     toast('Vote cast!');
     if (!DEMO_MODE) await supabaseCastVote(targetId);
-    // Check if all votes are in after this player votes
     await checkAllVoted();
   };
 
@@ -2054,7 +1975,6 @@ function showVotingPhase() {
   startTimer('voting', 30,
     s => setTimerEl(timerEl, s),
     async () => {
-      // Timer ran out — host pushes reveal, everyone else waits for realtime
       if (DEMO_MODE) {
         showRevealPhase();
       } else if (state.isHost) {
@@ -2074,23 +1994,19 @@ async function showRevealPhase() {
 
   const room = DEMO_MODE ? DemoRooms.get(state.roomCode) : null;
 
-  // ── Fetch everything from DB for Supabase mode ──
-  let players = room?.players || state.players;
+  let players    = room?.players || state.players;
   let secretWord = room?.word || state.secretWord || state.myWord || '???';
 
   if (!DEMO_MODE && state.gameId) {
-    // Fetch the secret word directly from the game row (works for ALL players incl. imposter)
     const { data: gameRow } = await sb.from('games').select('secret_word').eq('id', state.gameId).single();
     if (gameRow?.secret_word) secretWord = gameRow.secret_word;
 
-    // Fetch all players with current roles
     const { data: dbPlayers } = await sb.from('players').select('*').eq('room_id', state.roomId);
     if (dbPlayers) {
       players = dbPlayers.map(p => ({ ...p, name: p.display_name, emoji: p.avatar_emoji }));
       state.players = players;
     }
 
-    // Fetch authoritative vote tally from DB
     const { data: dbVotes } = await sb.from('votes').select('target_id').eq('game_id', state.gameId);
     if (dbVotes) {
       state.votes = {};
@@ -2098,30 +2014,25 @@ async function showRevealPhase() {
     }
   }
 
-  // ── Find imposters ──
-  const imposters = players.filter(p => (p.role || '').includes('imposter'));
-  const imposterIds = imposters.map(p => p.id);
+  const imposters    = players.filter(p => (p.role || '').includes('imposter'));
+  const imposterIds  = imposters.map(p => p.id);
 
-  // ── Majority vote wins: person with MOST votes is eliminated ──
-  let maxVotes = 0;
+  let maxVotes    = 0;
   let mostVotedId = null;
   Object.entries(state.votes).forEach(([id, count]) => {
     if (count > maxVotes) { maxVotes = count; mostVotedId = id; }
   });
 
-  // Crew wins if the most-voted player is an imposter
   const crewWins = imposterIds.includes(mostVotedId);
 
-  // ── Result card ──
   const resultCard = document.getElementById('reveal-result-card');
-  const emojiEl = document.getElementById('reveal-emoji');
-  const titleEl = document.getElementById('reveal-title');
-  const subEl   = document.getElementById('reveal-sub');
-  const wordEl  = document.getElementById('reveal-word');
+  const emojiEl    = document.getElementById('reveal-emoji');
+  const titleEl    = document.getElementById('reveal-title');
+  const subEl      = document.getElementById('reveal-sub');
+  const wordEl     = document.getElementById('reveal-word');
 
-  // Show word to crew only — imposter must guess it
-  const isMyImposterCheck = imposterIds.includes(state.playerId);
-  if (isMyImposterCheck) {
+  const isMyImposter = imposterIds.includes(state.playerId);
+  if (isMyImposter) {
     wordEl.textContent = '???';
     wordEl.style.color = 'var(--red)';
   } else {
@@ -2130,30 +2041,29 @@ async function showRevealPhase() {
   }
 
   if (crewWins) {
-    resultCard.className = 'reveal-card reveal-crew';
-    emojiEl.textContent = '🎉';
-    titleEl.textContent = 'Crew Wins!';
-    titleEl.style.color = 'var(--green)';
-    const votedPlayer = players.find(p => p.id === mostVotedId);
-    subEl.textContent = `${votedPlayer?.name || 'The imposter'} was caught with ${maxVotes} vote${maxVotes !== 1 ? 's' : ''}!`;
+    resultCard.className   = 'reveal-card reveal-crew';
+    emojiEl.textContent    = '🎉';
+    titleEl.textContent    = 'Crew Wins!';
+    titleEl.style.color    = 'var(--green)';
+    const votedPlayer      = players.find(p => p.id === mostVotedId);
+    subEl.textContent      = `${votedPlayer?.name || 'The imposter'} was caught with ${maxVotes} vote${maxVotes !== 1 ? 's' : ''}!`;
     confetti();
   } else {
-    resultCard.className = 'reveal-card reveal-imp';
-    emojiEl.textContent = '😈';
-    titleEl.textContent = 'Imposter Wins!';
-    titleEl.style.color = 'var(--red)';
-    const mostVotedPlayer = players.find(p => p.id === mostVotedId);
-    subEl.textContent = mostVotedId
+    resultCard.className   = 'reveal-card reveal-imp';
+    emojiEl.textContent    = '😈';
+    titleEl.textContent    = 'Imposter Wins!';
+    titleEl.style.color    = 'var(--red)';
+    const mostVotedPlayer  = players.find(p => p.id === mostVotedId);
+    subEl.textContent      = mostVotedId
       ? `The crew voted out ${mostVotedPlayer?.name || 'someone'} — wrong call!`
       : 'Nobody voted — the imposter escapes!';
   }
 
-  // ── Player list with vote counts & roles revealed ──
-  const container = document.getElementById('reveal-players');
-  const sortedPlayers = [...players].sort((a,b) => (state.votes[b.id]||0) - (state.votes[a.id]||0));
+  const container    = document.getElementById('reveal-players');
+  const sortedPlayers = [...players].sort((a, b) => (state.votes[b.id] || 0) - (state.votes[a.id] || 0));
   container.innerHTML = sortedPlayers.filter(p => !p.is_spectator && !p.isSpectator).map(p => {
-    const isImp = (p.role||'').includes('imposter');
-    const voteCount = state.votes[p.id] || 0;
+    const isImp        = (p.role || '').includes('imposter');
+    const voteCount    = state.votes[p.id] || 0;
     const isEliminated = p.id === mostVotedId;
     return `
       <div class="player-chip${isImp ? ' imposter-revealed' : ''}${isEliminated ? '" style="border-color:var(--amber)' : ''}">
@@ -2162,16 +2072,13 @@ async function showRevealPhase() {
         <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
           ${isImp ? '<span class="badge badge-red">Imposter</span>' : '<span class="badge badge-green">Crew</span>'}
           ${isEliminated ? '<span class="badge badge-amber">Eliminated</span>' : ''}
-          ${voteCount ? `<span class="badge badge-purple mono">${voteCount} vote${voteCount!==1?'s':''}</span>` : ''}
+          ${voteCount ? `<span class="badge badge-purple mono">${voteCount} vote${voteCount !== 1 ? 's' : ''}</span>` : ''}
         </div>
       </div>`;
   }).join('');
 
-  // ── Imposter comeback guess (only shown if imposter lost) ──
-  const isMyImposter = isMyImposterCheck;
   const guessSection = document.getElementById('imposter-guess-section');
   if (isMyImposter && crewWins) {
-    // Imposter was caught — let them attempt a comeback guess
     guessSection.style.display = 'block';
     guessSection.innerHTML = `
       <div class="text-xs text-muted2 mono" style="margin-bottom:0.5rem;">COMEBACK — Guess the word to steal the win!</div>
@@ -2180,11 +2087,9 @@ async function showRevealPhase() {
         <button class="btn btn-danger" id="submit-guess-btn">Guess</button>
       </div>`;
     document.getElementById('submit-guess-btn').onclick = () => {
-      // Read secretWord at click-time from state — guaranteed resolved by now
-      const word = state.secretWord || secretWord;
+      const word  = state.secretWord || secretWord;
       const guess = document.getElementById('imposter-guess-input').value.trim().toLowerCase();
       const correct = word.trim().toLowerCase();
-      console.log('Guess:', guess, '| Correct:', correct);
       if (!guess) return;
       if (guess === correct) {
         toast('🎉 Correct! Comeback win!', 3000);
@@ -2201,7 +2106,6 @@ async function showRevealPhase() {
     guessSection.style.display = 'none';
   }
 
-  // ── Buttons ──
   document.getElementById('back-lobby-btn').onclick = () => { showScreen('lobby'); renderLobbyPlayers(); };
   document.getElementById('play-again-btn').style.display = state.isHost ? 'flex' : 'none';
   document.getElementById('play-again-btn').onclick = () => {
@@ -2209,41 +2113,59 @@ async function showRevealPhase() {
       const r = DemoRooms.get(state.roomCode);
       if (r) { r.clues = []; r.votes = {}; r.phase = 'lobby'; }
     }
-    state.chaosEvent = null; state.myVote = null; state.myClueSent = false;
+    state.chaosEvent  = null;
+    state.myVote      = null;
+    state.myClueSent  = false;
     startGame();
   };
 }
 
 // ══════════════════════════════════════════════════════
-//  SUPABASE FUNCTIONS (stub — complete per your schema)
+//  SUPABASE FUNCTIONS
 // ══════════════════════════════════════════════════════
+
 async function supabaseCreateRoom(code) {
   try {
-    const { data: room, error } = await sb.from('rooms').insert({
+    // 1. Create room WITHOUT host_id (we don't have a player ID yet)
+    const { data: room, error: roomErr } = await sb.from('rooms').insert({
       code,
-      host_id: state.sessionId,
-      settings: { phase_timers: {word_distribution:10,clue:60,discussion:90,voting:30,reveal:15}, ...state.settings }
+      settings: {
+        phase_timers: { word_distribution: 10, clue: 60, discussion: 90, voting: 30, reveal: 15 },
+        ...state.settings
+      }
     }).select().single();
-    if (error) throw error;
+    if (roomErr) throw roomErr;
     state.roomId = room.id;
 
-    // Create initial game
-    const { data: game } = await sb.from('games').insert({ room_id: room.id }).select().single();
+    // 2. Create initial game row
+    const { data: game, error: gameErr } = await sb.from('games')
+      .insert({ room_id: room.id }).select().single();
+    if (gameErr) throw gameErr;
     state.gameId = game.id;
 
-    // Add self as player
-    const { data: player } = await sb.from('players').insert({
-      room_id: room.id, game_id: game.id,
-      session_id: state.sessionId,
-      display_name: state.playerName, avatar_emoji: state.playerEmoji,
-      is_host: true, is_spectator: state.isSpectator
+    // 3. Insert the host player — now we have a real DB player ID
+    const { data: player, error: pErr } = await sb.from('players').insert({
+      room_id:      room.id,
+      game_id:      game.id,
+      session_id:   state.sessionId,
+      display_name: state.playerName,
+      avatar_emoji: state.playerEmoji,
+      is_host:      true,
+      is_spectator: state.isSpectator
     }).select().single();
+    if (pErr) throw pErr;
     state.playerId = player.id;
+
+    // 4. Now set host_id on the room using the real player row ID
+    await sb.from('rooms').update({ host_id: player.id }).eq('id', room.id);
 
     saveSession();
     subscribeToRoom();
     showLobby();
-  } catch (e) { toast('Error creating room: ' + e.message); }
+  } catch (e) {
+    toast('Error creating room: ' + e.message);
+    console.error('supabaseCreateRoom error:', e);
+  }
 }
 
 async function supabaseJoinRoom(code) {
@@ -2251,7 +2173,7 @@ async function supabaseJoinRoom(code) {
     const { data: room, error: roomErr } = await sb.from('rooms').select('*').eq('code', code).single();
     if (roomErr || !room) { toast('Room not found! Check the code.'); return; }
     state.roomId = room.id;
-    state.gameId = room.current_game_id; // may be null if game not started yet — that's OK
+    state.gameId = room.current_game_id;
 
     // Check for existing session (rejoin)
     const { data: existing } = await sb.from('players')
@@ -2259,21 +2181,22 @@ async function supabaseJoinRoom(code) {
 
     let player;
     if (existing) {
-      // Rejoin — update connection status and name
       const { data: updated } = await sb.from('players').update({
-        is_connected: true, last_seen_at: new Date().toISOString(),
-        display_name: state.playerName, avatar_emoji: state.playerEmoji
+        is_connected:  true,
+        last_seen_at:  new Date().toISOString(),
+        display_name:  state.playerName,
+        avatar_emoji:  state.playerEmoji
       }).eq('id', existing.id).select().single();
       player = updated || existing;
       toast('Rejoined room!');
     } else {
       const { data: inserted, error: pErr } = await sb.from('players').insert({
-        room_id: room.id,
-        game_id: state.gameId,
-        session_id: state.sessionId,
+        room_id:      room.id,
+        game_id:      state.gameId,
+        session_id:   state.sessionId,
         display_name: state.playerName,
         avatar_emoji: state.playerEmoji,
-        is_host: false,
+        is_host:      false,
         is_spectator: state.isSpectator
       }).select().single();
       if (pErr) throw pErr;
@@ -2285,20 +2208,22 @@ async function supabaseJoinRoom(code) {
     subscribeToRoom();
     showLobby();
     toast(`Joined room ${code}!`);
-  } catch (e) { toast('Error joining: ' + e.message); console.error(e); }
+  } catch (e) {
+    toast('Error joining: ' + e.message);
+    console.error('supabaseJoinRoom error:', e);
+  }
 }
 
-// ── Session persistence (survives refresh) ──
 function saveSession() {
   sessionStorage.setItem('bluff_session', JSON.stringify({
-    roomId:    state.roomId,
-    roomCode:  state.roomCode,
-    gameId:    state.gameId,
-    playerId:  state.playerId,
-    sessionId: state.sessionId,
-    isHost:    state.isHost,
+    roomId:      state.roomId,
+    roomCode:    state.roomCode,
+    gameId:      state.gameId,
+    playerId:    state.playerId,
+    sessionId:   state.sessionId,
+    isHost:      state.isHost,
     isSpectator: state.isSpectator,
-    playerName: state.playerName,
+    playerName:  state.playerName,
     playerEmoji: state.playerEmoji,
   }));
 }
@@ -2310,52 +2235,44 @@ async function restoreSession() {
     const saved = JSON.parse(raw);
     if (!saved.roomId || !saved.playerId) return false;
 
-    // Check the room still exists
     const { data: room } = await sb.from('rooms').select('id,code,current_game_id').eq('id', saved.roomId).maybeSingle();
     if (!room) { sessionStorage.removeItem('bluff_session'); return false; }
 
-    // Check the player still exists
     const { data: player } = await sb.from('players').select('*').eq('id', saved.playerId).maybeSingle();
     if (!player) { sessionStorage.removeItem('bluff_session'); return false; }
 
-    // Restore state
     state.roomId     = saved.roomId;
     state.roomCode   = saved.roomCode;
     state.gameId     = room.current_game_id || saved.gameId;
     state.playerId   = saved.playerId;
     state.sessionId  = saved.sessionId;
+    state._sessionId = saved.sessionId;
     state.isHost     = saved.isHost;
     state.isSpectator = saved.isSpectator;
     state.playerName  = saved.playerName;
     state.playerEmoji = saved.playerEmoji;
 
-    // Mark player as connected again
     await sb.from('players').update({ is_connected: true, last_seen_at: new Date().toISOString() }).eq('id', state.playerId);
 
-    // Subscribe to room
     subscribeToRoom();
 
-    // Check what phase the game is currently in and jump to it
     if (state.gameId) {
       const { data: game } = await sb.from('games').select('*').eq('id', state.gameId).maybeSingle();
       if (game && game.phase && game.phase !== 'lobby' && game.phase !== 'ended') {
-        // Fetch my role and word
         const { data: me } = await sb.from('players').select('role,word_shown,objective').eq('id', state.playerId).single();
         if (me) {
           state.myRole = me.role;
           state.myWord = me.word_shown;
         }
         if (game.secret_word) state.secretWord = game.secret_word;
-        // Jump straight to the current phase
         await handleGameUpdate(game);
         return true;
       }
     }
 
-    // Otherwise go to lobby
     showLobby();
     return true;
-  } catch(e) {
+  } catch (e) {
     console.error('restoreSession error:', e);
     sessionStorage.removeItem('bluff_session');
     return false;
@@ -2364,42 +2281,35 @@ async function restoreSession() {
 
 function subscribeToRoom() {
   if (!sb) return;
+
   const channel = sb.channel(`room-${state.roomId}`)
-    // Players joining/leaving/disconnecting
     .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${state.roomId}` },
       payload => {
-        // If the host player was deleted or disconnected and I am not host → kicked
         if (!state.isHost && payload.eventType === 'UPDATE' && payload.new.is_host && !payload.new.is_connected) {
           handleHostLeft();
           return;
         }
         fetchPlayers();
       })
-    // Game phase changes — filter by room_id so non-hosts catch it even before gameId is set
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `room_id=eq.${state.roomId}` },
       payload => {
         if (!state.gameId) state.gameId = payload.new.id;
-        // If game was ended by host leaving
         if (!state.isHost && payload.new.phase === 'ended') {
           handleHostLeft();
           return;
         }
         handleGameUpdate(payload.new);
       })
-    // Room deleted = host left
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'rooms', filter: `id=eq.${state.roomId}` },
-      payload => {
+      () => {
         if (!state.isHost) handleHostLeft();
       })
     .subscribe();
   state.subscriptions.push(channel);
 
-  // Clues & votes on the same room channel — filter client-side by current gameId
-  // This way it works across Play Again rounds without re-subscribing
   const gameEventsCh = sb.channel(`game-events-${state.roomId}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'clues' },
       payload => {
-        // Only process clues for the current game
         if (payload.new.game_id === state.gameId) addClueToFeed(payload.new);
       })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' },
@@ -2409,16 +2319,14 @@ function subscribeToRoom() {
     .subscribe();
   state.subscriptions.push(gameEventsCh);
 
-  // Reaction broadcast channel — instant, no DB needed
   const reactionCh = sb.channel(`reactions-${state.roomId}`)
     .on('broadcast', { event: 'reaction' }, payload => {
-      spawnReaction(payload.payload.emoji, false); // false = don't re-broadcast
+      spawnReaction(payload.payload.emoji, false);
     })
     .subscribe();
   state._reactionChannel = reactionCh;
   state.subscriptions.push(reactionCh);
 
-  // Keep _subscribeGameEvents as no-op so existing calls don't break
   window._subscribeGameEvents = function() {};
 }
 
@@ -2432,86 +2340,80 @@ async function fetchPlayers() {
 
 async function supabaseStartGame() {
   try {
-    // Pick a truly random word — order by random() in DB, take 1
-    // Also exclude the last used word to avoid repeats back-to-back
     let wordQuery = sb.from('words').select('id, word, variants, difficulty, category');
-    // Exclude last word if we have one
     if (state.lastWordId) wordQuery = wordQuery.neq('id', state.lastWordId);
     const { data: wordPool } = await wordQuery;
     if (!wordPool || !wordPool.length) { toast('No words found in database!'); return; }
-    // Shuffle client-side with a fresh random seed each call
     const shuffled = wordPool.slice().sort(() => Math.random() - 0.5);
     const wordData = shuffled[Math.floor(Math.random() * Math.min(shuffled.length, 20))];
-    state.lastWordId = wordData.id; // remember to avoid repeat next round
+    state.lastWordId = wordData.id;
 
-    // Always create a FRESH game row on every start/play-again
-    // This ensures clean clues, votes, and roles — no bleed from previous round
+    // Create a fresh game row for every round
     const { data: newGame, error: gErr } = await sb.from('games')
       .insert({ room_id: state.roomId }).select().single();
     if (gErr) throw gErr;
     const gameId = newGame.id;
-    state.gameId = gameId;
+    state.gameId  = gameId;
 
-    // STEP 1: Write the word to the game FIRST so assign_roles can read it
+    // Write word first so assign_roles can read it
     await sb.from('games').update({
-      word_id: wordData.id,
-      secret_word: wordData.word,
-      started_at: new Date().toISOString(),
+      word_id:      wordData.id,
+      secret_word:  wordData.word,
+      started_at:   new Date().toISOString(),
     }).eq('id', gameId);
 
-    // Store secret word for imposter display
     state.secretWord = wordData.word;
 
-    // Update room's current_game_id so joiners can find it
     await sb.from('rooms').update({ current_game_id: gameId }).eq('id', state.roomId);
-
-    // Assign all players in room to this game
     await sb.from('players').update({ game_id: gameId }).eq('room_id', state.roomId);
 
-    // STEP 2: NOW assign roles — assign_roles reads secret_word from games table
     await sb.rpc('assign_roles', {
-      p_game_id: gameId,
+      p_game_id:                gameId,
       p_enable_double_imposter: state.settings.roles,
-      p_enable_confused: state.settings.variants,
-      p_enable_detective: state.settings.roles
+      p_enable_confused:        state.settings.variants,
+      p_enable_detective:       state.settings.roles
     });
 
-    // STEP 3: Fetch MY role and word now that assign_roles has written them
     const { data: me } = await sb.from('players').select('role, word_shown').eq('id', state.playerId).single();
     if (me) { state.myRole = me.role; state.myWord = me.word_shown; }
 
-    // Chaos event & objective
-    state.chaosEvent = state.settings.chaos ? pickChaosEvent() : null;
+    state.chaosEvent  = state.settings.chaos ? pickChaosEvent() : null;
     state.myObjective = state.settings.objectives ? pickObjective(state.settings) : null;
 
-    // STEP 4: Flip phase — triggers handleGameUpdate on ALL clients via realtime
     await sb.from('games').update({
-      phase: 'word_distribution',
+      phase:         'word_distribution',
       phase_ends_at: new Date(Date.now() + 10000).toISOString()
     }).eq('id', gameId);
 
-  } catch(e) { toast('Error starting game: ' + e.message); console.error(e); }
+  } catch (e) {
+    toast('Error starting game: ' + e.message);
+    console.error('supabaseStartGame error:', e);
+  }
 }
 
 async function supabaseSubmitClue(text) {
   const round = state.phase === 'clue2' ? 2 : 1;
   await sb.from('clues').insert({
-    game_id: state.gameId, player_id: state.playerId,
-    round, content: text
+    game_id:   state.gameId,
+    player_id: state.playerId,
+    round,
+    content:   text
   });
 }
 
 async function supabaseCastVote(targetId) {
   await sb.from('votes').upsert({
-    game_id: state.gameId, voter_id: state.playerId,
-    target_id: targetId, round: 1
+    game_id:   state.gameId,
+    voter_id:  state.playerId,
+    target_id: targetId,
+    round:     1
   });
 }
 
 async function handleGameUpdate(game) {
   if (game.phase !== state.phase) {
     state.phase = game.phase;
-    // Update gameId whenever it changes (Play Again creates a new game row)
+
     if (game.id && game.id !== state.gameId) {
       state.gameId = game.id;
       saveSession();
@@ -2519,23 +2421,22 @@ async function handleGameUpdate(game) {
       state.gameId = game.id;
       saveSession();
     }
-    // Store secret word from game row — everyone can use this in reveal
+
     if (game.secret_word) state.secretWord = game.secret_word;
 
     if (game.phase === 'word_distribution') {
       state.clues = []; state.votes = {}; state.myVote = null; state.myClueSent = false;
-      // Fetch this player's assigned role and word from DB
       const { data: me } = await sb.from('players')
         .select('role, word_shown, objective').eq('id', state.playerId).single();
       if (me) {
-        state.myRole = me.role;
-        state.myWord = me.word_shown;
+        state.myRole      = me.role;
+        state.myWord      = me.word_shown;
         state.myObjective = me.objective ? OBJECTIVES.find(o => o.type === me.objective) : null;
       }
       showWordPhase();
     }
     else if (game.phase === 'clue')       showCluePhase();
-    else if (game.phase === 'review')      showReviewPhase();
+    else if (game.phase === 'review')     showReviewPhase();
     else if (game.phase === 'clue2')      { state.clues = []; state.myClueSent = false; showCluePhase2(); }
     else if (game.phase === 'discussion') showDiscussionPhase();
     else if (game.phase === 'voting')     { state.votes = {}; showVotingPhase(); }
@@ -2546,7 +2447,6 @@ async function handleGameUpdate(game) {
 // ══════════════════════════════════════════════════════
 //  LEAVE ROOM
 // ══════════════════════════════════════════════════════
-
 function confirmLeave() {
   const modal = document.getElementById('leave-modal');
   const title = document.getElementById('leave-modal-title');
@@ -2559,7 +2459,7 @@ function confirmLeave() {
     desc.textContent  = 'You can rejoin with the same room code if the game is still running.';
   }
   modal.style.display = 'flex';
-  document.getElementById('leave-cancel-btn').onclick = () => { modal.style.display = 'none'; };
+  document.getElementById('leave-cancel-btn').onclick  = () => { modal.style.display = 'none'; };
   document.getElementById('leave-confirm-btn').onclick = () => { modal.style.display = 'none'; leaveRoom(); };
 }
 
@@ -2574,56 +2474,59 @@ async function leaveRoom() {
   showScreen('home');
 }
 
-// Host leaves — ends game, deletes room, kicks everyone
 async function hostLeave() {
   if (!sb || !state.isHost) return;
   try {
-    // Delete all game data for this room — cascade handles clues/votes/players
-    // Delete games first (clues/votes cascade from games)
     if (state.gameId) {
       await sb.from('clues').delete().eq('game_id', state.gameId);
       await sb.from('votes').delete().eq('game_id', state.gameId);
-      await sb.from('imposter_guesses').delete().eq('game_id', state.gameId);
-      await sb.from('reactions').delete().eq('game_id', state.gameId);
-      await sb.from('chaos_events').delete().eq('game_id', state.gameId);
       await sb.from('games').delete().eq('id', state.gameId);
     }
-    // Delete all players in room
     await sb.from('players').delete().eq('room_id', state.roomId);
-    // Delete room last — this triggers realtime DELETE which kicks everyone
     await sb.from('rooms').delete().eq('id', state.roomId);
-  } catch(e) { console.error('hostLeave error:', e); }
+  } catch (e) { console.error('hostLeave error:', e); }
 }
 
-// Non-host leaves cleanly — just removes their player row
 async function playerLeave() {
   if (!sb || !state.playerId) return;
   try {
     await sb.from('players').delete().eq('id', state.playerId);
-  } catch(e) { console.error('playerLeave error:', e); }
+  } catch (e) { console.error('playerLeave error:', e); }
 }
 
-// Reset all local state
 function resetState() {
   clearTimers();
   state.subscriptions.forEach(s => { try { s.unsubscribe(); } catch(e) {} });
-  state.subscriptions = [];
-  state.roomId = null; state.gameId = null; state.playerId = null;
-  state.roomCode = null; state.phase = 'lobby';
-  state.isHost = false; state.myRole = 'crewmate';
-  state.myWord = null; state.myObjective = null;
-  state.players = []; state.clues = []; state.votes = {};
-  state.myVote = null; state.myClueSent = false; state.chaosEvent = null;
+  state.subscriptions   = [];
+  state.roomId          = null;
+  state.gameId          = null;
+  state.playerId        = null;
+  state.roomCode        = null;
+  state.phase           = 'lobby';
+  state.isHost          = false;
+  state.myRole          = 'crewmate';
+  state.myWord          = null;
+  state.secretWord      = null;
+  state.myObjective     = null;
+  state.players         = [];
+  state.clues           = [];
+  state.votes           = {};
+  state.myVote          = null;
+  state.myClueSent      = false;
+  state.chaosEvent      = null;
+  state._reactionChannel = null;
   sessionStorage.removeItem('bluff_session');
 }
 
-// Called on non-host clients when they detect host has gone
 function handleHostLeft() {
   clearTimers();
   state.subscriptions.forEach(s => { try { s.unsubscribe(); } catch(e) {} });
   state.subscriptions = [];
-  state.roomId = null; state.gameId = null; state.playerId = null;
-  state.roomCode = null; state.phase = 'lobby';
+  state.roomId  = null;
+  state.gameId  = null;
+  state.playerId = null;
+  state.roomCode = null;
+  state.phase   = 'lobby';
   showScreen('kicked');
   document.getElementById('kicked-home-btn').onclick = () => { showScreen('home'); };
 }
@@ -2634,16 +2537,6 @@ function handleHostLeft() {
 document.addEventListener('DOMContentLoaded', () => {
   initHome();
 
-  // ── Always wire these regardless of session state ──
-  document.addEventListener('click', e => {
-    const btn = e.target.closest('.reaction-btn');
-    if (!btn) return;
-    const emoji = btn.dataset.emoji;
-    if (!emoji) return;
-    spawnReaction(emoji);
-    toast(emoji, 800);
-  });
-
   window.addEventListener('beforeunload', () => {
     if (state.isHost && state.roomId && !DEMO_MODE) hostLeave();
   });
@@ -2653,10 +2546,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Try to restore a previous session (refresh/rejoin)
-  restoreSession().then(restored => {
-    // If restored, we jumped back into the game — nothing else to do
-  }).catch(e => {
+  restoreSession().catch(e => {
     console.error('Session restore failed:', e);
   });
 });
