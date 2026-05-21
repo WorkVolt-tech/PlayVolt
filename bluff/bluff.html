@@ -2126,9 +2126,12 @@ async function showRevealPhase() {
 
 async function supabaseCreateRoom(code) {
   try {
-    // 1. Create room WITHOUT host_id (we don't have a player ID yet)
+    // 1. Create room. host_id is `text not null` in schema — use sessionId (matches
+    //    the original working version). Don't create an orphan game row here;
+    //    supabaseStartGame creates a fresh game per round anyway.
     const { data: room, error: roomErr } = await sb.from('rooms').insert({
       code,
+      host_id: state.sessionId,
       settings: {
         phase_timers: { word_distribution: 10, clue: 60, discussion: 90, voting: 30, reveal: 15 },
         ...state.settings
@@ -2136,17 +2139,11 @@ async function supabaseCreateRoom(code) {
     }).select().single();
     if (roomErr) throw roomErr;
     state.roomId = room.id;
+    state.gameId = null;
 
-    // 2. Create initial game row
-    const { data: game, error: gameErr } = await sb.from('games')
-      .insert({ room_id: room.id }).select().single();
-    if (gameErr) throw gameErr;
-    state.gameId = game.id;
-
-    // 3. Insert the host player — now we have a real DB player ID
+    // 2. Insert the host player (game_id stays null until startGame)
     const { data: player, error: pErr } = await sb.from('players').insert({
       room_id:      room.id,
-      game_id:      game.id,
       session_id:   state.sessionId,
       display_name: state.playerName,
       avatar_emoji: state.playerEmoji,
@@ -2155,9 +2152,6 @@ async function supabaseCreateRoom(code) {
     }).select().single();
     if (pErr) throw pErr;
     state.playerId = player.id;
-
-    // 4. Now set host_id on the room using the real player row ID
-    await sb.from('rooms').update({ host_id: player.id }).eq('id', room.id);
 
     saveSession();
     subscribeToRoom();
@@ -2259,10 +2253,12 @@ async function restoreSession() {
     if (state.gameId) {
       const { data: game } = await sb.from('games').select('*').eq('id', state.gameId).maybeSingle();
       if (game && game.phase && game.phase !== 'lobby' && game.phase !== 'ended') {
-        const { data: me } = await sb.from('players').select('role,word_shown,objective').eq('id', state.playerId).single();
+        const { data: me } = await sb.from('players')
+          .select('role,word_shown,objective').eq('id', state.playerId).maybeSingle();
         if (me) {
-          state.myRole = me.role;
-          state.myWord = me.word_shown;
+          state.myRole      = me.role;
+          state.myWord      = me.word_shown;
+          state.myObjective = me.objective ? OBJECTIVES.find(o => o.type === me.objective) : null;
         }
         if (game.secret_word) state.secretWord = game.secret_word;
         await handleGameUpdate(game);
