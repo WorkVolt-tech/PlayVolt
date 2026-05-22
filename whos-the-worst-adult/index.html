@@ -2131,8 +2131,9 @@ button:not(#muteBtn):active:not(:disabled) {
 
                 <div id="votingSection" style="display: none;">
                     <h4 style="margin-bottom: 10px; text-align: center; color: #feca57;">Who did the Instigator pick?</h4>
-                    <p style="text-align:center; font-size:0.82rem; color:#a0a0a0; margin-bottom: 12px;">Vote for who you think the Instigator chose</p>
+                    <p style="text-align:center; font-size:0.82rem; color:#a0a0a0; margin-bottom: 12px;">Tap to select, then confirm your vote</p>
                     <div class="vote-grid" id="voteOptions"></div>
+                    <button id="voteConfirmBtn" onclick="playSound('click'); submitVote(null)" class="btn-success" style="display:none; margin-top:18px; font-size:1.05rem; letter-spacing:0.5px;">&#10003; Confirm Vote</button>
                 </div>
 
                 <div id="waitingSection" style="display: none; text-align: center; padding: 40px;">
@@ -3533,6 +3534,30 @@ button:not(#muteBtn):active:not(:disabled) {
         }
     }
 
+    // Tracks which player the voter has tapped (pending confirmation)
+    let _pendingVoteTarget = null;
+
+    function selectVoteCandidate(targetId) {
+        if (state.hasVoted) return;
+        haptic([15]);
+        playSound('voteClick');
+        _pendingVoteTarget = targetId;
+
+        // Highlight selection
+        document.querySelectorAll('.vote-option').forEach(el => el.classList.remove('selected'));
+        const el = document.getElementById(`vote-${targetId}`);
+        if (el) el.classList.add('selected');
+
+        // Show / update the confirm button
+        const confirmBtn = document.getElementById('voteConfirmBtn');
+        if (confirmBtn) {
+            const player = state.players.find(p => p.id === targetId);
+            confirmBtn.textContent = `✓ Confirm — ${player ? player.name : '?'}`;
+            confirmBtn.style.display = 'block';
+            confirmBtn.disabled = false;
+        }
+    }
+
     function updateVoteOptions() {
         const container = document.getElementById('voteOptions');
         // Voters guess who the Instigator picked — Instigator can't pick themselves,
@@ -3542,12 +3567,17 @@ button:not(#muteBtn):active:not(:disabled) {
         container.innerHTML = options.map(p => {
             const isMe = p.id === state.currentUser?.id;
             return `
-                <div class="vote-option" onclick="submitVote('${p.id}')" id="vote-${p.id}">
+                <div class="vote-option" onclick="selectVoteCandidate('${p.id}')" id="vote-${p.id}">
                     <div style="width:44px;height:44px;border-radius:50%;${avatarColor(p.name)};display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:bold;color:#fff;margin:0 auto 6px;">${p.name.charAt(0).toUpperCase()}</div>
                     <div style="font-weight:700; font-size:0.95rem;">${p.name}${isMe ? ' <span style="opacity:0.6;font-size:0.75rem;">(You)</span>' : ''}</div>
                 </div>
             `;
         }).join('');
+
+        // Reset pending selection whenever options are re-rendered
+        _pendingVoteTarget = null;
+        const confirmBtn = document.getElementById('voteConfirmBtn');
+        if (confirmBtn) confirmBtn.style.display = 'none';
     }
 
     function updatePokerCard(isUsed) {
@@ -3794,8 +3824,9 @@ button:not(#muteBtn):active:not(:disabled) {
 
     async function submitVote(targetId) {
         if (state.hasVoted) return;
-        haptic([15]);
-        playSound('voteClick');
+        // If called without a targetId (from confirm button), use the pending selection
+        const resolvedTarget = targetId || _pendingVoteTarget;
+        if (!resolvedTarget) { showToast('Pick a player first!'); return; }
 
         if (!state.instigatorVoteConfirmed && state.currentReader !== state.currentUser?.id) {
             showToast('Wait for the Instigator to vote first!');
@@ -3805,8 +3836,17 @@ button:not(#muteBtn):active:not(:disabled) {
         const card = document.getElementById('pokerCard');
         const doubleDown = card ? card.classList.contains('active-card') : false;
         
+        // Lock UI immediately so double-taps can't fire twice
+        state.hasVoted = true;
+        const confirmBtn = document.getElementById('voteConfirmBtn');
+        if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Submitting…'; }
+
         document.querySelectorAll('.vote-option').forEach(el => el.classList.remove('selected'));
-        document.getElementById(`vote-${targetId}`).classList.add('selected');
+        const selectedEl = document.getElementById(`vote-${resolvedTarget}`);
+        if (selectedEl) selectedEl.classList.add('selected');
+
+        haptic([15]);
+        playSound('voteClick');
         
         try {
             const { error } = await supabaseClient
@@ -3814,7 +3854,7 @@ button:not(#muteBtn):active:not(:disabled) {
                 .insert({
                     room_id: state.currentUser.room_id,
                     player_id: state.currentUser.id,
-                    target_id: targetId,
+                    target_id: resolvedTarget,
                     round: state.round,
                     double_down: doubleDown
                 });
@@ -3831,7 +3871,6 @@ button:not(#muteBtn):active:not(:disabled) {
                     .eq('id', state.currentUser.id);
             }
             
-            state.hasVoted = true;
             document.getElementById('votingSection').style.display = 'none';
             document.getElementById('waitingSection').style.display = 'block';
             document.getElementById('voterStatus').textContent = 'Vote submitted!';
@@ -3840,6 +3879,7 @@ button:not(#muteBtn):active:not(:disabled) {
             console.error('Vote error:', error);
             showToast('Failed to vote: ' + error.message);
             state.hasVoted = false;
+            if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm Vote'; }
         }
     }
 
@@ -4569,8 +4609,8 @@ document.addEventListener('pointerdown', (e) => {
 /* ─────────────────────────────────────────
    POP ANIMATION ON VOTE SELECTION
 ───────────────────────────────────────── */
-const _origSubmitVote = window.submitVote;
-window.submitVote = function(targetId) {
+const _origSelectVoteCandidate = window.selectVoteCandidate;
+window.selectVoteCandidate = function(targetId) {
     // Pop animation on the clicked option
     const el = document.getElementById(`vote-${targetId}`);
     if (el) {
@@ -4581,7 +4621,7 @@ window.submitVote = function(targetId) {
         setTimeout(() => el.classList.remove('vote-popping'), 450);
     }
     haptic([15, 20]);
-    return _origSubmitVote.apply(this, arguments);
+    return _origSelectVoteCandidate.apply(this, arguments);
 };
 
 /* ─────────────────────────────────────────
