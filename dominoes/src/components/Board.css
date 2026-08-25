@@ -1,0 +1,49 @@
+.board-area {
+  flex: 1;
+  background: var(--felt);
+  background-image: radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.board-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Ccircle cx='1' cy='1' r='0.5' fill='rgba(0,0,0,0.05)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.board-hint {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.board-hint-text {
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  color: rgba(240,234,216,0.18);
+  text-transform: uppercase;
+}
+
+.drop-zone {
+  position: absolute;
+  border: 2px dashed rgba(201,168,76,0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  color: rgba(201,168,76,0.5);
+  text-transform: uppercase;
+  z-index: 100;
+  transition: all 0.2s;
+}
+.drop-zone:hover {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.08);
+  color: var(--gold);
+}

@@ -1,0 +1,59 @@
+.hand-area {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  gap: 0.75rem;
+  height: 148px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  flex-shrink: 0;
+}
+
+.hand-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--ivory-dim);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.hand-tiles {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  flex: 1;
+  justify-content: center;
+}
+
+.action-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.btn-pass {
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--ivory-dim);
+  transition: all 0.2s;
+}
+.btn-pass:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(201,76,76,0.05);
+}
+.btn-pass:disabled { opacity: 0.3; cursor: not-allowed; }

@@ -1,0 +1,98 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,9,8,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2.5rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  animation: slideUp 0.3s ease;
+}
+
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 0.5rem;
+}
+
+.modal-desc {
+  color: var(--ivory-dim);
+  font-size: 0.72rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.6;
+}
+
+.streak-row {
+  margin-bottom: 1.25rem;
+}
+.streak-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  margin-bottom: 0.5rem;
+}
+.streak-pips {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.streak-pip {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.3s;
+}
+.streak-pip.won {
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(201,168,76,0.6);
+}
+
+.scores-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.72rem;
+}
+.scores-table th {
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem;
+}
+.scores-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(58,53,40,0.5);
+}
+.scores-table tr.winner td { color: var(--gold); }
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+.modal-actions .btn { width: 100%; }
+
+.waiting-msg {
+  font-size: 0.62rem;
+  color: var(--ivory-dim);
+  letter-spacing: 0.1em;
+}

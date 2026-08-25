@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #0f0e0c;
+  --felt:       #1a2e1a;
+  --felt2:      #162614;
+  --surface:    #1a1814;
+  --surface2:   #242118;
+  --border:     #3a3528;
+  --ivory:      #fffef8;
+  --ivory-dim:  #a09880;
+  --gold:       #c9a84c;
+  --gold-glow:  #e8c96a;
+  --pip:        #1a1814;
+  --red:        #c94c4c;
+  --green:      #4caa6e;
+  --blue:       #4c8cca;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--ivory);
+  font-family: 'DM Mono', monospace;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+}
+
+input {
+  font-family: 'DM Mono', monospace;
+}
+
+.btn {
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--bg);
+  font-weight: 500;
+}
+.btn-primary:hover { background: var(--gold-glow); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-outline {
+  background: transparent;
+  color: var(--ivory);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover { border-color: var(--ivory-dim); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
