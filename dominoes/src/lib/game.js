@@ -72,7 +72,7 @@ export function computeNewStreak(streak, resolvedSeat, isDekabessMove, mode) {
 
 // ─── Snake board layout ───────────────────────────────────────────────────────
 const CORNER_STEPS = 1
-const MARGIN = 48
+// MARGIN scales with screen width — tighter on mobile
 
 function renderDims(entry, inCorner) {
   const isDbl = entry.tile[0] === entry.tile[1]
@@ -82,6 +82,7 @@ function renderDims(entry, inCorner) {
 }
 
 function walk(tiles, startX, startY, initDir, W) {
+  const MARGIN = Math.max(24, W * 0.06)
   const pos = []
   let x = startX, y = startY, dir = initDir, cornerLeft = 0
 
@@ -123,7 +124,24 @@ function walk(tiles, startX, startY, initDir, W) {
 
 export function computeSnakePositions(tiles, W, H) {
   if (!tiles || tiles.length === 0) return []
-  const cx = W / 4
-  const cy = H / 2
-  return walk(tiles, cx, cy, 1, W)
+
+  // First pass from origin to measure bounding box
+  const raw = walk(tiles, 0, 0, 1, W)
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+  raw.forEach(p => {
+    minX = Math.min(minX, p.x - p.pw / 2)
+    maxX = Math.max(maxX, p.x + p.pw / 2)
+    minY = Math.min(minY, p.y - p.ph / 2)
+    maxY = Math.max(maxY, p.y + p.ph / 2)
+  })
+
+  // Center the chain in the available space
+  const chainW = maxX - minX
+  const chainH = maxY - minY
+  const offsetX = (W - chainW) / 2 - minX
+  const offsetY = (H - chainH) / 2 - minY
+
+  raw.forEach(p => { p.x += offsetX; p.y += offsetY })
+  return raw
 }
