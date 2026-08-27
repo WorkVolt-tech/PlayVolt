@@ -16,6 +16,9 @@ export default function Lobby() {
   const [myRoomCode, setMyRoomCode] = useState(null)
   const [myPlayerId, setMyPlayerId] = useState(null)
   const [mySeat, setMySeat]         = useState(null)
+  const myPlayerIdRef = useRef(null)
+  const mySeatRef     = useRef(null)
+  const myRoomCodeRef = useRef(null)
   const [players, setPlayers]       = useState([])
   const [selectedMode, setMode]     = useState('chien')
   const [selectedAI, setAI]         = useState('beginner')
@@ -28,6 +31,11 @@ export default function Lobby() {
   useEffect(() => {
     localStorage.setItem('domino_nickname', nickname)
   }, [nickname])
+
+  // Keep refs in sync so closures always see current values
+  useEffect(() => { myPlayerIdRef.current = myPlayerId }, [myPlayerId])
+  useEffect(() => { mySeatRef.current = mySeat }, [mySeat])
+  useEffect(() => { myRoomCodeRef.current = myRoomCode }, [myRoomCode])
 
   useEffect(() => {
     const code = new URLSearchParams(location.search).get('join')
@@ -60,16 +68,16 @@ export default function Lobby() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
         async (payload) => {
           if (payload.new.status === 'playing') {
-            let finalSeat = mySeat
-            if (myPlayerId) {
-              const { data: me } = await db.from('domino_players').select('seat').eq('id', myPlayerId).single()
-              if (me) { setMySeat(me.seat); finalSeat = me.seat }
+            let finalSeat = mySeatRef.current
+            if (myPlayerIdRef.current) {
+              const { data: me } = await db.from('domino_players').select('seat').eq('id', myPlayerIdRef.current).single()
+              if (me) { setMySeat(me.seat); mySeatRef.current = me.seat; finalSeat = me.seat }
             }
             sessionStorage.setItem('domino_player', JSON.stringify({
               seat: finalSeat,
               nickname: nickname.trim(),
               roomId,
-              roomCode: myRoomCode || payload.new.code,
+              roomCode: myRoomCodeRef.current || payload.new.code,
               gameMode: payload.new.game_mode || 'chien',
               aiDifficulty: payload.new.ai_difficulty || null,
             }))
@@ -91,7 +99,8 @@ export default function Lobby() {
       .select().single()
 
     setMyRoomId(room.id); setMyRoomCode(code)
-    setMyPlayerId(player?.id); setMySeat(0); setAmHost(true)
+    setMyPlayerId(player?.id); myPlayerIdRef.current = player?.id
+    setMySeat(0); mySeatRef.current = 0; setAmHost(true)
     setPlayers(player ? [player] : [])
     subscribeToRoom(room.id, 'create')
     setTab('waiting')
@@ -117,7 +126,8 @@ export default function Lobby() {
     if (error) { setMsg({ text: 'Error: ' + error.message, type: 'error' }); return }
 
     setMyRoomId(room.id); setMyRoomCode(code)
-    setMyPlayerId(player.id); setMySeat(freeSeat)
+    setMyPlayerId(player.id); myPlayerIdRef.current = player.id
+    setMySeat(freeSeat); mySeatRef.current = freeSeat
     await loadPlayers(room.id)
     subscribeToRoom(room.id, 'join')
     setTab('waiting')
