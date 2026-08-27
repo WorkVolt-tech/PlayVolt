@@ -47,3 +47,10 @@
   background: rgba(201,168,76,0.08);
   color: var(--gold);
 }
+
+.drop-zone.drag-over {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.15);
+  color: var(--gold);
+  transform: scale(1.05);
+}

@@ -21,6 +21,8 @@ export default function PlayerHand({ hand, isMyTurn, playableTiles, selectedIdx,
               selected={isSelected}
               notPlayable={isMyTurn && !canPlay}
               onClick={canPlay ? () => onSelect(tile, idx) : undefined}
+              draggable={canPlay}
+              dragData={{ tile, idx }}
             />
           )
         })}
