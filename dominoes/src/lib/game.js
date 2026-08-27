@@ -75,10 +75,10 @@ const CORNER_STEPS = 1
 // MARGIN scales with screen width — tighter on mobile
 
 function renderDims(entry, inCorner) {
-  const isDbl = entry.tile[0] === entry.tile[1]
+  const isDouble = entry.tile[0] === entry.tile[1]
   return inCorner
-    ? (isDbl ? { w: TH, h: TW } : { w: TW, h: TH })
-    : (isDbl ? { w: TW, h: TH } : { w: TH, h: TW })
+    ? (isDouble ? { w: TH, h: TW } : { w: TW, h: TH })
+    : (isDouble ? { w: TW, h: TH } : { w: TH, h: TW })
 }
 
 function walk(tiles, startX, startY, initDir, W) {
