@@ -3,6 +3,8 @@
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
+  position: fixed;
+  inset: 0;
 }
 
 .top-bar {
