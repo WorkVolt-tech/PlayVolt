@@ -63,7 +63,16 @@ export default function Game() {
         boardData={boardData}
         selectedTile={selectedTile}
         isMyTurn={isMyTurn}
-        onDropZone={side => { if (selectedTile) placeTile(selectedTile.tile, selectedTile.idx, side) }}
+        onDropZone={side => {
+          if (!selectedTile) return
+          const cL = canPlayOnSide(selectedTile.tile, 'left', boardData)
+          const cR = canPlayOnSide(selectedTile.tile, 'right', boardData)
+          if (cL && cR && boardData.left_end !== boardData.right_end && !side) {
+            setShowPickerManual(true)
+          } else {
+            placeTile(selectedTile.tile, selectedTile.idx, side)
+          }
+        }}
         onDragPlace={handleDragPlace}
       />
 
