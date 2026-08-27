@@ -205,21 +205,13 @@ export function useGameState(myInfo, navigate) {
 
   const selectTile = useCallback((tile, idx) => {
     if (!isMyTurn) return
+    // Toggle deselect
     if (selectedTile?.idx === idx) { setSelectedTile(null); setShowPicker(false); return }
     setSelectedTile({ tile, idx })
+    // Just select — user then drags to board or uses side picker / drop zones
+    // Only auto-place first tile (no choice needed)
     if (!hasTilesOnBoard) { placeTile(tile, idx, 'first'); return }
-    const cL = canPlayOnSide(tile, 'left', boardData)
-    const cR = canPlayOnSide(tile, 'right', boardData)
-    if (cL && cR && boardData.left_end !== boardData.right_end) {
-      setShowPicker(true)
-    } else if (cL) {
-      placeTile(tile, idx, 'left')
-    } else if (cR) {
-      placeTile(tile, idx, 'right')
-    } else {
-      setSelectedTile(null)
-    }
-  }, [isMyTurn, selectedTile, hasTilesOnBoard, boardData, placeTile])
+  }, [isMyTurn, selectedTile, hasTilesOnBoard, placeTile])
 
   const passMove = useCallback(async () => {
     await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null })
