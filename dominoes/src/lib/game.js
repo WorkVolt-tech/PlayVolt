@@ -1,9 +1,8 @@
 // Tile dimensions
-export const TW = 28   // short side (portrait width / landscape height)
+export const TW = 28   // short side
 export const TH = 56   // long side
 export const GAP = 3
 
-// Generate a full domino set [0,0]..[6,6]
 export function generateDominoSet() {
   const tiles = []
   for (let a = 0; a <= 6; a++)
@@ -29,12 +28,10 @@ export function escHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-// Pip count for a hand
 export function pipCount(hand) {
   return (hand || []).reduce((s, t) => s + t[0] + t[1], 0)
 }
 
-// Which tiles in hand are playable given current board ends
 export function getPlayableTiles(hand, boardData) {
   if (!boardData || !Array.isArray(boardData.tiles) || boardData.tiles.length === 0) return hand
   const { left_end: left, right_end: right } = boardData
@@ -47,14 +44,12 @@ export function canPlayOnSide(tile, side, boardData) {
   return tile[0] === end || tile[1] === end
 }
 
-// Check if placing this tile as the last one is a Dekabess
 export function isDekabess(tile, boardData) {
   if (!tile || tile[0] === tile[1] || !boardData) return false
   const { left_end: left, right_end: right } = boardData
   return (tile[0] === left && tile[1] === right) || (tile[1] === left && tile[0] === right)
 }
 
-// Streak logic
 export function computeNewStreak(streak, resolvedSeat, isDekabessMove, mode) {
   const winnerKey = mode === 'asosye'
     ? (resolvedSeat === 0 || resolvedSeat === 2 ? 'A' : 'B')
@@ -72,7 +67,6 @@ export function computeNewStreak(streak, resolvedSeat, isDekabessMove, mode) {
 
 // ─── Snake board layout ───────────────────────────────────────────────────────
 const CORNER_STEPS = 1
-// MARGIN scales with screen width — tighter on mobile
 
 function renderDims(entry, inCorner) {
   const isDouble = entry.tile[0] === entry.tile[1]
@@ -82,7 +76,7 @@ function renderDims(entry, inCorner) {
 }
 
 function walk(tiles, startX, startY, initDir, W) {
-  const MARGIN = Math.max(24, W * 0.06)
+  const MARGIN = Math.max(28, W * 0.07)
   const pos = []
   let x = startX, y = startY, dir = initDir, cornerLeft = 0
 
@@ -105,7 +99,7 @@ function walk(tiles, startX, startY, initDir, W) {
       }
       y = y + h / 2 + GAP + nh / 2
     } else {
-      const { w: nw, h: nh } = renderDims(next, false)
+      const { w: nw } = renderDims(next, false)
       const nextX = x + dir * (w / 2 + GAP + nw / 2)
 
       if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
@@ -125,7 +119,7 @@ function walk(tiles, startX, startY, initDir, W) {
 export function computeSnakePositions(tiles, W, H) {
   if (!tiles || tiles.length === 0) return []
 
-  // First pass from origin to measure bounding box
+  // First pass from origin to get bounding box
   const raw = walk(tiles, 0, 0, 1, W)
 
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
@@ -136,11 +130,9 @@ export function computeSnakePositions(tiles, W, H) {
     maxY = Math.max(maxY, p.y + p.ph / 2)
   })
 
-  // Center the chain in the available space
-  const chainW = maxX - minX
-  const chainH = maxY - minY
-  const offsetX = (W - chainW) / 2 - minX
-  const offsetY = (H - chainH) / 2 - minY
+  // Center in board area
+  const offsetX = (W - (maxX - minX)) / 2 - minX
+  const offsetY = (H - (maxY - minY)) / 2 - minY
 
   raw.forEach(p => { p.x += offsetX; p.y += offsetY })
   return raw
