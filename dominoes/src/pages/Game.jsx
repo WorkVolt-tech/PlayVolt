@@ -78,6 +78,80 @@ export default function Game() {
     if (roomData.status === 'finished' || roomData.status === 'round_end') setShowOverlay(true)
   }, [roomData, players])
 
+  // ── AI turn logic ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!roomData || !players.length || !boardData === undefined) return
+    if (roomData.status !== 'playing') return
+
+    const currentPlayer = players.find(p => p.seat === roomData.current_turn)
+    if (!currentPlayer?.is_ai) return
+
+    // It's a bot's turn — play after a short delay
+    const timer = setTimeout(async () => {
+      const botHand = currentPlayer.hand || []
+      const botPlayable = getPlayableTiles(botHand, boardData)
+
+      if (botPlayable.length === 0) {
+        // Bot passes
+        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'pass', tile: null })
+        const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
+        if (events?.length === 4 && events.every(e => e.action === 'pass')) {
+          await endRound(null, false)
+          return
+        }
+        const nextSeat = (currentPlayer.seat + 1) % 4
+        await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
+        return
+      }
+
+      // Pick a random playable tile
+      const tile = botPlayable[Math.floor(Math.random() * botPlayable.length)]
+      const tileIdx = botHand.findIndex(t => t[0] === tile[0] && t[1] === tile[1])
+      const newHand = botHand.filter((_, i) => i !== tileIdx)
+
+      if (!boardData || !boardData.tiles || boardData.tiles.length === 0) {
+        // First tile
+        await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
+        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', currentPlayer.seat)
+        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'place', tile })
+      } else {
+        const cL = canPlayOnSide(tile, 'left', boardData)
+        const cR = canPlayOnSide(tile, 'right', boardData)
+        const side = (cL && cR) ? (Math.random() < 0.5 ? 'left' : 'right') : cL ? 'left' : 'right'
+        const end = side === 'left' ? boardData.left_end : boardData.right_end
+
+        let flipped = false, newOpenEnd
+        if (side === 'right') {
+          if (tile[1] === end) { flipped = true; newOpenEnd = tile[0] }
+          else { flipped = false; newOpenEnd = tile[1] }
+        } else {
+          if (tile[0] === end) { flipped = true; newOpenEnd = tile[1] }
+          else { flipped = false; newOpenEnd = tile[0] }
+        }
+
+        const newEntry = { tile, flipped }
+        const newTiles    = side === 'left' ? [newEntry, ...boardData.tiles] : [...boardData.tiles, newEntry]
+        const newLeftEnd  = side === 'left'  ? newOpenEnd : boardData.left_end
+        const newRightEnd = side === 'right' ? newOpenEnd : boardData.right_end
+
+        await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
+        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', currentPlayer.seat)
+        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'place', tile })
+      }
+
+      // Check win
+      if (newHand.length === 0) {
+        const dekabess = isDekabess(tile, boardData)
+        await endRound(currentPlayer.seat, dekabess)
+        return
+      }
+      const nextSeat = (currentPlayer.seat + 1) % 4
+      await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
+    }, 1200)
+
+    return () => clearTimeout(timer)
+  }, [roomData?.current_turn, roomData?.status])
+
   const me = players.find(p => p.seat === myInfo?.seat)
   const hand = me?.hand || []
   const isMyTurn = roomData?.current_turn === myInfo?.seat && roomData?.status === 'playing'
