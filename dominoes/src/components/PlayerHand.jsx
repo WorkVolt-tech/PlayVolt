@@ -1,7 +1,11 @@
 import DominoTile from './DominoTile'
 import './PlayerHand.css'
 
-export default function PlayerHand({ hand, isMyTurn, playableTiles, selectedIdx, onSelect, onPass, hasTilesOnBoard }) {
+export default function PlayerHand({
+  hand, isMyTurn, playableTiles, selectedIdx,
+  onSelect, onPass, hasTilesOnBoard,
+  onDragStart, onDragEnd,
+}) {
   const canPass = isMyTurn && playableTiles.length === 0 && hasTilesOnBoard
 
   return (
@@ -22,19 +26,14 @@ export default function PlayerHand({ hand, isMyTurn, playableTiles, selectedIdx,
               notPlayable={isMyTurn && !canPlay}
               onClick={canPlay ? () => onSelect(tile, idx) : undefined}
               draggable={canPlay}
-              dragData={{ tile, idx }}
+              onDragStart={canPlay ? () => onDragStart({ tile, idx }) : undefined}
+              onDragEnd={onDragEnd}
             />
           )
         })}
       </div>
       <div className="action-bar">
-        <button
-          className="btn btn-pass"
-          disabled={!canPass}
-          onClick={onPass}
-        >
-          Pass
-        </button>
+        <button className="btn-pass" disabled={!canPass} onClick={onPass}>Pass</button>
       </div>
     </div>
   )
