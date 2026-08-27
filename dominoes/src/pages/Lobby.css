@@ -3,10 +3,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  justify-content: flex-start;
+  padding: 2rem 1rem;
   position: relative;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@media (min-height: 700px) {
+  .lobby-page {
+    justify-content: center;
+  }
 }
 
 .lobby-bg {
@@ -30,11 +37,18 @@
 .title-block { text-align: center; margin-bottom: 2rem; }
 
 .logo-img {
-  width: 280px;
-  max-width: 80vw;
+  width: 200px;
+  max-width: 60vw;
   filter: drop-shadow(0 0 20px rgba(201,168,76,0.4));
   animation: float 3s ease-in-out infinite;
   margin-bottom: 0.5rem;
+}
+
+@media (min-height: 700px) {
+  .logo-img {
+    width: 280px;
+    max-width: 80vw;
+  }
 }
 
 .subtitle {
