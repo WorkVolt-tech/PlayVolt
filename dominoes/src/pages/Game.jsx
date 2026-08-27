@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
 import { canPlayOnSide } from '../hooks/useGameState'
@@ -9,6 +10,9 @@ import './Game.css'
 export default function Game() {
   const navigate = useNavigate()
   const myInfo   = JSON.parse(sessionStorage.getItem('domino_player') || 'null')
+
+  const [dragging, setDragging] = useState(null)
+  const draggingRef = useRef(null)
 
   const {
     roomData, players, boardData, selectedTile, showPicker,
@@ -62,6 +66,7 @@ export default function Game() {
       <Board
         boardData={boardData}
         selectedTile={selectedTile}
+        dragging={dragging}
         isMyTurn={isMyTurn}
         onDropZone={side => {
           if (!selectedTile) return
@@ -94,6 +99,8 @@ export default function Game() {
         onSelect={selectTile}
         onPass={passMove}
         hasTilesOnBoard={hasTilesOnBoard}
+        onDragStart={data => { draggingRef.current = data; setDragging(data) }}
+        onDragEnd={() => { draggingRef.current = null; setDragging(null) }}
       />
 
       {/* Toast */}
