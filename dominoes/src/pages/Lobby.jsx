@@ -60,12 +60,13 @@ export default function Lobby() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
         async (payload) => {
           if (payload.new.status === 'playing') {
+            let finalSeat = mySeat
             if (myPlayerId) {
               const { data: me } = await db.from('domino_players').select('seat').eq('id', myPlayerId).single()
-              if (me) setMySeat(me.seat)
+              if (me) { setMySeat(me.seat); finalSeat = me.seat }
             }
             sessionStorage.setItem('domino_player', JSON.stringify({
-              seat: mySeat,
+              seat: finalSeat,
               nickname: nickname.trim(),
               roomId,
               roomCode: myRoomCode || payload.new.code,
