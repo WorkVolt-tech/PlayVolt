@@ -263,6 +263,20 @@ export default function Game() {
         selectedTile={selectedTile}
         isMyTurn={isMyTurn}
         onDropZone={(side) => { if (selectedTile) confirmPlace(selectedTile.tile, selectedTile.idx, side) }}
+        onDragPlace={(tile, idx, side) => {
+          if (!isMyTurn) return
+          if (side === 'first') placeFirstTile(tile, idx)
+          else {
+            const cL = canPlayOnSide(tile, 'left', boardData)
+            const cR = canPlayOnSide(tile, 'right', boardData)
+            if (side === 'left' && cL) confirmPlace(tile, idx, 'left')
+            else if (side === 'right' && cR) confirmPlace(tile, idx, 'right')
+            else if (cL && cR && boardData.left_end !== boardData.right_end) {
+              setSelected({ tile, idx }); setShowPicker(true)
+            } else if (cL) confirmPlace(tile, idx, 'left')
+            else if (cR) confirmPlace(tile, idx, 'right')
+          }
+        }}
       />
 
       {/* Side picker */}
