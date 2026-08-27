@@ -40,7 +40,7 @@ function computeSnakePositions(tiles, W, H) {
         }
         y = y + h / 2 + GAP + nh / 2
       } else {
-        const { w: nw, h: nh } = renderDims(next, nextInCorner)
+        const { w: nw, h: nh } = renderDims(next, false)
         const nextX = x + dir * (w / 2 + GAP + nw / 2)
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
           const firstCornerDims = renderDims(next, true)
