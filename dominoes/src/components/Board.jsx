@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import DominoTile from './DominoTile'
-import { computeSnakePositions, canPlayOnSide } from '../lib/game'
+import { computeSnakePositions } from '../lib/game'
+import { canPlayOnSide } from '../hooks/useGameState'
 import { getDragging, clearDragging } from '../lib/dragDrop'
 import './Board.css'
 
