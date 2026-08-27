@@ -10,9 +10,9 @@ const CORNER_STEPS = 3
 
 function renderDims(entry, inCorner) {
   const isDbl = entry.tile[0] === entry.tile[1]
-  return inCorner
-    ? (isDbl ? { w: TH, h: TW } : { w: TW, h: TH })
-    : (isDbl ? { w: TW, h: TH } : { w: TH, h: TW })
+  // Doubles always vertical; corner turn tile always vertical; otherwise horizontal
+  if (isDbl || inCorner) return { w: TW, h: TH }
+  return { w: TH, h: TW }
 }
 
 function computeSnakePositions(tiles, W, H) {
@@ -40,7 +40,7 @@ function computeSnakePositions(tiles, W, H) {
         }
         y = y + h / 2 + GAP + nh / 2
       } else {
-        const { w: nw, h: nh } = renderDims(next, false)
+        const { w: nw, h: nh } = renderDims(next, nextInCorner)
         const nextX = x + dir * (w / 2 + GAP + nw / 2)
         if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
           const firstCornerDims = renderDims(next, true)
@@ -64,7 +64,7 @@ function computeSnakePositions(tiles, W, H) {
 function Tile({ entry, pos }) {
   const isDbl = entry.tile[0] === entry.tile[1]
   const inCorner = pos.dir === 0
-  const renderVertical = inCorner ? !isDbl : isDbl
+  const renderVertical = isDbl || inCorner  // doubles and corner tiles are vertical
 
   let displayTile = [...entry.tile]
   if (!isDbl) {
