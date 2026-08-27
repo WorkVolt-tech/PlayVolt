@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
-import { generateRoomCode, generateDominoSet, shuffle } from '../lib/game'
+import { generateRoomCode, generateDominoSet, shuffle } from '../hooks/useGameState'
 import './Lobby.css'
 
 export default function Lobby() {
