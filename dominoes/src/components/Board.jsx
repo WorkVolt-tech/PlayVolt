@@ -20,6 +20,22 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     return () => ro.disconnect()
   }, [])
 
+  // Touch drop on board (first tile placement)
+  useEffect(() => {
+    const el = areaRef.current
+    if (!el) return
+    function onTileDrop() {
+      if (!hasTiles) {
+        const data = getDragging()
+        if (!data) return
+        clearDragging()
+        onDragPlace(data.tile, data.idx, 'first')
+      }
+    }
+    el.addEventListener('tile-drop-board', onTileDrop)
+    return () => el.removeEventListener('tile-drop-board', onTileDrop)
+  }, [hasTiles, onDragPlace])
+
   const tiles = boardData?.tiles || []
   const hasTiles = tiles.length > 0
   const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h) : []

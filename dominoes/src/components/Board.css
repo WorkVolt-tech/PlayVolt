@@ -54,3 +54,11 @@
   color: var(--gold);
   transform: scale(1.05);
 }
+
+@media (max-width: 768px) {
+  .drop-zone {
+    width: 80px !important;
+    height: 56px !important;
+    font-size: 0.65rem;
+  }
+}

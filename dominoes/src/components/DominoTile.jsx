@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { setDragging, clearDragging } from '../lib/dragDrop'
 import './DominoTile.css'
 
@@ -6,11 +6,9 @@ export default function DominoTile({
   top, bottom, isVertical = true,
   playable = false, selected = false, notPlayable = false,
   onClick, style, className = '',
-  // drag props
   draggable = false, dragData = null,
 }) {
-  const touchStartPos = useRef(null)
-  const ghostRef = useRef(null)
+  const ref = useRef(null)
 
   let cls = 'domino-tile'
   if (isVertical) cls += ' vertical'
@@ -25,68 +23,64 @@ export default function DominoTile({
     if (!draggable || !dragData) return
     setDragging(dragData)
     e.dataTransfer.effectAllowed = 'move'
-    // Make drag ghost transparent so we don't see the default
-    const ghost = document.createElement('div')
-    ghost.style.position = 'fixed'
-    ghost.style.top = '-9999px'
-    document.body.appendChild(ghost)
-    e.dataTransfer.setDragImage(ghost, 0, 0)
-    ghostRef.current = ghost
   }
 
   function handleDragEnd() {
     clearDragging()
-    if (ghostRef.current) {
-      document.body.removeChild(ghostRef.current)
-      ghostRef.current = null
+  }
+
+  // ── Touch drag (non-passive so we can preventDefault) ───────
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !draggable) return
+
+    function onTouchStart(e) {
+      if (!dragData) return
+      setDragging(dragData)
     }
-  }
 
-  // ── Touch drag ──────────────────────────────────────────────
-  function handleTouchStart(e) {
-    if (!draggable || !dragData) return
-    const t = e.touches[0]
-    touchStartPos.current = { x: t.clientX, y: t.clientY }
-    setDragging(dragData)
-  }
-
-  function handleTouchMove(e) {
-    if (!draggable || !dragData) return
-    e.preventDefault() // prevent scroll while dragging
-    const t = e.touches[0]
-    // Find element under finger
-    const el = document.elementFromPoint(t.clientX, t.clientY)
-    // Highlight drop zones under finger
-    document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('drag-over'))
-    const dz = el?.closest('.drop-zone')
-    if (dz) dz.classList.add('drag-over')
-  }
-
-  function handleTouchEnd(e) {
-    if (!draggable || !dragData) return
-    const t = e.changedTouches[0]
-    // Find drop zone under finger
-    const el = document.elementFromPoint(t.clientX, t.clientY)
-    document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('drag-over'))
-    const dz = el?.closest('.drop-zone')
-    if (dz) {
-      // Trigger the drop zone's onDrop
-      dz.dispatchEvent(new CustomEvent('tile-drop', { bubbles: true }))
+    function onTouchMove(e) {
+      if (!dragData) return
+      e.preventDefault() // must be non-passive to work
+      const t = e.touches[0]
+      document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('drag-over'))
+      const el = document.elementFromPoint(t.clientX, t.clientY)
+      const dz = el?.closest('.drop-zone')
+      if (dz) dz.classList.add('drag-over')
     }
-    clearDragging()
-  }
+
+    function onTouchEnd(e) {
+      const t = e.changedTouches[0]
+      document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('drag-over'))
+      const el = document.elementFromPoint(t.clientX, t.clientY)
+      const dz = el?.closest('.drop-zone')
+      if (dz) dz.dispatchEvent(new CustomEvent('tile-drop', { bubbles: true }))
+      // Also check board area for first tile placement
+      const board = el?.closest('.board-area')
+      if (board && !dz) board.dispatchEvent(new CustomEvent('tile-drop-board', { bubbles: true }))
+      clearDragging()
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove', onTouchMove, { passive: false })
+    el.addEventListener('touchend', onTouchEnd, { passive: true })
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [draggable, dragData])
 
   return (
     <div
+      ref={ref}
       className={cls}
       style={style}
       onClick={playable || onClick ? onClick : undefined}
       draggable={draggable}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       <div className="pip-half">
         <img
