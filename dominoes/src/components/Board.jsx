@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState } from 'react'
-import { getDragging, clearDragging } from '../lib/dragDrop'
 import { canPlayOnSide } from '../hooks/useGameState'
 import './Board.css'
 
@@ -128,7 +127,7 @@ function Tile({ entry, pos }) {
   )
 }
 
-export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace }) {
+export default function Board({ boardData, selectedTile, dragging, isMyTurn, onDropZone, onDragPlace }) {
   const areaRef = useRef(null)
   const [dims, setDims] = useState({ w: 800, h: 300 })
   const [dragOver, setDragOver] = useState(null)
@@ -136,6 +135,8 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
   const hasTilesRef = useRef(false)
 
   useEffect(() => { onDragPlaceRef.current = onDragPlace }, [onDragPlace])
+  const draggingRef = useRef(null)
+  useEffect(() => { draggingRef.current = dragging }, [dragging])
 
   const tiles = boardData?.tiles || []
   const hasTiles = tiles.length > 0
@@ -156,10 +157,8 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     const el = areaRef.current
     if (!el) return
     function onTileDrop() {
-      if (!hasTilesRef.current) {
-        const data = getDragging()
-        if (!data) return
-        clearDragging()
+      if (!hasTilesRef.current && draggingRef.current) {
+        const data = draggingRef.current
         onDragPlaceRef.current(data.tile, data.idx, 'first')
       }
     }
@@ -182,17 +181,13 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
   function handleDrop(e, side) {
     e.preventDefault()
     setDragOver(null)
-    const data = getDragging()
-    if (!data) return
-    clearDragging()
-    onDragPlace(data.tile, data.idx, side)
+    if (!dragging) return
+    onDragPlace(dragging.tile, dragging.idx, side)
   }
 
   function handleTileDrop(side) {
-    const data = getDragging()
-    if (!data) return
-    clearDragging()
-    onDragPlace(data.tile, data.idx, side)
+    if (!dragging) return
+    onDragPlace(dragging.tile, dragging.idx, side)
   }
 
   return (
@@ -202,11 +197,8 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
       onDragOver={e => { if (!hasTiles && isMyTurn) { e.preventDefault(); e.dataTransfer.dropEffect = 'move' } }}
       onDrop={e => {
         e.preventDefault()
-        if (!hasTiles && isMyTurn) {
-          const data = getDragging()
-          if (!data) return
-          clearDragging()
-          onDragPlace(data.tile, data.idx, 'first')
+        if (!hasTiles && isMyTurn && dragging) {
+          onDragPlace(dragging.tile, dragging.idx, 'first')
         }
       }}
     >
