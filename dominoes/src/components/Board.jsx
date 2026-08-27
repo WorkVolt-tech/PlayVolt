@@ -40,9 +40,8 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
   const hasTiles = tiles.length > 0
   const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h) : []
 
-  const dragging = getDragging()
-  const canLeft  = (selectedTile || dragging) && isMyTurn && canPlayOnSide((selectedTile || dragging)?.tile, 'left', boardData)
-  const canRight = (selectedTile || dragging) && isMyTurn && canPlayOnSide((selectedTile || dragging)?.tile, 'right', boardData)
+  const canLeft  = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left', boardData)
+  const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right', boardData)
 
   const posL = positions[0]
   const posR = positions[positions.length - 1]
