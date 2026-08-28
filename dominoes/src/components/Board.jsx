@@ -181,13 +181,15 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
   function handleDrop(e, side) {
     e.preventDefault()
     setDragOver(null)
-    if (!dragging) return
-    onDragPlace(dragging.tile, dragging.idx, side)
+    const data = draggingRef.current
+    if (!data) return
+    onDragPlace(data.tile, data.idx, side)
   }
 
   function handleTileDrop(side) {
-    if (!dragging) return
-    onDragPlace(dragging.tile, dragging.idx, side)
+    const data = draggingRef.current
+    if (!data) return
+    onDragPlace(data.tile, data.idx, side)
   }
 
   return (
@@ -197,8 +199,8 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
       onDragOver={e => { if (!hasTiles && isMyTurn) { e.preventDefault(); e.dataTransfer.dropEffect = 'move' } }}
       onDrop={e => {
         e.preventDefault()
-        if (!hasTiles && isMyTurn && dragging) {
-          onDragPlace(dragging.tile, dragging.idx, 'first')
+        if (!hasTiles && isMyTurn && draggingRef.current) {
+          onDragPlace(draggingRef.current.tile, draggingRef.current.idx, 'first')
         }
       }}
     >
