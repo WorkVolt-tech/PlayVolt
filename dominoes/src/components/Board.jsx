@@ -36,19 +36,42 @@ function oppositeDirection(direction) {
 //   - normal tile → vertical
 //   - double      → horizontal
 //
-// In other words: doubles are ALWAYS perpendicular to the current run.
-function tileDims(isDouble, direction) {
-  const horizontalRun = isHorizontalDirection(direction)
+// In other words: doubles are perpendicular to a STRAIGHT run.
+//
+// EXCEPTION — if the double itself is the corner/turning domino, it follows
+// the NEW direction of travel instead of sitting perpendicular to it:
+//   - turning into RIGHT / LEFT → double is horizontal
+//   - turning into DOWN / UP   → double is vertical
+function tileOrientation(isDouble, direction, isTurning = false) {
+  const horizontalDirection = isHorizontalDirection(direction)
 
-  if (horizontalRun) {
-    return isDouble
-      ? { w: TW, h: TH, isVert: true }
-      : { w: TH, h: TW, isVert: false }
+  // IMPORTANT CORNER EXCEPTION:
+  // A double that IS the turning domino follows the NEW direction of travel.
+  //   turn to LEFT/RIGHT -> horizontal double
+  //   turn to UP/DOWN    -> vertical double
+  if (isDouble && isTurning) {
+    return horizontalDirection ? 'horizontal' : 'vertical'
   }
 
-  return isDouble
-    ? { w: TH, h: TW, isVert: false }
-    : { w: TW, h: TH, isVert: true }
+  // Everywhere else, doubles stay perpendicular to the current run.
+  if (isDouble) {
+    return horizontalDirection ? 'vertical' : 'horizontal'
+  }
+
+  // Normal dominoes follow the current run direction.
+  return horizontalDirection ? 'horizontal' : 'vertical'
+}
+
+function tileDims(isDouble, direction, isTurning = false) {
+  const orientation = tileOrientation(isDouble, direction, isTurning)
+  const isVert = orientation === 'vertical'
+
+  return {
+    w: isVert ? TW : TH,
+    h: isVert ? TH : TW,
+    isVert,
+    orientation,
+  }
 }
 
 // Calculate the next center point. For straight runs the tiles are placed
@@ -174,7 +197,9 @@ function computeSnakePositions(tiles, W, H) {
     pw: firstDims.w,
     ph: firstDims.h,
     isVert: firstDims.isVert,
+    orientation: firstDims.orientation,
     isDouble: firstIsDouble,
+    isTurning: false,
     flowDir,
   }
   positions.push(current)
@@ -211,7 +236,10 @@ function computeSnakePositions(tiles, W, H) {
       }
     }
 
-    const nextDims = tileDims(isDouble, nextDirection)
+    // A double normally sits perpendicular to the run, EXCEPT when the double
+    // is the actual corner tile. A turning double follows the NEW direction.
+    let isTurning = nextDirection !== flowDir
+    let nextDims = tileDims(isDouble, nextDirection, isTurning)
     let nextPoint = stepPosition(current, nextDims, nextDirection)
 
     // If a horizontal row is being entered from a vertical run but the chosen
@@ -223,7 +251,10 @@ function computeSnakePositions(tiles, W, H) {
     ) {
       nextDirection = DIR.DOWN
       verticalTravel = 0
-      const fallbackDims = tileDims(isDouble, nextDirection)
+      // This fallback cancels the attempted turn, so orientation must be
+      // recalculated as a straight vertical continuation.
+      isTurning = nextDirection !== flowDir
+      const fallbackDims = tileDims(isDouble, nextDirection, isTurning)
       nextPoint = stepPosition(current, fallbackDims, nextDirection)
 
       current = {
@@ -232,7 +263,9 @@ function computeSnakePositions(tiles, W, H) {
         pw: fallbackDims.w,
         ph: fallbackDims.h,
         isVert: fallbackDims.isVert,
+        orientation: fallbackDims.orientation,
         isDouble,
+        isTurning,
         flowDir: nextDirection,
       }
     } else {
@@ -242,7 +275,9 @@ function computeSnakePositions(tiles, W, H) {
         pw: nextDims.w,
         ph: nextDims.h,
         isVert: nextDims.isVert,
+        orientation: nextDims.orientation,
         isDouble,
+        isTurning,
         flowDir: nextDirection,
       }
     }
@@ -294,7 +329,8 @@ function computeSnakePositions(tiles, W, H) {
 
 // ─── Single tile renderer ─────────────────────────────────────────────────────
 function BoardTile({ entry, pos }) {
-  const { isDouble, isVert, flowDir } = pos
+  const { isDouble, flowDir, orientation } = pos
+  const isVert = orientation ? orientation === 'vertical' : pos.isVert
 
   let [first, second] = entry.tile
 
