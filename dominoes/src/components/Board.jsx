@@ -5,8 +5,7 @@ import './Board.css'
 const TW = 28
 const TH = 56
 const GAP = 3
-const MARGIN = 56
-const CORNER_STEPS = 3
+const CORNER_STEPS = 1
 
 function renderDims(entry, inCorner) {
   const isDbl = entry.tile[0] === entry.tile[1]
@@ -17,6 +16,7 @@ function renderDims(entry, inCorner) {
 
 function computeSnakePositions(tiles, W, H) {
   if (!tiles || tiles.length === 0) return []
+  const MARGIN = Math.max(30, W * 0.08)
 
   function walk(tiles, startIdx, startX, startY, initDir) {
     const pos = []
@@ -35,8 +35,9 @@ function computeSnakePositions(tiles, W, H) {
         cornerLeft--
         const nextInCorner = cornerLeft > 0
         const { w: nw, h: nh } = renderDims(next, nextInCorner)
-        if (!nextInCorner && entry.tile[0] === entry.tile[1]) {
-          x = x + dir * (TH - TW) / 2
+        if (!nextInCorner) {
+          // Align new row's outer edge with corner's outer edge
+          x = x + TW / 2 - nw / 2
         }
         y = y + h / 2 + GAP + nh / 2
       } else {
@@ -56,9 +57,20 @@ function computeSnakePositions(tiles, W, H) {
     return pos
   }
 
-  const cx = W / 2
-  const cy = H / 2
-  return walk(tiles, 0, cx, cy, 1)
+  // First pass from origin to measure bounding box
+  const raw = walk(tiles, 0, 0, 0, 1)
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+  raw.forEach(p => {
+    minX = Math.min(minX, p.x - p.pw / 2)
+    maxX = Math.max(maxX, p.x + p.pw / 2)
+    minY = Math.min(minY, p.y - p.ph / 2)
+    maxY = Math.max(maxY, p.y + p.ph / 2)
+  })
+  // Center the chain in the board area
+  const offsetX = (W - (maxX - minX)) / 2 - minX
+  const offsetY = (H - (maxY - minY)) / 2 - minY
+  raw.forEach(p => { p.x += offsetX; p.y += offsetY })
+  return raw
 }
 
 function Tile({ entry, pos }) {
