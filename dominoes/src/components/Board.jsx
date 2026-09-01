@@ -913,10 +913,12 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
     e.preventDefault()
     e.stopPropagation()
     setDragOver(null)
+    console.log('[Board] drop fired, isMyTurn:', isMyTurn, 'draggingRef:', draggingRef.current)
 
     if (!isMyTurn) return
 
     const data = getEventDragData(e)
+    console.log('[Board] resolved data:', data)
     if (!data) {
       setNativeDragging(null)
       return
@@ -957,17 +959,8 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
       }}
       onDragOver={e => {
         if (!isMyTurn) return
-
-        // CRITICAL FIX:
-        // Always preventDefault while it is the player's turn. The previous
-        // version only did this when draggingRef.current already existed, which
-        // meant `drop` never fired when parent drag state was missing/delayed.
         e.preventDefault()
-
-        if (e.dataTransfer) {
-          e.dataTransfer.dropEffect = 'move'
-        }
-
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
         recoverNativeDrag(e)
       }}
       onDragLeave={e => {
