@@ -62,3 +62,28 @@
     font-size: 0.65rem;
   }
 }
+
+/* Exact drag-and-drop landing targets. These sit over the ghost domino preview
+   and are intentionally larger than the tile itself so dropping feels natural. */
+.domino-drop-target {
+  position: absolute;
+  z-index: 60;
+  border: 1px dashed rgba(201,168,76,0.45);
+  border-radius: 10px;
+  background: rgba(201,168,76,0.035);
+  cursor: grab;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.domino-drop-target.drag-over {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.10);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.08);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .domino-drop-target:hover {
+    border-color: rgba(201,168,76,0.75);
+    background: rgba(201,168,76,0.07);
+  }
+}
