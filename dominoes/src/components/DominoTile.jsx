@@ -65,14 +65,14 @@ export default function DominoTile({
       draggable={draggable}
       onDragStart={draggable ? (e) => {
         e.dataTransfer.effectAllowed = 'move'
-        if (onDragStart) {
-          const payload = onDragStart()
-          if (payload) {
-            const json = JSON.stringify({ tile: payload.tile, idx: payload.idx })
-            e.dataTransfer.setData('application/x-domino', json)
-            e.dataTransfer.setData('application/json', json)
-            e.dataTransfer.setData('text/plain', json)
-          }
+        const payload = onDragStart ? onDragStart() : null
+        console.log('[DominoTile] dragstart payload:', payload)
+        if (payload) {
+          const json = JSON.stringify({ tile: payload.tile, idx: payload.idx })
+          e.dataTransfer.setData('application/x-domino', json)
+          e.dataTransfer.setData('application/json', json)
+          e.dataTransfer.setData('text/plain', json)
+          console.log('[DominoTile] dataTransfer set:', json)
         }
       } : undefined}
       onDragEnd={draggable ? () => { if (onDragEnd) onDragEnd() } : undefined}
