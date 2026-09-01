@@ -14,6 +14,7 @@ export default function PlayerHand({
       <div className="hand-tiles">
         {hand.map((tile, idx) => {
           const canPlay = isMyTurn && playableTiles.some(t => t[0] === tile[0] && t[1] === tile[1])
+          if (idx === 0) console.log('[Hand] tile0 canPlay:', canPlay, 'isMyTurn:', isMyTurn, 'playable count:', playableTiles.length)
           const isSelected = selectedIdx === idx
           return (
             <DominoTile
