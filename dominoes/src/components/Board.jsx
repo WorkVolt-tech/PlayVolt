@@ -947,7 +947,7 @@ export default function Board({ boardData, selectedTile, draggingRef: externalDr
 
   return (
     <div
-      className={`board-area ${dragging || nativeDragging ? 'drag-active' : ''}`}
+      className={`board-area ${draggingRef?.current || nativeDragging ? 'drag-active' : ''}`}
       ref={areaRef}
       onDragEnter={e => {
         if (!isMyTurn) return
