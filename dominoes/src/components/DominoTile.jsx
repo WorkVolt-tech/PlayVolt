@@ -82,7 +82,8 @@ export default function DominoTile({
           className="pip-img"
           src={`/tiles-white/${top}.png`}
           alt={String(top)}
-          style={!isVertical && top === 6 ? { transform: 'rotate(90deg)' } : undefined}
+          draggable={false}
+          style={{ pointerEvents: 'none', ...(!isVertical && top === 6 ? { transform: 'rotate(90deg)' } : {}) }}
         />
       </div>
       <div className="pip-half">
@@ -90,7 +91,8 @@ export default function DominoTile({
           className="pip-img"
           src={`/tiles-white/${bottom}.png`}
           alt={String(bottom)}
-          style={!isVertical && bottom === 6 ? { transform: 'rotate(90deg)' } : undefined}
+          draggable={false}
+          style={{ pointerEvents: 'none', ...(!isVertical && bottom === 6 ? { transform: 'rotate(90deg)' } : {}) }}
         />
       </div>
     </div>
