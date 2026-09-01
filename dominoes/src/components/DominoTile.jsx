@@ -63,8 +63,19 @@ export default function DominoTile({
       style={style}
       onClick={onClick}
       draggable={draggable}
-      onDragStart={draggable ? onDragStart : undefined}
-      onDragEnd={draggable ? onDragEnd : undefined}
+      onDragStart={draggable ? (e) => {
+        e.dataTransfer.effectAllowed = 'move'
+        if (onDragStart) {
+          const payload = onDragStart()
+          if (payload) {
+            const json = JSON.stringify({ tile: payload.tile, idx: payload.idx })
+            e.dataTransfer.setData('application/x-domino', json)
+            e.dataTransfer.setData('application/json', json)
+            e.dataTransfer.setData('text/plain', json)
+          }
+        }
+      } : undefined}
+      onDragEnd={draggable ? () => { if (onDragEnd) onDragEnd() } : undefined}
     >
       <div className="pip-half">
         <img
