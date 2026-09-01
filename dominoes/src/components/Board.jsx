@@ -644,7 +644,7 @@ function mergeDragPayload(primary, fallback, selectedTile) {
 }
 
 // ─── Board component ──────────────────────────────────────────────────────────
-export default function Board({ boardData, selectedTile, dragging, isMyTurn, onDropZone, onDragPlace }) {
+export default function Board({ boardData, selectedTile, draggingRef: externalDraggingRef, isMyTurn, onDropZone, onDragPlace }) {
   const areaRef = useRef(null)
   const [dims, setDims] = useState({ w: 800, h: 400 })
   const [dragOver, setDragOver] = useState(null)
@@ -654,13 +654,12 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
   // the parent drag state is delayed or absent.
   const [nativeDragging, setNativeDragging] = useState(null)
 
-  const draggingRef = useRef(null)
+  const draggingRef = externalDraggingRef
   const selectedTileRef = useRef(null)
   const onDragPlaceRef = useRef(onDragPlace)
   const boardDataRef = useRef(boardData)
 
   useEffect(() => { onDragPlaceRef.current = onDragPlace }, [onDragPlace])
-  useEffect(() => { draggingRef.current = dragging }, [dragging])
   useEffect(() => { selectedTileRef.current = selectedTile }, [selectedTile])
   useEffect(() => { boardDataRef.current = boardData }, [boardData])
 
@@ -777,7 +776,7 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
   // Use the newest available drag source for previews. `dragging` is preferred,
   // then native dataTransfer recovery, then selectedTile for click placement.
   const activePlay =
-    normalizeDragPayload(dragging) ||
+    normalizeDragPayload(draggingRef?.current) ||
     normalizeDragPayload(nativeDragging) ||
     normalizeDragPayload(selectedTile)
 
