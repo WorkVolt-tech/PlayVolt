@@ -99,7 +99,7 @@ export default function Game() {
         onSelect={selectTile}
         onPass={passMove}
         hasTilesOnBoard={hasTilesOnBoard}
-        onDragStart={data => { draggingRef.current = data; setDragging(data) }}
+        onDragStart={data => { draggingRef.current = data; setDragging(data); return data }}
         onDragEnd={() => { draggingRef.current = null; setDragging(null) }}
       />
 
