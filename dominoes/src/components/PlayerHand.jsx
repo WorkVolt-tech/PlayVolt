@@ -26,7 +26,7 @@ export default function PlayerHand({
               notPlayable={isMyTurn && !canPlay}
               onClick={canPlay ? () => onSelect(tile, idx) : undefined}
               draggable={canPlay}
-              onDragStart={canPlay ? () => onDragStart({ tile, idx }) : undefined}
+              onDragStart={canPlay ? () => { onDragStart({ tile, idx }); return { tile, idx } } : undefined}
               onDragEnd={onDragEnd}
             />
           )
