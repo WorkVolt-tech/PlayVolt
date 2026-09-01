@@ -39,26 +39,20 @@ function oppositeDirection(direction) {
 // In other words: doubles are perpendicular to a STRAIGHT run.
 //
 // EXCEPTION — if the double itself is the corner/turning domino, it follows
-// the NEW direction of travel instead of sitting perpendicular to it:
+// the NEW direction of travel:
 //   - turning into RIGHT / LEFT → double is horizontal
 //   - turning into DOWN / UP   → double is vertical
 function tileOrientation(isDouble, direction, isTurning = false) {
   const horizontalDirection = isHorizontalDirection(direction)
 
-  // IMPORTANT CORNER EXCEPTION:
-  // A double that IS the turning domino follows the NEW direction of travel.
-  //   turn to LEFT/RIGHT -> horizontal double
-  //   turn to UP/DOWN    -> vertical double
   if (isDouble && isTurning) {
     return horizontalDirection ? 'horizontal' : 'vertical'
   }
 
-  // Everywhere else, doubles stay perpendicular to the current run.
   if (isDouble) {
     return horizontalDirection ? 'vertical' : 'horizontal'
   }
 
-  // Normal dominoes follow the current run direction.
   return horizontalDirection ? 'horizontal' : 'vertical'
 }
 
@@ -236,8 +230,8 @@ function computeSnakePositions(tiles, W, H) {
       }
     }
 
-    // A double normally sits perpendicular to the run, EXCEPT when the double
-    // is the actual corner tile. A turning double follows the NEW direction.
+    // If this tile is the actual turning/corner tile, doubles follow the NEW
+    // direction instead of using the normal perpendicular-double rule.
     let isTurning = nextDirection !== flowDir
     let nextDims = tileDims(isDouble, nextDirection, isTurning)
     let nextPoint = stepPosition(current, nextDims, nextDirection)
@@ -251,8 +245,7 @@ function computeSnakePositions(tiles, W, H) {
     ) {
       nextDirection = DIR.DOWN
       verticalTravel = 0
-      // This fallback cancels the attempted turn, so orientation must be
-      // recalculated as a straight vertical continuation.
+      // Recalculate because the attempted turn may have been cancelled.
       isTurning = nextDirection !== flowDir
       const fallbackDims = tileDims(isDouble, nextDirection, isTurning)
       nextPoint = stepPosition(current, fallbackDims, nextDirection)
@@ -328,7 +321,7 @@ function computeSnakePositions(tiles, W, H) {
 }
 
 // ─── Single tile renderer ─────────────────────────────────────────────────────
-function BoardTile({ entry, pos }) {
+function BoardTile({ entry, pos, ghost = false, highlighted = false }) {
   const { isDouble, flowDir, orientation } = pos
   const isVert = orientation ? orientation === 'vertical' : pos.isVert
 
@@ -356,7 +349,14 @@ function BoardTile({ entry, pos }) {
       height: pos.ph,
       background: '#fffef8',
       borderRadius: 5,
-      boxShadow: '0 3px 10px rgba(0,0,0,0.5)',
+      border: ghost ? '1px dashed rgba(201,168,76,0.9)' : 'none',
+      boxShadow: highlighted
+        ? '0 0 0 3px rgba(201,168,76,0.20), 0 4px 14px rgba(0,0,0,0.45)'
+        : ghost
+          ? '0 0 0 2px rgba(201,168,76,0.10)'
+          : '0 3px 10px rgba(0,0,0,0.5)',
+      opacity: ghost ? (highlighted ? 0.88 : 0.48) : 1,
+      pointerEvents: 'none',
       display: 'grid',
       gridTemplateRows: isVert ? '1fr 1fr' : 'none',
       gridTemplateColumns: isVert ? 'none' : '1fr 1fr',
@@ -401,6 +401,76 @@ function BoardTile({ entry, pos }) {
       </div>
     </div>
   )
+}
+
+
+function shiftedPosition(pos, dx, dy) {
+  if (!pos) return null
+  return { ...pos, x: pos.x + dx, y: pos.y + dy }
+}
+
+// Build the EXACT position the current snake algorithm would use for a new
+// domino, then translate that preview so the already-rendered endpoint stays
+// fixed. This lets the player drag directly onto the place where the domino
+// will land instead of aiming at a generic "Left" / "Right" button.
+function computeDropPreview(tiles, positions, candidateTile, side, W, H) {
+  if (!candidateTile || !positions.length) return null
+
+  const candidate = { tile: candidateTile, flipped: false }
+
+  if (side === 'right') {
+    const simulated = computeSnakePositions([...tiles, candidate], W, H)
+    if (simulated.length < 2) return null
+
+    const simulatedAnchor = simulated[simulated.length - 2]
+    const actualAnchor = positions[positions.length - 1]
+    const preview = simulated[simulated.length - 1]
+
+    return shiftedPosition(
+      preview,
+      actualAnchor.x - simulatedAnchor.x,
+      actualAnchor.y - simulatedAnchor.y,
+    )
+  }
+
+  if (side === 'left') {
+    const simulated = computeSnakePositions([candidate, ...tiles], W, H)
+    if (simulated.length < 2) return null
+
+    // simulated[1] is the original first tile. Pin it to its currently drawn
+    // position, then shift the new simulated first tile by the same amount.
+    const simulatedAnchor = simulated[1]
+    const actualAnchor = positions[0]
+    const preview = simulated[0]
+
+    return shiftedPosition(
+      preview,
+      actualAnchor.x - simulatedAnchor.x,
+      actualAnchor.y - simulatedAnchor.y,
+    )
+  }
+
+  return null
+}
+
+function getDropHitStyle(pos, boardW, boardH) {
+  const pad = 14
+  const minHit = 48
+  const width = Math.max(minHit, pos.pw + pad * 2)
+  const height = Math.max(minHit, pos.ph + pad * 2)
+
+  return {
+    left: Math.max(2, Math.min(boardW - width - 2, pos.x - width / 2)),
+    top: Math.max(2, Math.min(boardH - height - 2, pos.y - height / 2)),
+    width,
+    height,
+  }
+}
+
+function distanceSquaredToPos(x, y, pos) {
+  const dx = x - pos.x
+  const dy = y - pos.y
+  return dx * dx + dy * dy
 }
 
 function getDropZoneStyle(pos, outwardDirection, boardW, boardH) {
@@ -486,24 +556,83 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
   }, [])
 
   const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h) : []
-  const canLeft = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'left', boardData)
-  const canRight = selectedTile && isMyTurn && canPlayOnSide(selectedTile.tile, 'right', boardData)
+
+  // IMPORTANT: while a domino is being dragged, the drag object is the source
+  // of truth. A drag should not depend on the tile also being "selected".
+  const activePlay = dragging?.tile ? dragging : (selectedTile?.tile ? selectedTile : null)
+  const activeTile = activePlay?.tile || null
+
+  const canLeft = !!(activeTile && isMyTurn && canPlayOnSide(activeTile, 'left', boardData))
+  const canRight = !!(activeTile && isMyTurn && canPlayOnSide(activeTile, 'right', boardData))
 
   const posL = positions[0]
   const posR = positions[positions.length - 1]
 
-  // "left" and "right" are logical chain ends, not permanent screen directions.
+  const previewLeft = canLeft
+    ? computeDropPreview(tiles, positions, activeTile, 'left', dims.w, dims.h)
+    : null
+  const previewRight = canRight
+    ? computeDropPreview(tiles, positions, activeTile, 'right', dims.w, dims.h)
+    : null
+
+  const firstPreview = !hasTiles && activeTile
+    ? (() => {
+        const isDouble = activeTile[0] === activeTile[1]
+        const d = tileDims(isDouble, DIR.RIGHT)
+        return {
+          x: dims.w / 2,
+          y: dims.h / 2,
+          pw: d.w,
+          ph: d.h,
+          isVert: d.isVert,
+          orientation: d.orientation,
+          isDouble,
+          isTurning: false,
+          flowDir: DIR.RIGHT,
+        }
+      })()
+    : null
+
+  // "left" and "right" are logical chain ends. The visual drop targets
+  // themselves are now positioned at the exact preview coordinates.
   const leftOutDirection = posL ? oppositeDirection(posL.flowDir) : DIR.LEFT
   const rightOutDirection = posR ? posR.flowDir : DIR.RIGHT
 
   function handleDrop(e, side) {
     e.preventDefault()
+    e.stopPropagation()
     setDragOver(null)
 
     const data = draggingRef.current
-    if (!data) return
+    if (!data || !onDragPlace) return
 
     onDragPlace(data.tile, data.idx, side)
+  }
+
+  function resolveNearestDropSide(e) {
+    if (!areaRef.current) return null
+
+    const rect = areaRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const candidates = []
+
+    if (canLeft && previewLeft) {
+      candidates.push({ side: 'left', d2: distanceSquaredToPos(x, y, previewLeft) })
+    }
+    if (canRight && previewRight) {
+      candidates.push({ side: 'right', d2: distanceSquaredToPos(x, y, previewRight) })
+    }
+
+    if (!candidates.length) return null
+    candidates.sort((a, b) => a.d2 - b.d2)
+
+    // The visible target is already generous, and this fallback gives the user
+    // a little forgiveness if they release just outside it.
+    const MAX_DISTANCE = 90
+    return candidates[0].d2 <= MAX_DISTANCE * MAX_DISTANCE
+      ? candidates[0].side
+      : null
   }
 
   return (
@@ -511,15 +640,25 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
       className="board-area"
       ref={areaRef}
       onDragOver={e => {
-        if (!hasTiles && isMyTurn) e.preventDefault()
+        const data = draggingRef.current
+        if (!isMyTurn || !data) return
+
+        if (!hasTiles || canLeft || canRight) {
+          e.preventDefault()
+        }
       }}
       onDrop={e => {
         e.preventDefault()
         const data = draggingRef.current
+        if (!data || !isMyTurn || !onDragPlace) return
 
-        if (!hasTiles && isMyTurn && data) {
+        if (!hasTiles) {
           onDragPlace(data.tile, data.idx, 'first')
+          return
         }
+
+        const side = resolveNearestDropSide(e)
+        if (side) onDragPlace(data.tile, data.idx, side)
       }}
     >
       {!hasTiles && (
@@ -534,36 +673,69 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
         <BoardTile key={i} entry={tiles[i]} pos={pos} />
       ))}
 
-      {canLeft && posL && (
-        <div
-          className={`drop-zone ${dragOver === 'left' ? 'drag-over' : ''}`}
-          style={getDropZoneStyle(posL, leftOutDirection, dims.w, dims.h)}
-          onClick={() => onDropZone('left')}
-          onDragOver={e => {
-            e.preventDefault()
-            setDragOver('left')
-          }}
-          onDragLeave={() => setDragOver(null)}
-          onDrop={e => handleDrop(e, 'left')}
-        >
-          {dropZoneLabel('left', leftOutDirection)}
-        </div>
+      {!hasTiles && firstPreview && dragging?.tile && (
+        <>
+          <BoardTile
+            entry={{ tile: activeTile, flipped: false }}
+            pos={firstPreview}
+            ghost
+            highlighted={dragOver === 'first'}
+          />
+          <div
+            className={`domino-drop-target ${dragOver === 'first' ? 'drag-over' : ''}`}
+            data-drop-side="first"
+            style={getDropHitStyle(firstPreview, dims.w, dims.h)}
+            onDragEnter={e => { e.preventDefault(); setDragOver('first') }}
+            onDragOver={e => { e.preventDefault(); setDragOver('first') }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={e => handleDrop(e, 'first')}
+            aria-label="Drop first domino here"
+          />
+        </>
       )}
 
-      {canRight && posR && (
-        <div
-          className={`drop-zone ${dragOver === 'right' ? 'drag-over' : ''}`}
-          style={getDropZoneStyle(posR, rightOutDirection, dims.w, dims.h)}
-          onClick={() => onDropZone('right')}
-          onDragOver={e => {
-            e.preventDefault()
-            setDragOver('right')
-          }}
-          onDragLeave={() => setDragOver(null)}
-          onDrop={e => handleDrop(e, 'right')}
-        >
-          {dropZoneLabel('right', rightOutDirection)}
-        </div>
+      {canLeft && previewLeft && (
+        <>
+          <BoardTile
+            entry={{ tile: activeTile, flipped: false }}
+            pos={previewLeft}
+            ghost
+            highlighted={dragOver === 'left'}
+          />
+          <div
+            className={`domino-drop-target ${dragOver === 'left' ? 'drag-over' : ''}`}
+            data-drop-side="left"
+            style={getDropHitStyle(previewLeft, dims.w, dims.h)}
+            onClick={() => onDropZone?.('left')}
+            onDragEnter={e => { e.preventDefault(); setDragOver('left') }}
+            onDragOver={e => { e.preventDefault(); setDragOver('left') }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={e => handleDrop(e, 'left')}
+            aria-label={`Place domino on left end (${dropZoneLabel('left', leftOutDirection)})`}
+          />
+        </>
+      )}
+
+      {canRight && previewRight && (
+        <>
+          <BoardTile
+            entry={{ tile: activeTile, flipped: false }}
+            pos={previewRight}
+            ghost
+            highlighted={dragOver === 'right'}
+          />
+          <div
+            className={`domino-drop-target ${dragOver === 'right' ? 'drag-over' : ''}`}
+            data-drop-side="right"
+            style={getDropHitStyle(previewRight, dims.w, dims.h)}
+            onClick={() => onDropZone?.('right')}
+            onDragEnter={e => { e.preventDefault(); setDragOver('right') }}
+            onDragOver={e => { e.preventDefault(); setDragOver('right') }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={e => handleDrop(e, 'right')}
+            aria-label={`Place domino on right end (${dropZoneLabel('right', rightOutDirection)})`}
+          />
+        </>
       )}
     </div>
   )
