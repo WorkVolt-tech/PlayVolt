@@ -17,7 +17,7 @@ export default function DominoTile({
   if (notPlayable) cls += ' not-playable'
   if (className) cls += ' ' + className
 
-  // Touch drag — non-passive so we can preventDefault scroll
+  // Touch support
   useEffect(() => {
     const el = ref.current
     if (!el || !draggable) return
@@ -25,24 +25,26 @@ export default function DominoTile({
     function onTouchStart(e) {
       if (onDragStart) onDragStart()
     }
-
     function onTouchMove(e) {
       e.preventDefault()
       const t = e.touches[0]
-      document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('drag-over'))
+      document.querySelectorAll('.domino-drop-target, .board-area').forEach(el => el.classList.remove('drag-over'))
       const elUnder = document.elementFromPoint(t.clientX, t.clientY)
-      const dz = elUnder?.closest('.drop-zone')
-      if (dz) dz.classList.add('drag-over')
+      const target = elUnder?.closest('.domino-drop-target')
+      if (target) target.classList.add('drag-over')
     }
-
     function onTouchEnd(e) {
       const t = e.changedTouches[0]
-      document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('drag-over'))
+      document.querySelectorAll('.domino-drop-target').forEach(el => el.classList.remove('drag-over'))
       const elUnder = document.elementFromPoint(t.clientX, t.clientY)
-      const dz = elUnder?.closest('.drop-zone')
-      if (dz) dz.dispatchEvent(new CustomEvent('tile-touch-drop', { bubbles: true }))
-      const board = elUnder?.closest('.board-area')
-      if (board && !dz) board.dispatchEvent(new CustomEvent('tile-touch-drop-board', { bubbles: true }))
+      const target = elUnder?.closest('.domino-drop-target')
+      if (target) {
+        const side = target.dataset.dropSide
+        target.dispatchEvent(new CustomEvent('tile-touch-drop', { bubbles: true, detail: { side } }))
+      } else {
+        const board = elUnder?.closest('.board-area')
+        if (board) board.dispatchEvent(new CustomEvent('tile-touch-drop-board', { bubbles: true }))
+      }
       if (onDragEnd) onDragEnd()
     }
 
@@ -65,33 +67,20 @@ export default function DominoTile({
       draggable={draggable}
       onDragStart={draggable ? (e) => {
         e.dataTransfer.effectAllowed = 'move'
-        const payload = onDragStart ? onDragStart() : null
-        console.log('[DominoTile] dragstart payload:', payload)
-        if (payload) {
-          const json = JSON.stringify({ tile: payload.tile, idx: payload.idx })
-          e.dataTransfer.setData('application/x-domino', json)
-          e.dataTransfer.setData('application/json', json)
-          e.dataTransfer.setData('text/plain', json)
-          console.log('[DominoTile] dataTransfer set:', json)
-        }
+        e.dataTransfer.setData('text/plain', 'dragging')
+        if (onDragStart) onDragStart()
       } : undefined}
       onDragEnd={draggable ? () => { if (onDragEnd) onDragEnd() } : undefined}
     >
       <div className="pip-half">
-        <img
-          className="pip-img"
-          src={`/tiles-white/${top}.png`}
-          alt={String(top)}
-          draggable={false}
+        <img className="pip-img" draggable={false}
+          src={`/tiles-white/${top}.png`} alt={String(top)}
           style={{ pointerEvents: 'none', ...(!isVertical && top === 6 ? { transform: 'rotate(90deg)' } : {}) }}
         />
       </div>
       <div className="pip-half">
-        <img
-          className="pip-img"
-          src={`/tiles-white/${bottom}.png`}
-          alt={String(bottom)}
-          draggable={false}
+        <img className="pip-img" draggable={false}
+          src={`/tiles-white/${bottom}.png`} alt={String(bottom)}
           style={{ pointerEvents: 'none', ...(!isVertical && bottom === 6 ? { transform: 'rotate(90deg)' } : {}) }}
         />
       </div>
