@@ -510,16 +510,159 @@ function dropZoneLabel(side, direction) {
   return side === 'left' ? `${arrow} Left` : `Right ${arrow}`
 }
 
+// ─── Drag payload helpers ─────────────────────────────────────────────────────
+//
+// The previous drag/drop version depended entirely on the parent `dragging`
+// prop being populated before the pointer reached the board. If that state was
+// missing or one render late, Board never called preventDefault() in dragOver,
+// so the browser refused to fire drop at all.
+//
+// This version accepts the drag at the BOARD level first, then resolves the
+// domino from either:
+//   1) the parent `dragging` prop/ref, or
+//   2) HTML5 dataTransfer payloads.
+//
+// This makes Board a real drop receiver instead of depending on one React state
+// timing path.
+function sameTile(a, b) {
+  return (
+    Array.isArray(a) &&
+    Array.isArray(b) &&
+    a.length >= 2 &&
+    b.length >= 2 &&
+    Number(a[0]) === Number(b[0]) &&
+    Number(a[1]) === Number(b[1])
+  )
+}
+
+function normalizeTile(tile) {
+  if (!Array.isArray(tile) || tile.length < 2) return null
+
+  const a = Number(tile[0])
+  const b = Number(tile[1])
+
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+  return [a, b]
+}
+
+function normalizeDragPayload(value) {
+  if (!value) return null
+
+  // Already in the shape Board expects.
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const tile = normalizeTile(value.tile || value.domino || value.values)
+    if (!tile) return null
+
+    const rawIdx = value.idx ?? value.index ?? value.handIndex
+    const parsedIdx = rawIdx === undefined || rawIdx === null || rawIdx === ''
+      ? null
+      : Number(rawIdx)
+
+    return {
+      tile,
+      idx: Number.isInteger(parsedIdx) ? parsedIdx : null,
+    }
+  }
+
+  // Allow a bare [a,b] payload.
+  if (Array.isArray(value)) {
+    const tile = normalizeTile(value)
+    return tile ? { tile, idx: null } : null
+  }
+
+  if (typeof value !== 'string') return null
+
+  const raw = value.trim()
+  if (!raw) return null
+
+  // JSON payloads:
+  // {"tile":[6,4],"idx":2}
+  // [6,4]
+  try {
+    const parsed = JSON.parse(raw)
+    const normalized = normalizeDragPayload(parsed)
+    if (normalized) return normalized
+  } catch {
+    // Not JSON — try a compact text domino format below.
+  }
+
+  // Compact payload fallback: 6|4, 6-4, 6,4, 6/4
+  const match = raw.match(/^\s*(\d+)\s*[\|\-,/:]\s*(\d+)(?:\s*[\|\-,/:]\s*(\d+))?\s*$/)
+  if (!match) return null
+
+  const tile = [Number(match[1]), Number(match[2])]
+  const idx = match[3] !== undefined ? Number(match[3]) : null
+
+  return {
+    tile,
+    idx: Number.isInteger(idx) ? idx : null,
+  }
+}
+
+function readTransferPayload(dataTransfer) {
+  if (!dataTransfer) return null
+
+  const preferredTypes = [
+    'application/x-domino',
+    'application/json',
+    'text/plain',
+    'text',
+  ]
+
+  for (const type of preferredTypes) {
+    try {
+      const raw = dataTransfer.getData(type)
+      const parsed = normalizeDragPayload(raw)
+      if (parsed) return parsed
+    } catch {
+      // Some browsers restrict reading drag data outside the drop event.
+    }
+  }
+
+  return null
+}
+
+function mergeDragPayload(primary, fallback, selectedTile) {
+  const p = normalizeDragPayload(primary)
+  const f = normalizeDragPayload(fallback)
+  const s = normalizeDragPayload(selectedTile)
+
+  const result = p || f || s
+  if (!result) return null
+
+  // If the transfer only contains tile values, recover the hand index from the
+  // React drag state / selected tile when they refer to the same domino.
+  if (result.idx === null) {
+    if (f?.idx !== null && sameTile(result.tile, f?.tile)) {
+      result.idx = f.idx
+    } else if (s?.idx !== null && sameTile(result.tile, s?.tile)) {
+      result.idx = s.idx
+    }
+  }
+
+  return result
+}
+
 // ─── Board component ──────────────────────────────────────────────────────────
 export default function Board({ boardData, selectedTile, dragging, isMyTurn, onDropZone, onDragPlace }) {
   const areaRef = useRef(null)
   const [dims, setDims] = useState({ w: 800, h: 400 })
   const [dragOver, setDragOver] = useState(null)
+
+  // Native HTML5 drag data recovered from dataTransfer. This is intentionally
+  // separate from the parent `dragging` prop so previews can still appear when
+  // the parent drag state is delayed or absent.
+  const [nativeDragging, setNativeDragging] = useState(null)
+
   const draggingRef = useRef(null)
+  const selectedTileRef = useRef(null)
   const onDragPlaceRef = useRef(onDragPlace)
+  const boardDataRef = useRef(boardData)
 
   useEffect(() => { onDragPlaceRef.current = onDragPlace }, [onDragPlace])
   useEffect(() => { draggingRef.current = dragging }, [dragging])
+  useEffect(() => { selectedTileRef.current = selectedTile }, [selectedTile])
+  useEffect(() => { boardDataRef.current = boardData }, [boardData])
 
   useEffect(() => {
     const el = areaRef.current
@@ -539,15 +682,89 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
 
   useEffect(() => { hasTilesRef.current = hasTiles }, [hasTiles])
 
-  // Touch drop listener for the empty board.
+  function getEventDragData(e) {
+    const transfer = readTransferPayload(e?.dataTransfer)
+    return mergeDragPayload(
+      transfer,
+      draggingRef.current,
+      selectedTileRef.current,
+    )
+  }
+
+  function getPayloadIndex(data) {
+    if (!data) return null
+    if (Number.isInteger(data.idx)) return data.idx
+
+    const liveDragging = normalizeDragPayload(draggingRef.current)
+    if (liveDragging?.idx !== null && sameTile(data.tile, liveDragging.tile)) {
+      return liveDragging.idx
+    }
+
+    const liveSelected = normalizeDragPayload(selectedTileRef.current)
+    if (liveSelected?.idx !== null && sameTile(data.tile, liveSelected.tile)) {
+      return liveSelected.idx
+    }
+
+    return null
+  }
+
+  function placeDraggedDomino(data, side) {
+    if (!data?.tile || !onDragPlaceRef.current) return false
+
+    const currentBoard = boardDataRef.current
+    const currentTiles = currentBoard?.tiles || []
+
+    if (side !== 'first') {
+      if (!currentTiles.length) return false
+      if (side !== 'left' && side !== 'right') return false
+      if (!canPlayOnSide(data.tile, side, currentBoard)) return false
+    } else if (currentTiles.length) {
+      return false
+    }
+
+    const idx = getPayloadIndex(data)
+
+    // onDragPlace historically receives (tile, handIndex, side). Do not silently
+    // invent a hand index because that can remove the wrong domino from the hand.
+    if (idx === null) {
+      console.warn(
+        'Domino drop reached Board, but no hand index was provided. ' +
+        'The drag source should pass { tile: [a,b], idx } through the dragging prop ' +
+        'or dataTransfer.'
+      )
+      return false
+    }
+
+    onDragPlaceRef.current(data.tile, idx, side)
+    return true
+  }
+
+  // Keep support for the app's existing custom touch-drop event. Unlike the old
+  // version, this now supports left/right targets too, not just the empty board.
   useEffect(() => {
     const el = areaRef.current
     if (!el) return
 
-    const onTouchBoard = () => {
-      const data = draggingRef.current
-      if (!hasTilesRef.current && data) {
-        onDragPlaceRef.current(data.tile, data.idx, 'first')
+    const onTouchBoard = (e) => {
+      const data = mergeDragPayload(
+        e?.detail?.dragging || e?.detail,
+        draggingRef.current,
+        selectedTileRef.current,
+      )
+      if (!data) return
+
+      if (!hasTilesRef.current) {
+        placeDraggedDomino(data, 'first')
+        return
+      }
+
+      const side =
+        e?.target?.dataset?.dropSide ||
+        e?.detail?.side ||
+        null
+
+      if (side === 'left' || side === 'right') {
+        placeDraggedDomino(data, side)
       }
     }
 
@@ -557,20 +774,31 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
 
   const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h) : []
 
-  // IMPORTANT: while a domino is being dragged, the drag object is the source
-  // of truth. A drag should not depend on the tile also being "selected".
-  const activePlay = dragging?.tile ? dragging : (selectedTile?.tile ? selectedTile : null)
+  // Use the newest available drag source for previews. `dragging` is preferred,
+  // then native dataTransfer recovery, then selectedTile for click placement.
+  const activePlay =
+    normalizeDragPayload(dragging) ||
+    normalizeDragPayload(nativeDragging) ||
+    normalizeDragPayload(selectedTile)
+
   const activeTile = activePlay?.tile || null
 
-  const canLeft = !!(activeTile && isMyTurn && canPlayOnSide(activeTile, 'left', boardData))
-  const canRight = !!(activeTile && isMyTurn && canPlayOnSide(activeTile, 'right', boardData))
+  const canLeft = !!(
+    activeTile &&
+    isMyTurn &&
+    canPlayOnSide(activeTile, 'left', boardData)
+  )
 
-  const posL = positions[0]
-  const posR = positions[positions.length - 1]
+  const canRight = !!(
+    activeTile &&
+    isMyTurn &&
+    canPlayOnSide(activeTile, 'right', boardData)
+  )
 
   const previewLeft = canLeft
     ? computeDropPreview(tiles, positions, activeTile, 'left', dims.w, dims.h)
     : null
+
   const previewRight = canRight
     ? computeDropPreview(tiles, positions, activeTile, 'right', dims.w, dims.h)
     : null
@@ -579,6 +807,7 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
     ? (() => {
         const isDouble = activeTile[0] === activeTile[1]
         const d = tileDims(isDouble, DIR.RIGHT)
+
         return {
           x: dims.w / 2,
           y: dims.h / 2,
@@ -593,78 +822,166 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
       })()
     : null
 
-  // "left" and "right" are logical chain ends. The visual drop targets
-  // themselves are now positioned at the exact preview coordinates.
-  const leftOutDirection = posL ? oppositeDirection(posL.flowDir) : DIR.LEFT
-  const rightOutDirection = posR ? posR.flowDir : DIR.RIGHT
+  function recoverNativeDrag(e) {
+    const recovered = readTransferPayload(e?.dataTransfer)
+    if (!recovered) return
 
-  function handleDrop(e, side) {
+    const merged = mergeDragPayload(
+      recovered,
+      draggingRef.current,
+      selectedTileRef.current,
+    )
+
+    if (
+      merged &&
+      (
+        !nativeDragging ||
+        !sameTile(nativeDragging.tile, merged.tile) ||
+        nativeDragging.idx !== merged.idx
+      )
+    ) {
+      setNativeDragging(merged)
+    }
+  }
+
+  function handleTargetDrop(e, side) {
     e.preventDefault()
     e.stopPropagation()
     setDragOver(null)
 
-    const data = draggingRef.current
-    if (!data || !onDragPlace) return
+    const data = getEventDragData(e)
+    if (!data || !isMyTurn) return
 
-    onDragPlace(data.tile, data.idx, side)
+    placeDraggedDomino(data, side)
+    setNativeDragging(null)
   }
 
-  function resolveNearestDropSide(e) {
-    if (!areaRef.current) return null
+  function getDynamicPreview(data, side) {
+    if (!data?.tile || !positions.length) return null
+
+    const currentBoard = boardDataRef.current
+    if (!canPlayOnSide(data.tile, side, currentBoard)) return null
+
+    return computeDropPreview(
+      currentBoard?.tiles || [],
+      positions,
+      data.tile,
+      side,
+      dims.w,
+      dims.h,
+    )
+  }
+
+  function resolveNearestDropSide(e, data) {
+    if (!areaRef.current || !data?.tile || !positions.length) return null
 
     const rect = areaRef.current.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
     const candidates = []
 
-    if (canLeft && previewLeft) {
-      candidates.push({ side: 'left', d2: distanceSquaredToPos(x, y, previewLeft) })
+    const left = getDynamicPreview(data, 'left')
+    if (left) {
+      candidates.push({
+        side: 'left',
+        d2: distanceSquaredToPos(x, y, left),
+      })
     }
-    if (canRight && previewRight) {
-      candidates.push({ side: 'right', d2: distanceSquaredToPos(x, y, previewRight) })
+
+    const right = getDynamicPreview(data, 'right')
+    if (right) {
+      candidates.push({
+        side: 'right',
+        d2: distanceSquaredToPos(x, y, right),
+      })
     }
 
     if (!candidates.length) return null
+
     candidates.sort((a, b) => a.d2 - b.d2)
 
-    // The visible target is already generous, and this fallback gives the user
-    // a little forgiveness if they release just outside it.
-    const MAX_DISTANCE = 90
+    // Generous snap radius: the player drops near the intended open end; the
+    // domino then snaps into the exact calculated legal position.
+    const MAX_DISTANCE = 110
+
     return candidates[0].d2 <= MAX_DISTANCE * MAX_DISTANCE
       ? candidates[0].side
       : null
   }
 
+  function handleBoardDrop(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(null)
+
+    if (!isMyTurn) return
+
+    const data = getEventDragData(e)
+    if (!data) {
+      setNativeDragging(null)
+      return
+    }
+
+    if (!hasTiles) {
+      placeDraggedDomino(data, 'first')
+      setNativeDragging(null)
+      return
+    }
+
+    // If the pointer is over an explicit target, prefer that target. Otherwise
+    // snap to the nearest legal open end.
+    const explicitSide = e.target?.closest?.('[data-drop-side]')?.dataset?.dropSide
+
+    const side =
+      explicitSide === 'left' || explicitSide === 'right'
+        ? explicitSide
+        : resolveNearestDropSide(e, data)
+
+    if (side) {
+      placeDraggedDomino(data, side)
+    }
+
+    setNativeDragging(null)
+  }
+
   return (
     <div
-      className="board-area"
+      className={`board-area ${dragging || nativeDragging ? 'drag-active' : ''}`}
       ref={areaRef}
-      onDragOver={e => {
-        const data = draggingRef.current
-        if (!isMyTurn || !data) return
+      onDragEnter={e => {
+        if (!isMyTurn) return
 
-        if (!hasTiles || canLeft || canRight) {
-          e.preventDefault()
-        }
-      }}
-      onDrop={e => {
+        // Crucial: a valid HTML5 drop target must cancel dragEnter/dragOver.
         e.preventDefault()
-        const data = draggingRef.current
-        if (!data || !isMyTurn || !onDragPlace) return
+        recoverNativeDrag(e)
+      }}
+      onDragOver={e => {
+        if (!isMyTurn) return
 
-        if (!hasTiles) {
-          onDragPlace(data.tile, data.idx, 'first')
-          return
+        // CRITICAL FIX:
+        // Always preventDefault while it is the player's turn. The previous
+        // version only did this when draggingRef.current already existed, which
+        // meant `drop` never fired when parent drag state was missing/delayed.
+        e.preventDefault()
+
+        if (e.dataTransfer) {
+          e.dataTransfer.dropEffect = 'move'
         }
 
-        const side = resolveNearestDropSide(e)
-        if (side) onDragPlace(data.tile, data.idx, side)
+        recoverNativeDrag(e)
       }}
+      onDragLeave={e => {
+        // Do not clear state while merely moving between children inside board.
+        if (areaRef.current?.contains(e.relatedTarget)) return
+        setDragOver(null)
+        setNativeDragging(null)
+      }}
+      onDrop={handleBoardDrop}
     >
       {!hasTiles && (
         <div className="board-hint">
           <span className="board-hint-text">
-            {isMyTurn ? 'Select a tile to place it' : 'Waiting for first tile…'}
+            {isMyTurn ? 'Drag a tile here to start' : 'Waiting for first tile…'}
           </span>
         </div>
       )}
@@ -673,7 +990,7 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
         <BoardTile key={i} entry={tiles[i]} pos={pos} />
       ))}
 
-      {!hasTiles && firstPreview && dragging?.tile && (
+      {!hasTiles && firstPreview && (
         <>
           <BoardTile
             entry={{ tile: activeTile, flipped: false }}
@@ -681,14 +998,29 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
             ghost
             highlighted={dragOver === 'first'}
           />
+
           <div
             className={`domino-drop-target ${dragOver === 'first' ? 'drag-over' : ''}`}
             data-drop-side="first"
             style={getDropHitStyle(firstPreview, dims.w, dims.h)}
-            onDragEnter={e => { e.preventDefault(); setDragOver('first') }}
-            onDragOver={e => { e.preventDefault(); setDragOver('first') }}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={e => handleDrop(e, 'first')}
+            onDragEnter={e => {
+              e.preventDefault()
+              e.stopPropagation()
+              recoverNativeDrag(e)
+              setDragOver('first')
+            }}
+            onDragOver={e => {
+              e.preventDefault()
+              e.stopPropagation()
+              if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+              recoverNativeDrag(e)
+              setDragOver('first')
+            }}
+            onDragLeave={e => {
+              if (e.currentTarget.contains(e.relatedTarget)) return
+              setDragOver(null)
+            }}
+            onDrop={e => handleTargetDrop(e, 'first')}
             aria-label="Drop first domino here"
           />
         </>
@@ -702,16 +1034,31 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
             ghost
             highlighted={dragOver === 'left'}
           />
+
           <div
             className={`domino-drop-target ${dragOver === 'left' ? 'drag-over' : ''}`}
             data-drop-side="left"
             style={getDropHitStyle(previewLeft, dims.w, dims.h)}
             onClick={() => onDropZone?.('left')}
-            onDragEnter={e => { e.preventDefault(); setDragOver('left') }}
-            onDragOver={e => { e.preventDefault(); setDragOver('left') }}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={e => handleDrop(e, 'left')}
-            aria-label={`Place domino on left end (${dropZoneLabel('left', leftOutDirection)})`}
+            onDragEnter={e => {
+              e.preventDefault()
+              e.stopPropagation()
+              recoverNativeDrag(e)
+              setDragOver('left')
+            }}
+            onDragOver={e => {
+              e.preventDefault()
+              e.stopPropagation()
+              if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+              recoverNativeDrag(e)
+              setDragOver('left')
+            }}
+            onDragLeave={e => {
+              if (e.currentTarget.contains(e.relatedTarget)) return
+              setDragOver(null)
+            }}
+            onDrop={e => handleTargetDrop(e, 'left')}
+            aria-label="Drop domino on left open end"
           />
         </>
       )}
@@ -724,16 +1071,31 @@ export default function Board({ boardData, selectedTile, dragging, isMyTurn, onD
             ghost
             highlighted={dragOver === 'right'}
           />
+
           <div
             className={`domino-drop-target ${dragOver === 'right' ? 'drag-over' : ''}`}
             data-drop-side="right"
             style={getDropHitStyle(previewRight, dims.w, dims.h)}
             onClick={() => onDropZone?.('right')}
-            onDragEnter={e => { e.preventDefault(); setDragOver('right') }}
-            onDragOver={e => { e.preventDefault(); setDragOver('right') }}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={e => handleDrop(e, 'right')}
-            aria-label={`Place domino on right end (${dropZoneLabel('right', rightOutDirection)})`}
+            onDragEnter={e => {
+              e.preventDefault()
+              e.stopPropagation()
+              recoverNativeDrag(e)
+              setDragOver('right')
+            }}
+            onDragOver={e => {
+              e.preventDefault()
+              e.stopPropagation()
+              if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+              recoverNativeDrag(e)
+              setDragOver('right')
+            }}
+            onDragLeave={e => {
+              if (e.currentTarget.contains(e.relatedTarget)) return
+              setDragOver(null)
+            }}
+            onDrop={e => handleTargetDrop(e, 'right')}
+            aria-label="Drop domino on right open end"
           />
         </>
       )}
