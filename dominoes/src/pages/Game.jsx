@@ -11,7 +11,6 @@ export default function Game() {
   const navigate = useNavigate()
   const myInfo   = JSON.parse(sessionStorage.getItem('domino_player') || 'null')
 
-  const [dragging, setDragging] = useState(null)
   const draggingRef = useRef(null)
 
   const {
@@ -66,7 +65,7 @@ export default function Game() {
       <Board
         boardData={boardData}
         selectedTile={selectedTile}
-        dragging={dragging}
+        draggingRef={draggingRef}
         isMyTurn={isMyTurn}
         onDropZone={side => {
           if (!selectedTile) return
@@ -99,8 +98,8 @@ export default function Game() {
         onSelect={selectTile}
         onPass={passMove}
         hasTilesOnBoard={hasTilesOnBoard}
-        onDragStart={data => { draggingRef.current = data; setDragging(data); return data }}
-        onDragEnd={() => { draggingRef.current = null; setDragging(null) }}
+        onDragStart={data => { draggingRef.current = data; return data }}
+        onDragEnd={() => { draggingRef.current = null }}
       />
 
       {/* Toast */}
