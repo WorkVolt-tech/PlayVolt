@@ -87,3 +87,19 @@
     background: rgba(201,168,76,0.07);
   }
 }
+
+
+/* Latest drag receiver hardening. */
+.board-area.drag-active {
+  outline: 1px solid rgba(201,168,76,0.12);
+  outline-offset: -1px;
+}
+
+.domino-drop-target {
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.board-area.drag-active .domino-drop-target {
+  cursor: copy;
+}
