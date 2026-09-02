@@ -437,11 +437,12 @@ function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardDa
     const actualAnchor = positions[positions.length - 1]
     const preview = simulated[simulated.length - 1]
 
-    return shiftedPosition(
+    const shifted = shiftedPosition(
       preview,
       actualAnchor.x - simulatedAnchor.x,
       actualAnchor.y - simulatedAnchor.y,
     )
+    return shifted ? { ...shifted, flipped } : null
   }
 
   if (side === 'left') {
@@ -454,11 +455,12 @@ function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardDa
     const actualAnchor = positions[0]
     const preview = simulated[0]
 
-    return shiftedPosition(
+    const shifted2 = shiftedPosition(
       preview,
       actualAnchor.x - simulatedAnchor.x,
       actualAnchor.y - simulatedAnchor.y,
     )
+    return shifted2 ? { ...shifted2, flipped } : null
   }
 
   return null
@@ -1053,7 +1055,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
       {canLeft && previewLeft && (
         <>
           <BoardTile
-            entry={{ tile: activeTile, flipped: false }}
+            entry={{ tile: activeTile, flipped: previewLeft.flipped ?? false }}
             pos={previewLeft}
             ghost
             highlighted={dragOver === 'left'}
@@ -1091,7 +1093,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
       {canRight && previewRight && (
         <>
           <BoardTile
-            entry={{ tile: activeTile, flipped: false }}
+            entry={{ tile: activeTile, flipped: previewRight.flipped ?? false }}
             pos={previewRight}
             ghost
             highlighted={dragOver === 'right'}
