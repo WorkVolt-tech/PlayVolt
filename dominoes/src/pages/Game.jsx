@@ -60,6 +60,17 @@ export default function Game() {
             placeTile(selectedTile.tile, selectedTile.idx, side)
           }
         }}
+        onDragPlace={(tile, idx, side) => {
+          if (!isMyTurn) return
+          if (side === 'first') { placeTile(tile, idx, 'first'); return }
+          const cL = canPlayOnSide(tile, 'left', boardData)
+          const cR = canPlayOnSide(tile, 'right', boardData)
+          if (side === 'left' && cL) placeTile(tile, idx, 'left')
+          else if (side === 'right' && cR) placeTile(tile, idx, 'right')
+          else if (cL && cR) { placeTile(tile, idx, 'left') }
+          else if (cL) placeTile(tile, idx, 'left')
+          else if (cR) placeTile(tile, idx, 'right')
+        }}
       />
 
       {/* Side picker */}
