@@ -141,6 +141,8 @@ export function useGameState(myInfo, navigate) {
   const endRound = useCallback(async (winningSeat, isDek) => {
     const { data: room } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single()
     if (!room) return
+    // Guard: only process if still playing (prevent double-fire)
+    if (room.status !== 'playing') return
     const mode   = room.game_mode || 'chien'
     const streak = room.streak || { seat: null, team: null, count: 0 }
     let resolvedSeat = winningSeat
@@ -269,6 +271,8 @@ export function useGameState(myInfo, navigate) {
     if (!roomData || !players.length || roomData.status !== 'playing') return
     const currentPlayer = players.find(p => p.seat === roomData.current_turn)
     if (!currentPlayer?.is_ai) return
+    // Only the host (seat 0) runs AI logic to prevent double-fire
+    if (myInfo.seat !== 0) return
     const board = boardRef.current
     const timer = setTimeout(async () => {
       const botHand     = currentPlayer.hand || []
