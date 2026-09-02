@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
 import { canPlayOnSide } from '../hooks/useGameState'
@@ -11,8 +11,6 @@ export default function Game() {
   const navigate = useNavigate()
   const myInfo   = JSON.parse(sessionStorage.getItem('domino_player') || 'null')
 
-  const draggingRef = useRef(null)
-
   const {
     roomData, players, boardData, selectedTile, showPicker,
     showOverlay, toast, isProcessing,
@@ -22,20 +20,6 @@ export default function Game() {
   } = useGameState(myInfo, navigate)
 
   if (!myInfo || !roomData) return <div className="loading">Loading…</div>
-
-  function handleDragPlace(tile, idx, side) {
-    if (!isMyTurn) return
-    if (side === 'first') { placeTile(tile, idx, 'first'); return }
-    const cL = canPlayOnSide(tile, 'left', boardData)
-    const cR = canPlayOnSide(tile, 'right', boardData)
-    if (side === 'left'  && cL) { placeTile(tile, idx, 'left');  return }
-    if (side === 'right' && cR) { placeTile(tile, idx, 'right'); return }
-    if (cL && cR && boardData.left_end !== boardData.right_end) {
-      // Need to ask — select then show picker
-      selectTile(tile, idx)
-    } else if (cL) placeTile(tile, idx, 'left')
-    else if (cR)   placeTile(tile, idx, 'right')
-  }
 
   return (
     <div className="game-layout">
@@ -65,7 +49,6 @@ export default function Game() {
       <Board
         boardData={boardData}
         selectedTile={selectedTile}
-        draggingRef={draggingRef}
         isMyTurn={isMyTurn}
         onDropZone={side => {
           if (!selectedTile) return
@@ -77,7 +60,6 @@ export default function Game() {
             placeTile(selectedTile.tile, selectedTile.idx, side)
           }
         }}
-        onDragPlace={handleDragPlace}
       />
 
       {/* Side picker */}
@@ -98,8 +80,6 @@ export default function Game() {
         onSelect={selectTile}
         onPass={passMove}
         hasTilesOnBoard={hasTilesOnBoard}
-        onDragStart={data => { draggingRef.current = data; return data }}
-        onDragEnd={() => { draggingRef.current = null }}
       />
 
       {/* Toast */}
