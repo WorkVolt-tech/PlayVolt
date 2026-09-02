@@ -139,36 +139,45 @@ export function useGameState(myInfo, navigate) {
   const hasTilesOnBoard = !!boardData?.tiles?.length
 
   const endRound = useCallback(async (winningSeat, isDek) => {
+    console.log('[endRound] called, winningSeat:', winningSeat, 'isDek:', isDek)
     try {
-    const { data: room } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single()
-    if (!room) return
-    // Guard: only process if still playing (prevent double-fire)
-    if (room.status !== 'playing') return
-    const mode   = room.game_mode || 'chien'
-    const streak = room.streak || { seat: null, team: null, count: 0 }
-    let resolvedSeat = winningSeat
-    if (winningSeat === null) {
-      const sorted = playersRef.current.map(p => ({ seat: p.seat, pips: pipCount(p.hand) })).sort((a, b) => a.pips - b.pips)
-      resolvedSeat = sorted[0].seat
-    }
-    const newStreak = computeNewStreak(streak, resolvedSeat, isDek, mode)
-    const isVyej    = newStreak.count >= 4
-    const winnerKey = mode === 'asosye' ? (resolvedSeat === 0 || resolvedSeat === 2 ? 'A' : 'B') : resolvedSeat
-    await Promise.all([
-      db.from('game_events').delete().eq('room_id', myInfo.roomId),
-      db.from('board').delete().eq('room_id', myInfo.roomId),
-    ])
-    await db.from('domino_rooms').update({
-      status: isVyej ? 'finished' : 'round_end',
-      current_turn: resolvedSeat,
-      streak: newStreak,
-      match_winner: isVyej ? winnerKey : null,
-      pending_point: isDek,
-    }).eq('id', myInfo.roomId)
-    // Force immediate reload so overlay shows without waiting for subscription
-    await loadGameState()
+      const { data: room, error: roomErr } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single()
+      console.log('[endRound] room status:', room?.status, 'error:', roomErr)
+      if (!room) { console.log('[endRound] no room found'); return }
+      if (room.status !== 'playing') { console.log('[endRound] guard hit, status:', room.status); return }
+      
+      const mode   = room.game_mode || 'chien'
+      const streak = room.streak || { seat: null, team: null, count: 0 }
+      let resolvedSeat = winningSeat
+      if (winningSeat === null) {
+        const sorted = playersRef.current.map(p => ({ seat: p.seat, pips: pipCount(p.hand) })).sort((a, b) => a.pips - b.pips)
+        resolvedSeat = sorted[0].seat
+      }
+      const newStreak = computeNewStreak(streak, resolvedSeat, isDek, mode)
+      const isVyej    = newStreak.count >= 4
+      const winnerKey = mode === 'asosye' ? (resolvedSeat === 0 || resolvedSeat === 2 ? 'A' : 'B') : resolvedSeat
+      
+      console.log('[endRound] resolvedSeat:', resolvedSeat, 'isVyej:', isVyej, 'newStreak:', newStreak)
+      
+      const [delEvents, delBoard] = await Promise.all([
+        db.from('game_events').delete().eq('room_id', myInfo.roomId),
+        db.from('board').delete().eq('room_id', myInfo.roomId),
+      ])
+      console.log('[endRound] deleted events/board, errors:', delEvents.error, delBoard.error)
+      
+      const { error: updateErr } = await db.from('domino_rooms').update({
+        status: isVyej ? 'finished' : 'round_end',
+        current_turn: resolvedSeat,
+        streak: newStreak,
+        match_winner: isVyej ? winnerKey : null,
+        pending_point: isDek,
+      }).eq('id', myInfo.roomId)
+      console.log('[endRound] room update error:', updateErr)
+      
+      await loadGameState()
+      console.log('[endRound] loadGameState done, showOverlay should be true')
     } catch(err) {
-      console.error('[endRound] error:', err)
+      console.error('[endRound] EXCEPTION:', err)
       await loadGameState()
     }
   }, [myInfo, loadGameState])
