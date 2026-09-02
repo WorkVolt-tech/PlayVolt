@@ -16,11 +16,8 @@ export function DragProvider({ children }) {
   }, [])
 
   const endDrag = useCallback(() => {
-    // Delay clear so drop zone onMouseUp can read draggingRef.current first
-    setTimeout(() => {
-      draggingRef.current = null
-      setDragging(null)
-    }, 50)
+    draggingRef.current = null
+    setDragging(null)
   }, [])
 
   useEffect(() => {
@@ -32,17 +29,17 @@ export function DragProvider({ children }) {
     }
     function onUp(e) {
       if (!draggingRef.current) return
-      // Find if mouse is over a drop zone
-      const el = document.elementFromPoint(
-        e.touches ? e.changedTouches[0].clientX : e.clientX,
-        e.touches ? e.changedTouches[0].clientY : e.clientY
-      )
+      const clientX = e.touches ? e.changedTouches[0].clientX : e.clientX
+      const clientY = e.touches ? e.changedTouches[0].clientY : e.clientY
+      const el = document.elementFromPoint(clientX, clientY)
       const dropZone = el?.closest('[data-droppable]')
       if (dropZone) {
-        // Fire custom event — drop zone handles it
+        // Fire BEFORE endDrag so draggingRef is still populated
         dropZone.dispatchEvent(new CustomEvent('custom-drop', { bubbles: false }))
       }
-      endDrag()
+      // Clear immediately after
+      draggingRef.current = null
+      setDragging(null)
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
