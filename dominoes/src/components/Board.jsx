@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { canPlayOnSide } from '../hooks/useGameState'
+import { DropZone, useDrag } from './DragDrop'
 import './Board.css'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -644,7 +645,8 @@ function mergeDragPayload(primary, fallback, selectedTile) {
 }
 
 // ─── Board component ──────────────────────────────────────────────────────────
-export default function Board({ boardData, selectedTile, draggingRef: externalDraggingRef, isMyTurn, onDropZone, onDragPlace }) {
+export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace }) {
+  const { draggingRef } = useDrag()
   const areaRef = useRef(null)
   const [dims, setDims] = useState({ w: 800, h: 400 })
   const [dragOver, setDragOver] = useState(null)
@@ -654,7 +656,6 @@ export default function Board({ boardData, selectedTile, draggingRef: externalDr
   // the parent drag state is delayed or absent.
   const [nativeDragging, setNativeDragging] = useState(null)
 
-  const draggingRef = externalDraggingRef
   const selectedTileRef = useRef(null)
   const onDragPlaceRef = useRef(onDragPlace)
   const boardDataRef = useRef(boardData)
