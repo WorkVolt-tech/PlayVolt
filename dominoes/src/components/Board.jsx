@@ -653,6 +653,20 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     const idx = typeof data.idx === 'number' ? data.idx : 0
     onDragPlaceRef.current?.(data.tile, idx, side)
   }
+
+  // Listen for custom-drop events on our drop zones
+  useEffect(() => {
+    const el = areaRef.current
+    if (!el) return
+    function onCustomDrop(e) {
+      const side = e.target?.closest?.('[data-drop-side]')?.dataset?.dropSide
+      if (!side) return
+      const data = draggingRef.current
+      if (data) commitDrop(data, side)
+    }
+    el.addEventListener('custom-drop', onCustomDrop, true)
+    return () => el.removeEventListener('custom-drop', onCustomDrop, true)
+  }, [])
   const areaRef = useRef(null)
   const [dims, setDims] = useState({ w: 800, h: 400 })
   const [dragOver, setDragOver] = useState(null)
@@ -1000,6 +1014,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
 
           <div
             className={`domino-drop-target ${dragOver === 'first' ? 'drag-over' : ''}`}
+            data-droppable="true"
             data-drop-side="first"
             style={getDropHitStyle(firstPreview, dims.w, dims.h)}
             onDragEnter={e => {
@@ -1020,7 +1035,6 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
               setDragOver(null)
             }}
             onDrop={e => handleTargetDrop(e, 'first')}
-            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'first') } }}
             aria-label="Drop first domino here"
           />
         </>
@@ -1037,6 +1051,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
 
           <div
             className={`domino-drop-target ${dragOver === 'left' ? 'drag-over' : ''}`}
+            data-droppable="true"
             data-drop-side="left"
             style={getDropHitStyle(previewLeft, dims.w, dims.h)}
             onClick={() => onDropZone?.('left')}
@@ -1058,7 +1073,6 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
               setDragOver(null)
             }}
             onDrop={e => handleTargetDrop(e, 'left')}
-            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'left') } }}
             aria-label="Drop domino on left open end"
           />
         </>
@@ -1075,6 +1089,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
 
           <div
             className={`domino-drop-target ${dragOver === 'right' ? 'drag-over' : ''}`}
+            data-droppable="true"
             data-drop-side="right"
             style={getDropHitStyle(previewRight, dims.w, dims.h)}
             onClick={() => onDropZone?.('right')}
@@ -1096,7 +1111,6 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
               setDragOver(null)
             }}
             onDrop={e => handleTargetDrop(e, 'right')}
-            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'right') } }}
             aria-label="Drop domino on right open end"
           />
         </>
