@@ -646,7 +646,13 @@ function mergeDragPayload(primary, fallback, selectedTile) {
 
 // ─── Board component ──────────────────────────────────────────────────────────
 export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace }) {
-  const { draggingRef } = useDrag()
+  const { draggingRef, endDrag } = useDrag()
+
+  function commitDrop(data, side) {
+    if (!data?.tile) return
+    const idx = typeof data.idx === 'number' ? data.idx : 0
+    onDragPlaceRef.current?.(data.tile, idx, side)
+  }
   const areaRef = useRef(null)
   const [dims, setDims] = useState({ w: 800, h: 400 })
   const [dragOver, setDragOver] = useState(null)
@@ -1014,6 +1020,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
               setDragOver(null)
             }}
             onDrop={e => handleTargetDrop(e, 'first')}
+            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'first') } }}
             aria-label="Drop first domino here"
           />
         </>
@@ -1051,6 +1058,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
               setDragOver(null)
             }}
             onDrop={e => handleTargetDrop(e, 'left')}
+            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'left') } }}
             aria-label="Drop domino on left open end"
           />
         </>
@@ -1088,6 +1096,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
               setDragOver(null)
             }}
             onDrop={e => handleTargetDrop(e, 'right')}
+            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'right') } }}
             aria-label="Drop domino on right open end"
           />
         </>
