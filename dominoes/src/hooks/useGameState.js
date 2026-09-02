@@ -27,8 +27,15 @@ export function pipCount(hand) {
   return (hand || []).reduce((s, t) => s + t[0] + t[1], 0)
 }
 
-export function getPlayableTiles(hand, boardData) {
-  if (!boardData?.tiles?.length) return hand
+export function getPlayableTiles(hand, boardData, roomData) {
+  // Round 1, first tile: must play 6-6
+  if (!boardData?.tiles?.length) {
+    if (roomData?.round === 1) {
+      const doubleSix = hand.filter(t => t[0] === 6 && t[1] === 6)
+      return doubleSix.length ? doubleSix : hand
+    }
+    return hand
+  }
   const { left_end: L, right_end: R } = boardData
   return hand.filter(t => t[0] === L || t[1] === L || t[0] === R || t[1] === R)
 }
@@ -128,7 +135,7 @@ export function useGameState(myInfo, navigate) {
   const me          = players.find(p => p.seat === myInfo?.seat)
   const hand        = me?.hand || []
   const isMyTurn    = roomData?.current_turn === myInfo?.seat && roomData?.status === 'playing'
-  const playable    = getPlayableTiles(hand, boardData)
+  const playable    = getPlayableTiles(hand, boardData, roomData)
   const hasTilesOnBoard = !!boardData?.tiles?.length
 
   const endRound = useCallback(async (winningSeat, isDek) => {
@@ -222,15 +229,23 @@ export function useGameState(myInfo, navigate) {
 
   const startNextRound = useCallback(async () => {
     setShowOverlay(false)
+    // Get current room to find winner seat and round number
+    const { data: room } = await db.from('domino_rooms').select('current_turn, round').eq('id', myInfo.roomId).single()
+    const winnerSeat = room?.current_turn ?? 0
+    const nextRound = (room?.round ?? 1) + 1
+
     const tiles = shuffle(generateDominoSet())
     const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)]
     for (let i = 0; i < 4; i++)
       await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
     await db.from('board').delete().eq('room_id', myInfo.roomId)
     await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
-    let startingSeat = 0
-    for (let i = 0; i < 4; i++) if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break }
-    await db.from('domino_rooms').update({ status: 'playing', current_turn: startingSeat }).eq('id', myInfo.roomId)
+    // Winner of last round starts next round
+    await db.from('domino_rooms').update({
+      status: 'playing',
+      current_turn: winnerSeat,
+      round: nextRound,
+    }).eq('id', myInfo.roomId)
   }, [myInfo])
 
   const leaveTable = useCallback(async () => {
@@ -257,7 +272,7 @@ export function useGameState(myInfo, navigate) {
     const board = boardRef.current
     const timer = setTimeout(async () => {
       const botHand     = currentPlayer.hand || []
-      const botPlayable = getPlayableTiles(botHand, board)
+      const botPlayable = getPlayableTiles(botHand, board, roomData)
       if (botPlayable.length === 0) {
         await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'pass', tile: null })
         const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
