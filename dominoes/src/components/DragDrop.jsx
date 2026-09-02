@@ -16,8 +16,11 @@ export function DragProvider({ children }) {
   }, [])
 
   const endDrag = useCallback(() => {
-    draggingRef.current = null
-    setDragging(null)
+    // Delay clear so drop zone onMouseUp can read draggingRef.current first
+    setTimeout(() => {
+      draggingRef.current = null
+      setDragging(null)
+    }, 50)
   }, [])
 
   useEffect(() => {
@@ -27,8 +30,19 @@ export function DragProvider({ children }) {
       const clientY = e.touches ? e.touches[0].clientY : e.clientY
       setPos({ x: clientX, y: clientY })
     }
-    function onUp() {
-      if (draggingRef.current) endDrag()
+    function onUp(e) {
+      if (!draggingRef.current) return
+      // Find if mouse is over a drop zone
+      const el = document.elementFromPoint(
+        e.touches ? e.changedTouches[0].clientX : e.clientX,
+        e.touches ? e.changedTouches[0].clientY : e.clientY
+      )
+      const dropZone = el?.closest('[data-droppable]')
+      if (dropZone) {
+        // Fire custom event — drop zone handles it
+        dropZone.dispatchEvent(new CustomEvent('custom-drop', { bubbles: false }))
+      }
+      endDrag()
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
@@ -45,11 +59,10 @@ export function DragProvider({ children }) {
   return (
     <DragContext.Provider value={{ dragging, draggingRef, pos, startDrag, endDrag }}>
       {children}
-      {/* Ghost tile following cursor */}
       {dragging && (
         <div style={{
           position: 'fixed',
-          left: pos.x - 28,
+          left: pos.x - 14,
           top: pos.y - 28,
           width: 28,
           height: 56,
@@ -81,7 +94,6 @@ export function useDrag() {
   return useContext(DragContext)
 }
 
-// Wrap a tile to make it draggable
 export function Draggable({ children, data, disabled }) {
   const { startDrag } = useDrag()
 
@@ -107,37 +119,24 @@ export function Draggable({ children, data, disabled }) {
   )
 }
 
-// Wrap a drop target
+// Drop zone — listens for custom-drop event dispatched by window mouseup
 export function DropZone({ onDrop, children, style, className }) {
-  const { draggingRef, endDrag } = useDrag()
+  const { draggingRef } = useDrag()
   const ref = useRef(null)
 
-  function onMouseUp(e) {
-    const data = draggingRef.current
-    if (!data) return
-    endDrag()
-    onDrop(data)
-  }
-
-  function onTouchEnd(e) {
-    const data = draggingRef.current
-    if (!data) return
-    const t = e.changedTouches[0]
-    const el = document.elementFromPoint(t.clientX, t.clientY)
-    if (ref.current && ref.current.contains(el)) {
-      endDrag()
-      onDrop(data)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    function onCustomDrop() {
+      const data = draggingRef.current
+      if (data) onDrop(data)
     }
-  }
+    el.addEventListener('custom-drop', onCustomDrop)
+    return () => el.removeEventListener('custom-drop', onCustomDrop)
+  }, [onDrop, draggingRef])
 
   return (
-    <div
-      ref={ref}
-      style={style}
-      className={className}
-      onMouseUp={onMouseUp}
-      onTouchEnd={onTouchEnd}
-    >
+    <div ref={ref} data-droppable="true" style={style} className={className}>
       {children}
     </div>
   )
