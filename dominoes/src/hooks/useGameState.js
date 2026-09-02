@@ -210,8 +210,11 @@ export function useGameState(myInfo, navigate) {
       await endRound(myInfo.seat, lastTile ? checkDekabess(lastTile, boardRef.current) : false)
       return
     }
-    const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
-    if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
+    // Check if all 4 players passed consecutively — only valid if board has tiles
+    if (boardRef.current?.tiles?.length > 0) {
+      const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
+      if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
+    }
     const { data: currentRoom } = await db.from('domino_rooms').select('current_turn').eq('id', myInfo.roomId).single()
     const nextSeat = ((currentRoom?.current_turn ?? myInfo.seat) + 1) % 4
     await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
@@ -318,8 +321,10 @@ export function useGameState(myInfo, navigate) {
       const botPlayable = getPlayableTiles(botHand, board, roomData)
       if (botPlayable.length === 0) {
         await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'pass', tile: null })
-        const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
-        if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
+        if (board?.tiles?.length > 0) {
+          const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
+          if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
+        }
         await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
         return
       }
