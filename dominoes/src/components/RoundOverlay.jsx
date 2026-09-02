@@ -28,6 +28,7 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
     desc  = `${roundWinner?.nickname ?? '?'} wins this round. Streak: ${streak.count}/4`
   }
 
+  const isBlocked = roomData.blocked === true
   const results = [...players]
     .map(p => ({ ...p, pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0) }))
     .sort((a, b) => a.pips - b.pips)
@@ -51,14 +52,16 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
         {/* Scores */}
         <table className="scores-table">
           <thead>
-            <tr><th>Player</th><th>Seat</th><th>Pips</th></tr>
+            <tr>
+              <th>Player</th>
+              {isBlocked && <th>Pips</th>}
+            </tr>
           </thead>
           <tbody>
             {results.map(r => (
               <tr key={r.seat} className={r.seat === roundWinnerSeat ? 'winner' : ''}>
-                <td>{r.nickname}{r.seat === myInfo.seat ? ' (you)' : ''}</td>
-                <td>{r.seat + 1}</td>
-                <td>{r.pips}{r.seat === roundWinnerSeat ? ' 👑' : ''}</td>
+                <td>{r.nickname}{r.seat === myInfo.seat ? ' (you)' : ''}{r.seat === roundWinnerSeat ? ' 👑' : ''}</td>
+                {isBlocked && <td>{r.pips}</td>}
               </tr>
             ))}
           </tbody>
