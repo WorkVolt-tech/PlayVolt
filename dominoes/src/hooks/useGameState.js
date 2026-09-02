@@ -95,7 +95,7 @@ export function useGameState(myInfo, navigate) {
 
   const scheduleReload = useCallback(() => {
     clearTimeout(reloadTimer.current)
-    reloadTimer.current = setTimeout(loadGameState, 120)
+    reloadTimer.current = setTimeout(loadGameState, 50)
   }, [loadGameState])
 
   useEffect(() => {
@@ -139,6 +139,7 @@ export function useGameState(myInfo, navigate) {
   const hasTilesOnBoard = !!boardData?.tiles?.length
 
   const endRound = useCallback(async (winningSeat, isDek) => {
+    try {
     const { data: room } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single()
     if (!room) return
     // Guard: only process if still playing (prevent double-fire)
@@ -166,6 +167,10 @@ export function useGameState(myInfo, navigate) {
     }).eq('id', myInfo.roomId)
     // Force immediate reload so overlay shows without waiting for subscription
     await loadGameState()
+    } catch(err) {
+      console.error('[endRound] error:', err)
+      await loadGameState()
+    }
   }, [myInfo, loadGameState])
 
   const advanceTurn = useCallback(async (newHand, lastTile) => {
