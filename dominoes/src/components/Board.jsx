@@ -414,10 +414,20 @@ function shiftedPosition(pos, dx, dy) {
 // domino, then translate that preview so the already-rendered endpoint stays
 // fixed. This lets the player drag directly onto the place where the domino
 // will land instead of aiming at a generic "Left" / "Right" button.
-function computeDropPreview(tiles, positions, candidateTile, side, W, H) {
+function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardData) {
   if (!candidateTile || !positions.length) return null
 
-  const candidate = { tile: candidateTile, flipped: false }
+  // Calculate correct flip — same logic as confirmPlace
+  let flipped = false
+  if (boardData && boardData.tiles?.length) {
+    const end = side === 'left' ? boardData.left_end : boardData.right_end
+    if (side === 'right') {
+      flipped = candidateTile[1] === end
+    } else {
+      flipped = candidateTile[0] === end
+    }
+  }
+  const candidate = { tile: candidateTile, flipped }
 
   if (side === 'right') {
     const simulated = computeSnakePositions([...tiles, candidate], W, H)
@@ -816,11 +826,11 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
   )
 
   const previewLeft = canLeft
-    ? computeDropPreview(tiles, positions, activeTile, 'left', dims.w, dims.h)
+    ? computeDropPreview(tiles, positions, activeTile, 'left', dims.w, dims.h, boardData)
     : null
 
   const previewRight = canRight
-    ? computeDropPreview(tiles, positions, activeTile, 'right', dims.w, dims.h)
+    ? computeDropPreview(tiles, positions, activeTile, 'right', dims.w, dims.h, boardData)
     : null
 
   const firstPreview = !hasTiles && activeTile
