@@ -289,8 +289,11 @@ export function useGameState(myInfo, navigate) {
       status: 'playing',
       current_turn: winnerSeat,
       round: nextRound,
+      pending_point: false,
     }).eq('id', myInfo.roomId)
-  }, [myInfo])
+    // Reload state — setShowOverlay stays false since status is now 'playing'
+    await loadGameState()
+  }, [myInfo, loadGameState])
 
   const leaveTable = useCallback(async () => {
     if (!confirm('Leave this table?')) return
