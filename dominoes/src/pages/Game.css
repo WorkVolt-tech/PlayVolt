@@ -12,10 +12,11 @@
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 1rem;
-  gap: 0.75rem;
-  height: 50px;
+  padding: 0 0.75rem;
+  gap: 0.5rem;
+  min-height: 50px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .top-bar-left { display: flex; align-items: center; gap: 0.75rem; }
@@ -40,18 +41,19 @@
 .player-tags {
   display: flex;
   gap: 0.4rem;
-  overflow: hidden;
   flex: 1;
+  flex-wrap: wrap;
+  overflow: visible;
 }
 
 .player-tag {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 7px;
+  padding: 3px 6px;
   border-radius: 3px;
-  font-size: 0.58rem;
-  letter-spacing: 0.05em;
+  font-size: 0.55rem;
+  letter-spacing: 0.03em;
   border: 1px solid transparent;
   transition: all 0.3s;
   background: var(--surface2);
