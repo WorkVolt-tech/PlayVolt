@@ -11,6 +11,8 @@ export default function Game() {
   const navigate = useNavigate()
   const myInfo   = JSON.parse(sessionStorage.getItem('domino_player') || 'null')
 
+  const [passingSeats, setPassingSeats] = useState(new Set())
+
   const {
     roomData, players, boardData, selectedTile, showPicker,
     showOverlay, toast, isProcessing,
@@ -18,6 +20,21 @@ export default function Game() {
     selectTile, placeTile, passMove, cancelSelection,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
+
+  // Track who recently passed
+  useEffect(() => {
+    if (!roomData?.roomId && !myInfo?.roomId) return
+    db.from('game_events')
+      .select('player_seat, action')
+      .eq('room_id', myInfo.roomId)
+      .eq('action', 'pass')
+      .order('created_at', { ascending: false })
+      .limit(4)
+      .then(({ data }) => {
+        const passSeats = new Set((data || []).map(e => e.player_seat))
+        setPassingSeats(passSeats)
+      })
+  }, [roomData?.current_turn])
 
   if (!myInfo || !roomData) return <div className="loading">Loading…</div>
 
@@ -38,6 +55,7 @@ export default function Game() {
             ].join(' ')}>
               <div className="tag-dot" />
               <span>{p.nickname}{p.seat === myInfo.seat ? ' ★' : ''}</span>
+              {passingSeats.has(p.seat) && <span className="tag-pass">PASS</span>}
               <span className="tag-tiles">{Array.isArray(p.hand) ? p.hand.length : 0}</span>
             </div>
           ))}
