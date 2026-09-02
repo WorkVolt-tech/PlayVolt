@@ -134,3 +134,13 @@
   font-size: 0.72rem;
   letter-spacing: 0.2em;
 }
+
+.tag-pass {
+  font-size: 0.48rem;
+  letter-spacing: 0.1em;
+  color: var(--red);
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  padding: 1px 3px;
+  text-transform: uppercase;
+}
