@@ -176,6 +176,29 @@ export function useGameState(myInfo, navigate) {
       
       await loadGameState()
       console.log('[endRound] loadGameState done, showOverlay should be true')
+      
+      // If winner is a bot and we are the host, auto-start next round after delay
+      if (!isVyej && myInfo.seat === 0) {
+        const winnerPlayer = playersRef.current.find(p => p.seat === resolvedSeat)
+        if (winnerPlayer?.is_ai) {
+          setTimeout(async () => {
+            const { data: latestRoom } = await db.from('domino_rooms').select('current_turn, round, status').eq('id', myInfo.roomId).single()
+            if (latestRoom?.status !== 'round_end') return
+            const nextRound = (latestRoom.round ?? 1) + 1
+            const tiles = shuffle(generateDominoSet())
+            const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)]
+            for (let i = 0; i < 4; i++)
+              await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
+            await db.from('board').delete().eq('room_id', myInfo.roomId)
+            await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
+            await db.from('domino_rooms').update({
+              status: 'playing',
+              current_turn: resolvedSeat,
+              round: nextRound,
+            }).eq('id', myInfo.roomId)
+          }, 2500)
+        }
+      }
     } catch(err) {
       console.error('[endRound] EXCEPTION:', err)
       await loadGameState()
