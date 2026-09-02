@@ -164,7 +164,9 @@ export function useGameState(myInfo, navigate) {
       match_winner: isVyej ? winnerKey : null,
       pending_point: isDek,
     }).eq('id', myInfo.roomId)
-  }, [myInfo])
+    // Force immediate reload so overlay shows without waiting for subscription
+    await loadGameState()
+  }, [myInfo, loadGameState])
 
   const advanceTurn = useCallback(async (newHand, lastTile) => {
     if (newHand.length === 0) {
