@@ -164,7 +164,9 @@ export function useGameState(myInfo, navigate) {
     }
     const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
     if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
-    await db.from('domino_rooms').update({ current_turn: (myInfo.seat + 1) % 4 }).eq('id', myInfo.roomId)
+    const { data: currentRoom } = await db.from('domino_rooms').select('current_turn').eq('id', myInfo.roomId).single()
+    const nextSeat = ((currentRoom?.current_turn ?? myInfo.seat) + 1) % 4
+    await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
   }, [myInfo, endRound])
 
   const placeTile = useCallback(async (tile, idx, side) => {
@@ -224,6 +226,7 @@ export function useGameState(myInfo, navigate) {
     const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)]
     for (let i = 0; i < 4; i++)
       await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
+    await db.from('board').delete().eq('room_id', myInfo.roomId)
     await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
     let startingSeat = 0
     for (let i = 0; i < 4; i++) if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break }
