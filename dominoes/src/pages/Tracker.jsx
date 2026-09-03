@@ -501,11 +501,20 @@ export default function Tracker() {
               Click a tile in your hand to play it
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {myHand.map(t => (
-                <Draggable key={`${t[0]}-${t[1]}`} data={{ tile: t }} disabled={false}>
-                  <TileImg tile={t} size={28} onClick={() => playMyTile(t)} />
-                </Draggable>
-              ))}
+              {myHand.map(t => {
+                const canPlay = boardTiles.length === 0
+                  ? true
+                  : t[0] === boardLeftEnd || t[1] === boardLeftEnd || t[0] === boardRightEnd || t[1] === boardRightEnd
+                return (
+                  <Draggable key={`${t[0]}-${t[1]}`} data={{ tile: t }} disabled={!canPlay}>
+                    <TileImg tile={t} size={28}
+                      selected={canPlay}
+                      dimmed={!canPlay}
+                      onClick={canPlay ? () => playMyTile(t) : undefined}
+                    />
+                  </Draggable>
+                )
+              })}
             </div>
             {myHand.length === 0 && <div style={{ color: 'var(--gold)', fontSize: '0.75rem' }}>Your hand is empty!</div>}
           </>
@@ -519,11 +528,15 @@ export default function Tracker() {
               {availableTiles.map(t => {
                 const key = `${t[0]}-${t[1]}`
                 const isSel = selectedForPlay && `${selectedForPlay[0]}-${selectedForPlay[1]}` === key
+                const canPlay = boardTiles.length === 0
+                  ? true
+                  : t[0] === boardLeftEnd || t[1] === boardLeftEnd || t[0] === boardRightEnd || t[1] === boardRightEnd
                 return (
-                  <Draggable key={key} data={{ tile: t }} disabled={false}>
+                  <Draggable key={key} data={{ tile: t }} disabled={!canPlay}>
                     <TileImg tile={t} size={24}
                       selected={isSel}
-                      onClick={() => setSelectedForPlay(isSel ? null : t)}
+                      dimmed={!canPlay}
+                      onClick={canPlay ? () => setSelectedForPlay(isSel ? null : t) : undefined}
                     />
                   </Draggable>
                 )
