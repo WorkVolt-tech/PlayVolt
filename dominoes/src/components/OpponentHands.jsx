@@ -4,9 +4,9 @@ import './OpponentHands.css'
 // Seat 0 = bottom (you), Seat 1 = left, Seat 2 = top, Seat 3 = right
 export default function OpponentHands({ players, myInfo }) {
   const positions = {
-    1: 'left',
+    1: 'right',   // counter-clockwise: seat 1 is to your right
     2: 'top', 
-    3: 'right',
+    3: 'left',    // seat 3 is to your left
   }
 
   return (
