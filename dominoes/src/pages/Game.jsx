@@ -7,6 +7,7 @@ import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
+import OpponentHands from '../components/OpponentHands'
 import './Game.css'
 
 export default function Game() {
@@ -104,6 +105,11 @@ export default function Game() {
           else if (cR) placeTile(tile, idx, 'right')
         }}
       />
+
+      {/* Opponent hands around the board */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10 }}>
+        <OpponentHands players={players} myInfo={myInfo} roomData={roomData} />
+      </div>
 
       {/* Side picker */}
       {showPicker && (
