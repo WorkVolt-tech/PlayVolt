@@ -341,7 +341,37 @@ export function useGameState(myInfo, navigate) {
         await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
         return
       }
-      const tile    = botPlayable[Math.floor(Math.random() * botPlayable.length)]
+      // AI personality based on seat
+      // Seat 1 = Djo (Smart), Seat 2 = Ti-Cam (Risky), Seat 3 = Jean (Aggressive)
+      let tile
+      const seat = currentPlayer.seat
+      
+      if (seat === 1) {
+        // Djo - Smart: prefer non-doubles, avoid getting stuck with doubles
+        // unless playing the double frees up options
+        const nonDoubles = botPlayable.filter(t => t[0] !== t[1])
+        const doubles = botPlayable.filter(t => t[0] === t[1])
+        if (nonDoubles.length > 0) {
+          // Play the non-double that leaves most options (highest pip value = more connections)
+          tile = nonDoubles.sort((a, b) => (b[0] + b[1]) - (a[0] + a[1]))[0]
+        } else {
+          // Only doubles left, play lowest double
+          tile = doubles.sort((a, b) => a[0] - b[0])[0]
+        }
+      } else if (seat === 2) {
+        // Ti-Cam - Risky: play doubles first to clear them, then random
+        const doubles = botPlayable.filter(t => t[0] === t[1])
+        if (doubles.length > 0) {
+          tile = doubles[Math.floor(Math.random() * doubles.length)]
+        } else {
+          tile = botPlayable[Math.floor(Math.random() * botPlayable.length)]
+        }
+      } else if (seat === 3) {
+        // Jean - Aggressive: play highest pip count to drain hand fast and block others
+        tile = botPlayable.sort((a, b) => (b[0] + b[1]) - (a[0] + a[1]))[0]
+      } else {
+        tile = botPlayable[Math.floor(Math.random() * botPlayable.length)]
+      }
       const tileIdx = botHand.findIndex(t => t[0] === tile[0] && t[1] === tile[1])
       const newHand = botHand.filter((_, i) => i !== tileIdx)
       if (!board?.tiles?.length) {
