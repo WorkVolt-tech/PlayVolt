@@ -28,7 +28,7 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
     desc  = `${roundWinner?.nickname ?? '?'} wins this round. Streak: ${streak.count}/4`
   }
 
-  const isBlocked = roomData.blocked === true
+  const isBlocked = roomData.blocked === true || roomData.blocked === 'true'
   const results = [...players]
     .map(p => ({ ...p, pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0) }))
     .sort((a, b) => a.pips - b.pips)
