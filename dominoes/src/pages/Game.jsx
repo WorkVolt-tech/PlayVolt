@@ -6,6 +6,7 @@ import { canPlayOnSide } from '../hooks/useGameState'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import RoundOverlay from '../components/RoundOverlay'
+import DekabessOverlay from '../components/DekabessOverlay'
 import './Game.css'
 
 export default function Game() {
@@ -13,6 +14,8 @@ export default function Game() {
   const myInfo   = JSON.parse(sessionStorage.getItem('domino_player') || 'null')
 
   const [passingSeats, setPassingSeats] = useState(new Set())
+  const [showDekabess, setShowDekabess] = useState(false)
+  const [dekabessPlayer, setDekabessPlayer] = useState('')
 
   const {
     roomData, players, boardData, selectedTile, showPicker,
@@ -21,6 +24,16 @@ export default function Game() {
     selectTile, placeTile, passMove, cancelSelection,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
+
+  // Show Dekabess celebration
+  useEffect(() => {
+    if (!roomData || !showOverlay) return
+    if (roomData.pending_point) {
+      const winner = players.find(p => p.seat === roomData.current_turn)
+      setDekabessPlayer(winner?.nickname || '?')
+      setShowDekabess(true)
+    }
+  }, [showOverlay, roomData?.pending_point])
 
   // Track who recently passed
   useEffect(() => {
@@ -115,8 +128,16 @@ export default function Game() {
       {/* Toast */}
       {toast && <div className="turn-toast">{toast}</div>}
 
+      {/* Dekabess celebration */}
+      {showDekabess && (
+        <DekabessOverlay
+          playerName={dekabessPlayer}
+          onDone={() => setShowDekabess(false)}
+        />
+      )}
+
       {/* Round/Match overlay */}
-      {showOverlay && roomData && (
+      {showOverlay && !showDekabess && roomData && (
         <RoundOverlay
           roomData={roomData}
           players={players}
