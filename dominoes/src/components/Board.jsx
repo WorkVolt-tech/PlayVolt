@@ -1047,6 +1047,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
               setDragOver(null)
             }}
             onDrop={e => handleTargetDrop(e, 'first')}
+            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'first') } }}
             aria-label="Drop first domino here"
           />
         </>
@@ -1085,6 +1086,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
               setDragOver(null)
             }}
             onDrop={e => handleTargetDrop(e, 'left')}
+            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'left') } }}
             aria-label="Drop domino on left open end"
           />
         </>
@@ -1123,6 +1125,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
               setDragOver(null)
             }}
             onDrop={e => handleTargetDrop(e, 'right')}
+            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'right') } }}
             aria-label="Drop domino on right open end"
           />
         </>
