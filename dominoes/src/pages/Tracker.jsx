@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Draggable, useDrag } from '../components/DragDrop'
 import './Tracker.css'
 
 // ── Snake layout (same as Board.jsx) ────────────────────────────────────────
@@ -92,29 +93,97 @@ function BoardTileT({ entry, pos }) {
   )
 }
 
-function TrackerBoard({ tiles }) {
+function TrackerBoard({ tiles, onDrop, leftEnd, rightEnd }) {
   const ref = useRef(null)
   const [dims, setDims] = useState({ w: 600, h: 240 })
+  const [dragOver, setDragOver] = useState(null)
+  const { draggingRef, endDrag } = useDrag()
+
   useEffect(() => {
     const el = ref.current; if (!el) return
     const ro = new ResizeObserver(([e]) => setDims({ w: e.contentRect.width, h: e.contentRect.height }))
     ro.observe(el); return () => ro.disconnect()
   }, [])
+
   const positions = computeBoardPositions(tiles, dims.w, dims.h)
+  const posL = positions[0]
+  const posR = positions[positions.length - 1]
+
+  function handleDrop(side) {
+    const data = draggingRef.current
+    if (!data) return
+    endDrag()
+    onDrop(data.tile, side)
+  }
+
+  function handleBoardDrop() {
+    if (tiles.length > 0) return
+    const data = draggingRef.current
+    if (!data) return
+    endDrag()
+    onDrop(data.tile, 'first')
+  }
+
   return (
-    <div ref={ref} style={{
-      position: 'relative', width: '100%', height: 240,
-      background: 'var(--felt)',
-      backgroundImage: 'radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%)',
-      borderRadius: 8, overflow: 'hidden',
-    }}>
+    <div ref={ref}
+      onMouseUp={tiles.length === 0 ? handleBoardDrop : undefined}
+      style={{
+        position: 'relative', width: '100%', height: 240,
+        background: 'var(--felt)',
+        backgroundImage: 'radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%)',
+        borderRadius: 8, overflow: 'hidden', cursor: tiles.length === 0 ? 'copy' : 'default',
+      }}>
       {tiles.length === 0 && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '0.62rem', letterSpacing: '0.15em', color: 'rgba(240,234,216,0.18)', textTransform: 'uppercase' }}>
-          Board empty
+          Drag a tile here to start
         </div>
       )}
       {positions.map((pos, i) => <BoardTileT key={i} entry={tiles[i]} pos={pos} />)}
+
+      {/* Left drop zone */}
+      {tiles.length > 0 && posL && (
+        <div
+          data-droppable="true"
+          onMouseUp={() => handleDrop('left')}
+          onMouseEnter={() => setDragOver('left')}
+          onMouseLeave={() => setDragOver(null)}
+          style={{
+            position: 'absolute',
+            left: Math.max(4, posL.x - posL.pw / 2 - 72),
+            top: posL.y - 20,
+            width: 64, height: 40,
+            border: `2px dashed ${dragOver === 'left' ? 'var(--gold)' : 'rgba(201,168,76,0.4)'}`,
+            background: dragOver === 'left' ? 'rgba(201,168,76,0.1)' : 'transparent',
+            borderRadius: 6,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.55rem', letterSpacing: '0.1em',
+            color: dragOver === 'left' ? 'var(--gold)' : 'rgba(201,168,76,0.5)',
+            textTransform: 'uppercase', zIndex: 10, cursor: 'copy',
+          }}>← {leftEnd}</div>
+      )}
+
+      {/* Right drop zone */}
+      {tiles.length > 0 && posR && (
+        <div
+          data-droppable="true"
+          onMouseUp={() => handleDrop('right')}
+          onMouseEnter={() => setDragOver('right')}
+          onMouseLeave={() => setDragOver(null)}
+          style={{
+            position: 'absolute',
+            left: Math.min(dims.w - 72, posR.x + posR.pw / 2 + 4),
+            top: posR.y - 20,
+            width: 64, height: 40,
+            border: `2px dashed ${dragOver === 'right' ? 'var(--gold)' : 'rgba(201,168,76,0.4)'}`,
+            background: dragOver === 'right' ? 'rgba(201,168,76,0.1)' : 'transparent',
+            borderRadius: 6,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.55rem', letterSpacing: '0.1em',
+            color: dragOver === 'right' ? 'var(--gold)' : 'rgba(201,168,76,0.5)',
+            textTransform: 'uppercase', zIndex: 10, cursor: 'copy',
+          }}>{rightEnd} →</div>
+      )}
     </div>
   )
 }
@@ -433,8 +502,9 @@ export default function Tracker() {
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {myHand.map(t => (
-                <TileImg key={`${t[0]}-${t[1]}`} tile={t} size={28}
-                  onClick={() => playMyTile(t)} />
+                <Draggable key={`${t[0]}-${t[1]}`} data={{ tile: t }} disabled={false}>
+                  <TileImg tile={t} size={28} onClick={() => playMyTile(t)} />
+                </Draggable>
               ))}
             </div>
             {myHand.length === 0 && <div style={{ color: 'var(--gold)', fontSize: '0.75rem' }}>Your hand is empty!</div>}
@@ -450,10 +520,12 @@ export default function Tracker() {
                 const key = `${t[0]}-${t[1]}`
                 const isSel = selectedForPlay && `${selectedForPlay[0]}-${selectedForPlay[1]}` === key
                 return (
-                  <TileImg key={key} tile={t} size={24}
-                    selected={isSel}
-                    onClick={() => setSelectedForPlay(isSel ? null : t)}
-                  />
+                  <Draggable key={key} data={{ tile: t }} disabled={false}>
+                    <TileImg tile={t} size={24}
+                      selected={isSel}
+                      onClick={() => setSelectedForPlay(isSel ? null : t)}
+                    />
+                  </Draggable>
                 )
               })}
             </div>
@@ -506,7 +578,7 @@ export default function Tracker() {
       {/* Board */}
       <div className="tracker-card">
         <div className="tracker-card-title">Board</div>
-        <TrackerBoard tiles={boardTiles} />
+        <TrackerBoard tiles={boardTiles} onDrop={(tile, side) => { placeOnBoard(tile, side); setPlayedLog(prev => [...prev, { domino: tile, player: currentPlayer }]); if (currentPlayer === 'ME') setMyHand(prev => prev.filter(t => `${t[0]}-${t[1]}` !== `${tile[0]}-${tile[1]}`)); nextTurn() }} leftEnd={boardLeftEnd} rightEnd={boardRightEnd} />
         {boardTiles.length > 0 && (
           <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', marginTop: 6, letterSpacing: '0.1em' }}>
             Left end: <span style={{ color: 'var(--gold)' }}>{boardLeftEnd}</span>
