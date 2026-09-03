@@ -180,20 +180,6 @@ export default function Tracker() {
         <p className="tracker-sub">Select your 7 tiles and starting player</p>
       </div>
 
-      {/* Starting player */}
-      <div className="tracker-card">
-        <div className="tracker-card-title">Starting Player</div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {['ME', 'RP', 'MP', 'LP'].map(p => (
-            <button
-              key={p}
-              className={`tracker-player-btn ${startingPlayer === p ? 'selected' : ''}`}
-              onClick={() => setStartingPlayer(p)}
-            >{p}</button>
-          ))}
-        </div>
-      </div>
-
       {/* Hand selection */}
       <div className="tracker-card">
         <div className="tracker-card-title">Your Hand ({myHand.length}/7)</div>
@@ -221,7 +207,20 @@ export default function Tracker() {
             )
           })}
         </div>
-        <button className="tracker-btn-primary" style={{ marginTop: 16 }} onClick={startGame}>
+        {/* Starting player */}
+        <div style={{ marginTop: 16, marginBottom: 8 }}>
+          <div className="tracker-card-title">Who starts?</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {['ME', 'RP', 'MP', 'LP'].map(p => (
+              <button
+                key={p}
+                className={`tracker-player-btn ${startingPlayer === p ? 'selected' : ''}`}
+                onClick={() => setStartingPlayer(p)}
+              >{p}</button>
+            ))}
+          </div>
+        </div>
+        <button className="tracker-btn-primary" style={{ marginTop: 8 }} onClick={startGame}>
           Start Tracking →
         </button>
       </div>
