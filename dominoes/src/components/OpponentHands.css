@@ -1,0 +1,81 @@
+.opponent-area {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 5;
+}
+
+.opponent-area.opponent-top {
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: column;
+}
+
+.opponent-area.opponent-left {
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: row;
+  align-items: center;
+}
+
+.opponent-area.opponent-right {
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: row-reverse;
+  align-items: center;
+}
+
+.opponent-name {
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
+  color: var(--ivory-dim);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.opponent-tiles {
+  display: flex;
+  gap: 2px;
+}
+
+.opponent-tiles-left,
+.opponent-tiles-right {
+  flex-direction: column;
+}
+
+.opponent-tiles-top,
+.opponent-tiles-bottom {
+  flex-direction: row;
+}
+
+/* Face-down domino tile */
+.opponent-tile {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.opponent-tile.vertical {
+  width: 16px;
+  height: 32px;
+}
+
+.opponent-tile.horizontal {
+  width: 32px;
+  height: 16px;
+}
+
+/* Active turn highlight */
+.opponent-area.is-turn .opponent-name {
+  color: var(--gold);
+}
+.opponent-area.is-turn .opponent-tile {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.1);
+}
