@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { db } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
 import { canPlayOnSide } from '../hooks/useGameState'
