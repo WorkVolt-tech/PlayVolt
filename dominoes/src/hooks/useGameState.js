@@ -77,6 +77,7 @@ export function useGameState(myInfo, navigate) {
   const processingRef = useRef(false)
   const boardRef      = useRef(null)
   const playersRef    = useRef([])
+  const overlayShownRef = useRef(false)
 
   useEffect(() => { boardRef.current = boardData }, [boardData])
   useEffect(() => { playersRef.current = players }, [players])
@@ -90,7 +91,10 @@ export function useGameState(myInfo, navigate) {
     if (room)  setRoomData(room)
     if (pData) setPlayers(pData)
     if (bData !== undefined) setBoardData(bData)
-    if (room?.status === 'finished' || room?.status === 'round_end') setShowOverlay(true)
+    if ((room?.status === 'finished' || room?.status === 'round_end') && !overlayShownRef.current) {
+      overlayShownRef.current = true
+      setShowOverlay(true)
+    }
   }, [myInfo?.roomId])
 
   const scheduleReload = useCallback(() => {
@@ -129,7 +133,10 @@ export function useGameState(myInfo, navigate) {
     const active = players.find(p => p.seat === roomData.current_turn)
     if (isMyTurn) showToastMsg('Your turn!')
     else if (active) showToastMsg(`${active.nickname}'s turn`)
-    if (roomData.status === 'finished' || roomData.status === 'round_end') setShowOverlay(true)
+    if ((roomData.status === 'finished' || roomData.status === 'round_end') && !overlayShownRef.current) {
+      overlayShownRef.current = true
+      setShowOverlay(true)
+    }
   }, [roomData?.current_turn, roomData?.status])
 
   const me          = players.find(p => p.seat === myInfo?.seat)
@@ -191,7 +198,9 @@ export function useGameState(myInfo, navigate) {
               await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
             await db.from('board').delete().eq('room_id', myInfo.roomId)
             await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
-            await db.from('domino_rooms').update({
+            overlayShownRef.current = false
+          setShowOverlay(false)
+          await db.from('domino_rooms').update({
               status: 'playing',
               current_turn: resolvedSeat,
               round: nextRound,
@@ -272,6 +281,7 @@ export function useGameState(myInfo, navigate) {
   }, [hand, myInfo, advanceTurn])
 
   const startNextRound = useCallback(async () => {
+    overlayShownRef.current = false
     setShowOverlay(false)
     // Get current room to find winner seat and round number
     const { data: room } = await db.from('domino_rooms').select('current_turn, round').eq('id', myInfo.roomId).single()
