@@ -29,15 +29,8 @@ export function DragProvider({ children }) {
     }
     function onUp(e) {
       if (!draggingRef.current) return
-      const clientX = e.touches ? e.changedTouches[0].clientX : e.clientX
-      const clientY = e.touches ? e.changedTouches[0].clientY : e.clientY
-      const el = document.elementFromPoint(clientX, clientY)
-      const dropZone = el?.closest('[data-droppable]')
-      if (dropZone) {
-        // Fire BEFORE endDrag so draggingRef is still populated
-        dropZone.dispatchEvent(new CustomEvent('custom-drop', { bubbles: false }))
-      }
-      // Clear immediately after
+      // onMouseUp on drop zones fires before window mouseup
+      // so draggingRef is still set when drop zones read it
       draggingRef.current = null
       setDragging(null)
     }
