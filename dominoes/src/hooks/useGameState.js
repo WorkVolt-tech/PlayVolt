@@ -91,10 +91,7 @@ export function useGameState(myInfo, navigate) {
     if (room)  setRoomData(room)
     if (pData) setPlayers(pData)
     if (bData !== undefined) setBoardData(bData)
-    if ((room?.status === 'finished' || room?.status === 'round_end') && !overlayShownRef.current) {
-      overlayShownRef.current = true
-      setShowOverlay(true)
-    }
+    // Overlay is triggered by useEffect watching roomData.status
   }, [myInfo?.roomId])
 
   const scheduleReload = useCallback(() => {
@@ -133,9 +130,14 @@ export function useGameState(myInfo, navigate) {
     const active = players.find(p => p.seat === roomData.current_turn)
     if (isMyTurn) showToastMsg('Your turn!')
     else if (active) showToastMsg(`${active.nickname}'s turn`)
-    if ((roomData.status === 'finished' || roomData.status === 'round_end') && !overlayShownRef.current) {
-      overlayShownRef.current = true
-      setShowOverlay(true)
+    if (roomData.status === 'finished' || roomData.status === 'round_end') {
+      if (!overlayShownRef.current) {
+        overlayShownRef.current = true
+        setShowOverlay(true)
+      }
+    } else {
+      // Reset when back to playing
+      overlayShownRef.current = false
     }
   }, [roomData?.current_turn, roomData?.status])
 
