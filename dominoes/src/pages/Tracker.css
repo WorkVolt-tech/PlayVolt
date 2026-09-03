@@ -1,0 +1,115 @@
+.tracker-page {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ivory);
+  font-family: 'DM Mono', monospace;
+  padding: 1rem;
+  overflow-y: auto;
+  user-select: none;
+}
+
+.tracker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.tracker-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  margin: 0;
+}
+
+.tracker-sub {
+  font-size: 0.62rem;
+  color: var(--ivory-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin: 0 0 1rem;
+}
+
+.tracker-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.tracker-card-title {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  margin-bottom: 0.75rem;
+}
+
+.tracker-tile-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tracker-btn-primary {
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tracker-btn-primary:hover:not(:disabled) { background: var(--gold-glow); }
+.tracker-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.tracker-btn-outline {
+  background: transparent;
+  color: var(--ivory-dim);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tracker-btn-outline:hover { border-color: var(--ivory-dim); color: var(--ivory); }
+
+.tracker-player-btn {
+  background: var(--surface2);
+  color: var(--ivory-dim);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: 0.4rem 0.875rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tracker-player-btn:hover { border-color: var(--gold); color: var(--gold); }
+.tracker-player-btn.selected { border-color: var(--gold); background: rgba(201,168,76,0.1); color: var(--gold); }
+
+.tracker-select {
+  background: var(--surface2);
+  color: var(--ivory);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+}
+
+@media (max-width: 480px) {
+  .tracker-page { padding: 0.75rem; }
+  .tracker-title { font-size: 1.2rem; }
+}
