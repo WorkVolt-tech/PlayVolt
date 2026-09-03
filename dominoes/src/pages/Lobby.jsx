@@ -158,7 +158,7 @@ export default function Lobby() {
 
     // Solo: fill with AI
     if (selectedMode === 'solo') {
-      const aiNames = ['Bot Djo', 'Bot Marie', 'Bot Bobo']
+      const aiNames = ['Djo', 'Ti-Cam', 'Jean']
       let botIdx = 0
       for (let seat = 0; seat < 4; seat++) {
         if (!allPlayers.find(p => p.seat === seat)) {
