@@ -651,98 +651,113 @@ const PLAYER_COLORS = { RP: '#4c8cca', MP: '#4caa6e', LP: '#c94c4c', ME: 'var(--
 
 function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, playedLog, passes }) {
   const hasTiles = boardTiles.length > 0
-  const usedKeys = new Set(playedLog.map(e => `${e.domino[0]}-${e.domino[1]}`))
-  const myKeys   = new Set(myHand.map(t => `${t[0]}-${t[1]}`))
-  const remaining = ALL_DOMINOES.filter(t => !usedKeys.has(`${t[0]}-${t[1]}`) && !myKeys.has(`${t[0]}-${t[1]}`))
 
-  // Can tile t play on a given end?
   function playsOn(t, end) { return t[0] === end || t[1] === end }
 
-  // After playing tile t on 'side', what are the new board ends?
-  function newEnds(t, side) {
-    if (!hasTiles) return { L: t[0], R: t[1] }
-    const end = side === 'left' ? boardLeftEnd : boardRightEnd
-    const newOpen = t[1] === end ? t[0] : t[1]
+  // After playing tile t on side, what are the new ends?
+  function applyTile(t, side, L, R) {
+    if (L === null) return { L: t[0], R: t[1] }
+    const end = side === 'left' ? L : R
+    const newOpen = (t[1] === end) ? t[0] : t[1]
     return {
-      L: side === 'left'  ? newOpen : boardLeftEnd,
-      R: side === 'right' ? newOpen : boardRightEnd,
+      L: side === 'left' ? newOpen : L,
+      R: side === 'right' ? newOpen : R,
     }
   }
 
-  // Is tile t a Dekabess on ends L/R? (non-double, matches both)
   function isDekabess(t, L, R) {
     if (t[0] === t[1]) return false
-    if (L === R) return false
+    if (L === null || R === null || L === R) return false
     return (t[0] === L && t[1] === R) || (t[1] === L && t[0] === R)
   }
 
-  // ── Can I Dekabess RIGHT NOW (last tile in hand)? ──────────────────────
-  const canDekabessNow = hasTiles && myHand.length === 1 && isDekabess(myHand[0], boardLeftEnd, boardRightEnd)
-
-  // ── Which of my tiles IS the Dekabess tile right now (even if not last)? ─
-  const dekabessReady = hasTiles ? myHand.filter(t => isDekabess(t, boardLeftEnd, boardRightEnd)) : []
-
-  // ── Path to Dekabess: for each subset of plays, can I end with a Dekabess? ─
-  // Strategy: find which tile I should SAVE as my last tile (the Dekabess tile)
-  // Then figure out what to play now to make that happen
-  const dekabessPlans = []
-  if (hasTiles && myHand.length > 1) {
-    myHand.forEach(keepTile => {
-      if (keepTile[0] === keepTile[1]) return // doubles can't Dekabess
-      const restOfHand = myHand.filter(t => `${t[0]}-${t[1]}` !== `${keepTile[0]}-${keepTile[1]}`)
-
-      // What board ends would allow keepTile to Dekabess?
-      // keepTile [a,b] needs ends to be {a,b}
-      const needL = keepTile[0], needR = keepTile[1]
-      const needL2 = keepTile[1], needR2 = keepTile[0]
-
-      // For each tile I could play NOW, does it move toward {needL,needR}?
-      const playableNow = restOfHand.filter(t =>
-        !hasTiles || playsOn(t, boardLeftEnd) || playsOn(t, boardRightEnd)
-      )
-
-      playableNow.forEach(playNow => {
-        const sides = []
-        if (!hasTiles) sides.push('first')
-        else {
-          if (playsOn(playNow, boardLeftEnd)) sides.push('left')
-          if (playsOn(playNow, boardRightEnd)) sides.push('right')
-        }
-        sides.forEach(side => {
-          const ends = newEnds(playNow, side)
-          // After playing playNow, can keepTile eventually Dekabess?
-          // Check if keepTile matches the new ends
-          const directDek = isDekabess(keepTile, ends.L, ends.R)
-          if (directDek) {
-            dekabessPlans.push({
-              playNow, side, keepTile,
-              newL: ends.L, newR: ends.R,
-              stepsAway: 1,
-              label: myHand.length === 2 ? 'Play this → Dekabess next!' : 'Play this → sets up Dekabess'
-            })
-          }
-        })
-      })
-    })
+  function canPlayTile(t, L, R) {
+    if (L === null) return true
+    return playsOn(t, L) || playsOn(t, R)
   }
 
-  // ── Simple win: best tile to play to empty hand fastest ────────────────
-  // Play the tile with most pip value (get rid of big tiles)
-  // But prioritize tiles that keep the most options open
+  // Try to find a sequence where we play all tiles EXCEPT keepTile last,
+  // and after playing everything else, keepTile matches both ends.
+  // Returns the first play to make, or null if no path exists.
+  function findDekabessPath(keepTile, hand, L, R) {
+    const rest = hand.filter(t => `${t[0]}-${t[1]}` !== `${keepTile[0]}-${keepTile[1]}`)
+    if (rest.length === 0) {
+      // keepTile is already the last tile - does it Dekabess?
+      return isDekabess(keepTile, L, R) ? { firstPlay: null, possible: true } : null
+    }
+
+    // BFS/DFS through possible play sequences
+    // State: { remaining tiles, current L, current R }
+    function search(remaining, curL, curR, depth) {
+      if (remaining.length === 0) {
+        return isDekabess(keepTile, curL, curR)
+      }
+      if (depth > 6) return false // limit recursion
+
+      for (const tile of remaining) {
+        const sides = []
+        if (curL === null) sides.push('first')
+        else {
+          if (playsOn(tile, curL)) sides.push('left')
+          if (playsOn(tile, curR)) sides.push('right')
+        }
+        for (const side of sides) {
+          const { L: nL, R: nR } = applyTile(tile, side, curL, curR)
+          const nextRemaining = remaining.filter(t => `${t[0]}-${t[1]}` !== `${tile[0]}-${tile[1]}`)
+          if (search(nextRemaining, nL, nR, depth + 1)) return true
+        }
+      }
+      return false
+    }
+
+    // Find what to play FIRST that leads to a valid path
+    const playable = rest.filter(t => canPlayTile(t, L, R))
+    for (const firstPlay of playable) {
+      const sides = []
+      if (L === null) sides.push('first')
+      else {
+        if (playsOn(firstPlay, L)) sides.push('left')
+        if (playsOn(firstPlay, R)) sides.push('right')
+      }
+      for (const side of sides) {
+        const { L: nL, R: nR } = applyTile(firstPlay, side, L, R)
+        const remaining2 = rest.filter(t => `${t[0]}-${t[1]}` !== `${firstPlay[0]}-${firstPlay[1]}`)
+        if (search(remaining2, nL, nR, 0)) {
+          return { firstPlay, side, possible: true }
+        }
+      }
+    }
+    return null
+  }
+
+  // ── Find viable Dekabess plans ───────────────────────────────────────────
+  const dekabessPlans = []
+  if (myHand.length > 0) {
+    const candidates = myHand.filter(t => t[0] !== t[1]) // non-doubles only
+    for (const keepTile of candidates) {
+      const path = findDekabessPath(keepTile, myHand, hasTiles ? boardLeftEnd : null, hasTiles ? boardRightEnd : null)
+      if (path) {
+        dekabessPlans.push({ keepTile, firstPlay: path.firstPlay, side: path.side })
+      }
+    }
+  }
+
+  // ── Can Dekabess right now (last tile)? ─────────────────────────────────
+  const canDekabessNow = hasTiles && myHand.length === 1 && isDekabess(myHand[0], boardLeftEnd, boardRightEnd)
+
+  // ── Best play to simply win (no Dekabess) ───────────────────────────────
   const playableNow = hasTiles
-    ? myHand.filter(t => playsOn(t, boardLeftEnd) || playsOn(t, boardRightEnd))
+    ? myHand.filter(t => canPlayTile(t, boardLeftEnd, boardRightEnd))
     : myHand
 
   const bestToWin = [...playableNow].sort((a, b) => {
-    // Prefer non-doubles (doubles are harder to place later)
-    const aIsDouble = a[0] === a[1], bIsDouble = b[0] === b[1]
-    if (aIsDouble && !bIsDouble) return 1
-    if (!aIsDouble && bIsDouble) return -1
-    // Then highest pip count
-    return (b[0] + b[1]) - (a[0] + a[1])
+    const aD = a[0] === a[1], bD = b[0] === b[1]
+    if (aD && !bD) return 1
+    if (!aD && bD) return -1
+    return (b[0]+b[1]) - (a[0]+a[1])
   })
 
-  const colors = { gold: 'var(--gold)', green: 'var(--green)', red: 'var(--red)', dim: 'var(--ivory-dim)' }
+  const dekabessKeepKeys = new Set(dekabessPlans.map(p => `${p.keepTile[0]}-${p.keepTile[1]}`))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -760,45 +775,34 @@ function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, played
         </div>
       )}
 
-      {/* Dekabess tile already in hand and playable */}
-      {!canDekabessNow && dekabessReady.length > 0 && myHand.length > 1 && (
-        <div className="tracker-card" style={{ border: '1px solid var(--gold)' }}>
-          <div className="tracker-card-title" style={{ color: 'var(--gold)' }}>🎯 Save This for Dekabess</div>
-          <div style={{ fontSize: '0.62rem', color: 'var(--ivory-dim)', marginBottom: 8 }}>
-            This tile matches both ends right now. Save it as your last tile — play everything else first.
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {dekabessReady.map(t => <TileImg key={`${t[0]}-${t[1]}`} tile={t} size={28} selected />)}
-          </div>
-        </div>
-      )}
-
       {/* Dekabess plans */}
       {!canDekabessNow && dekabessPlans.length > 0 && (
-        <div className="tracker-card">
-          <div className="tracker-card-title">🧠 Path to Dekabess</div>
+        <div className="tracker-card" style={{ border: '1px solid rgba(201,168,76,0.4)' }}>
+          <div className="tracker-card-title" style={{ color: 'var(--gold)' }}>🎯 Dekabess Path Found</div>
           <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', marginBottom: 10 }}>
-            Play these tiles to set up a Dekabess finish:
+            A sequence exists where your last tile wins with a Dekabess:
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {dekabessPlans.slice(0, 4).map((plan, i) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {dekabessPlans.slice(0, 3).map((plan, i) => (
               <div key={i} style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px', background: 'var(--surface2)', borderRadius: 8,
-                border: '1px solid var(--border)'
               }}>
+                {plan.firstPlay ? (
+                  <>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.5rem', color: 'var(--ivory-dim)', marginBottom: 4 }}>PLAY NOW →{plan.side}</div>
+                      <TileImg tile={plan.firstPlay} size={24} />
+                    </div>
+                    <div style={{ color: 'var(--border)', fontSize: '1.2rem' }}>→</div>
+                  </>
+                ) : null}
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.5rem', color: 'var(--ivory-dim)', marginBottom: 4 }}>PLAY NOW</div>
-                  <TileImg tile={plan.playNow} size={24} />
-                  <div style={{ fontSize: '0.5rem', color: 'var(--ivory-dim)', marginTop: 2 }}>→ {plan.side}</div>
-                </div>
-                <div style={{ color: 'var(--border)', fontSize: '1.2rem' }}>→</div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.5rem', color: 'var(--gold)', marginBottom: 4 }}>DEKABESS WITH</div>
+                  <div style={{ fontSize: '0.5rem', color: 'var(--gold)', marginBottom: 4 }}>SAVE FOR LAST</div>
                   <TileImg tile={plan.keepTile} size={24} selected />
                 </div>
-                <div style={{ marginLeft: 'auto', fontSize: '0.55rem', color: 'var(--gold)', fontWeight: 700 }}>
-                  {plan.label}
+                <div style={{ marginLeft: 'auto', fontSize: '0.55rem', color: 'var(--gold)' }}>
+                  {myHand.length === 2 ? '🎯 Dekabess next!' : 'Path exists'}
                 </div>
               </div>
             ))}
@@ -806,12 +810,12 @@ function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, played
         </div>
       )}
 
-      {/* No Dekabess path — suggest best play to just win */}
-      {!canDekabessNow && dekabessPlans.length === 0 && (
+      {/* No Dekabess path */}
+      {!canDekabessNow && dekabessPlans.length === 0 && myHand.length > 0 && (
         <div className="tracker-card">
-          <div className="tracker-card-title">💡 No Dekabess Path — Best Play to Win</div>
+          <div className="tracker-card-title">💡 Best Play to Win</div>
           <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', marginBottom: 10 }}>
-            No Dekabess setup found. Focus on emptying your hand. Play in this order:
+            No Dekabess path found with current board. Focus on emptying your hand:
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {bestToWin.map((t, i) => (
@@ -824,19 +828,15 @@ function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, played
         </div>
       )}
 
-      {/* Best play to win even when there IS a Dekabess path */}
-      {bestToWin.length > 0 && dekabessPlans.length > 0 && !canDekabessNow && (
+      {/* Best play to simply win even when Dekabess path exists */}
+      {!canDekabessNow && dekabessPlans.length > 0 && bestToWin.length > 0 && (
         <div className="tracker-card">
-          <div className="tracker-card-title">🏆 Best Play to Simply Win (no Dekabess)</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {bestToWin.slice(0, 1).map(t => (
-              <div key={`${t[0]}-${t[1]}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <TileImg tile={t} size={28} />
-                <span style={{ fontSize: '0.62rem', color: 'var(--ivory-dim)' }}>
-                  Highest value playable — gets rid of {t[0]+t[1]} pips
-                </span>
-              </div>
-            ))}
+          <div className="tracker-card-title">🏆 Best Play to Simply Win</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <TileImg tile={bestToWin[0]} size={26} />
+            <span style={{ fontSize: '0.62rem', color: 'var(--ivory-dim)' }}>
+              Highest value playable — removes {bestToWin[0][0]+bestToWin[0][1]} pips from your hand
+            </span>
           </div>
         </div>
       )}
@@ -845,26 +845,27 @@ function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, played
       {myHand.length > 0 && hasTiles && (
         <div className="tracker-card">
           <div className="tracker-card-title">Your Hand</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
             {myHand.map(t => {
-              const canPlay = playsOn(t, boardLeftEnd) || playsOn(t, boardRightEnd)
-              const isDek = isDekabess(t, boardLeftEnd, boardRightEnd)
-              const inPlan = dekabessPlans.some(p => `${p.keepTile[0]}-${p.keepTile[1]}` === `${t[0]}-${t[1]}`)
+              const key = `${t[0]}-${t[1]}`
+              const canPlay = canPlayTile(t, boardLeftEnd, boardRightEnd)
+              const isDek = canDekabessNow && key === `${myHand[0][0]}-${myHand[0][1]}`
+              const isKeep = dekabessKeepKeys.has(key)
               return (
-                <div key={`${t[0]}-${t[1]}`} style={{ textAlign: 'center' }}>
-                  <TileImg tile={t} size={22} selected={isDek || inPlan} dimmed={!canPlay} />
+                <div key={key} style={{ textAlign: 'center' }}>
+                  <TileImg tile={t} size={22} selected={isDek || isKeep} dimmed={!canPlay} />
                   <div style={{ fontSize: '0.45rem', marginTop: 2,
-                    color: isDek ? 'var(--gold)' : inPlan ? 'var(--green)' : canPlay ? 'var(--ivory-dim)' : 'var(--border)' }}>
-                    {isDek ? '🎯' : inPlan ? 'save' : canPlay ? '✓' : '✗'}
+                    color: isDek ? 'var(--gold)' : isKeep ? 'var(--green)' : canPlay ? 'var(--ivory-dim)' : 'var(--border)' }}>
+                    {isDek ? '🎯' : isKeep ? 'save' : canPlay ? '✓' : '✗'}
                   </div>
                 </div>
               )
             })}
           </div>
-          <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: '0.55rem', color: 'var(--ivory-dim)' }}>
-            <span><span style={{ color: 'var(--gold)' }}>🎯</span> Dekabess tile</span>
-            <span><span style={{ color: 'var(--green)' }}>save</span> Keep for Dekabess</span>
-            <span>✓ Playable &nbsp; ✗ Blocked</span>
+          <div style={{ display: 'flex', gap: 12, fontSize: '0.55rem', color: 'var(--ivory-dim)' }}>
+            <span><span style={{ color: 'var(--gold)' }}>🎯</span> Dekabess</span>
+            <span><span style={{ color: 'var(--green)' }}>save</span> Keep for last</span>
+            <span>✓ Playable &nbsp;✗ Blocked</span>
           </div>
         </div>
       )}
@@ -1318,14 +1319,20 @@ export default function Tracker() {
               })}
             </div>
             {myHand.length === 0 && <div style={{ color: 'var(--gold)', fontSize: '0.75rem', marginBottom: 8 }}>Your hand is empty!</div>}
-            <button className="tracker-btn-outline" onClick={doPass}>
-              Pass
-              {boardLeftEnd !== null && (
-                <span style={{ marginLeft: 6, color: 'var(--gold)', fontSize: '0.6rem' }}>
-                  (can't play {boardLeftEnd}{boardRightEnd !== boardLeftEnd ? ` or ${boardRightEnd}` : ''})
-                </span>
-              )}
-            </button>
+            {(() => {
+              const hasPlay = boardTiles.length === 0 ? myHand.length > 0
+                : myHand.some(t => t[0] === boardLeftEnd || t[1] === boardLeftEnd || t[0] === boardRightEnd || t[1] === boardRightEnd)
+              return !hasPlay && (
+                <button className="tracker-btn-outline" onClick={doPass}>
+                  Pass
+                  {boardLeftEnd !== null && (
+                    <span style={{ marginLeft: 6, color: 'var(--gold)', fontSize: '0.6rem' }}>
+                      (can't play {boardLeftEnd}{boardRightEnd !== boardLeftEnd ? ` or ${boardRightEnd}` : ''})
+                    </span>
+                  )}
+                </button>
+              )
+            })()}
           </>
         ) : (
           <>
