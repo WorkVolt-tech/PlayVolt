@@ -480,10 +480,20 @@ function getDropHitStyle(pos, boardW, boardH) {
 
 
 function BoardTileT({ entry, pos }) {
+  const { isDouble, flowDir, orientation, isVert: posIsVert } = pos
   const isDbl = entry.tile[0] === entry.tile[1]
-  const isVert = pos.isVert
-  let [top, bottom] = entry.tile
-  if (!isDbl && entry.flipped) { top = entry.tile[1]; bottom = entry.tile[0] }
+  const isVert = orientation ? orientation === 'vertical' : posIsVert
+
+  let [first, second] = entry.tile
+  if (!isDbl) {
+    const logicalFlip = !!entry.flipped
+    const visualReverse = flowDir === DIR.LEFT || flowDir === DIR.UP
+    if (logicalFlip !== visualReverse) {
+      first = entry.tile[1]
+      second = entry.tile[0]
+    }
+  }
+
   return (
     <div style={{
       position: 'absolute',
@@ -501,11 +511,11 @@ function BoardTileT({ entry, pos }) {
                    : { top: '10%', bottom: '10%', left: '50%', width: 1, transform: 'translateX(-50%)' }),
         background: 'rgba(26,24,20,0.25)', pointerEvents: 'none' }} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img src={`/tiles-white/${top}.png`} draggable={false}
+        <img src={`/tiles-white/${first}.png`} draggable={false}
           style={{ width: '70%', height: '70%', objectFit: 'contain', pointerEvents: 'none' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img src={`/tiles-white/${bottom}.png`} draggable={false}
+        <img src={`/tiles-white/${second}.png`} draggable={false}
           style={{ width: '70%', height: '70%', objectFit: 'contain', pointerEvents: 'none' }} />
       </div>
     </div>
@@ -750,13 +760,35 @@ function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, played
     ? myHand.filter(t => canPlayTile(t, boardLeftEnd, boardRightEnd))
     : myHand
 
-  // Smart sort: doubles first (they get stuck), then by pip count descending
+  // For each number 0-6, count how many tiles with that number are still unplayed
+  // (not in played log and not in my hand) — i.e. in opponents' hands or the boneyard
+  const usedKeys2 = new Set(playedLog.map(e => `${e.domino[0]}-${e.domino[1]}`))
+  const myKeys2 = new Set(myHand.map(t => `${t[0]}-${t[1]}`))
+  const tilesRemaining = ALL_DOMINOES.filter(t =>
+    !usedKeys2.has(`${t[0]}-${t[1]}`) && !myKeys2.has(`${t[0]}-${t[1]}`)
+  )
+  // For number n, how many unplayed tiles contain n?
+  function numberFrequency(n) {
+    return tilesRemaining.filter(t => t[0] === n || t[1] === n).length
+  }
+  // A double is "safe to keep" if its number is rare (≤2 remaining tiles with that number)
+  // meaning opponents are unlikely to be able to block you on it
+  function isDoubleRare(t) {
+    return t[0] === t[1] && numberFrequency(t[0]) <= 2
+  }
+
+  // Smart sort: dangerous doubles first, rare doubles last (keep as advantage)
   const bestToWin = [...playableNow].sort((a, b) => {
     const aD = a[0] === a[1], bD = b[0] === b[1]
-    // Doubles always go first — only match one number, dangerous to hold
-    if (aD && !bD) return -1
-    if (!aD && bD) return 1
-    // Among same type, highest pip count first (drain hand faster)
+    const aRare = isDoubleRare(a), bRare = isDoubleRare(b)
+
+    // Rare doubles → treat like non-doubles (keep them, play later)
+    // Dangerous doubles (common number) → play immediately
+    const aEffectiveDouble = aD && !aRare
+    const bEffectiveDouble = bD && !bRare
+
+    if (aEffectiveDouble && !bEffectiveDouble) return -1
+    if (!aEffectiveDouble && bEffectiveDouble) return 1
     return (b[0]+b[1]) - (a[0]+a[1])
   })
 
