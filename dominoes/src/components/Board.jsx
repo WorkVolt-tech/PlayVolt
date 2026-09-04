@@ -1024,31 +1024,10 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
             highlighted={dragOver === 'first'}
           />
 
-          <div
+          <DropZone
+            onDrop={data => commitDrop(data, 'first')}
             className={`domino-drop-target ${dragOver === 'first' ? 'drag-over' : ''}`}
-            data-droppable="true"
-            data-drop-side="first"
             style={getDropHitStyle(firstPreview, dims.w, dims.h)}
-            onDragEnter={e => {
-              e.preventDefault()
-              e.stopPropagation()
-              recoverNativeDrag(e)
-              setDragOver('first')
-            }}
-            onDragOver={e => {
-              e.preventDefault()
-              e.stopPropagation()
-              if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
-              recoverNativeDrag(e)
-              setDragOver('first')
-            }}
-            onDragLeave={e => {
-              if (e.currentTarget.contains(e.relatedTarget)) return
-              setDragOver(null)
-            }}
-            onDrop={e => handleTargetDrop(e, 'first')}
-            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'first') } }}
-            aria-label="Drop first domino here"
           />
         </>
       )}
@@ -1062,32 +1041,10 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
             highlighted={dragOver === 'left'}
           />
 
-          <div
+          <DropZone
+            onDrop={data => commitDrop(data, 'left')}
             className={`domino-drop-target ${dragOver === 'left' ? 'drag-over' : ''}`}
-            data-droppable="true"
-            data-drop-side="left"
             style={getDropHitStyle(previewLeft, dims.w, dims.h)}
-            onClick={() => onDropZone?.('left')}
-            onDragEnter={e => {
-              e.preventDefault()
-              e.stopPropagation()
-              recoverNativeDrag(e)
-              setDragOver('left')
-            }}
-            onDragOver={e => {
-              e.preventDefault()
-              e.stopPropagation()
-              if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
-              recoverNativeDrag(e)
-              setDragOver('left')
-            }}
-            onDragLeave={e => {
-              if (e.currentTarget.contains(e.relatedTarget)) return
-              setDragOver(null)
-            }}
-            onDrop={e => handleTargetDrop(e, 'left')}
-            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'left') } }}
-            aria-label="Drop domino on left open end"
           />
         </>
       )}
@@ -1101,32 +1058,10 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
             highlighted={dragOver === 'right'}
           />
 
-          <div
+          <DropZone
+            onDrop={data => commitDrop(data, 'right')}
             className={`domino-drop-target ${dragOver === 'right' ? 'drag-over' : ''}`}
-            data-droppable="true"
-            data-drop-side="right"
             style={getDropHitStyle(previewRight, dims.w, dims.h)}
-            onClick={() => onDropZone?.('right')}
-            onDragEnter={e => {
-              e.preventDefault()
-              e.stopPropagation()
-              recoverNativeDrag(e)
-              setDragOver('right')
-            }}
-            onDragOver={e => {
-              e.preventDefault()
-              e.stopPropagation()
-              if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
-              recoverNativeDrag(e)
-              setDragOver('right')
-            }}
-            onDragLeave={e => {
-              if (e.currentTarget.contains(e.relatedTarget)) return
-              setDragOver(null)
-            }}
-            onDrop={e => handleTargetDrop(e, 'right')}
-            onMouseUp={() => { const d = draggingRef.current; if (d) { endDrag(); commitDrop(d, 'right') } }}
-            aria-label="Drop domino on right open end"
           />
         </>
       )}
