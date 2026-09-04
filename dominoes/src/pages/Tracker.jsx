@@ -561,13 +561,13 @@ export default function Tracker() {
   function doPass() {
     const p = currentPlayer
     if (p === 'ME') { nextTurn(); return }
-    const nums = []
     const newPasses = { ...passes, [p]: new Set(passes[p]) }
-    if (pendingPass.n1 !== '') { newPasses[p].add(+pendingPass.n1); nums.push(+pendingPass.n1) }
-    if (pendingPass.n2 !== '') { newPasses[p].add(+pendingPass.n2); nums.push(+pendingPass.n2) }
+    const nums = []
+    // Auto-record the current open ends as what they passed on
+    if (boardLeftEnd !== null) { newPasses[p].add(boardLeftEnd); nums.push(boardLeftEnd) }
+    if (boardRightEnd !== null && boardRightEnd !== boardLeftEnd) { newPasses[p].add(boardRightEnd); nums.push(boardRightEnd) }
     setPasses(newPasses)
     setPassLog(prev => [...prev, { player: p, nums }])
-    setPendingPass({ n1: '', n2: '' })
     nextTurn()
   }
 
