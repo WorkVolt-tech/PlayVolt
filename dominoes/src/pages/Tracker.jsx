@@ -524,7 +524,7 @@ function BoardTileT({ entry, pos }) {
 
 function TrackerBoard({ tiles, onDrop, leftEnd, rightEnd }) {
   const ref = useRef(null)
-  const [dims, setDims] = useState({ w: 600, h: 240 })
+  const [dims, setDims] = useState({ w: 600, h: 260 })
 
   useEffect(() => {
     const el = ref.current; if (!el) return
@@ -536,9 +536,49 @@ function TrackerBoard({ tiles, onDrop, leftEnd, rightEnd }) {
   const posL = positions[0]
   const posR = positions[positions.length - 1]
 
+  // Drop zone style following the end tile's outward direction (same as game)
+  function dropZoneStyle(pos, side) {
+    if (!pos) return {}
+    const ZW = 64, ZH = 40, OFFSET = 6
+    let left = pos.x - ZW / 2
+    let top = pos.y - ZH / 2
+
+    const dir = pos.flowDir
+    if (side === 'left') {
+      if (dir === DIR.RIGHT || dir === DIR.DOWN || dir === DIR.UP) {
+        left = pos.x - pos.pw / 2 - OFFSET - ZW
+      } else {
+        left = pos.x + pos.pw / 2 + OFFSET
+      }
+    } else {
+      if (dir === DIR.RIGHT || dir === DIR.DOWN || dir === DIR.UP) {
+        left = pos.x + pos.pw / 2 + OFFSET
+        // If vertical end, place below
+        if (dir === DIR.DOWN) { left = pos.x - ZW / 2; top = pos.y + pos.ph / 2 + OFFSET }
+        if (dir === DIR.UP)   { left = pos.x - ZW / 2; top = pos.y - pos.ph / 2 - OFFSET - ZH }
+      } else {
+        left = pos.x - pos.pw / 2 - OFFSET - ZW
+      }
+    }
+
+    return {
+      position: 'absolute',
+      left: Math.max(4, Math.min(dims.w - ZW - 4, left)),
+      top: Math.max(4, Math.min(dims.h - ZH - 4, top)),
+      width: ZW, height: ZH,
+      border: '2px dashed rgba(201,168,76,0.5)',
+      background: 'rgba(201,168,76,0.05)',
+      borderRadius: 6,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: '0.55rem', letterSpacing: '0.1em',
+      color: 'rgba(201,168,76,0.6)',
+      textTransform: 'uppercase', zIndex: 10, cursor: 'copy',
+    }
+  }
+
   return (
     <div ref={ref} style={{
-      position: 'relative', width: '100%', height: 240,
+      position: 'relative', width: '100%', height: 260,
       background: 'var(--felt)',
       backgroundImage: 'radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%)',
       borderRadius: 8, overflow: 'hidden',
@@ -555,41 +595,14 @@ function TrackerBoard({ tiles, onDrop, leftEnd, rightEnd }) {
       {positions.map((pos, i) => <BoardTileT key={i} entry={tiles[i]} pos={pos} />)}
 
       {tiles.length > 0 && posL && (
-        <DropZone
-          onDrop={data => onDrop(data.tile, 'left')}
-          style={{
-            position: 'absolute',
-            left: Math.max(4, posL.x - posL.pw / 2 - 72),
-            top: posL.y - 20,
-            width: 64, height: 40,
-            border: '2px dashed rgba(201,168,76,0.4)',
-            background: 'transparent',
-            borderRadius: 6,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.55rem', letterSpacing: '0.1em',
-            color: 'rgba(201,168,76,0.5)',
-            textTransform: 'uppercase', zIndex: 10, cursor: 'copy',
-          }}
-        >← {leftEnd}</DropZone>
+        <DropZone onDrop={data => onDrop(data.tile, 'left')} style={dropZoneStyle(posL, 'left')}>
+          ← {leftEnd}
+        </DropZone>
       )}
-
       {tiles.length > 0 && posR && (
-        <DropZone
-          onDrop={data => onDrop(data.tile, 'right')}
-          style={{
-            position: 'absolute',
-            left: Math.min(dims.w - 72, posR.x + posR.pw / 2 + 4),
-            top: posR.y - 20,
-            width: 64, height: 40,
-            border: '2px dashed rgba(201,168,76,0.4)',
-            background: 'transparent',
-            borderRadius: 6,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.55rem', letterSpacing: '0.1em',
-            color: 'rgba(201,168,76,0.5)',
-            textTransform: 'uppercase', zIndex: 10, cursor: 'copy',
-          }}
-        >{rightEnd} →</DropZone>
+        <DropZone onDrop={data => onDrop(data.tile, 'right')} style={dropZoneStyle(posR, 'right')}>
+          {rightEnd} →
+        </DropZone>
       )}
     </div>
   )
@@ -659,7 +672,7 @@ function PlayerTag({ name, active, tileCount, color }) {
 
 const PLAYER_COLORS = { RP: '#4c8cca', MP: '#4caa6e', LP: '#c94c4c', ME: 'var(--gold)' }
 
-function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, playedLog, passes }) {
+function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, playedLog, passes, isPartners }) {
   const hasTiles = boardTiles.length > 0
 
   function playsOn(t, end) { return t[0] === end || t[1] === end }
@@ -876,6 +889,36 @@ function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, played
         </div>
       )}
 
+      {/* Partners strategy */}
+      {isPartners && hasTiles && myHand.length > 0 && (
+        <div className="tracker-card" style={{ border: '1px solid rgba(76,170,110,0.4)' }}>
+          <div className="tracker-card-title" style={{ color: 'var(--green)' }}>🤝 Partners Strategy (ME + MP)</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.62rem', color: 'var(--ivory-dim)', lineHeight: 1.7 }}>
+            <p>• <span style={{ color: 'var(--ivory)' }}>Help MP finish first</span> — if MP has few tiles, play on the ends MP can use.</p>
+            <p>• <span style={{ color: 'var(--ivory)' }}>Block RP and LP</span> — track which numbers they passed on and play to those ends.</p>
+            <p>• <span style={{ color: 'var(--ivory)' }}>Don't block MP</span> — avoid playing to ends where MP passed, unless you have no choice.</p>
+            {(() => {
+              const mpPassed = passes['MP'] || new Set()
+              const blockingMP = playableNow.filter(t => {
+                const cL = t[0] === boardLeftEnd || t[1] === boardLeftEnd
+                const cR = t[0] === boardRightEnd || t[1] === boardRightEnd
+                if (cL) { const newEnd = t[1] === boardLeftEnd ? t[0] : t[1]; if (mpPassed.has(newEnd)) return true }
+                if (cR) { const newEnd = t[1] === boardRightEnd ? t[0] : t[1]; if (mpPassed.has(newEnd)) return true }
+                return false
+              })
+              return blockingMP.length > 0 && (
+                <p style={{ color: 'var(--red)' }}>
+                  ⚠️ Careful — these tiles would block your partner MP:
+                  <span style={{ display: 'inline-flex', gap: 4, marginLeft: 6, verticalAlign: 'middle' }}>
+                    {blockingMP.map(t => <TileImg key={`${t[0]}-${t[1]}`} tile={t} size={18} />)}
+                  </span>
+                </p>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
       {/* Hand overview */}
       {myHand.length > 0 && hasTiles && (
         <div className="tracker-card">
@@ -938,6 +981,8 @@ export default function Tracker() {
   const [boardLeftEnd, setBoardLeftEnd] = useState(saved?.boardLeftEnd ?? null)
   const [boardRightEnd, setBoardRightEnd] = useState(saved?.boardRightEnd ?? null)
   const [isBlocked, setIsBlocked] = useState(saved?.isBlocked ?? false)
+  const [roundOver, setRoundOver] = useState(saved?.roundOver ?? null) // {winner, reason}
+  const [isPartners, setIsPartners] = useState(saved?.isPartners ?? false) // ME+MP vs RP+LP
   const [pendingSide, setPendingSide] = useState(null)
 
   // Save to localStorage immediately on every state change AND on beforeunload
@@ -1031,9 +1076,11 @@ export default function Tracker() {
 
   function playMyTile(tile) {
     const key = `${tile[0]}-${tile[1]}`
+    const newHand = myHand.filter(t => `${t[0]}-${t[1]}` !== key)
     setPlayedLog(prev => [...prev, { domino: tile, player: 'ME' }])
-    setMyHand(prev => prev.filter(t => `${t[0]}-${t[1]}` !== key))
+    setMyHand(newHand)
     handleTilePlay(tile, 'ME')
+    if (newHand.length === 0) { setRoundOver({ winner: 'ME', reason: 'empty' }); return }
     nextTurn()
   }
 
@@ -1123,6 +1170,7 @@ export default function Tracker() {
     setPendingPass({ n1: '', n2: '' }); setSelectedForPlay(null)
     setBoardTiles([]); setBoardLeftEnd(null); setBoardRightEnd(null); setPendingSide(null)
     setIsBlocked(false)
+    setRoundOver(null)
     localStorage.removeItem('dekabess_tracker')
   }
 
@@ -1164,8 +1212,17 @@ export default function Tracker() {
             )
           })}
         </div>
-        {/* Starting player */}
+        {/* Partners mode */}
         <div style={{ marginTop: 16, marginBottom: 8 }}>
+          <div className="tracker-card-title">Game Mode</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={`tracker-player-btn ${!isPartners ? 'selected' : ''}`} onClick={() => setIsPartners(false)}>Solo</button>
+            <button className={`tracker-player-btn ${isPartners ? 'selected' : ''}`} onClick={() => setIsPartners(true)}>Partners (ME + MP)</button>
+          </div>
+        </div>
+
+        {/* Starting player */}
+        <div style={{ marginTop: 12, marginBottom: 8 }}>
           <div className="tracker-card-title">Who starts?</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {['ME', 'RP', 'MP', 'LP'].map(p => (
@@ -1210,6 +1267,22 @@ export default function Tracker() {
             tileCount={tileCounts[p]} color={PLAYER_COLORS[p]} />
         ))}
       </div>
+
+      {/* ROUND OVER */}
+      {roundOver && (
+        <div className="tracker-card" style={{ border: '2px solid var(--green)', background: 'rgba(76,170,110,0.07)', marginBottom: 12 }}>
+          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', color: 'var(--green)', marginBottom: 8 }}>
+            {roundOver.winner === 'ME' ? '🎉 You win the round!' : `${roundOver.winner} wins the round!`}
+          </div>
+          <div style={{ fontSize: '0.62rem', color: 'var(--ivory-dim)', marginBottom: 12 }}>
+            {roundOver.reason === 'empty' ? 'Hand emptied first.' : 'Lowest pip count wins.'}
+            {isPartners && (roundOver.winner === 'ME' || roundOver.winner === 'MP') ? ' 🤝 Your team wins!' : ''}
+          </div>
+          <button className="tracker-btn-primary" onClick={() => { setRoundOver(null); setIsBlocked(false) }}>
+            Continue Tracking
+          </button>
+        </div>
+      )}
 
       {/* BLOCKED GAME */}
       {isBlocked && (
@@ -1321,6 +1394,7 @@ export default function Tracker() {
           boardRightEnd={boardRightEnd}
           playedLog={playedLog}
           passes={passes}
+          isPartners={isPartners}
         />
       )}
 
@@ -1431,9 +1505,11 @@ export default function Tracker() {
       )}
 
       {/* Board */}
-      <div className="tracker-card">
-        <div className="tracker-card-title">Board</div>
+      <div className="tracker-card" style={{ padding: '0.75rem' }}>
+        <div className="tracker-card-title" style={{ marginBottom: 6 }}>Board</div>
+        <div style={{ overflowX: 'auto', overflowY: 'hidden' }}>
         <TrackerBoard tiles={boardTiles} onDrop={(tile, side) => { placeOnBoard(tile, side); setPlayedLog(prev => [...prev, { domino: tile, player: currentPlayer }]); if (currentPlayer === 'ME') setMyHand(prev => prev.filter(t => `${t[0]}-${t[1]}` !== `${tile[0]}-${tile[1]}`)); nextTurn() }} leftEnd={boardLeftEnd} rightEnd={boardRightEnd} />
+        </div>
         {boardTiles.length > 0 && (
           <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', marginTop: 6, letterSpacing: '0.1em' }}>
             Left end: <span style={{ color: 'var(--gold)' }}>{boardLeftEnd}</span>
