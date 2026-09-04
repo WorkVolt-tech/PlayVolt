@@ -1,69 +1,489 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Draggable, useDrag } from '../components/DragDrop'
+import { Draggable, DropZone, useDrag } from '../components/DragDrop'
 import './Tracker.css'
 
 // ── Snake layout (same as Board.jsx) ────────────────────────────────────────
 const TW = 28, TH = 56, GAP = 3
 
-function renderDimsT(entry, inCorner) {
-  const isDbl = entry.tile[0] === entry.tile[1]
-  return inCorner
-    ? (isDbl ? { w: TH, h: TW } : { w: TW, h: TH })
-    : (isDbl ? { w: TW, h: TH } : { w: TH, h: TW })
+const DIR = {
+  RIGHT: 'RIGHT',
+  DOWN: 'DOWN',
+  LEFT: 'LEFT',
+  UP: 'UP',
 }
 
-function computeBoardPositions(tiles, W, H) {
-  if (!tiles || tiles.length === 0) return []
-  const MARGIN = 40, CORNER_STEPS = 1
-  const pos = []
-  let x = W / 2, y = H / 2, dir = 1, cornerLeft = 0
-  for (let i = 0; i < tiles.length; i++) {
-    const entry = tiles[i]
-    const inCorner = cornerLeft > 0
-    const { w, h } = renderDimsT(entry, inCorner)
-    pos.push({ x, y, dir: inCorner ? 0 : dir, pw: w, ph: h })
-    if (i === tiles.length - 1) break
-    const next = tiles[i + 1]
-    if (inCorner) {
-      cornerLeft--
-      const nextInCorner = cornerLeft > 0
-      const { w: nw, h: nh } = renderDimsT(next, nextInCorner)
-      if (!nextInCorner) x = x + TW / 2 - nw / 2
-      y = y + h / 2 + GAP + nh / 2
-    } else {
-      const { w: nw } = renderDimsT(next, false)
-      const nextX = x + dir * (w / 2 + GAP + nw / 2)
-      if (nextX - nw / 2 < MARGIN || nextX + nw / 2 > W - MARGIN) {
-        const cd = renderDimsT(next, true)
-        x = x + dir * (w / 2 - cd.w / 2)
-        dir *= -1; cornerLeft = CORNER_STEPS - 1
-        y = y + h / 2 + GAP + cd.h / 2
-      } else { x = nextX }
+function isHorizontalDirection(direction) {
+  return direction === DIR.RIGHT || direction === DIR.LEFT
+}
+
+function oppositeDirection(direction) {
+  if (direction === DIR.RIGHT) return DIR.LEFT
+  if (direction === DIR.LEFT) return DIR.RIGHT
+  if (direction === DIR.DOWN) return DIR.UP
+  return DIR.DOWN
+}
+
+// ─── Orientation rules ────────────────────────────────────────────────────────
+// The domino's orientation is based on the CURRENT DIRECTION OF PLAY.
+//
+// Horizontal run (RIGHT / LEFT):
+//   - normal tile → horizontal
+//   - double      → vertical
+//
+// Vertical run (DOWN / UP):
+//   - normal tile → vertical
+//   - double      → horizontal
+//
+// In other words: doubles are perpendicular to a STRAIGHT run.
+//
+// EXCEPTION — if the double itself is the corner/turning domino, it follows
+// the NEW direction of travel:
+//   - turning into RIGHT / LEFT → double is horizontal
+//   - turning into DOWN / UP   → double is vertical
+function tileOrientation(isDouble, direction, isTurning = false) {
+  const horizontalDirection = isHorizontalDirection(direction)
+
+  if (isDouble && isTurning) {
+    return horizontalDirection ? 'horizontal' : 'vertical'
+  }
+
+  if (isDouble) {
+    return horizontalDirection ? 'vertical' : 'horizontal'
+  }
+
+  return horizontalDirection ? 'horizontal' : 'vertical'
+}
+
+function tileDims(isDouble, direction, isTurning = false) {
+  const orientation = tileOrientation(isDouble, direction, isTurning)
+  const isVert = orientation === 'vertical'
+
+  return {
+    w: isVert ? TW : TH,
+    h: isVert ? TH : TW,
+    isVert,
+    orientation,
+  }
+}
+
+// Calculate the next center point. For straight runs the tiles are placed
+// end-to-end. At a 90° turn the new tile is tucked against the outer half of
+// the previous tile so the bend reads like a real tabletop domino chain.
+function stepPosition(current, nextDims, nextDirection) {
+  const { x, y, pw, ph, flowDir } = current
+  const { w: nw, h: nh } = nextDims
+
+  // Straight continuation.
+  if (flowDir === nextDirection) {
+    if (nextDirection === DIR.RIGHT) {
+      return { x: x + pw / 2 + GAP + nw / 2, y }
+    }
+    if (nextDirection === DIR.LEFT) {
+      return { x: x - pw / 2 - GAP - nw / 2, y }
+    }
+    if (nextDirection === DIR.DOWN) {
+      return { x, y: y + ph / 2 + GAP + nh / 2 }
+    }
+    return { x, y: y - ph / 2 - GAP - nh / 2 }
+  }
+
+  // RIGHT → DOWN: put the vertical run under the right half of the last tile.
+  if (flowDir === DIR.RIGHT && nextDirection === DIR.DOWN) {
+    return {
+      x: x + pw / 2 - nw / 2,
+      y: y + ph / 2 + GAP + nh / 2,
     }
   }
-  // Center
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
-  pos.forEach(p => {
-    minX = Math.min(minX, p.x - p.pw / 2); maxX = Math.max(maxX, p.x + p.pw / 2)
-    minY = Math.min(minY, p.y - p.ph / 2); maxY = Math.max(maxY, p.y + p.ph / 2)
-  })
-  const ox = (W - (maxX - minX)) / 2 - minX
-  const oy = (H - (maxY - minY)) / 2 - minY
-  pos.forEach(p => { p.x += ox; p.y += oy })
-  return pos
+
+  // LEFT → DOWN: put the vertical run under the left half of the last tile.
+  if (flowDir === DIR.LEFT && nextDirection === DIR.DOWN) {
+    return {
+      x: x - pw / 2 + nw / 2,
+      y: y + ph / 2 + GAP + nh / 2,
+    }
+  }
+
+  // DOWN → LEFT: start the new row from the lower-left end of the vertical run.
+  if (flowDir === DIR.DOWN && nextDirection === DIR.LEFT) {
+    return {
+      x: x - pw / 2 - GAP - nw / 2,
+      y: y + ph / 2 - nh / 2,
+    }
+  }
+
+  // DOWN → RIGHT: start the new row from the lower-right end of the vertical run.
+  if (flowDir === DIR.DOWN && nextDirection === DIR.RIGHT) {
+    return {
+      x: x + pw / 2 + GAP + nw / 2,
+      y: y + ph / 2 - nh / 2,
+    }
+  }
+
+  // UP support, mainly so endpoint/drop-zone direction remains future-proof.
+  if (flowDir === DIR.RIGHT && nextDirection === DIR.UP) {
+    return {
+      x: x + pw / 2 - nw / 2,
+      y: y - ph / 2 - GAP - nh / 2,
+    }
+  }
+
+  if (flowDir === DIR.LEFT && nextDirection === DIR.UP) {
+    return {
+      x: x - pw / 2 + nw / 2,
+      y: y - ph / 2 - GAP - nh / 2,
+    }
+  }
+
+  if (flowDir === DIR.UP && nextDirection === DIR.LEFT) {
+    return {
+      x: x - pw / 2 - GAP - nw / 2,
+      y: y - ph / 2 + nh / 2,
+    }
+  }
+
+  if (flowDir === DIR.UP && nextDirection === DIR.RIGHT) {
+    return {
+      x: x + pw / 2 + GAP + nw / 2,
+      y: y - ph / 2 + nh / 2,
+    }
+  }
+
+  return { x, y }
 }
+
+function withinHorizontalBounds(candidate, dims, W, margin) {
+  return (
+    candidate.x - dims.w / 2 >= margin &&
+    candidate.x + dims.w / 2 <= W - margin
+  )
+}
+
+// ─── Snake layout ─────────────────────────────────────────────────────────────
+function computeSnakePositions(tiles, W, H) {
+  if (!tiles || tiles.length === 0) return []
+
+  // Protect the layout from a transient 0px ResizeObserver measurement.
+  const boardW = Math.max(W || 0, 280)
+  const boardH = Math.max(H || 0, 260)
+  const MARGIN = Math.max(22, Math.min(42, boardW * 0.055))
+
+  // A vertical section should be a real run, not a single fake "corner" tile.
+  // This normally gives us about two regular vertical dominoes before the next
+  // horizontal row begins.
+  const VERTICAL_RUN_TARGET = Math.max(TH + GAP, Math.min(TH * 1.55, boardH * 0.14))
+
+  const positions = []
+  let flowDir = DIR.RIGHT
+  let horizontalDir = DIR.RIGHT
+  let verticalTravel = 0
+
+  const firstEntry = tiles[0]
+  const firstIsDouble = firstEntry.tile[0] === firstEntry.tile[1]
+  const firstDims = tileDims(firstIsDouble, flowDir)
+
+  // Lay out against the usable bounds first. The finished chain is centered
+  // afterward, so a short opening line still appears in the middle of the table.
+  let current = {
+    x: MARGIN + firstDims.w / 2,
+    y: MARGIN + firstDims.h / 2,
+    pw: firstDims.w,
+    ph: firstDims.h,
+    isVert: firstDims.isVert,
+    orientation: firstDims.orientation,
+    isDouble: firstIsDouble,
+    isTurning: false,
+    flowDir,
+  }
+  positions.push(current)
+
+  for (let i = 1; i < tiles.length; i++) {
+    const entry = tiles[i]
+    const isDouble = entry.tile[0] === entry.tile[1]
+    let nextDirection = flowDir
+
+    if (flowDir === DIR.RIGHT || flowDir === DIR.LEFT) {
+      // First test whether another tile fits in the current horizontal run.
+      let testDims = tileDims(isDouble, flowDir)
+      let testPoint = stepPosition(current, testDims, flowDir)
+
+      if (!withinHorizontalBounds(testPoint, testDims, boardW, MARGIN)) {
+        // We actually turn DOWN. From this point normal tiles are vertical and
+        // doubles are horizontal until the vertical run finishes.
+        nextDirection = DIR.DOWN
+        verticalTravel = 0
+      }
+    } else if (flowDir === DIR.DOWN) {
+      // Stay vertical long enough to visibly clear the previous row.
+      if (verticalTravel >= VERTICAL_RUN_TARGET) {
+        nextDirection = horizontalDir === DIR.RIGHT ? DIR.LEFT : DIR.RIGHT
+        horizontalDir = nextDirection
+        verticalTravel = 0
+      }
+    } else if (flowDir === DIR.UP) {
+      // UP is supported for completeness; resume the opposite horizontal row.
+      if (verticalTravel >= VERTICAL_RUN_TARGET) {
+        nextDirection = horizontalDir === DIR.RIGHT ? DIR.LEFT : DIR.RIGHT
+        horizontalDir = nextDirection
+        verticalTravel = 0
+      }
+    }
+
+    // If this tile is the actual turning/corner tile, doubles follow the NEW
+    // direction instead of using the normal perpendicular-double rule.
+    let isTurning = nextDirection !== flowDir
+    let nextDims = tileDims(isDouble, nextDirection, isTurning)
+    let nextPoint = stepPosition(current, nextDims, nextDirection)
+
+    // If a horizontal row is being entered from a vertical run but the chosen
+    // side is already too close to the wall, continue vertically instead of
+    // forcing an overlap/out-of-bounds tile.
+    if (
+      (nextDirection === DIR.RIGHT || nextDirection === DIR.LEFT) &&
+      !withinHorizontalBounds(nextPoint, nextDims, boardW, MARGIN)
+    ) {
+      nextDirection = DIR.DOWN
+      verticalTravel = 0
+      // Recalculate because the attempted turn may have been cancelled.
+      isTurning = nextDirection !== flowDir
+      const fallbackDims = tileDims(isDouble, nextDirection, isTurning)
+      nextPoint = stepPosition(current, fallbackDims, nextDirection)
+
+      current = {
+        x: nextPoint.x,
+        y: nextPoint.y,
+        pw: fallbackDims.w,
+        ph: fallbackDims.h,
+        isVert: fallbackDims.isVert,
+        orientation: fallbackDims.orientation,
+        isDouble,
+        isTurning,
+        flowDir: nextDirection,
+      }
+    } else {
+      current = {
+        x: nextPoint.x,
+        y: nextPoint.y,
+        pw: nextDims.w,
+        ph: nextDims.h,
+        isVert: nextDims.isVert,
+        orientation: nextDims.orientation,
+        isDouble,
+        isTurning,
+        flowDir: nextDirection,
+      }
+    }
+
+    positions.push(current)
+
+    if (current.flowDir === DIR.DOWN || current.flowDir === DIR.UP) {
+      verticalTravel += current.ph + GAP
+    }
+
+    flowDir = current.flowDir
+  }
+
+  // Center the completed chain as a group. This fixes the old layout's tendency
+  // to collapse into a narrow center column while still keeping the whole snake
+  // inside the visible board whenever it fits.
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
+
+  positions.forEach(p => {
+    minX = Math.min(minX, p.x - p.pw / 2)
+    maxX = Math.max(maxX, p.x + p.pw / 2)
+    minY = Math.min(minY, p.y - p.ph / 2)
+    maxY = Math.max(maxY, p.y + p.ph / 2)
+  })
+
+  const chainW = maxX - minX
+  const chainH = maxY - minY
+  const usableW = Math.max(0, boardW - MARGIN * 2)
+  const usableH = Math.max(0, boardH - MARGIN * 2)
+
+  const offsetX = chainW <= usableW
+    ? (boardW - chainW) / 2 - minX
+    : MARGIN - minX
+
+  const offsetY = chainH <= usableH
+    ? (boardH - chainH) / 2 - minY
+    : MARGIN - minY
+
+  positions.forEach(p => {
+    p.x += offsetX
+    p.y += offsetY
+  })
+
+  return positions
+}
+
+// ─── Single tile renderer ─────────────────────────────────────────────────────
+function BoardTile({ entry, pos, ghost = false, highlighted = false }) {
+  const { isDouble, flowDir, orientation } = pos
+  const isVert = orientation ? orientation === 'vertical' : pos.isVert
+
+  let [first, second] = entry.tile
+
+  if (!isDouble) {
+    // entry.flipped represents the logical orientation in the chain.
+    // When the visual snake travels LEFT or UP, reverse the visual order so
+    // matching halves still face the neighboring domino.
+    const logicalFlip = !!entry.flipped
+    const visualReverse = flowDir === DIR.LEFT || flowDir === DIR.UP
+
+    if (logicalFlip !== visualReverse) {
+      first = entry.tile[1]
+      second = entry.tile[0]
+    }
+  }
+
+  return (
+    <div style={{
+      position: 'absolute',
+      left: pos.x - pos.pw / 2,
+      top: pos.y - pos.ph / 2,
+      width: pos.pw,
+      height: pos.ph,
+      background: '#fffef8',
+      borderRadius: 5,
+      border: ghost ? '1px dashed rgba(201,168,76,0.9)' : 'none',
+      boxShadow: highlighted
+        ? '0 0 0 3px rgba(201,168,76,0.20), 0 4px 14px rgba(0,0,0,0.45)'
+        : ghost
+          ? '0 0 0 2px rgba(201,168,76,0.10)'
+          : '0 3px 10px rgba(0,0,0,0.5)',
+      opacity: ghost ? (highlighted ? 0.88 : 0.48) : 1,
+      pointerEvents: 'none',
+      display: 'grid',
+      gridTemplateRows: isVert ? '1fr 1fr' : 'none',
+      gridTemplateColumns: isVert ? 'none' : '1fr 1fr',
+      overflow: 'hidden',
+      zIndex: 1,
+    }}>
+      {/* Divider */}
+      <div style={{
+        position: 'absolute',
+        ...(isVert
+          ? { left: '10%', right: '10%', top: '50%', height: 1, transform: 'translateY(-50%)' }
+          : { top: '10%', bottom: '10%', left: '50%', width: 1, transform: 'translateX(-50%)' }
+        ),
+        background: 'rgba(26,24,20,0.25)',
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <img
+          src={`/tiles-white/${first}.png`}
+          alt={String(first)}
+          style={{
+            width: '70%',
+            height: '70%',
+            objectFit: 'contain',
+            ...(!isVert && first === 6 ? { transform: 'rotate(90deg)' } : {}),
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <img
+          src={`/tiles-white/${second}.png`}
+          alt={String(second)}
+          style={{
+            width: '70%',
+            height: '70%',
+            objectFit: 'contain',
+            ...(!isVert && second === 6 ? { transform: 'rotate(90deg)' } : {}),
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+
+function shiftedPosition(pos, dx, dy) {
+  if (!pos) return null
+  return { ...pos, x: pos.x + dx, y: pos.y + dy }
+}
+
+// Build the EXACT position the current snake algorithm would use for a new
+// domino, then translate that preview so the already-rendered endpoint stays
+// fixed. This lets the player drag directly onto the place where the domino
+// will land instead of aiming at a generic "Left" / "Right" button.
+function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardData) {
+  if (!candidateTile || !positions.length) return null
+
+  // Calculate correct flip — same logic as confirmPlace
+  let flipped = false
+  if (boardData && boardData.tiles?.length) {
+    const end = side === 'left' ? boardData.left_end : boardData.right_end
+    if (side === 'right') {
+      flipped = candidateTile[1] === end
+    } else {
+      flipped = candidateTile[0] === end
+    }
+  }
+  const candidate = { tile: candidateTile, flipped }
+
+  if (side === 'right') {
+    const simulated = computeSnakePositions([...tiles, candidate], W, H)
+    if (simulated.length < 2) return null
+
+    const simulatedAnchor = simulated[simulated.length - 2]
+    const actualAnchor = positions[positions.length - 1]
+    const preview = simulated[simulated.length - 1]
+
+    const shifted = shiftedPosition(
+      preview,
+      actualAnchor.x - simulatedAnchor.x,
+      actualAnchor.y - simulatedAnchor.y,
+    )
+    return shifted ? { ...shifted, flipped } : null
+  }
+
+  if (side === 'left') {
+    const simulated = computeSnakePositions([candidate, ...tiles], W, H)
+    if (simulated.length < 2) return null
+
+    // simulated[1] is the original first tile. Pin it to its currently drawn
+    // position, then shift the new simulated first tile by the same amount.
+    const simulatedAnchor = simulated[1]
+    const actualAnchor = positions[0]
+    const preview = simulated[0]
+
+    const shifted2 = shiftedPosition(
+      preview,
+      actualAnchor.x - simulatedAnchor.x,
+      actualAnchor.y - simulatedAnchor.y,
+    )
+    return shifted2 ? { ...shifted2, flipped } : null
+  }
+
+  return null
+}
+
+function getDropHitStyle(pos, boardW, boardH) {
+  const pad = 14
+  const minHit = 48
+  const width = Math.max(minHit, pos.pw + pad * 2)
+  const height = Math.max(minHit, pos.ph + pad * 2)
+
+  return {
+    left: Math.max(2, Math.min(boardW - width - 2, pos.x - width / 2)),
+    top: Math.max(2, Math.min(boardH - height - 2, pos.y - height / 2)),
+    width,
+    height,
+  }
+}
+
 
 function BoardTileT({ entry, pos }) {
   const isDbl = entry.tile[0] === entry.tile[1]
-  const inCorner = pos.dir === 0
-  const isVert = inCorner ? !isDbl : isDbl
+  const isVert = pos.isVert
   let [top, bottom] = entry.tile
-  if (!isDbl) {
-    const logicalFlip = !!entry.flipped
-    const visualMirror = pos.dir === -1
-    if (logicalFlip !== visualMirror) { top = entry.tile[1]; bottom = entry.tile[0] }
-  }
+  if (!isDbl && entry.flipped) { top = entry.tile[1]; bottom = entry.tile[0] }
   return (
     <div style={{
       position: 'absolute',
@@ -82,13 +502,11 @@ function BoardTileT({ entry, pos }) {
         background: 'rgba(26,24,20,0.25)', pointerEvents: 'none' }} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <img src={`/tiles-white/${top}.png`} draggable={false}
-          style={{ width: '70%', height: '70%', objectFit: 'contain', pointerEvents: 'none',
-            ...(!isVert && top === 6 ? { transform: 'rotate(90deg)' } : {}) }} />
+          style={{ width: '70%', height: '70%', objectFit: 'contain', pointerEvents: 'none' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <img src={`/tiles-white/${bottom}.png`} draggable={false}
-          style={{ width: '70%', height: '70%', objectFit: 'contain', pointerEvents: 'none',
-            ...(!isVert && bottom === 6 ? { transform: 'rotate(90deg)' } : {}) }} />
+          style={{ width: '70%', height: '70%', objectFit: 'contain', pointerEvents: 'none' }} />
       </div>
     </div>
   )
@@ -97,8 +515,6 @@ function BoardTileT({ entry, pos }) {
 function TrackerBoard({ tiles, onDrop, leftEnd, rightEnd }) {
   const ref = useRef(null)
   const [dims, setDims] = useState({ w: 600, h: 240 })
-  const [dragOver, setDragOver] = useState(null)
-  const { draggingRef, endDrag } = useDrag()
 
   useEffect(() => {
     const el = ref.current; if (!el) return
@@ -106,84 +522,64 @@ function TrackerBoard({ tiles, onDrop, leftEnd, rightEnd }) {
     ro.observe(el); return () => ro.disconnect()
   }, [])
 
-  const positions = computeBoardPositions(tiles, dims.w, dims.h)
+  const positions = computeSnakePositions(tiles, dims.w, dims.h)
   const posL = positions[0]
   const posR = positions[positions.length - 1]
 
-  function handleDrop(side) {
-    const data = draggingRef.current
-    if (!data) return
-    endDrag()
-    onDrop(data.tile, side)
-  }
-
-  function handleBoardDrop() {
-    if (tiles.length > 0) return
-    const data = draggingRef.current
-    if (!data) return
-    endDrag()
-    onDrop(data.tile, 'first')
-  }
-
   return (
-    <div ref={ref}
-      onMouseUp={tiles.length === 0 ? handleBoardDrop : undefined}
-      style={{
-        position: 'relative', width: '100%', height: 240,
-        background: 'var(--felt)',
-        backgroundImage: 'radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%)',
-        borderRadius: 8, overflow: 'hidden', cursor: tiles.length === 0 ? 'copy' : 'default',
-      }}>
+    <div ref={ref} style={{
+      position: 'relative', width: '100%', height: 240,
+      background: 'var(--felt)',
+      backgroundImage: 'radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%)',
+      borderRadius: 8, overflow: 'hidden',
+    }}>
       {tiles.length === 0 && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '0.62rem', letterSpacing: '0.15em', color: 'rgba(240,234,216,0.18)', textTransform: 'uppercase' }}>
+        <DropZone
+          onDrop={data => onDrop(data.tile, 'first')}
+          style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.62rem', letterSpacing: '0.15em', color: 'rgba(240,234,216,0.18)', textTransform: 'uppercase' }}
+        >
           Drag a tile here to start
-        </div>
+        </DropZone>
       )}
       {positions.map((pos, i) => <BoardTileT key={i} entry={tiles[i]} pos={pos} />)}
 
-      {/* Left drop zone */}
       {tiles.length > 0 && posL && (
-        <div
-          data-droppable="true"
-          onMouseUp={() => handleDrop('left')}
-          onMouseEnter={() => setDragOver('left')}
-          onMouseLeave={() => setDragOver(null)}
+        <DropZone
+          onDrop={data => onDrop(data.tile, 'left')}
           style={{
             position: 'absolute',
             left: Math.max(4, posL.x - posL.pw / 2 - 72),
             top: posL.y - 20,
             width: 64, height: 40,
-            border: `2px dashed ${dragOver === 'left' ? 'var(--gold)' : 'rgba(201,168,76,0.4)'}`,
-            background: dragOver === 'left' ? 'rgba(201,168,76,0.1)' : 'transparent',
+            border: '2px dashed rgba(201,168,76,0.4)',
+            background: 'transparent',
             borderRadius: 6,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '0.55rem', letterSpacing: '0.1em',
-            color: dragOver === 'left' ? 'var(--gold)' : 'rgba(201,168,76,0.5)',
+            color: 'rgba(201,168,76,0.5)',
             textTransform: 'uppercase', zIndex: 10, cursor: 'copy',
-          }}>← {leftEnd}</div>
+          }}
+        >← {leftEnd}</DropZone>
       )}
 
-      {/* Right drop zone */}
       {tiles.length > 0 && posR && (
-        <div
-          data-droppable="true"
-          onMouseUp={() => handleDrop('right')}
-          onMouseEnter={() => setDragOver('right')}
-          onMouseLeave={() => setDragOver(null)}
+        <DropZone
+          onDrop={data => onDrop(data.tile, 'right')}
           style={{
             position: 'absolute',
             left: Math.min(dims.w - 72, posR.x + posR.pw / 2 + 4),
             top: posR.y - 20,
             width: 64, height: 40,
-            border: `2px dashed ${dragOver === 'right' ? 'var(--gold)' : 'rgba(201,168,76,0.4)'}`,
-            background: dragOver === 'right' ? 'rgba(201,168,76,0.1)' : 'transparent',
+            border: '2px dashed rgba(201,168,76,0.4)',
+            background: 'transparent',
             borderRadius: 6,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '0.55rem', letterSpacing: '0.1em',
-            color: dragOver === 'right' ? 'var(--gold)' : 'rgba(201,168,76,0.5)',
+            color: 'rgba(201,168,76,0.5)',
             textTransform: 'uppercase', zIndex: 10, cursor: 'copy',
-          }}>{rightEnd} →</div>
+          }}
+        >{rightEnd} →</DropZone>
       )}
     </div>
   )
@@ -617,13 +1013,13 @@ export default function Tracker() {
   // ── Pass ─────────────────────────────────────────────────────────────────
   function doPass() {
     const p = currentPlayer
-    if (p === 'ME') { nextTurn(); return }
-    const newPasses = { ...passes, [p]: new Set(passes[p]) }
     const nums = []
-    // Auto-record the current open ends as what they passed on
-    if (boardLeftEnd !== null) { newPasses[p].add(boardLeftEnd); nums.push(boardLeftEnd) }
-    if (boardRightEnd !== null && boardRightEnd !== boardLeftEnd) { newPasses[p].add(boardRightEnd); nums.push(boardRightEnd) }
-    setPasses(newPasses)
+    if (p !== 'ME') {
+      const newPasses = { ...passes, [p]: new Set(passes[p]) }
+      if (boardLeftEnd !== null) { newPasses[p].add(boardLeftEnd); nums.push(boardLeftEnd) }
+      if (boardRightEnd !== null && boardRightEnd !== boardLeftEnd) { newPasses[p].add(boardRightEnd); nums.push(boardRightEnd) }
+      setPasses(newPasses)
+    }
     setPassLog(prev => [...prev, { player: p, nums }])
     nextTurn()
   }
@@ -792,9 +1188,9 @@ export default function Tracker() {
         {currentPlayer === 'ME' ? (
           <>
             <div style={{ fontSize: '0.65rem', color: 'var(--ivory-dim)', marginBottom: 8 }}>
-              Click a tile in your hand to play it
+              Drag or tap a tile to play it
             </div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
               {myHand.map(t => {
                 const canPlay = boardTiles.length === 0
                   ? true
@@ -810,12 +1206,20 @@ export default function Tracker() {
                 )
               })}
             </div>
-            {myHand.length === 0 && <div style={{ color: 'var(--gold)', fontSize: '0.75rem' }}>Your hand is empty!</div>}
+            {myHand.length === 0 && <div style={{ color: 'var(--gold)', fontSize: '0.75rem', marginBottom: 8 }}>Your hand is empty!</div>}
+            <button className="tracker-btn-outline" onClick={doPass}>
+              Pass
+              {boardLeftEnd !== null && (
+                <span style={{ marginLeft: 6, color: 'var(--gold)', fontSize: '0.6rem' }}>
+                  (can't play {boardLeftEnd}{boardRightEnd !== boardLeftEnd ? ` or ${boardRightEnd}` : ''})
+                </span>
+              )}
+            </button>
           </>
         ) : (
           <>
             <div style={{ fontSize: '0.65rem', color: 'var(--ivory-dim)', marginBottom: 8 }}>
-              Select tile {currentPlayer} played, or record a pass
+              Drag tile {currentPlayer} played onto the board, or record a pass
             </div>
             {/* Available tiles to pick from */}
             <div className="tracker-tile-grid" style={{ marginBottom: 12 }}>
@@ -837,23 +1241,14 @@ export default function Tracker() {
               })}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <button className="tracker-btn-primary"
-                disabled={!selectedForPlay}
-                onClick={playOpponentTile}>
-                Play Selected Tile
+              <button className="tracker-btn-outline" onClick={doPass}>
+                Pass
+                {boardLeftEnd !== null && (
+                  <span style={{ marginLeft: 6, color: 'var(--gold)', fontSize: '0.6rem' }}>
+                    (can't play {boardLeftEnd}{boardRightEnd !== boardLeftEnd ? ` or ${boardRightEnd}` : ''})
+                  </span>
+                )}
               </button>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <span style={{ fontSize: '0.65rem', color: 'var(--ivory-dim)' }}>Pass on:</span>
-                {[1, 2].map(n => (
-                  <select key={n} className="tracker-select"
-                    value={pendingPass[`n${n}`]}
-                    onChange={e => setPendingPass(prev => ({ ...prev, [`n${n}`]: e.target.value }))}>
-                    <option value="">—</option>
-                    {[0,1,2,3,4,5,6].map(i => <option key={i} value={i}>{i}</option>)}
-                  </select>
-                ))}
-                <button className="tracker-btn-outline" onClick={doPass}>Pass</button>
-              </div>
             </div>
           </>
         )}
