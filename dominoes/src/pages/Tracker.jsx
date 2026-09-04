@@ -507,15 +507,25 @@ export default function Tracker() {
   const [boardRightEnd, setBoardRightEnd] = useState(saved?.boardRightEnd ?? null)
   const [pendingSide, setPendingSide] = useState(null)
 
-  // Save state to localStorage on every change
+  // Save to localStorage immediately on every state change AND on beforeunload
+  const getState = () => ({
+    phase, myHand, startingPlayer, currentPlayer,
+    playedLog, passLog,
+    passes: { RP: [...passes.RP], MP: [...passes.MP], LP: [...passes.LP] },
+    boardTiles, boardLeftEnd, boardRightEnd,
+  })
+
   useEffect(() => {
-    localStorage.setItem('dekabess_tracker', JSON.stringify({
-      phase, myHand, startingPlayer, currentPlayer,
-      playedLog, passLog,
-      passes: { RP: [...passes.RP], MP: [...passes.MP], LP: [...passes.LP] },
-      boardTiles, boardLeftEnd, boardRightEnd,
-    }))
+    localStorage.setItem('dekabess_tracker', JSON.stringify(getState()))
   }, [phase, myHand, startingPlayer, currentPlayer, playedLog, passLog, passes, boardTiles, boardLeftEnd, boardRightEnd])
+
+  useEffect(() => {
+    function onUnload() {
+      localStorage.setItem('dekabess_tracker', JSON.stringify(getState()))
+    }
+    window.addEventListener('beforeunload', onUnload)
+    return () => window.removeEventListener('beforeunload', onUnload)
+  })
 
   // Which tiles are used (in hand or played)
   const usedTiles = new Set([
