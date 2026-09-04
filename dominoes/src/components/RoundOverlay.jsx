@@ -29,9 +29,11 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
   }
 
   const isBlocked = roomData.blocked === true || roomData.blocked === 'true'
-  const results = [...players]
+  const withPips = [...players]
     .map(p => ({ ...p, pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0) }))
-    .sort((a, b) => a.pips - b.pips)
+  const results = isBlocked
+    ? [...withPips].sort((a, b) => a.pips - b.pips)
+    : withPips.sort((a, b) => a.seat - b.seat)
 
   return (
     <div className="overlay">
@@ -54,14 +56,14 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
           <thead>
             <tr>
               <th>Player</th>
-              {isBlocked && <th>Pips</th>}
+              {isBlocked && <th style={{ textAlign: 'right' }}>Pips</th>}
             </tr>
           </thead>
           <tbody>
             {results.map(r => (
               <tr key={r.seat} className={r.seat === roundWinnerSeat ? 'winner' : ''}>
                 <td>{r.nickname}{r.seat === myInfo.seat ? ' (you)' : ''}{r.seat === roundWinnerSeat ? ' 👑' : ''}</td>
-                {isBlocked && <td>{r.pips}</td>}
+                {isBlocked && <td style={{ textAlign: 'right', fontWeight: r.seat === roundWinnerSeat ? 700 : 400 }}>{r.pips}</td>}
               </tr>
             ))}
           </tbody>
