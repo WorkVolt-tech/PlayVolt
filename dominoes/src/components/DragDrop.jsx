@@ -2,6 +2,12 @@ import { createContext, useContext, useRef, useState, useEffect, useCallback } f
 
 const DragContext = createContext(null)
 
+// Registry of active drop zones
+const dropZones = new Map()
+
+export function registerDropZone(id, handler) { dropZones.set(id, handler) }
+export function unregisterDropZone(id) { dropZones.delete(id) }
+
 export function DragProvider({ children }) {
   const [dragging, setDragging] = useState(null)
   const [pos, setPos] = useState({ x: 0, y: 0 })
@@ -27,13 +33,31 @@ export function DragProvider({ children }) {
       const clientY = e.touches ? e.touches[0].clientY : e.clientY
       setPos({ x: clientX, y: clientY })
     }
+
     function onUp(e) {
       if (!draggingRef.current) return
-      // onMouseUp on drop zones fires before window mouseup
-      // so draggingRef is still set when drop zones read it
+      const data = draggingRef.current
+      const clientX = e.touches ? e.changedTouches[0].clientX : e.clientX
+      const clientY = e.touches ? e.changedTouches[0].clientY : e.clientY
+
+      // Find drop zone under cursor by checking all registered zones
+      let dropped = false
+      dropZones.forEach((handler, id) => {
+        if (dropped) return
+        const el = document.querySelector(`[data-dropzone-id="${id}"]`)
+        if (!el) return
+        const rect = el.getBoundingClientRect()
+        if (clientX >= rect.left && clientX <= rect.right &&
+            clientY >= rect.top  && clientY <= rect.bottom) {
+          dropped = true
+          handler(data)
+        }
+      })
+
       draggingRef.current = null
       setDragging(null)
     }
+
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     window.addEventListener('touchmove', onMove, { passive: true })
@@ -44,7 +68,7 @@ export function DragProvider({ children }) {
       window.removeEventListener('touchmove', onMove)
       window.removeEventListener('touchend', onUp)
     }
-  }, [endDrag])
+  }, [])
 
   return (
     <DragContext.Provider value={{ dragging, draggingRef, pos, startDrag, endDrag }}>
@@ -109,24 +133,18 @@ export function Draggable({ children, data, disabled }) {
   )
 }
 
-// Drop zone — listens for custom-drop event dispatched by window mouseup
+// Drop zone — registers itself by position, works regardless of pointer-events on children
+let zoneCounter = 0
 export function DropZone({ onDrop, children, style, className }) {
-  const { draggingRef } = useDrag()
-  const ref = useRef(null)
+  const id = useRef(`dz-${++zoneCounter}`).current
 
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    function onCustomDrop() {
-      const data = draggingRef.current
-      if (data) onDrop(data)
-    }
-    el.addEventListener('custom-drop', onCustomDrop)
-    return () => el.removeEventListener('custom-drop', onCustomDrop)
-  }, [onDrop, draggingRef])
+    registerDropZone(id, onDrop)
+    return () => unregisterDropZone(id)
+  }, [onDrop])
 
   return (
-    <div ref={ref} data-droppable="true" style={style} className={className}>
+    <div data-dropzone-id={id} style={style} className={className}>
       {children}
     </div>
   )
