@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Draggable, useDrag } from '../components/DragDrop'
 import './Tracker.css'
 
@@ -453,6 +454,7 @@ function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, played
 }
 
 export default function Tracker() {
+  const navigate = useNavigate()
   const [phase, setPhase] = useState('setup') // setup | playing
   const [myHand, setMyHand] = useState([])
   const [startingPlayer, setStartingPlayer] = useState('ME')
@@ -609,14 +611,18 @@ export default function Tracker() {
     setPasses({ RP: new Set(), MP: new Set(), LP: new Set() })
     setPendingPass({ n1: '', n2: '' }); setSelectedForPlay(null)
     setBoardTiles([]); setBoardLeftEnd(null); setBoardRightEnd(null); setPendingSide(null)
+    localStorage.removeItem('dekabess_tracker')
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
   if (phase === 'setup') return (
     <div className="tracker-page">
       <div className="tracker-header">
-        <h1 className="tracker-title">Dekabess Tracker</h1>
-        <p className="tracker-sub">Track · Predict · Win</p>
+        <div>
+          <h1 className="tracker-title">Dekabess Tracker</h1>
+          <p className="tracker-sub" style={{ margin: 0 }}>Track · Predict · Win</p>
+        </div>
+        <button className="tracker-btn-outline" onClick={() => navigate('/')}>← Back</button>
       </div>
 
       {/* Hand selection */}
@@ -679,7 +685,10 @@ export default function Tracker() {
     <div className="tracker-page">
       <div className="tracker-header">
         <h1 className="tracker-title">Dekabess Tracker</h1>
-        <button className="tracker-btn-outline" onClick={reset}>New Game</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="tracker-btn-outline" onClick={reset}>New Game</button>
+          <button className="tracker-btn-outline" onClick={() => navigate('/')}>← Menu</button>
+        </div>
       </div>
 
       {/* Player status bar */}
