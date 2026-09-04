@@ -901,6 +901,7 @@ export default function Tracker() {
   const [boardTiles, setBoardTiles] = useState(saved?.boardTiles || [])
   const [boardLeftEnd, setBoardLeftEnd] = useState(saved?.boardLeftEnd ?? null)
   const [boardRightEnd, setBoardRightEnd] = useState(saved?.boardRightEnd ?? null)
+  const [isBlocked, setIsBlocked] = useState(saved?.isBlocked ?? false)
   const [pendingSide, setPendingSide] = useState(null)
 
   // Save to localStorage immediately on every state change AND on beforeunload
@@ -1014,13 +1015,34 @@ export default function Tracker() {
   function doPass() {
     const p = currentPlayer
     const nums = []
+    const newPasses = { ...passes }
     if (p !== 'ME') {
-      const newPasses = { ...passes, [p]: new Set(passes[p]) }
+      newPasses[p] = new Set(passes[p])
       if (boardLeftEnd !== null) { newPasses[p].add(boardLeftEnd); nums.push(boardLeftEnd) }
       if (boardRightEnd !== null && boardRightEnd !== boardLeftEnd) { newPasses[p].add(boardRightEnd); nums.push(boardRightEnd) }
       setPasses(newPasses)
     }
-    setPassLog(prev => [...prev, { player: p, nums }])
+    const newPassLog = [...passLog, { player: p, nums }]
+    setPassLog(newPassLog)
+
+    // Check if game is blocked: last 4 entries in passLog are all passes
+    // (including this one) from all 4 players on current ends
+    if (boardLeftEnd !== null) {
+      const allPassed = ['ME', 'RP', 'MP', 'LP'].every(player => {
+        if (player === 'ME') {
+          // Check if ME can play anything
+          const mePlayable = myHand.some(t =>
+            t[0] === boardLeftEnd || t[1] === boardLeftEnd ||
+            t[0] === boardRightEnd || t[1] === boardRightEnd
+          )
+          return !mePlayable
+        }
+        // Check if this opponent passed on current ends
+        const theirPasses = player === p ? newPasses[player] : passes[player]
+        return theirPasses.has(boardLeftEnd) && (boardLeftEnd === boardRightEnd || theirPasses.has(boardRightEnd))
+      })
+      if (allPassed) setIsBlocked(true)
+    }
     nextTurn()
   }
 
@@ -1064,6 +1086,7 @@ export default function Tracker() {
     setPasses({ RP: new Set(), MP: new Set(), LP: new Set() })
     setPendingPass({ n1: '', n2: '' }); setSelectedForPlay(null)
     setBoardTiles([]); setBoardLeftEnd(null); setBoardRightEnd(null); setPendingSide(null)
+    setIsBlocked(false)
     localStorage.removeItem('dekabess_tracker')
   }
 
@@ -1151,6 +1174,94 @@ export default function Tracker() {
             tileCount={tileCounts[p]} color={PLAYER_COLORS[p]} />
         ))}
       </div>
+
+      {/* BLOCKED GAME */}
+      {isBlocked && (
+        <div className="tracker-card" style={{ border: '2px solid var(--red)', background: 'rgba(201,76,76,0.07)', marginBottom: 12 }}>
+          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.2rem', color: 'var(--red)', marginBottom: 8 }}>
+            🔒 Game Blocked!
+          </div>
+          <div style={{ fontSize: '0.62rem', color: 'var(--ivory-dim)', marginBottom: 12 }}>
+            No one can play. Lowest pip count wins the round.
+          </div>
+          {(() => {
+            const usedKeys = new Set(playedLog.map(e => `${e.domino[0]}-${e.domino[1]}`))
+            const myKeys = new Set(myHand.map(t => `${t[0]}-${t[1]}`))
+            const remaining = ALL_DOMINOES.filter(t => !usedKeys.has(`${t[0]}-${t[1]}`) && !myKeys.has(`${t[0]}-${t[1]}`))
+
+            // ME: exact pip count
+            const myPips = myHand.reduce((s, t) => s + t[0] + t[1], 0)
+
+            // Each opponent: estimate based on what we know they don't have
+            const tileCount = {
+              RP: 7 - playedLog.filter(e => e.player === 'RP').length,
+              MP: 7 - playedLog.filter(e => e.player === 'MP').length,
+              LP: 7 - playedLog.filter(e => e.player === 'LP').length,
+            }
+
+            // For each opponent, get their possible tiles (excluding impossibles from passes)
+            const oppEstimates = ['RP', 'MP', 'LP'].map(p => {
+              const impossible = new Set()
+              remaining.forEach(t => {
+                passes[p].forEach(n => { if (t[0] === n || t[1] === n) impossible.add(`${t[0]}-${t[1]}`) })
+              })
+              const possible = remaining.filter(t => !impossible.has(`${t[0]}-${t[1]}`))
+              const avgPips = possible.length > 0
+                ? possible.reduce((s, t) => s + t[0] + t[1], 0) / possible.length
+                : 0
+              const estTotal = Math.round(avgPips * tileCount[p])
+              return { player: p, tiles: tileCount[p], estPips: estTotal, possible: possible.length }
+            })
+
+            const allEntries = [
+              { player: 'ME', tiles: myHand.length, pips: myPips, exact: true },
+              ...oppEstimates.map(e => ({ player: e.player, tiles: e.tiles, pips: e.estPips, exact: false, possible: e.possible }))
+            ].sort((a, b) => a.pips - b.pips)
+
+            return (
+              <div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.65rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      <th style={{ textAlign: 'left', padding: '4px 8px', color: 'var(--ivory-dim)', fontSize: '0.55rem', letterSpacing: '0.1em' }}>PLAYER</th>
+                      <th style={{ textAlign: 'center', padding: '4px 8px', color: 'var(--ivory-dim)', fontSize: '0.55rem', letterSpacing: '0.1em' }}>TILES LEFT</th>
+                      <th style={{ textAlign: 'center', padding: '4px 8px', color: 'var(--ivory-dim)', fontSize: '0.55rem', letterSpacing: '0.1em' }}>PIPS</th>
+                      <th style={{ textAlign: 'right', padding: '4px 8px', color: 'var(--ivory-dim)', fontSize: '0.55rem', letterSpacing: '0.1em' }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allEntries.map((e, i) => (
+                      <tr key={e.player} style={{
+                        borderBottom: '1px solid rgba(58,53,40,0.3)',
+                        background: i === 0 ? 'rgba(76,170,110,0.08)' : 'transparent',
+                        color: i === 0 ? 'var(--green)' : 'var(--ivory)',
+                      }}>
+                        <td style={{ padding: '6px 8px', fontWeight: i === 0 ? 700 : 400 }}>
+                          {e.player === 'ME' ? 'You' : e.player}
+                          {i === 0 && ' 👑'}
+                        </td>
+                        <td style={{ padding: '6px 8px', textAlign: 'center' }}>{e.tiles}</td>
+                        <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 700 }}>
+                          {e.pips}
+                          {!e.exact && <span style={{ fontSize: '0.5rem', color: 'var(--ivory-dim)' }}> ~est</span>}
+                        </td>
+                        <td style={{ padding: '6px 8px', textAlign: 'right', fontSize: '0.55rem', color: 'var(--ivory-dim)' }}>
+                          {e.exact ? 'exact' : `${e.possible} possible tiles`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {allEntries[0]?.player !== 'ME' && (
+                  <div style={{ marginTop: 10, fontSize: '0.62rem', color: 'var(--ivory-dim)' }}>
+                    ⚠️ Opponent pip counts are estimates based on known passes. Actual counts may differ.
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
