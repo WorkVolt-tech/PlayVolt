@@ -750,10 +750,13 @@ function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, played
     ? myHand.filter(t => canPlayTile(t, boardLeftEnd, boardRightEnd))
     : myHand
 
+  // Smart sort: doubles first (they get stuck), then by pip count descending
   const bestToWin = [...playableNow].sort((a, b) => {
     const aD = a[0] === a[1], bD = b[0] === b[1]
-    if (aD && !bD) return 1
-    if (!aD && bD) return -1
+    // Doubles always go first — only match one number, dangerous to hold
+    if (aD && !bD) return -1
+    if (!aD && bD) return 1
+    // Among same type, highest pip count first (drain hand faster)
     return (b[0]+b[1]) - (a[0]+a[1])
   })
 
