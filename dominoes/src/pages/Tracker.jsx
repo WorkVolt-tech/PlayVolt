@@ -252,6 +252,206 @@ function PlayerTag({ name, active, tileCount, color }) {
 
 const PLAYER_COLORS = { RP: '#4c8cca', MP: '#4caa6e', LP: '#c94c4c', ME: 'var(--gold)' }
 
+function DekabessGuide({ myHand, boardTiles, boardLeftEnd, boardRightEnd, playedLog, passes }) {
+  const usedKeys = new Set(playedLog.map(e => `${e.domino[0]}-${e.domino[1]}`))
+  const myKeys   = new Set(myHand.map(t => `${t[0]}-${t[1]}`))
+  const remaining = ALL_DOMINOES.filter(t => !usedKeys.has(`${t[0]}-${t[1]}`) && !myKeys.has(`${t[0]}-${t[1]}`))
+  const totalUnknown = remaining.length
+
+  // ── Dekabess analysis ────────────────────────────────────────────────────
+  // A Dekabess happens when your last tile is a non-double that matches BOTH open ends
+  // So we need: a tile [a,b] where a===leftEnd and b===rightEnd (or vice versa)
+
+  const hasTiles = boardTiles.length > 0
+
+  // Which tiles in your hand could be a Dekabess right now?
+  const dekabessNow = hasTiles ? myHand.filter(t => {
+    if (t[0] === t[1]) return false
+    return (t[0] === boardLeftEnd && t[1] === boardRightEnd) ||
+           (t[1] === boardLeftEnd && t[0] === boardRightEnd)
+  }) : []
+
+  // Which tiles in your hand match at least one end (good plays to get toward Dekabess)?
+  const playableNow = hasTiles ? myHand.filter(t =>
+    t[0] === boardLeftEnd || t[1] === boardLeftEnd ||
+    t[0] === boardRightEnd || t[1] === boardRightEnd
+  ) : myHand
+
+  // For each pair of open ends (or potential future ends), calculate Dekabess probability
+  // If we play tile X, the new ends become [newLeft, newRight]
+  // Then: how many tiles in remaining could be a Dekabess on those ends?
+  function getDekabessSetup(tile, side) {
+    if (!hasTiles) return null
+    const end = side === 'left' ? boardLeftEnd : boardRightEnd
+    let newOpen
+    if (side === 'right') {
+      newOpen = tile[1] === end ? tile[0] : tile[1]
+    } else {
+      newOpen = tile[0] === end ? tile[1] : tile[0]
+    }
+    const newLeft  = side === 'left'  ? newOpen : boardLeftEnd
+    const newRight = side === 'right' ? newOpen : boardRightEnd
+
+    // After playing this tile, which of my remaining hand tiles could Dekabess?
+    const newHand = myHand.filter(t => `${t[0]}-${t[1]}` !== `${tile[0]}-${tile[1]}`)
+    const potential = newHand.filter(t => {
+      if (t[0] === t[1]) return false
+      return (t[0] === newLeft && t[1] === newRight) ||
+             (t[1] === newLeft && t[0] === newRight)
+    })
+    return { newLeft, newRight, potential, tile, side }
+  }
+
+  // Best plays: for each playable tile, check if playing it sets up a Dekabess
+  const setups = []
+  if (hasTiles) {
+    playableNow.forEach(tile => {
+      const cL = tile[0] === boardLeftEnd || tile[1] === boardLeftEnd
+      const cR = tile[0] === boardRightEnd || tile[1] === boardRightEnd
+      if (cL) { const s = getDekabessSetup(tile, 'left');  if (s) setups.push(s) }
+      if (cR) { const s = getDekabessSetup(tile, 'right'); if (s) setups.push(s) }
+    })
+  }
+
+  // Probability that a random remaining tile completes current Dekabess setup
+  const dekabessProb = hasTiles && totalUnknown > 0 ? (
+    remaining.filter(t => {
+      if (t[0] === t[1]) return false
+      return (t[0] === boardLeftEnd && t[1] === boardRightEnd) ||
+             (t[1] === boardLeftEnd && t[0] === boardRightEnd)
+    }).length / totalUnknown * 100
+  ).toFixed(1) : 0
+
+  const colors = { high: '#4caa6e', mid: '#c9a84c', low: '#c94c4c' }
+  const ratingColor = (pct) => pct >= 60 ? colors.high : pct >= 30 ? colors.mid : colors.low
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+      {/* Current board state */}
+      {hasTiles && (
+        <div className="tracker-card">
+          <div className="tracker-card-title">Current Board Ends</div>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '0.55rem', color: 'var(--ivory-dim)', marginBottom: 4 }}>LEFT</div>
+              <img src={`/tiles-white/${boardLeftEnd}.png`} style={{ height: 32, pointerEvents: 'none' }} />
+            </div>
+            <div style={{ fontSize: '1.5rem', color: 'var(--border)' }}>↔</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '0.55rem', color: 'var(--ivory-dim)', marginBottom: 4 }}>RIGHT</div>
+              <img src={`/tiles-white/${boardRightEnd}.png`} style={{ height: 32, pointerEvents: 'none' }} />
+            </div>
+            {boardLeftEnd !== boardRightEnd && (
+              <div style={{ marginLeft: 'auto', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.55rem', color: 'var(--ivory-dim)', marginBottom: 4 }}>DEKABESS CHANCE</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 700, color: ratingColor(+dekabessProb) }}>
+                  {dekabessProb}%
+                </div>
+              </div>
+            )}
+            {boardLeftEnd === boardRightEnd && (
+              <div style={{ marginLeft: 'auto', fontSize: '0.6rem', color: 'var(--ivory-dim)' }}>
+                Both ends equal — Dekabess not possible
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Dekabess NOW */}
+      {dekabessNow.length > 0 && (
+        <div className="tracker-card" style={{ border: '1px solid var(--gold)', background: 'rgba(201,168,76,0.07)' }}>
+          <div className="tracker-card-title" style={{ color: 'var(--gold)' }}>🎯 Dekabess Available NOW!</div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--ivory-dim)', marginBottom: 8 }}>
+            Play one of these as your last tile for a Dekabess:
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {dekabessNow.map(t => <TileImg key={`${t[0]}-${t[1]}`} tile={t} size={28} selected />)}
+          </div>
+        </div>
+      )}
+
+      {/* Best plays toward Dekabess */}
+      {setups.filter(s => s.potential.length > 0).length > 0 && (
+        <div className="tracker-card">
+          <div className="tracker-card-title">🧠 Plays That Set Up a Dekabess</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {setups.filter(s => s.potential.length > 0).map((s, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px', background: 'var(--surface2)', borderRadius: 6 }}>
+                <TileImg tile={s.tile} size={22} />
+                <div style={{ fontSize: '0.58rem', color: 'var(--ivory-dim)' }}>
+                  → {s.side}
+                </div>
+                <div style={{ fontSize: '0.58rem', color: 'var(--ivory-dim)' }}>
+                  New ends: <span style={{ color: 'var(--gold)' }}>{s.newLeft} ↔ {s.newRight}</span>
+                </div>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+                  {s.potential.map(t => <TileImg key={`${t[0]}-${t[1]}`} tile={t} size={18} selected />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* General best play advice */}
+      <div className="tracker-card">
+        <div className="tracker-card-title">💡 Best Play Strategy</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.65rem', color: 'var(--ivory-dim)', lineHeight: 1.6 }}>
+          {!hasTiles && <p>Place your highest-value tile first to drain your hand fast.</p>}
+          {hasTiles && dekabessNow.length > 0 && myHand.length === 1 && (
+            <p style={{ color: 'var(--gold)' }}>🎯 Play your last tile for a <strong>Dekabess!</strong> That's 2 wins!</p>
+          )}
+          {hasTiles && myHand.length > 1 && (
+            <>
+              <p>• <span style={{ color: 'var(--ivory)' }}>Save non-doubles</span> that match both ends — they could be your Dekabess tile.</p>
+              <p>• <span style={{ color: 'var(--ivory)' }}>Play doubles early</span> — they only match one number, harder to place late.</p>
+              <p>• <span style={{ color: 'var(--ivory)' }}>Watch opponent hands</span> — if they have few tiles, block the ends they need.</p>
+              {setups.filter(s => s.potential.length > 0).length === 0 && (
+                <p>• No current Dekabess setup found. Focus on emptying your hand fastest.</p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Hand analysis */}
+      {myHand.length > 0 && (
+        <div className="tracker-card">
+          <div className="tracker-card-title">Your Hand Analysis</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+              {myHand.map(t => {
+                const canPlay = !hasTiles || t[0] === boardLeftEnd || t[1] === boardLeftEnd || t[0] === boardRightEnd || t[1] === boardRightEnd
+                const isDekabessCandidate = !hasTiles ? false :
+                  (t[0] === boardLeftEnd && t[1] === boardRightEnd) || (t[1] === boardLeftEnd && t[0] === boardRightEnd)
+                return (
+                  <div key={`${t[0]}-${t[1]}`} style={{ textAlign: 'center' }}>
+                    <TileImg tile={t} size={22}
+                      selected={isDekabessCandidate}
+                      dimmed={!canPlay} />
+                    <div style={{ fontSize: '0.45rem', marginTop: 2,
+                      color: isDekabessCandidate ? 'var(--gold)' : canPlay ? 'var(--green)' : 'var(--border)' }}>
+                      {isDekabessCandidate ? '🎯' : canPlay ? '✓' : '✗'}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', display: 'flex', gap: 12 }}>
+              <span><span style={{ color: 'var(--gold)' }}>🎯</span> Dekabess</span>
+              <span><span style={{ color: 'var(--green)' }}>✓</span> Playable</span>
+              <span><span style={{ color: 'var(--border)' }}>✗</span> Not playable</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Tracker() {
   const [phase, setPhase] = useState('setup') // setup | playing
   const [myHand, setMyHand] = useState([])
@@ -261,7 +461,8 @@ export default function Tracker() {
   const [passLog, setPassLog] = useState([])    // [{player, nums}]
   const [passes, setPasses] = useState({ RP: new Set(), MP: new Set(), LP: new Set() })
   const [pendingPass, setPendingPass] = useState({ n1: '', n2: '' })
-  const [selectedForPlay, setSelectedForPlay] = useState(null) // tile key for opponent play
+  const [selectedForPlay, setSelectedForPlay] = useState(null)
+  const [activeTab, setActiveTab] = useState('game') // game | guide // tile key for opponent play
   const [boardTiles, setBoardTiles] = useState([]) // [{tile, flipped}]
   const [boardLeftEnd, setBoardLeftEnd] = useState(null)
   const [boardRightEnd, setBoardRightEnd] = useState(null)
@@ -414,8 +615,8 @@ export default function Tracker() {
   if (phase === 'setup') return (
     <div className="tracker-page">
       <div className="tracker-header">
-        <h1 className="tracker-title">Domino Tracker</h1>
-        <p className="tracker-sub">Select your 7 tiles and starting player</p>
+        <h1 className="tracker-title">Dekabess Tracker</h1>
+        <p className="tracker-sub">Track · Predict · Win</p>
       </div>
 
       {/* Hand selection */}
@@ -477,7 +678,7 @@ export default function Tracker() {
   return (
     <div className="tracker-page">
       <div className="tracker-header">
-        <h1 className="tracker-title">Domino Tracker</h1>
+        <h1 className="tracker-title">Dekabess Tracker</h1>
         <button className="tracker-btn-outline" onClick={reset}>New Game</button>
       </div>
 
@@ -488,6 +689,33 @@ export default function Tracker() {
             tileCount={tileCounts[p]} color={PLAYER_COLORS[p]} />
         ))}
       </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
+        {[['game', '🎮 Game'], ['guide', '🎯 Dekabess Guide']].map(([id, label]) => (
+          <button key={id} onClick={() => setActiveTab(id)} style={{
+            flex: 1, padding: '0.6rem', background: 'none', border: 'none',
+            borderBottom: `2px solid ${activeTab === id ? 'var(--gold)' : 'transparent'}`,
+            color: activeTab === id ? 'var(--gold)' : 'var(--ivory-dim)',
+            fontFamily: 'DM Mono, monospace', fontSize: '0.62rem',
+            letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer',
+            marginBottom: -1, transition: 'all 0.2s',
+          }}>{label}</button>
+        ))}
+      </div>
+
+      {activeTab === 'guide' && (
+        <DekabessGuide
+          myHand={myHand}
+          boardTiles={boardTiles}
+          boardLeftEnd={boardLeftEnd}
+          boardRightEnd={boardRightEnd}
+          playedLog={playedLog}
+          passes={passes}
+        />
+      )}
+
+      {activeTab === 'game' && (<>
 
       {/* Current turn */}
       <div className="tracker-card" style={{ borderColor: 'var(--gold)' }}>
@@ -617,6 +845,8 @@ export default function Tracker() {
           </div>
         ))}
       </div>
+
+      </>) }
 
       {/* Logs */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
