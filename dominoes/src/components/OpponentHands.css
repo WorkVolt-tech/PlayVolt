@@ -3,13 +3,13 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  z-index: 5;
+  z-index: 6;
   pointer-events: none;
 }
 
-/* TOP — Ti-Cam: horizontal row at top of board */
+/* TOP — Ti-Cam */
 .opponent-area.opponent-top {
-  top: 10px;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
   flex-direction: row;
@@ -44,7 +44,6 @@
   white-space: nowrap;
 }
 
-/* Vertical name for side players */
 .opponent-left .opponent-name,
 .opponent-right .opponent-name {
   writing-mode: vertical-rl;
@@ -57,13 +56,11 @@
   background: rgba(201,168,76,0.12);
 }
 
-/* Tile rows */
 .opponent-tiles { display: flex; gap: 2px; }
-.opponent-tiles-top    { flex-direction: row; }
+.opponent-tiles-top   { flex-direction: row; }
 .opponent-tiles-left,
-.opponent-tiles-right  { flex-direction: column; }
+.opponent-tiles-right { flex-direction: column; }
 
-/* Face-down tile */
 .opponent-tile {
   background: var(--surface2);
   border: 1px solid var(--border);
