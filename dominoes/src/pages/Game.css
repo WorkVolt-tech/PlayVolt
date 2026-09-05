@@ -144,3 +144,39 @@
   padding: 1px 3px;
   text-transform: uppercase;
 }
+
+/* Game area grid: left col | board | right col */
+.game-area {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.game-area .board-area {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Landscape: compact top bar to single line */
+@media (max-height: 500px) {
+  .top-bar {
+    min-height: 36px;
+    padding: 0 0.5rem;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .player-tags {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .player-tag {
+    font-size: 0.48rem;
+    padding: 2px 4px;
+  }
+  .game-title { font-size: 0.8rem; }
+  .room-code-badge { display: none; }
+  .hand-area { padding: 0 0.5rem; }
+  .hand-tile { transform: scale(0.85); }
+}
