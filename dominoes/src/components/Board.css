@@ -1,8 +1,8 @@
 .board-area {
-  flex: 1;
+  position: absolute;
+  inset: 0;
   background: var(--felt);
   background-image: radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%);
-  position: relative;
   overflow: hidden;
 }
 
