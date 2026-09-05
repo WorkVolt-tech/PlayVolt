@@ -3,8 +3,8 @@ import './OpponentHands.css'
 export default function OpponentHands({ players, myInfo, roomData }) {
   const positions = {
     1: 'right',
-    2: 'top',
     3: 'left',
+    // seat 2 (Ti-Cam) rendered as a dedicated row above the board
   }
 
   return (
