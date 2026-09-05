@@ -1,69 +1,62 @@
-/* Side opponents — sit in columns beside the board */
-.side-opponent {
+.opponent-area {
+  position: absolute;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 4px;
-  padding: 4px 2px;
-  width: 28px;
-  flex-shrink: 0;
+  z-index: 5;
+  pointer-events: none;
 }
 
-.side-opponent-tiles {
-  display: flex;
+/* TOP — Ti-Cam: centered horizontally, below the board's top edge */
+.opponent-area.opponent-top {
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
   flex-direction: column;
-  gap: 2px;
   align-items: center;
 }
 
-/* Top opponent — sits in a row above the board */
-.top-opponent {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 4px 8px;
-  height: 36px;
-  flex-shrink: 0;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-
-.top-opponent-tiles {
-  display: flex;
-  flex-direction: row;
-  gap: 2px;
+/* LEFT — Jean: centered vertically on left edge */
+.opponent-area.opponent-left {
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
   align-items: center;
 }
 
-/* Opponent name */
+/* RIGHT — Djo: centered vertically on right edge */
+.opponent-area.opponent-right {
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  align-items: center;
+}
+
 .opponent-name {
   font-size: 0.48rem;
   letter-spacing: 0.12em;
   color: var(--ivory-dim);
   text-transform: uppercase;
   white-space: nowrap;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
 }
 
-.top-opponent .opponent-name {
-  writing-mode: horizontal-tb;
-  transform: none;
+.opponent-area.is-turn .opponent-name { color: var(--gold); }
+.opponent-area.is-turn .opponent-tile {
+  border-color: rgba(201,168,76,0.6);
+  background: rgba(201,168,76,0.1);
 }
 
-/* Active turn highlight */
-.side-opponent.is-turn .opponent-name,
-.top-opponent.is-turn .opponent-name {
-  color: var(--gold);
+/* Tile stacks */
+.opponent-tiles {
+  display: flex;
+  gap: 2px;
 }
-.side-opponent.is-turn .opponent-tile,
-.top-opponent.is-turn .opponent-tile {
-  border-color: var(--gold);
-  background: rgba(201,168,76,0.15);
-}
+
+.opponent-tiles-top { flex-direction: row; flex-wrap: wrap; justify-content: center; max-width: 200px; }
+.opponent-tiles-left,
+.opponent-tiles-right { flex-direction: column; }
 
 /* Face-down tile */
 .opponent-tile {
@@ -74,11 +67,3 @@
 }
 .opponent-tile.vertical   { width: 14px; height: 28px; }
 .opponent-tile.horizontal { width: 28px; height: 14px; }
-
-/* Landscape: make tiles smaller */
-@media (max-height: 500px) {
-  .opponent-tile.vertical   { width: 10px; height: 20px; }
-  .opponent-tile.horizontal { width: 20px; height: 10px; }
-  .top-opponent { height: 28px; }
-  .side-opponent { width: 22px; }
-}
