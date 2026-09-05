@@ -106,7 +106,7 @@ export default function Game() {
         }}
       />
 
-      {/* Opponent hands around the board */}
+      {/* Opponent hands — left and right only (absolute inside board) */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5 }}>
         <OpponentHands players={players} myInfo={myInfo} roomData={roomData} />
       </div>
