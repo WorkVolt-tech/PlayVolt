@@ -78,9 +78,9 @@ export default function Game() {
         <button className="btn-leave" onClick={leaveTable}>Leave</button>
       </div>
 
-      <Board
-          opponents={players.filter(p => p.seat !== myInfo?.seat).map(p => ({ ...p, isActive: roomData?.current_turn === p.seat }))}
-          myInfo={myInfo}
+      <div style={{ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <OpponentHands players={players} myInfo={myInfo} roomData={roomData} />
+        <Board
           boardData={boardData}
         selectedTile={selectedTile}
         isMyTurn={isMyTurn}
@@ -105,8 +105,8 @@ export default function Game() {
           else if (cL) placeTile(tile, idx, 'left')
           else if (cR) placeTile(tile, idx, 'right')
         }}
-      />
-
+        />
+      </div>
 
       {/* Side picker */}
       {showPicker && (
