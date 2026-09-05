@@ -7,7 +7,7 @@ import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
-import OpponentHands from '../components/OpponentHands'
+import { SideOpponent, TopOpponent } from '../components/OpponentHands'
 import './Game.css'
 
 export default function Game() {
@@ -79,8 +79,21 @@ export default function Game() {
       </div>
 
       {/* Board */}
-      <Board
-        boardData={boardData}
+      {/* Top opponent */}
+      <TopOpponent
+        player={players.find(p => p.seat === 2)}
+        isActive={roomData?.current_turn === 2}
+      />
+
+      {/* Game area: left opponent | board | right opponent */}
+      <div className="game-area">
+        <SideOpponent
+          player={players.find(p => p.seat === 3)}
+          side="left"
+          isActive={roomData?.current_turn === 3}
+        />
+        <Board
+          boardData={boardData}
         selectedTile={selectedTile}
         isMyTurn={isMyTurn}
         onDropZone={side => {
@@ -106,11 +119,6 @@ export default function Game() {
         }}
       />
 
-      {/* Opponent hands around the board */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10 }}>
-        <OpponentHands players={players} myInfo={myInfo} roomData={roomData} />
-      </div>
-
       {/* Side picker */}
       {showPicker && (
         <div className="side-picker">
@@ -133,6 +141,13 @@ export default function Game() {
 
       {/* Toast */}
       {toast && <div className="turn-toast">{toast}</div>}
+
+        <SideOpponent
+          player={players.find(p => p.seat === 1)}
+          side="right"
+          isActive={roomData?.current_turn === 1}
+        />
+      </div>
 
       {/* Dekabess celebration */}
       {showDekabess && (
