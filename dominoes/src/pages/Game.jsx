@@ -88,8 +88,8 @@ export default function Game() {
           if (!selectedTile) return
           const cL = canPlayOnSide(selectedTile.tile, 'left', boardData)
           const cR = canPlayOnSide(selectedTile.tile, 'right', boardData)
-          if (cL && cR && boardData.left_end !== boardData.right_end && !side) {
-            setShowPickerManual(true)
+          if (cL && cR && boardData.left_end !== boardData.right_end) {
+            selectTile(selectedTile.tile, selectedTile.idx)
           } else {
             placeTile(selectedTile.tile, selectedTile.idx, side)
           }
