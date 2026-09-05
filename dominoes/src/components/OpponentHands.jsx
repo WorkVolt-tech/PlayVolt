@@ -1,37 +1,32 @@
 import './OpponentHands.css'
 
-function FaceDownTile({ orientation }) {
-  return (
-    <div className={`opponent-tile ${orientation}`} />
-  )
-}
+export default function OpponentHands({ players, myInfo, roomData }) {
+  const positions = {
+    1: 'right',
+    2: 'top',
+    3: 'left',
+  }
 
-// Sidebar opponent (left or right of board)
-export function SideOpponent({ player, side, isActive }) {
-  const count = Array.isArray(player?.hand) ? player.hand.length : 0
   return (
-    <div className={`side-opponent side-opponent-${side} ${isActive ? 'is-turn' : ''}`}>
-      <div className="opponent-name">{player?.nickname}</div>
-      <div className="side-opponent-tiles">
-        {Array.from({ length: count }).map((_, i) => (
-          <FaceDownTile key={i} orientation="vertical" />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Top opponent (above board)
-export function TopOpponent({ player, isActive }) {
-  const count = Array.isArray(player?.hand) ? player.hand.length : 0
-  return (
-    <div className={`top-opponent ${isActive ? 'is-turn' : ''}`}>
-      <div className="opponent-name">{player?.nickname}</div>
-      <div className="top-opponent-tiles">
-        {Array.from({ length: count }).map((_, i) => (
-          <FaceDownTile key={i} orientation="horizontal" />
-        ))}
-      </div>
-    </div>
+    <>
+      {players
+        .filter(p => p.seat !== myInfo.seat)
+        .map(p => {
+          const pos = positions[p.seat]
+          if (!pos) return null
+          const count = Array.isArray(p.hand) ? p.hand.length : 0
+          const isActive = roomData?.current_turn === p.seat
+          return (
+            <div key={p.seat} className={`opponent-area opponent-${pos} ${isActive ? 'is-turn' : ''}`}>
+              <div className="opponent-name">{p.nickname}</div>
+              <div className={`opponent-tiles opponent-tiles-${pos}`}>
+                {Array.from({ length: count }).map((_, i) => (
+                  <div key={i} className={`opponent-tile ${pos === 'top' ? 'horizontal' : 'vertical'}`} />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+    </>
   )
 }
