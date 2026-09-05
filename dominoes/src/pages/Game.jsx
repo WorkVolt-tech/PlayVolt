@@ -78,8 +78,10 @@ export default function Game() {
         <button className="btn-leave" onClick={leaveTable}>Leave</button>
       </div>
 
-      {/* Board */}
-      <Board
+      {/* Board wrapper */}
+      <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+        <OpponentHands players={players} myInfo={myInfo} roomData={roomData} />
+        <Board
           boardData={boardData}
         selectedTile={selectedTile}
         isMyTurn={isMyTurn}
@@ -105,10 +107,6 @@ export default function Game() {
           else if (cR) placeTile(tile, idx, 'right')
         }}
       />
-
-      {/* Opponent hands — left and right only (absolute inside board) */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5 }}>
-        <OpponentHands players={players} myInfo={myInfo} roomData={roomData} />
       </div>
 
       {/* Side picker */}
