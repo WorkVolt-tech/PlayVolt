@@ -9,7 +9,7 @@
 
 /* TOP — Ti-Cam: centered horizontally, below the board's top edge */
 .opponent-area.opponent-top {
-  top: 8px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   flex-direction: column;
