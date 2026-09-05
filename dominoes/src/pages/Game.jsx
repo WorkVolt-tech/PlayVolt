@@ -78,7 +78,7 @@ export default function Game() {
         <button className="btn-leave" onClick={leaveTable}>Leave</button>
       </div>
 
-      <div style={{ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div className="board-container">
         <OpponentHands players={players} myInfo={myInfo} roomData={roomData} />
         <Board
           boardData={boardData}
