@@ -1,12 +1,9 @@
-import { createPortal } from 'react-dom'
 import './OpponentHands.css'
 
 export default function OpponentHands({ players, myInfo, roomData }) {
   const positions = { 1: 'right', 2: 'top', 3: 'left' }
-  const boardEl = document.getElementById('board-area')
-  if (!boardEl) return null
 
-  return createPortal(
+  return (
     <>
       {players
         .filter(p => p.seat !== myInfo.seat)
@@ -26,7 +23,6 @@ export default function OpponentHands({ players, myInfo, roomData }) {
             </div>
           )
         })}
-    </>,
-    boardEl
+    </>
   )
 }
