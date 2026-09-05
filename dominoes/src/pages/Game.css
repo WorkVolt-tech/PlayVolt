@@ -7,6 +7,10 @@
   inset: 0;
 }
 
+.board-area {
+  position: relative;
+}
+
 .top-bar {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
