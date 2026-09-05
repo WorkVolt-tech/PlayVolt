@@ -1,69 +1,32 @@
-.opponent-area {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  z-index: 5;
-  pointer-events: none;
-}
+import './OpponentHands.css'
 
-/* TOP — Ti-Cam: centered horizontally, below the board's top edge */
-.opponent-area.opponent-top {
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  flex-direction: column;
-  align-items: center;
-}
+export default function OpponentHands({ players, myInfo, roomData }) {
+  const positions = {
+    1: 'right',
+    3: 'left',
+    // seat 2 (Ti-Cam) rendered as a dedicated row above the board
+  }
 
-/* LEFT — Jean: centered vertically on left edge */
-.opponent-area.opponent-left {
-  left: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  flex-direction: column;
-  align-items: center;
+  return (
+    <>
+      {players
+        .filter(p => p.seat !== myInfo.seat)
+        .map(p => {
+          const pos = positions[p.seat]
+          if (!pos) return null
+          const count = Array.isArray(p.hand) ? p.hand.length : 0
+          const isActive = roomData?.current_turn === p.seat
+          return (
+            <div key={p.seat} className={`opponent-area opponent-${pos} ${isActive ? 'is-turn' : ''}`}>
+              <div className="opponent-name">{p.nickname}</div>
+              <div className={`opponent-tiles opponent-tiles-${pos}`}>
+                {Array.from({ length: count }).map((_, i) => (
+                  <div key={i} className={`opponent-tile ${pos === 'top' ? 'horizontal' : 'vertical'}`} />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+    </>
+  )
 }
-
-/* RIGHT — Djo: centered vertically on right edge */
-.opponent-area.opponent-right {
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  flex-direction: column;
-  align-items: center;
-}
-
-.opponent-name {
-  font-size: 0.48rem;
-  letter-spacing: 0.12em;
-  color: var(--ivory-dim);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.opponent-area.is-turn .opponent-name { color: var(--gold); }
-.opponent-area.is-turn .opponent-tile {
-  border-color: rgba(201,168,76,0.6);
-  background: rgba(201,168,76,0.1);
-}
-
-/* Tile stacks */
-.opponent-tiles {
-  display: flex;
-  gap: 2px;
-}
-
-.opponent-tiles-top { flex-direction: row; flex-wrap: wrap; justify-content: center; max-width: 200px; }
-.opponent-tiles-left,
-.opponent-tiles-right { flex-direction: column; }
-
-/* Face-down tile */
-.opponent-tile {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-.opponent-tile.vertical   { width: 14px; height: 28px; }
-.opponent-tile.horizontal { width: 28px; height: 14px; }
