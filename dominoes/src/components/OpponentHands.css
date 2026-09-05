@@ -14,11 +14,7 @@
   transform: translateX(-50%);
   flex-direction: row;
   align-items: center;
-  background: rgba(22, 38, 20, 0.85);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 4px 10px;
-  gap: 6px;
+  gap: 4px;
   white-space: nowrap;
 }
 
