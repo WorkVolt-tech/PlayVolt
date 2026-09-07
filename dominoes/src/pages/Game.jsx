@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { db } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
@@ -7,6 +7,7 @@ import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
+import KnockAnimation from '../components/KnockAnimation'
 import OpponentHands from '../components/OpponentHands'
 import './Game.css'
 
@@ -17,6 +18,7 @@ export default function Game() {
   const [passingSeats, setPassingSeats] = useState(new Set())
   const [showDekabess, setShowDekabess] = useState(false)
   const [dekabessPlayer, setDekabessPlayer] = useState('')
+  const [knockPlayer, setKnockPlayer] = useState(null)
 
   const {
     roomData, players, boardData, selectedTile, showPicker,
@@ -36,18 +38,40 @@ export default function Game() {
     }
   }, [showOverlay, roomData?.pending_point])
 
-  // Track who recently passed
+  // Track passes - clear when someone plays, show knock when someone passes
+  const prevPassSeatsRef = useRef(new Set())
   useEffect(() => {
-    if (!roomData?.roomId && !myInfo?.roomId) return
+    if (!myInfo?.roomId) return
     db.from('game_events')
-      .select('player_seat, action')
+      .select('player_seat, action, created_at')
       .eq('room_id', myInfo.roomId)
-      .eq('action', 'pass')
       .order('created_at', { ascending: false })
       .limit(4)
       .then(({ data }) => {
-        const passSeats = new Set((data || []).map(e => e.player_seat))
-        setPassingSeats(passSeats)
+        // Only mark as passing if the most recent events are passes
+        // Once someone plays, clear all pass indicators
+        const recent = data || []
+        const newPassSeats = new Set(
+          recent
+            .filter(e => e.action === 'pass')
+            .map(e => e.player_seat)
+        )
+        // If any recent event is a 'place', clear that player's pass
+        recent.filter(e => e.action === 'place').forEach(e => newPassSeats.delete(e.player_seat))
+        // Show knock for newly passed players
+        newPassSeats.forEach(seat => {
+          if (!prevPassSeatsRef.current.has(seat)) {
+            const p = players.find(pl => pl.seat === seat)
+            if (p) {
+              const mySeat = myInfo?.seat ?? 0
+              const diff = ((seat - mySeat) + 4) % 4
+              const posMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' }
+              setKnockPlayer({ name: p.nickname, position: posMap[diff] })
+            }
+          }
+        })
+        prevPassSeatsRef.current = newPassSeats
+        setPassingSeats(newPassSeats)
       })
   }, [roomData?.current_turn])
 
@@ -130,6 +154,15 @@ export default function Game() {
 
       {/* Toast */}
       {toast && <div className="turn-toast">{toast}</div>}
+
+      {/* Knock animation */}
+      {knockPlayer && (
+        <KnockAnimation
+          playerName={knockPlayer.name}
+          position={knockPlayer.position}
+          onDone={() => setKnockPlayer(null)}
+        />
+      )}
 
       {/* Dekabess celebration */}
       {showDekabess && (
