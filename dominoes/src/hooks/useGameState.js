@@ -135,9 +135,10 @@ export function useGameState(myInfo, navigate) {
         overlayShownRef.current = true
         setShowOverlay(true)
       }
-    } else {
-      // Reset when back to playing
+    } else if (roomData.status === 'playing') {
+      // Status went back to playing — hide overlay for ALL players
       overlayShownRef.current = false
+      setShowOverlay(false)
     }
   }, [roomData?.current_turn, roomData?.status])
 
