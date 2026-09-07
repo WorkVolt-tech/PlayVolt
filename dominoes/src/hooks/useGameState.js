@@ -180,6 +180,7 @@ export function useGameState(myInfo, navigate) {
         streak: newStreak,
         match_winner: isVyej ? winnerKey : null,
         pending_point: isDek,
+        blocked: winningSeat === null,
       }).eq('id', myInfo.roomId)
       console.log('[endRound] room update error:', updateErr)
       
@@ -285,10 +286,22 @@ export function useGameState(myInfo, navigate) {
   const startNextRound = useCallback(async () => {
     overlayShownRef.current = false
     setShowOverlay(false)
-    // Get current room to find winner seat and round number
-    const { data: room } = await db.from('domino_rooms').select('current_turn, round').eq('id', myInfo.roomId).single()
-    const winnerSeat = room?.current_turn ?? 0
-    const nextRound = (room?.round ?? 1) + 1
+
+    // Get current room
+    const { data: room } = await db.from('domino_rooms').select('current_turn, round, game_mode').eq('id', myInfo.roomId).single()
+    if (!room) return
+
+    const winnerSeat = room.current_turn ?? 0
+    const nextRound = (room.round ?? 1) + 1
+    const isSoloMode = room.game_mode === 'solo'
+
+    // Only the winner (or host in solo) deals the next round
+    // Everyone else just waits for the subscription to update them
+    if (myInfo.seat !== winnerSeat && !isSoloMode) {
+      // Non-winner clicked — just close overlay and wait
+      await loadGameState()
+      return
+    }
 
     const tiles = shuffle(generateDominoSet())
     const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)]
@@ -296,16 +309,28 @@ export function useGameState(myInfo, navigate) {
       await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
     await db.from('board').delete().eq('room_id', myInfo.roomId)
     await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
-    // Winner of last round starts next round
+    await db.from('game_events').delete().eq('room_id', myInfo.roomId)
     await db.from('domino_rooms').update({
       status: 'playing',
       current_turn: winnerSeat,
       round: nextRound,
       pending_point: false,
+      blocked: false,
     }).eq('id', myInfo.roomId)
-    // Reload state — setShowOverlay stays false since status is now 'playing'
     await loadGameState()
   }, [myInfo, loadGameState])
+
+  const replaceWithBot = useCallback(async (seat) => {
+    if (myInfo.seat !== 0) return // only host can do this
+    const botNames = { 1: 'Djo', 2: 'Ti-Cam', 3: 'Jean' }
+    const botName = botNames[seat] || `Bot ${seat}`
+    // Give bot a hand from remaining tiles or empty hand
+    await db.from('domino_players').update({
+      nickname: botName,
+      is_ai: true,
+      is_connected: true,
+    }).eq('room_id', myInfo.roomId).eq('seat', seat)
+  }, [myInfo])
 
   const leaveTable = useCallback(async () => {
     if (!confirm('Leave this table?')) return
@@ -409,7 +434,7 @@ export function useGameState(myInfo, navigate) {
     showOverlay, toast, isProcessing,
     me, hand, isMyTurn, playable, hasTilesOnBoard,
     selectTile, placeTile, passMove,
-    startNextRound, leaveTable, setShowOverlay,
+    startNextRound, leaveTable, setShowOverlay, replaceWithBot,
     cancelSelection: () => { setSelectedTile(null); setShowPicker(false) },
   }
 }
