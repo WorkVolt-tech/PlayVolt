@@ -28,13 +28,18 @@ export default function Game() {
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
 
-  // Show Dekabess celebration
+  // Show Dekabess celebration — only once per round
+  const dekabessShownRef = useRef(false)
   useEffect(() => {
     if (!roomData || !showOverlay) return
-    if (roomData.pending_point) {
+    if (roomData.pending_point && !dekabessShownRef.current) {
+      dekabessShownRef.current = true
       const winner = players.find(p => p.seat === roomData.current_turn)
       setDekabessPlayer(winner?.nickname || '?')
       setShowDekabess(true)
+    }
+    if (!roomData.pending_point) {
+      dekabessShownRef.current = false
     }
   }, [showOverlay, roomData?.pending_point])
 
