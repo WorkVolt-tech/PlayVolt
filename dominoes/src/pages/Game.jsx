@@ -58,7 +58,7 @@ export default function Game() {
       {/* Top bar */}
       <div className="top-bar">
         <div className="top-bar-left">
-          <span className="game-title">Dominos</span>
+          <span className="game-title">Dekabess!</span>
           <span className="room-code-badge">{myInfo.roomCode || '——'}</span>
         </div>
         <div className="player-tags">
