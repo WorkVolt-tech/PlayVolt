@@ -15,7 +15,9 @@ export function DragProvider({ children }) {
     draggingRef.current = data
     setDragging(data)
     setPos({ x: clientX, y: clientY })
+    startXY.current = { x: clientX, y: clientY }
   }, [])
+  const startXY = useRef({ x: 0, y: 0 })
 
   const endDrag = useCallback((clientX, clientY) => {
     if (!draggingRef.current) return
@@ -78,7 +80,7 @@ export function DragProvider({ children }) {
         <div style={{
           position: 'fixed',
           left: pos.x - 14,
-          top: pos.y - 28,
+          top: pos.y - 28,  /* centered on finger - detection matches visual */
           width: 28,
           height: 56,
           background: '#fffef8',
@@ -148,11 +150,15 @@ export function Draggable({ children, data, disabled }) {
 let zoneCounter = 0
 export function DropZone({ onDrop, children, style, className }) {
   const id = useRef(`dz-${++zoneCounter}`).current
+  const onDropRef = useRef(onDrop)
+  
+  // Always keep ref current so drop handler never goes stale
+  useEffect(() => { onDropRef.current = onDrop }, [onDrop])
 
   useEffect(() => {
-    registerDropZone(id, onDrop)
+    registerDropZone(id, (data) => onDropRef.current(data))
     return () => unregisterDropZone(id)
-  }, [onDrop])
+  }, [id])
 
   return (
     <div data-dropzone-id={id} style={style} className={className}>
