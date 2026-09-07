@@ -46,7 +46,9 @@ export default function KnockAnimation({ playerName, position = 'bottom', onDone
     right:  'translateX(60px)',
   }
 
-  const rot = `rotate(${rotations[position]}deg)`
+  // Flip horizontally for right/top so fist faces toward board
+  const flip = (position === 'right' || position === 'top') ? ' scaleX(-1)' : ''
+  const rot = `rotate(${rotations[position]}deg)${flip}`
 
   const handStyle = {
     width: 90,
