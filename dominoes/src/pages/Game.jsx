@@ -21,7 +21,7 @@ export default function Game() {
   const {
     roomData, players, boardData, selectedTile, showPicker,
     showOverlay, toast, isProcessing,
-    hand, isMyTurn, playable, hasTilesOnBoard,
+    hand, isMyTurn, playable, hasTilesOnBoard, replaceWithBot,
     selectTile, placeTile, passMove, cancelSelection,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
