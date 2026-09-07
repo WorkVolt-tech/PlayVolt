@@ -46,9 +46,14 @@ export default function KnockAnimation({ playerName, position = 'bottom', onDone
     right:  'translateX(60px)',
   }
 
-  // Flip horizontally for right/top so fist faces toward board
-  const flip = (position === 'right' || position === 'top') ? ' scaleX(-1)' : ''
-  const rot = `rotate(${rotations[position]}deg)${flip}`
+  // Each position needs specific transform so fist always faces board center
+  const transforms = {
+    bottom: 'rotate(0deg)',                    // fist up, no change
+    left:   'rotate(90deg)',                   // fist points right toward board
+    top:    'rotate(180deg) scaleX(-1)',       // fist points down toward board
+    right:  'rotate(-90deg) scaleX(-1)',      // fist points left toward board
+  }
+  const rot = transforms[position]
 
   const handStyle = {
     width: 90,
