@@ -169,30 +169,33 @@ export function useGameState(myInfo, navigate) {
       
       console.log('[endRound] resolvedSeat:', resolvedSeat, 'isVyej:', isVyej, 'newStreak:', newStreak)
 
-      // Record Vyèj in Wa Tab La leaderboard
+      // Record Vyèj in Wa Tab La leaderboard — for the winner only
       if (isVyej && resolvedSeat === myInfo.seat) {
+        // Get or create persistent player ID
+        let playerId = localStorage.getItem('dekabess_player_id')
+        if (!playerId) {
+          playerId = crypto.randomUUID()
+          localStorage.setItem('dekabess_player_id', playerId)
+        }
         const weekStart = new Date()
         const day = weekStart.getDay()
         weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1))
         const weekStr = weekStart.toISOString().split('T')[0]
         const mode = room.game_mode === 'asosye' ? 'teams' : 'solo'
-        const playerId = `${myInfo.roomId}-seat-${myInfo.seat}` // simple ID
         const nickname = players.find(p => p.seat === myInfo.seat)?.nickname || 'Player'
-        // Upsert — increment wins
         await db.rpc('increment_wa_tab_la', {
           p_player_id: playerId,
           p_nickname: nickname,
           p_mode: mode,
           p_week_start: weekStr,
-        }).catch(() => {
-          // Fallback if RPC not set up yet
-          db.from('wa_tab_la').upsert({
+        }).catch(async () => {
+          await db.from('wa_tab_la').upsert({
             player_id: playerId,
             player_nickname: nickname,
             mode,
             week_start: weekStr,
             wins: 1,
-          }, { onConflict: 'player_id,week_start,mode', ignoreDuplicates: false })
+          }, { onConflict: 'player_id,week_start,mode' })
         })
       }
       
