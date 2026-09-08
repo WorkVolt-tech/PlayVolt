@@ -1,0 +1,175 @@
+.wtl-page {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ivory);
+  font-family: 'DM Mono', monospace;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.wtl-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.wtl-back {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ivory-dim);
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.wtl-back:hover { border-color: var(--ivory-dim); color: var(--ivory); }
+
+.wtl-title-block { flex: 1; }
+.wtl-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--gold);
+  margin: 0;
+  line-height: 1;
+}
+.wtl-sub {
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--ivory-dim);
+  text-transform: uppercase;
+  margin: 4px 0 0;
+}
+
+.wtl-timer { text-align: right; flex-shrink: 0; }
+.wtl-timer-label { font-size: 0.5rem; letter-spacing: 0.15em; color: var(--ivory-dim); text-transform: uppercase; }
+.wtl-timer-value { font-size: 0.9rem; color: var(--gold); font-weight: 700; }
+
+/* Tabs */
+.wtl-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.wtl-tab {
+  flex: 1;
+  padding: 0.65rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--ivory-dim);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.wtl-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* Podium */
+.wtl-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+  height: 160px;
+}
+
+.wtl-podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  max-width: 120px;
+}
+
+.wtl-podium-medal { font-size: 1.5rem; }
+.wtl-podium-name {
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: var(--ivory);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.wtl-podium-wins { font-size: 0.55rem; color: var(--ivory-dim); }
+.wtl-king-badge {
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  text-transform: uppercase;
+  border: 1px solid var(--gold);
+  border-radius: 3px;
+  padding: 1px 6px;
+  margin-top: 2px;
+}
+
+.wtl-podium-bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+}
+.wtl-podium-bar.rank-1 { height: 80px; background: linear-gradient(180deg, #c9a84c 0%, #8a6d2a 100%); }
+.wtl-podium-bar.rank-2 { height: 55px; background: linear-gradient(180deg, #9aa0a6 0%, #636b72 100%); }
+.wtl-podium-bar.rank-3 { height: 40px; background: linear-gradient(180deg, #cd7f32 0%, #8b5a1f 100%); }
+
+/* List */
+.wtl-list-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.wtl-list-header {
+  display: grid;
+  grid-template-columns: 40px 1fr 60px;
+  padding: 8px 16px;
+  font-size: 0.52rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.wtl-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 60px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(58,53,40,0.4);
+  align-items: center;
+  transition: background 0.15s;
+}
+.wtl-row:last-child { border-bottom: none; }
+.wtl-row:hover { background: var(--surface2); }
+.wtl-row-king { background: rgba(201,168,76,0.07); }
+
+.wtl-rank { font-size: 0.75rem; }
+.wtl-name { font-size: 0.72rem; color: var(--ivory); }
+.wtl-wins { font-size: 0.72rem; color: var(--gold); font-weight: 700; text-align: right; }
+
+.wtl-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--ivory-dim);
+  font-size: 0.68rem;
+  line-height: 1.8;
+}
+
+.wtl-prize-note {
+  text-align: center;
+  font-size: 0.6rem;
+  color: var(--ivory-dim);
+  letter-spacing: 0.1em;
+  padding: 0.5rem;
+}
