@@ -6,6 +6,11 @@ import './Lobby.css'
 
 export default function Lobby() {
   const navigate = useNavigate()
+
+  // Detect iOS Safari (not already installed)
+  const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())
+  const isStandalone = window.navigator.standalone === true
+  const showIosHint = isIos && !isStandalone
   const [nickname, setNickname] = useState(() => localStorage.getItem('domino_nickname') || '')
   const [tab, setTab] = useState('create')
   const [joinCode, setJoinCode] = useState('')
@@ -356,6 +361,28 @@ export default function Lobby() {
       <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
         <button onClick={() => navigate('/tracker')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>📊 Dekabess Tracker</button>
       </div>
+
+      {showIosHint && (
+        <div style={{
+          marginTop: '1.5rem',
+          background: 'var(--surface2)',
+          border: '1px solid var(--border)',
+          borderRadius: 8,
+          padding: '0.875rem 1rem',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+          fontSize: '0.62rem',
+          color: 'var(--ivory-dim)',
+          lineHeight: 1.6,
+        }}>
+          <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>📲</span>
+          <div>
+            <div style={{ color: 'var(--ivory)', marginBottom: 3, letterSpacing: '0.05em' }}>Install as an app</div>
+            Tap <strong style={{ color: 'var(--ivory)' }}>Share</strong> <span style={{ fontSize: '0.9em' }}>⬆️</span> then <strong style={{ color: 'var(--ivory)' }}>Add to Home Screen</strong> to play Dekabess like a native app — no App Store needed.
+          </div>
+        </div>
+      )}
       </div>
     </div>
   )
