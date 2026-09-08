@@ -168,6 +168,33 @@ export function useGameState(myInfo, navigate) {
       const winnerKey = mode === 'asosye' ? (resolvedSeat === 0 || resolvedSeat === 2 ? 'A' : 'B') : resolvedSeat
       
       console.log('[endRound] resolvedSeat:', resolvedSeat, 'isVyej:', isVyej, 'newStreak:', newStreak)
+
+      // Record Vyèj in Wa Tab La leaderboard
+      if (isVyej && resolvedSeat === myInfo.seat) {
+        const weekStart = new Date()
+        const day = weekStart.getDay()
+        weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1))
+        const weekStr = weekStart.toISOString().split('T')[0]
+        const mode = room.game_mode === 'asosye' ? 'teams' : 'solo'
+        const playerId = `${myInfo.roomId}-seat-${myInfo.seat}` // simple ID
+        const nickname = players.find(p => p.seat === myInfo.seat)?.nickname || 'Player'
+        // Upsert — increment wins
+        await db.rpc('increment_wa_tab_la', {
+          p_player_id: playerId,
+          p_nickname: nickname,
+          p_mode: mode,
+          p_week_start: weekStr,
+        }).catch(() => {
+          // Fallback if RPC not set up yet
+          db.from('wa_tab_la').upsert({
+            player_id: playerId,
+            player_nickname: nickname,
+            mode,
+            week_start: weekStr,
+            wins: 1,
+          }, { onConflict: 'player_id,week_start,mode', ignoreDuplicates: false })
+        })
+      }
       
       const [delEvents, delBoard] = await Promise.all([
         db.from('game_events').delete().eq('room_id', myInfo.roomId),
