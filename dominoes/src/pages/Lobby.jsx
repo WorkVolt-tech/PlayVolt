@@ -6,6 +6,14 @@ import './Lobby.css'
 
 export default function Lobby() {
   const navigate = useNavigate()
+  const [authUser, setAuthUser] = useState(null)
+
+  useEffect(() => {
+    import('../lib/supabase').then(({ db }) => {
+      db.auth.getSession().then(({ data: { session } }) => setAuthUser(session?.user ?? null))
+      db.auth.onAuthStateChange((_, s) => setAuthUser(s?.user ?? null))
+    })
+  }, [])
 
   // Detect iOS Safari (not already installed)
   const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())
@@ -213,6 +221,17 @@ export default function Lobby() {
   return (
     <div className="lobby-page">
       <div className="lobby-bg" />
+      <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
+        {authUser ? (
+          <button onClick={() => navigate('/profile')} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--gold)', borderRadius: 20, padding: '6px 14px', fontFamily: 'DM Mono, monospace', fontSize: '0.6rem', letterSpacing: '0.1em', cursor: 'pointer' }}>
+            👤 Profile
+          </button>
+        ) : (
+          <button onClick={() => navigate('/auth')} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', borderRadius: 20, padding: '6px 14px', fontFamily: 'DM Mono, monospace', fontSize: '0.6rem', letterSpacing: '0.1em', cursor: 'pointer' }}>
+            Sign In
+          </button>
+        )}
+      </div>
       <div className="wrapper">
         {/* Logo */}
         <div className="title-block">
