@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
+import { chooseTile, getPersonality } from '../lib/botAI'
 
 // ── Pure helpers ────────────────────────────────────────────────────────────
 export function generateRoomCode() {
@@ -405,37 +406,12 @@ export function useGameState(myInfo, navigate) {
         botRunningRef.current = false
         return
       }
-      // AI personality based on seat
-      // Seat 1 = Djo (Smart), Seat 2 = Ti-Cam (Risky), Seat 3 = Jean (Aggressive)
-      let tile
-      const seat = currentPlayer.seat
-      
-      if (seat === 1) {
-        // Djo - Smart: prefer non-doubles, avoid getting stuck with doubles
-        // unless playing the double frees up options
-        const nonDoubles = botPlayable.filter(t => t[0] !== t[1])
-        const doubles = botPlayable.filter(t => t[0] === t[1])
-        if (nonDoubles.length > 0) {
-          // Play the non-double that leaves most options (highest pip value = more connections)
-          tile = nonDoubles.sort((a, b) => (b[0] + b[1]) - (a[0] + a[1]))[0]
-        } else {
-          // Only doubles left, play lowest double
-          tile = doubles.sort((a, b) => a[0] - b[0])[0]
-        }
-      } else if (seat === 2) {
-        // Ti-Cam - Risky: play doubles first to clear them, then random
-        const doubles = botPlayable.filter(t => t[0] === t[1])
-        if (doubles.length > 0) {
-          tile = doubles[Math.floor(Math.random() * doubles.length)]
-        } else {
-          tile = botPlayable[Math.floor(Math.random() * botPlayable.length)]
-        }
-      } else if (seat === 3) {
-        // Jean - Aggressive: play highest pip count to drain hand fast and block others
-        tile = botPlayable.sort((a, b) => (b[0] + b[1]) - (a[0] + a[1]))[0]
-      } else {
-        tile = botPlayable[Math.floor(Math.random() * botPlayable.length)]
-      }
+      // Use personality-based AI engine
+      const personality = getPersonality(currentPlayer.nickname)
+      const move = chooseTile(personality, botPlayable, botHand, board)
+      let tile = move?.tile || botPlayable[0]
+      // Override side from AI recommendation if available
+      const aiSide = move?.side
       const tileIdx = botHand.findIndex(t => t[0] === tile[0] && t[1] === tile[1])
       const newHand = botHand.filter((_, i) => i !== tileIdx)
       // Verify tile not already on board (prevent duplicate on double-fire)
@@ -448,7 +424,10 @@ export function useGameState(myInfo, navigate) {
       } else {
         const cL   = canPlayOnSide(tile, 'left', board)
         const cR   = canPlayOnSide(tile, 'right', board)
-        const side = (cL && cR) ? (Math.random() < 0.5 ? 'left' : 'right') : cL ? 'left' : 'right'
+        // Use AI-recommended side if valid, else fallback
+        const side = (aiSide && aiSide !== 'first' && ((aiSide === 'left' && cL) || (aiSide === 'right' && cR)))
+          ? aiSide
+          : (cL && cR) ? (Math.random() < 0.5 ? 'left' : 'right') : cL ? 'left' : 'right'
         const end  = side === 'left' ? board.left_end : board.right_end
         let flipped = false, newOpenEnd
         if (side === 'right') {
