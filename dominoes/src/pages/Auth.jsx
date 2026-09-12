@@ -20,11 +20,14 @@ export default function Auth() {
       if (mode === 'signup') {
         if (!nickname.trim()) { setError('Nickname is required'); setLoading(false); return }
         if (nickname.length < 2 || nickname.length > 16) { setError('Nickname must be 2–16 characters'); setLoading(false); return }
-        const { error: e } = await db.auth.signUp({
+        const { data, error: e } = await db.auth.signUp({
           email, password,
           options: { data: { nickname: nickname.trim() } }
         })
         if (e) throw e
+        // If session exists, confirmation is off — go straight to lobby
+        if (data?.session) { navigate('/'); return }
+        // Otherwise show check email screen
         setDone(true)
       } else {
         const { error: e } = await db.auth.signInWithPassword({ email, password })
