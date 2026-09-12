@@ -1,12 +1,10 @@
-// Cache version — bump this on every deploy to force update
-const CACHE = 'dekabess-v2'
+const CACHE = 'dekabess-1789244509731'
 
 self.addEventListener('install', e => {
-  self.skipWaiting() // activate immediately
+  self.skipWaiting()
 })
 
 self.addEventListener('activate', e => {
-  // Delete ALL old caches
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
@@ -15,15 +13,14 @@ self.addEventListener('activate', e => {
 })
 
 self.addEventListener('fetch', e => {
-  // Never cache Supabase API calls — always need live data
-  if (e.request.url.includes('supabase') || 
-      e.request.url.includes('api.') ||
-      e.request.method !== 'GET') {
-    e.respondWith(fetch(e.request))
-    return
-  }
+  const url = e.request.url
 
-  // Network first — try to get fresh version, fall back to cache
+  // Skip ALL external requests — only cache same-origin static assets
+  if (!url.startsWith(self.location.origin)) return
+
+  // Skip non-GET
+  if (e.request.method !== 'GET') return
+
   e.respondWith(
     fetch(e.request)
       .then(res => {
@@ -37,7 +34,6 @@ self.addEventListener('fetch', e => {
   )
 })
 
-// Tell all open tabs to reload when new SW activates
 self.addEventListener('message', e => {
   if (e.data === 'SKIP_WAITING') self.skipWaiting()
 })
