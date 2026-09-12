@@ -7,11 +7,27 @@ import './Lobby.css'
 export default function Lobby() {
   const navigate = useNavigate()
   const [authUser, setAuthUser] = useState(null)
+  const [authProfile, setAuthProfile] = useState(null)
 
   useEffect(() => {
     import('../lib/supabase').then(({ db }) => {
-      db.auth.getSession().then(({ data: { session } }) => setAuthUser(session?.user ?? null))
-      db.auth.onAuthStateChange((_, s) => setAuthUser(s?.user ?? null))
+      db.auth.getSession().then(async ({ data: { session } }) => {
+        setAuthUser(session?.user ?? null)
+        if (session?.user) {
+          const { data } = await db.from('profiles').select('nickname').eq('id', session.user.id).single()
+          setAuthProfile(data)
+        }
+      })
+      db.auth.onAuthStateChange(async (_, s) => {
+        setAuthUser(s?.user ?? null)
+        if (s?.user) {
+          const { db: dbInner } = await import('../lib/supabase')
+          const { data } = await dbInner.from('profiles').select('nickname').eq('id', s.user.id).single()
+          setAuthProfile(data)
+        } else {
+          setAuthProfile(null)
+        }
+      })
     })
   }, [])
 
