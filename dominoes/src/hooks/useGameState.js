@@ -380,23 +380,29 @@ export function useGameState(myInfo, navigate) {
   }, [myInfo, navigate])
 
   // AI turns
+  const botRunningRef = useRef(false)
   useEffect(() => {
     if (!roomData || !players.length || roomData.status !== 'playing') return
     const currentPlayer = players.find(p => p.seat === roomData.current_turn)
     if (!currentPlayer?.is_ai) return
     // Only the host (seat 0) runs AI logic to prevent double-fire
     if (myInfo.seat !== 0) return
+    // Prevent double-fire within the same turn
+    if (botRunningRef.current) return
     const board = boardRef.current
     const timer = setTimeout(async () => {
+      if (botRunningRef.current) return
+      botRunningRef.current = true
       const botHand     = currentPlayer.hand || []
       const botPlayable = getPlayableTiles(botHand, board, roomData)
       if (botPlayable.length === 0) {
         await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'pass', tile: null })
         if (board?.tiles?.length > 0) {
           const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
-          if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
+          if (events?.length === 4 && events.every(e => e.action === 'pass')) { botRunningRef.current = false; await endRound(null, false); return }
         }
         await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
+        botRunningRef.current = false
         return
       }
       // AI personality based on seat
@@ -432,6 +438,9 @@ export function useGameState(myInfo, navigate) {
       }
       const tileIdx = botHand.findIndex(t => t[0] === tile[0] && t[1] === tile[1])
       const newHand = botHand.filter((_, i) => i !== tileIdx)
+      // Verify tile not already on board (prevent duplicate on double-fire)
+      const alreadyPlayed = board?.tiles?.some(e => e.tile[0] === tile[0] && e.tile[1] === tile[1])
+      if (alreadyPlayed) { botRunningRef.current = false; return }
       if (!board?.tiles?.length) {
         await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
         await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', currentPlayer.seat)
@@ -454,10 +463,11 @@ export function useGameState(myInfo, navigate) {
         await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', currentPlayer.seat)
         await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'place', tile })
       }
-      if (newHand.length === 0) { await endRound(currentPlayer.seat, checkDekabess(tile, board)); return }
+      if (newHand.length === 0) { botRunningRef.current = false; await endRound(currentPlayer.seat, checkDekabess(tile, board)); return }
       await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
+      botRunningRef.current = false
     }, 1200)
-    return () => clearTimeout(timer)
+    return () => { clearTimeout(timer); botRunningRef.current = false }
   }, [roomData?.current_turn, roomData?.status])
 
   return {
