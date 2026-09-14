@@ -45,43 +45,41 @@ export default function Game() {
 
   // Track passes - clear when someone plays, show knock when someone passes
   const prevPassSeatsRef = useRef(new Set())
-  const lastEventIdRef = useRef(null)
 
   useEffect(() => {
     if (!myInfo?.roomId) return
-    // Subscribe to game_events in real time to catch passes instantly
-    const channel = db.channel(`game-events-${myInfo.roomId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'game_events',
-        filter: `room_id=eq.${myInfo.roomId}`,
-      }, (payload) => {
-        const e = payload.new
-        if (!e || e.id === lastEventIdRef.current) return
-        lastEventIdRef.current = e.id
-        if (e.action === 'pass') {
-          const seat = e.player_seat
-          const p = players.find(pl => pl.seat === seat)
-          if (p) {
-            const mySeat = myInfo?.seat ?? 0
-            const diff = ((seat - mySeat) + 4) % 4
-            const posMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' }
-            setKnockPlayer({ name: p.nickname, position: posMap[diff] })
-            setPassingSeats(prev => new Set([...prev, seat]))
+    db.from('game_events')
+      .select('player_seat, action')
+      .eq('room_id', myInfo.roomId)
+      .order('created_at', { ascending: false })
+      .limit(8)
+      .then(({ data }) => {
+        const recent = data || []
+        const newPassSeats = new Set()
+        // Walk events newest to oldest — track passes until a place clears them
+        const clearedSeats = new Set()
+        recent.forEach(e => {
+          if (e.action === 'place') clearedSeats.add(e.player_seat)
+          if (e.action === 'pass' && !clearedSeats.has(e.player_seat)) {
+            newPassSeats.add(e.player_seat)
           }
-        } else if (e.action === 'place') {
-          setPassingSeats(prev => {
-            const next = new Set(prev)
-            next.delete(e.player_seat)
-            return next
-          })
-        }
+        })
+        // Show knock for newly passed players
+        newPassSeats.forEach(seat => {
+          if (!prevPassSeatsRef.current.has(seat)) {
+            const p = players.find(pl => pl.seat === seat)
+            if (p) {
+              const mySeat = myInfo?.seat ?? 0
+              const diff = ((seat - mySeat) + 4) % 4
+              const posMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' }
+              setKnockPlayer({ name: p.nickname, position: posMap[diff] })
+            }
+          }
+        })
+        prevPassSeatsRef.current = newPassSeats
+        setPassingSeats(newPassSeats)
       })
-      .subscribe()
-
-    return () => { db.removeChannel(channel) }
-  }, [myInfo?.roomId, players])
+  }, [roomData?.current_turn])
 
   if (!myInfo || !roomData) return <div className="loading">Loading…</div>
 
