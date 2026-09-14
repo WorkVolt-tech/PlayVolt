@@ -79,6 +79,7 @@ export function useGameState(myInfo, navigate) {
   const boardRef      = useRef(null)
   const playersRef    = useRef([])
   const overlayShownRef = useRef(false)
+  const botRunningRef   = useRef(false)
 
   useEffect(() => { boardRef.current = boardData }, [boardData])
   useEffect(() => { playersRef.current = players }, [players])
@@ -381,7 +382,6 @@ export function useGameState(myInfo, navigate) {
   }, [myInfo, navigate])
 
   // AI turns
-  const botRunningRef = useRef(false)
   useEffect(() => {
     if (!roomData || !players.length || roomData.status !== 'playing') return
     const currentPlayer = players.find(p => p.seat === roomData.current_turn)
@@ -391,6 +391,8 @@ export function useGameState(myInfo, navigate) {
     // Prevent double-fire within the same turn
     if (botRunningRef.current) return
     const board = boardRef.current
+    // Safety reset — if bot gets stuck for 6s, force unlock
+    const safetyTimer = setTimeout(() => { botRunningRef.current = false }, 6000)
     const timer = setTimeout(async () => {
       if (botRunningRef.current) return
       botRunningRef.current = true
@@ -446,7 +448,7 @@ export function useGameState(myInfo, navigate) {
       await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
       botRunningRef.current = false
     }, 1200)
-    return () => { clearTimeout(timer); botRunningRef.current = false }
+    return () => { clearTimeout(timer); clearTimeout(safetyTimer); botRunningRef.current = false }
   }, [roomData?.current_turn, roomData?.status])
 
   return {
