@@ -44,10 +44,11 @@ export default function Game() {
   }, [showOverlay, roomData?.pending_point])
 
   // Track passes - clear when someone plays, show knock when someone passes
-  const prevPassSeatsRef = useRef(new Set())
+  const prevTurnRef = useRef(null)
 
   useEffect(() => {
     if (!myInfo?.roomId) return
+    const currentTurn = roomData?.current_turn
     db.from('game_events')
       .select('player_seat, action')
       .eq('room_id', myInfo.roomId)
@@ -56,7 +57,6 @@ export default function Game() {
       .then(({ data }) => {
         const recent = data || []
         const newPassSeats = new Set()
-        // Walk events newest to oldest — track passes until a place clears them
         const clearedSeats = new Set()
         recent.forEach(e => {
           if (e.action === 'place') clearedSeats.add(e.player_seat)
@@ -64,19 +64,21 @@ export default function Game() {
             newPassSeats.add(e.player_seat)
           }
         })
-        // Show knock for newly passed players
-        newPassSeats.forEach(seat => {
-          if (!prevPassSeatsRef.current.has(seat)) {
-            const p = players.find(pl => pl.seat === seat)
-            if (p) {
-              const mySeat = myInfo?.seat ?? 0
-              const diff = ((seat - mySeat) + 4) % 4
-              const posMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' }
-              setKnockPlayer({ name: p.nickname, position: posMap[diff] })
-            }
+
+        // The most recent event — if it's a pass, always show the knock
+        const latest = recent[0]
+        if (latest?.action === 'pass' && currentTurn !== prevTurnRef.current) {
+          const seat = latest.player_seat
+          const p = players.find(pl => pl.seat === seat)
+          if (p) {
+            const mySeat = myInfo?.seat ?? 0
+            const diff = ((seat - mySeat) + 4) % 4
+            const posMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' }
+            setKnockPlayer({ name: p.nickname, position: posMap[diff] })
           }
-        })
-        prevPassSeatsRef.current = newPassSeats
+        }
+
+        prevTurnRef.current = currentTurn
         setPassingSeats(newPassSeats)
       })
   }, [roomData?.current_turn])
