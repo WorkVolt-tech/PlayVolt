@@ -273,32 +273,35 @@ export function useGameState(myInfo, navigate) {
     const currentHand  = playersRef.current.find(p => p.seat === myInfo.seat)?.hand || []
     const newHand = currentHand.filter((_, i) => i !== idx)
 
-    if (!currentBoard?.tiles?.length || side === 'first') {
-      await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
-      await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
-      await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
-      await advanceTurn(newHand, tile)
-    } else {
-      const end = side === 'left' ? currentBoard.left_end : currentBoard.right_end
-      let flipped = false, newOpenEnd
-      if (side === 'right') {
-        if (tile[1] === end) { flipped = true; newOpenEnd = tile[0] } else { newOpenEnd = tile[1] }
+    try {
+      if (!currentBoard?.tiles?.length || side === 'first') {
+        await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
+        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
+        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
+        await advanceTurn(newHand, tile)
       } else {
-        if (tile[0] === end) { flipped = true; newOpenEnd = tile[1] } else { newOpenEnd = tile[0] }
+        const end = side === 'left' ? currentBoard.left_end : currentBoard.right_end
+        let flipped = false, newOpenEnd
+        if (side === 'right') {
+          if (tile[1] === end) { flipped = true; newOpenEnd = tile[0] } else { newOpenEnd = tile[1] }
+        } else {
+          if (tile[0] === end) { flipped = true; newOpenEnd = tile[1] } else { newOpenEnd = tile[0] }
+        }
+        const newEntry    = { tile, flipped }
+        const newTiles    = side === 'left' ? [newEntry, ...currentBoard.tiles] : [...currentBoard.tiles, newEntry]
+        const newLeftEnd  = side === 'left'  ? newOpenEnd : currentBoard.left_end
+        const newRightEnd = side === 'right' ? newOpenEnd : currentBoard.right_end
+        await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
+        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
+        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
+        await advanceTurn(newHand, tile)
       }
-      const newEntry    = { tile, flipped }
-      const newTiles    = side === 'left' ? [newEntry, ...currentBoard.tiles] : [...currentBoard.tiles, newEntry]
-      const newLeftEnd  = side === 'left'  ? newOpenEnd : currentBoard.left_end
-      const newRightEnd = side === 'right' ? newOpenEnd : currentBoard.right_end
-      await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
-      await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
-      await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
-      await advanceTurn(newHand, tile)
+    } finally {
+      setSelectedTile(null)
+      setShowPicker(false)
+      processingRef.current = false
+      setProcessing(false)
     }
-    setSelectedTile(null)
-    setShowPicker(false)
-    processingRef.current = false
-    setProcessing(false)
   }, [myInfo, advanceTurn])
 
   const selectTile = useCallback((tile, idx) => {
