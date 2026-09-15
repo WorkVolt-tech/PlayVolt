@@ -362,7 +362,7 @@ export function useGameState(myInfo, navigate) {
 
   const replaceWithBot = useCallback(async (seat) => {
     if (myInfo.seat !== 0) return // only host can do this
-    const allBotNames = ['Djo', 'Ti-Cam', 'Jean', 'Mémère', 'Ti-Pierre', 'Bouki', 'Bourik']
+    const allBotNames = ['Ti-Djo', 'Ti-Cam', 'Ti-Jean', 'Mémère', 'Ti-Pierre', 'Bouki', 'Bourik']
     const usedNames = players.map(p => p.nickname)
     const available = allBotNames.filter(n => !usedNames.includes(n))
     const botName = available.length > 0
@@ -388,7 +388,7 @@ export function useGameState(myInfo, navigate) {
       await db.from('domino_rooms').delete().eq('id', myInfo.roomId)
     } else {
       // Non-host leaves — replace with bot immediately
-      const allBotNames = ['Djo', 'Ti-Cam', 'Jean']
+      const allBotNames = ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
       const usedNames = players.map(p => p.nickname)
       const available = allBotNames.filter(n => !usedNames.includes(n))
       const botName = available.length > 0
@@ -410,7 +410,7 @@ export function useGameState(myInfo, navigate) {
     if (myInfo.seat !== 0) return
     players.forEach(p => {
       if (!p.is_ai && !p.is_connected && p.seat !== myInfo.seat) {
-        const allBotNames = ['Djo', 'Ti-Cam', 'Jean']
+        const allBotNames = ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
         const usedNames = players.map(pl => pl.nickname)
         const available = allBotNames.filter(n => !usedNames.includes(n))
         const botName = available.length > 0
