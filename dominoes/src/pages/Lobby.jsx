@@ -107,29 +107,46 @@ export default function Lobby() {
         if (waiting?.length >= 4) {
           const first4 = waiting.slice(0, 4)
           if (first4[0].id === entry.id) {
-            // I'm first — create room and add all 4
+            // I'm first — create room, deal hands, add all 4 players
             const code = generateRoomCode()
+
+            // Find who has 6-6 to set starting seat
+            const allTiles = []
+            for (let a = 0; a <= 6; a++) for (let b = a; b <= 6; b++) allTiles.push([a,b])
+            const shuffled = allTiles.sort(() => Math.random() - 0.5)
+            const hands = [shuffled.slice(0,7), shuffled.slice(7,14), shuffled.slice(14,21), shuffled.slice(21,28)]
+            const startingSeat = hands.findIndex(h => h.some(t => t[0]===6 && t[1]===6))
+
             const { data: room } = await db.from('domino_rooms')
-              .insert({ code, status: 'waiting', current_turn: 0 }).select().single()
+              .insert({ code, status: 'waiting', current_turn: startingSeat >= 0 ? startingSeat : 0, round: 1, game_mode: 'chien' })
+              .select().single()
             if (!room) return
 
+            // Add board row
+            await db.from('board').insert({ room_id: room.id, tiles: [], left_end: null, right_end: null })
+
+            // Add players with hands
             for (let i = 0; i < 4; i++) {
               await db.from('domino_players').insert({
                 room_id: room.id, seat: i,
-                nickname: first4[i].nickname, hand: [], is_connected: true, is_ai: false,
+                nickname: first4[i].nickname,
+                hand: hands[i],
+                is_connected: true, is_ai: false,
               })
-              // Mark queue entry as matched
               await db.from('queue').update({ status: 'matched', room_id: room.id }).eq('id', first4[i].id)
             }
+
+            // Set to playing AFTER everything is ready
             await db.from('domino_rooms').update({ status: 'playing' }).eq('id', room.id)
           } else if (first4.some(p => p.id === entry.id)) {
             // I'm in the first 4 — watch for room assignment
             const myEntry = first4.find(p => p.id === entry.id)
             if (myEntry?.room_id) {
               const myIdx = first4.indexOf(myEntry)
+              const { data: roomData } = await db.from('domino_rooms').select('code').eq('id', myEntry.room_id).single()
               sessionStorage.setItem('domino_player', JSON.stringify({
                 seat: myIdx, nickname: nick,
-                roomId: myEntry.room_id, roomCode: '', gameMode: 'chien',
+                roomId: myEntry.room_id, roomCode: roomData?.code || '', gameMode: 'chien',
               }))
               if (queueChannelRef.current) db.removeChannel(queueChannelRef.current)
               navigate('/game')
@@ -148,9 +165,10 @@ export default function Lobby() {
         if (payload.new.status === 'matched' && payload.new.room_id) {
           const { data: me } = await db.from('domino_players')
             .select('seat').eq('room_id', payload.new.room_id).eq('nickname', nick).single()
+          const { data: rData } = await db.from('domino_rooms').select('code').eq('id', payload.new.room_id).single()
           sessionStorage.setItem('domino_player', JSON.stringify({
             seat: me?.seat ?? 0, nickname: nick,
-            roomId: payload.new.room_id, roomCode: '', gameMode: 'chien',
+            roomId: payload.new.room_id, roomCode: rData?.code || '', gameMode: 'chien',
           }))
           navigate('/game')
         }
