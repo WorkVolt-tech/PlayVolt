@@ -362,8 +362,12 @@ export function useGameState(myInfo, navigate) {
 
   const replaceWithBot = useCallback(async (seat) => {
     if (myInfo.seat !== 0) return // only host can do this
-    const botNames = { 1: 'Djo', 2: 'Ti-Cam', 3: 'Jean' }
-    const botName = botNames[seat] || `Bot ${seat}`
+    const allBotNames = ['Djo', 'Ti-Cam', 'Jean', 'Mémère', 'Ti-Pierre', 'Bouki', 'Bourik']
+    const usedNames = players.map(p => p.nickname)
+    const available = allBotNames.filter(n => !usedNames.includes(n))
+    const botName = available.length > 0
+      ? available[Math.floor(Math.random() * available.length)]
+      : allBotNames[Math.floor(Math.random() * allBotNames.length)]
     // Give bot a hand from remaining tiles or empty hand
     await db.from('domino_players').update({
       nickname: botName,
@@ -384,8 +388,12 @@ export function useGameState(myInfo, navigate) {
       await db.from('domino_rooms').delete().eq('id', myInfo.roomId)
     } else {
       // Non-host leaves — replace with bot immediately
-      const botNames = { 1: 'Djo', 2: 'Ti-Cam', 3: 'Jean' }
-      const botName = botNames[myInfo.seat] || `Bot ${myInfo.seat}`
+      const allBotNames = ['Djo', 'Ti-Cam', 'Jean']
+      const usedNames = players.map(p => p.nickname)
+      const available = allBotNames.filter(n => !usedNames.includes(n))
+      const botName = available.length > 0
+        ? available[Math.floor(Math.random() * available.length)]
+        : allBotNames[Math.floor(Math.random() * allBotNames.length)]
       await db.from('domino_players').update({
         nickname: botName,
         is_ai: true,
@@ -402,8 +410,12 @@ export function useGameState(myInfo, navigate) {
     if (myInfo.seat !== 0) return
     players.forEach(p => {
       if (!p.is_ai && !p.is_connected && p.seat !== myInfo.seat) {
-        const botNames = { 1: 'Djo', 2: 'Ti-Cam', 3: 'Jean' }
-        const botName = botNames[p.seat] || `Bot ${p.seat}`
+        const allBotNames = ['Djo', 'Ti-Cam', 'Jean']
+        const usedNames = players.map(pl => pl.nickname)
+        const available = allBotNames.filter(n => !usedNames.includes(n))
+        const botName = available.length > 0
+          ? available[Math.floor(Math.random() * available.length)]
+          : allBotNames[Math.floor(Math.random() * allBotNames.length)]
         db.from('domino_players').update({
           nickname: botName, is_ai: true, is_connected: true,
         }).eq('room_id', myInfo.roomId).eq('seat', p.seat)
