@@ -183,18 +183,18 @@ export function useGameState(myInfo, navigate) {
         const day = weekStart.getDay()
         weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1))
         const weekStr = weekStart.toISOString().split('T')[0]
-        const mode = room.game_mode === 'asosye' ? 'teams' : 'solo'
+        const leaderMode = room.game_mode === 'asosye' ? 'teams' : 'solo'
         const nickname = players.find(p => p.seat === myInfo.seat)?.nickname || 'Player'
         await db.rpc('increment_wa_tab_la', {
           p_player_id: playerId,
           p_nickname: nickname,
-          p_mode: mode,
+          p_mode: leaderMode,
           p_week_start: weekStr,
         }).catch(async () => {
           await db.from('wa_tab_la').upsert({
             player_id: playerId,
             player_nickname: nickname,
-            mode,
+            mode: leaderMode,
             week_start: weekStr,
             wins: 1,
           }, { onConflict: 'player_id,week_start,mode' })
@@ -224,6 +224,8 @@ export function useGameState(myInfo, navigate) {
       if (!isVyej && myInfo.seat === 0) {
         const winnerPlayer = playersRef.current.find(p => p.seat === resolvedSeat)
         if (winnerPlayer?.is_ai) {
+          // Wait longer when Dekabess — overlay takes 3.8s + round overlay needs time
+          const autoStartDelay = isDek ? 7000 : 4000
           setTimeout(async () => {
             const { data: latestRoom } = await db.from('domino_rooms').select('current_turn, round, status').eq('id', myInfo.roomId).single()
             if (latestRoom?.status !== 'round_end') return
@@ -235,13 +237,13 @@ export function useGameState(myInfo, navigate) {
             await db.from('board').delete().eq('room_id', myInfo.roomId)
             await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
             overlayShownRef.current = false
-          setShowOverlay(false)
-          await db.from('domino_rooms').update({
+            setShowOverlay(false)
+            await db.from('domino_rooms').update({
               status: 'playing',
               current_turn: resolvedSeat,
               round: nextRound,
             }).eq('id', myInfo.roomId)
-          }, 2500)
+          }, autoStartDelay)
         }
       }
     } catch(err) {
