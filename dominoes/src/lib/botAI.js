@@ -174,9 +174,9 @@ export const PERSONALITIES = {
 // Default assignment by bot name
 export function getPersonality(nickname) {
   const n = (nickname || '').toLowerCase()
-  if (n.includes('djo'))    return 'strategist'
+  if (n.includes('ti-djo') || n.includes('djo'))    return 'strategist'
   if (n.includes('ti-cam') || n.includes('ticam')) return 'gambler'
-  if (n.includes('jean'))   return 'blocker'
+  if (n.includes('ti-jean') || n.includes('jean'))   return 'blocker'
   return 'strategist' // default for new bots
 }
 
