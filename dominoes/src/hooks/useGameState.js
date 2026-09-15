@@ -375,6 +375,7 @@ export function useGameState(myInfo, navigate) {
   const leaveTable = useCallback(async () => {
     if (!confirm('Leave this table?')) return
     if (myInfo.seat === 0) {
+      // Host leaves — end the game
       await Promise.all([
         db.from('game_events').delete().eq('room_id', myInfo.roomId),
         db.from('board').delete().eq('room_id', myInfo.roomId),
@@ -382,11 +383,33 @@ export function useGameState(myInfo, navigate) {
       ])
       await db.from('domino_rooms').delete().eq('id', myInfo.roomId)
     } else {
-      await db.from('domino_players').update({ is_connected: false }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
+      // Non-host leaves — replace with bot immediately
+      const botNames = { 1: 'Djo', 2: 'Ti-Cam', 3: 'Jean' }
+      const botName = botNames[myInfo.seat] || `Bot ${myInfo.seat}`
+      await db.from('domino_players').update({
+        nickname: botName,
+        is_ai: true,
+        is_connected: true,
+      }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
     }
     sessionStorage.removeItem('domino_player')
     navigate('/')
   }, [myInfo, navigate])
+
+  // Watch for disconnected players and replace with bots (host only)
+  useEffect(() => {
+    if (!roomData || !players.length || roomData.status !== 'playing') return
+    if (myInfo.seat !== 0) return
+    players.forEach(p => {
+      if (!p.is_ai && !p.is_connected && p.seat !== myInfo.seat) {
+        const botNames = { 1: 'Djo', 2: 'Ti-Cam', 3: 'Jean' }
+        const botName = botNames[p.seat] || `Bot ${p.seat}`
+        db.from('domino_players').update({
+          nickname: botName, is_ai: true, is_connected: true,
+        }).eq('room_id', myInfo.roomId).eq('seat', p.seat)
+      }
+    })
+  }, [players])
 
   // AI turns
   useEffect(() => {
