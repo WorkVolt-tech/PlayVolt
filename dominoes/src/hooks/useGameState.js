@@ -262,8 +262,10 @@ export function useGameState(myInfo, navigate) {
       const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
       if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
     }
-    // Always advance from the seat that just played (myInfo.seat for human, currentPlayer.seat for bots)
-    const nextSeat = (myInfo.seat + 1) % 4
+    // Read actual current_turn from DB to advance correctly
+    const { data: latestRoom } = await db.from('domino_rooms').select('current_turn').eq('id', myInfo.roomId).single()
+    const fromSeat = latestRoom?.current_turn ?? myInfo.seat
+    const nextSeat = (fromSeat + 1) % 4
     await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
   }, [myInfo, endRound])
 
