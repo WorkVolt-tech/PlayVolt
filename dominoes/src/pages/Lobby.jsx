@@ -36,6 +36,11 @@ export default function Lobby() {
   const isStandalone = window.navigator.standalone === true
   const showIosHint = isIos && !isStandalone
   const [nickname, setNickname] = useState(() => localStorage.getItem('domino_nickname') || '')
+
+  // Override with profile nickname when signed in
+  useEffect(() => {
+    if (authProfile?.nickname) setNickname(authProfile.nickname)
+  }, [authProfile?.nickname])
   const [tab, setTab] = useState('create')
   const [joinCode, setJoinCode] = useState('')
   const [msg, setMsg] = useState({ text: '', type: '' })
@@ -54,7 +59,6 @@ export default function Lobby() {
   const [selectedPartner, setPartner] = useState(null)
   const [amHost, setAmHost]         = useState(false)
   const [queueCount, setQueueCount] = useState(0)
-  const [inQueue, setInQueue]       = useState(false)
   const channelRef = useRef(null)
 
   useEffect(() => {
@@ -72,9 +76,94 @@ export default function Lobby() {
     loadQueueCount()
   }, [])
 
+  const [inQueue, setInQueue] = useState(false)
+  const [myQueueId, setMyQueueId] = useState(null)
+  const queueChannelRef = useRef(null)
+
   async function loadQueueCount() {
     const { data } = await db.from('queue').select('id').eq('status', 'waiting')
     setQueueCount(data?.length ?? 0)
+  }
+
+  async function joinQueue() {
+    const nick = getNickname(); if (!nick) return
+    setInQueue(true)
+
+    // Insert into queue
+    const { data: entry, error } = await db.from('queue')
+      .insert({ nickname: nick, status: 'waiting' })
+      .select().single()
+    if (error) { setMsg({ text: 'Queue error: ' + error.message, type: 'error' }); setInQueue(false); return }
+    setMyQueueId(entry.id)
+
+    // Subscribe to queue changes
+    if (queueChannelRef.current) db.removeChannel(queueChannelRef.current)
+    queueChannelRef.current = db.channel('queue-watch-' + entry.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, async () => {
+        const { data: waiting } = await db.from('queue').select('*').eq('status', 'waiting').order('created_at')
+        setQueueCount(waiting?.length ?? 0)
+
+        // If 4 players in queue, first player creates the room
+        if (waiting?.length >= 4) {
+          const first4 = waiting.slice(0, 4)
+          if (first4[0].id === entry.id) {
+            // I'm first — create room and add all 4
+            const code = generateRoomCode()
+            const { data: room } = await db.from('domino_rooms')
+              .insert({ code, status: 'waiting', current_turn: 0 }).select().single()
+            if (!room) return
+
+            for (let i = 0; i < 4; i++) {
+              await db.from('domino_players').insert({
+                room_id: room.id, seat: i,
+                nickname: first4[i].nickname, hand: [], is_connected: true, is_ai: false,
+              })
+              // Mark queue entry as matched
+              await db.from('queue').update({ status: 'matched', room_id: room.id }).eq('id', first4[i].id)
+            }
+            await db.from('domino_rooms').update({ status: 'playing' }).eq('id', room.id)
+          } else if (first4.some(p => p.id === entry.id)) {
+            // I'm in the first 4 — watch for room assignment
+            const myEntry = first4.find(p => p.id === entry.id)
+            if (myEntry?.room_id) {
+              const myIdx = first4.indexOf(myEntry)
+              sessionStorage.setItem('domino_player', JSON.stringify({
+                seat: myIdx, nickname: nick,
+                roomId: myEntry.room_id, roomCode: '', gameMode: 'chien',
+              }))
+              if (queueChannelRef.current) db.removeChannel(queueChannelRef.current)
+              navigate('/game')
+            }
+          }
+        }
+      })
+      .subscribe()
+
+    // Also watch for my entry to get matched (room_id set)
+    db.channel('my-queue-' + entry.id)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'queue',
+        filter: `id=eq.${entry.id}`
+      }, async (payload) => {
+        if (payload.new.status === 'matched' && payload.new.room_id) {
+          const { data: me } = await db.from('domino_players')
+            .select('seat').eq('room_id', payload.new.room_id).eq('nickname', nick).single()
+          sessionStorage.setItem('domino_player', JSON.stringify({
+            seat: me?.seat ?? 0, nickname: nick,
+            roomId: payload.new.room_id, roomCode: '', gameMode: 'chien',
+          }))
+          navigate('/game')
+        }
+      })
+      .subscribe()
+  }
+
+  async function leaveQueue() {
+    if (myQueueId) await db.from('queue').delete().eq('id', myQueueId)
+    if (queueChannelRef.current) db.removeChannel(queueChannelRef.current)
+    setInQueue(false)
+    setMyQueueId(null)
+    loadQueueCount()
   }
 
   function getNickname() {
@@ -261,7 +350,9 @@ export default function Lobby() {
           <input
             type="text"
             value={nickname}
-            onChange={e => setNickname(e.target.value)}
+            readOnly={!!authProfile}
+            style={authProfile ? { opacity: 0.7, cursor: 'not-allowed', pointerEvents: 'none' } : {}}
+            onChange={e => { if (!authProfile) setNickname(e.target.value) }}
             placeholder="Enter your name…"
             maxLength={16}
           />
@@ -311,9 +402,15 @@ export default function Lobby() {
             <div className="queue-status">
               <div className="queue-label">Players in Queue</div>
               <span className="queue-count">{queueCount} / 4</span>
-              <div className="queue-sub">Need 4 to auto-start</div>
+              <div className="queue-sub">
+                {inQueue ? '🟢 You are in queue — waiting for players…' : 'Need 4 to auto-start'}
+              </div>
             </div>
-            <button className="btn btn-primary" onClick={loadQueueCount}>Refresh</button>
+            {!inQueue ? (
+              <button className="btn btn-primary" onClick={joinQueue}>Join Queue</button>
+            ) : (
+              <button className="btn" onClick={leaveQueue} style={{ borderColor: 'var(--red)', color: 'var(--red)' }}>Leave Queue</button>
+            )}
           </div>
         )}
 
