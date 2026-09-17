@@ -11,13 +11,13 @@ export function DragProvider({ children }) {
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const draggingRef = useRef(null)
 
-  const startDrag = useCallback((data, clientX, clientY) => {
+  const isTouch = useRef(false)
+  const startDrag = useCallback((data, clientX, clientY, touch = false) => {
     draggingRef.current = data
+    isTouch.current = touch
     setDragging(data)
     setPos({ x: clientX, y: clientY })
-    startXY.current = { x: clientX, y: clientY }
   }, [])
-  const startXY = useRef({ x: 0, y: 0 })
 
   const endDrag = useCallback((clientX, clientY) => {
     if (!draggingRef.current) return
@@ -80,7 +80,7 @@ export function DragProvider({ children }) {
         <div style={{
           position: 'fixed',
           left: pos.x - 14,
-          top: pos.y - 28,  /* centered on finger - detection matches visual */
+          top: isTouch.current ? pos.y - 80 : pos.y - 28,  /* above finger on touch so it's visible */
           width: 28,
           height: 56,
           background: '#fffef8',
@@ -129,7 +129,7 @@ export function Draggable({ children, data, disabled }) {
       if (disabled) return
       e.preventDefault() // prevents scroll + click delay on mobile
       const t = e.touches[0]
-      startDrag(data, t.clientX, t.clientY)
+      startDrag(data, t.clientX, t.clientY, true)
     }
 
     el.addEventListener('mousedown', onMouseDown)
