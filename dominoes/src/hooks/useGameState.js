@@ -217,6 +217,33 @@ export function useGameState(myInfo, navigate) {
       }).eq('id', myInfo.roomId)
       console.log('[endRound] room update error:', updateErr)
       
+      // Update profile stats for signed-in player
+      const { data: { user } } = await db.auth.getUser()
+      if (user) {
+        const iWon = resolvedSeat === myInfo.seat
+        const iDekabessed = iWon && isDek
+        await db.rpc('increment_profile_stats', {
+          p_user_id: user.id,
+          p_games: 1,
+          p_wins: iWon ? 1 : 0,
+          p_vyej: (iWon && isVyej) ? 1 : 0,
+          p_dekabess: iDekabessed ? 1 : 0,
+        }).catch(() => {
+          // Fallback if RPC not set up — direct update
+          db.from('profiles').select('total_games,total_wins,total_vyej,total_dekabess')
+            .eq('id', user.id).single()
+            .then(({ data: prof }) => {
+              if (prof) db.from('profiles').update({
+                total_games:    (prof.total_games    || 0) + 1,
+                total_wins:     (prof.total_wins     || 0) + (iWon ? 1 : 0),
+                total_vyej:     (prof.total_vyej     || 0) + ((iWon && isVyej) ? 1 : 0),
+                total_dekabess: (prof.total_dekabess || 0) + (iDekabessed ? 1 : 0),
+                updated_at: new Date().toISOString(),
+              }).eq('id', user.id)
+            })
+        })
+      }
+
       await loadGameState()
       console.log('[endRound] loadGameState done, showOverlay should be true')
       
@@ -252,9 +279,10 @@ export function useGameState(myInfo, navigate) {
     }
   }, [myInfo, loadGameState])
 
-  const advanceTurn = useCallback(async (newHand, lastTile) => {
+  const advanceTurn = useCallback(async (newHand, lastTile, updatedBoard) => {
     if (newHand.length === 0) {
-      await endRound(myInfo.seat, lastTile ? checkDekabess(lastTile, boardRef.current) : false)
+      const boardToCheck = updatedBoard || boardRef.current
+      await endRound(myInfo.seat, lastTile ? checkDekabess(lastTile, boardToCheck) : false)
       return
     }
     // Check if all 4 players passed consecutively — only valid if board has tiles
@@ -298,7 +326,7 @@ export function useGameState(myInfo, navigate) {
         await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
         await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
         await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
-        await advanceTurn(newHand, tile)
+        await advanceTurn(newHand, tile, { left_end: newLeftEnd, right_end: newRightEnd })
       }
     } finally {
       setSelectedTile(null)
