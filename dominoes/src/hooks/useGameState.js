@@ -326,7 +326,8 @@ export function useGameState(myInfo, navigate) {
         await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
         await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
         await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
-        await advanceTurn(newHand, tile, { left_end: newLeftEnd, right_end: newRightEnd })
+        // Pass OLD board ends for Dekabess check — tile must match both ends BEFORE it's placed
+        await advanceTurn(newHand, tile, { left_end: currentBoard.left_end, right_end: currentBoard.right_end })
       }
     } finally {
       setSelectedTile(null)
