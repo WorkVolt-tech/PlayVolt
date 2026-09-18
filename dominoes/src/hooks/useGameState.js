@@ -211,34 +211,44 @@ export function useGameState(myInfo, navigate) {
         blocked: winningSeat === null,
       }).eq('id', myInfo.roomId)
       if (updateErr) { await loadGameState(); return }
-      // Update profile stats for signed-in player
-      const { data: { user } } = await db.auth.getUser()
-      if (user) {
-        const iWon = resolvedSeat === myInfo.seat
-        const iDekabessed = iWon && isDek
-        await db.rpc('increment_profile_stats', {
-          p_user_id: user.id,
-          p_games: 1,
-          p_wins: iWon ? 1 : 0,
-          p_vyej: (iWon && isVyej) ? 1 : 0,
-          p_dekabess: iDekabessed ? 1 : 0,
-        }).catch(() => {
-          // Fallback if RPC not set up — direct update
-          db.from('profiles').select('total_games,total_wins,total_vyej,total_dekabess')
-            .eq('id', user.id).single()
-            .then(({ data: prof }) => {
-              if (prof) db.from('profiles').update({
-                total_games:    (prof.total_games    || 0) + 1,
-                total_wins:     (prof.total_wins     || 0) + (iWon ? 1 : 0),
-                total_vyej:     (prof.total_vyej     || 0) + ((iWon && isVyej) ? 1 : 0),
-                total_dekabess: (prof.total_dekabess || 0) + (iDekabessed ? 1 : 0),
-                updated_at: new Date().toISOString(),
-              }).eq('id', user.id)
-            })
-        })
-      }
-
+      // Room is now in its correct state — load it immediately. Everything below is a
+      // side effect (profile stats) and must never be able to block the round transition.
       await loadGameState()
+
+      // Update profile stats for signed-in player.
+      // NOTE: db.rpc(...) returns a PostgREST "thenable" (only implements .then()), not a
+      // real Promise — it has no .catch(). Calling .catch() on it threw synchronously and
+      // was the root cause of the "stuck at round end / Vyèj / bot win" bug. Fixed by
+      // awaiting it and checking the returned error, all wrapped in try/catch below.
+      try {
+        const { data: { user } } = await db.auth.getUser()
+        if (user) {
+          const iWon = resolvedSeat === myInfo.seat
+          const iDekabessed = iWon && isDek
+          const { error: statsErr } = await db.rpc('increment_profile_stats', {
+            p_user_id: user.id,
+            p_games: 1,
+            p_wins: iWon ? 1 : 0,
+            p_vyej: (iWon && isVyej) ? 1 : 0,
+            p_dekabess: iDekabessed ? 1 : 0,
+          })
+          if (statsErr) {
+            // Fallback if RPC not set up — direct update
+            const { data: prof } = await db.from('profiles')
+              .select('total_games,total_wins,total_vyej,total_dekabess')
+              .eq('id', user.id).single()
+            if (prof) await db.from('profiles').update({
+              total_games:    (prof.total_games    || 0) + 1,
+              total_wins:     (prof.total_wins     || 0) + (iWon ? 1 : 0),
+              total_vyej:     (prof.total_vyej     || 0) + ((iWon && isVyej) ? 1 : 0),
+              total_dekabess: (prof.total_dekabess || 0) + (iDekabessed ? 1 : 0),
+              updated_at: new Date().toISOString(),
+            }).eq('id', user.id)
+          }
+        }
+      } catch (statsErr) {
+        console.error('[endRound] profile stats update failed (non-fatal):', statsErr)
+      }
       
       // If winner is a bot and we are the host, auto-start next round after delay
       if (!isVyej && myInfo.seat === 0) {
@@ -272,21 +282,21 @@ export function useGameState(myInfo, navigate) {
     }
   }, [myInfo, loadGameState])
 
-  const advanceTurn = useCallback(async (newHand, lastTile, updatedBoard) => {
+  const advanceTurn = useCallback(async (newHand, lastTile, updatedBoard, wasPass = false) => {
     if (newHand.length === 0) {
       const boardToCheck = updatedBoard || boardRef.current
       await endRound(myInfo.seat, lastTile ? checkDekabess(lastTile, boardToCheck) : false)
       return
     }
-    // Check if all 4 players passed consecutively — only valid if board has tiles
-    if (boardRef.current?.tiles?.length > 0) {
+    // Check if all 4 players passed consecutively — a placement can never complete a
+    // pass streak, so this query only needs to run right after an actual pass.
+    if (wasPass && boardRef.current?.tiles?.length > 0) {
       const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
       if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
     }
-    // Read actual current_turn from DB to advance correctly
-    const { data: latestRoom } = await db.from('domino_rooms').select('current_turn').eq('id', myInfo.roomId).single()
-    const fromSeat = latestRoom?.current_turn ?? myInfo.seat
-    const nextSeat = (fromSeat + 1) % 4
+    // isMyTurn gates every call site (selectTile/placeTile/passMove), so it's always the
+    // acting player's own turn already — no need to re-fetch current_turn first.
+    const nextSeat = (myInfo.seat + 1) % 4
     await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
   }, [myInfo, endRound])
 
@@ -300,9 +310,11 @@ export function useGameState(myInfo, navigate) {
 
     try {
       if (!currentBoard?.tiles?.length || side === 'first') {
-        await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
-        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
-        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
+        await Promise.all([
+          db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId),
+          db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat),
+          db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile }),
+        ])
         await advanceTurn(newHand, tile)
       } else {
         const end = side === 'left' ? currentBoard.left_end : currentBoard.right_end
@@ -316,9 +328,11 @@ export function useGameState(myInfo, navigate) {
         const newTiles    = side === 'left' ? [newEntry, ...currentBoard.tiles] : [...currentBoard.tiles, newEntry]
         const newLeftEnd  = side === 'left'  ? newOpenEnd : currentBoard.left_end
         const newRightEnd = side === 'right' ? newOpenEnd : currentBoard.right_end
-        await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
-        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
-        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
+        await Promise.all([
+          db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId),
+          db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat),
+          db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile }),
+        ])
         // Pass OLD board ends for Dekabess check — tile must match both ends BEFORE it's placed
         await advanceTurn(newHand, tile, { left_end: currentBoard.left_end, right_end: currentBoard.right_end })
       }
@@ -342,7 +356,7 @@ export function useGameState(myInfo, navigate) {
 
   const passMove = useCallback(async () => {
     await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null })
-    await advanceTurn(hand, null)
+    await advanceTurn(hand, null, undefined, true)
   }, [hand, myInfo, advanceTurn])
 
   const startNextRound = useCallback(async () => {
