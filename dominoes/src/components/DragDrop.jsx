@@ -5,6 +5,14 @@ const DragContext = createContext(null)
 
 const dropZones = new Map()
 
+// Module-level flag so code outside the React tree (useGameState's realtime
+// subscription) can tell whether a drag gesture is in progress right now,
+// without needing to be a React consumer of drag state.
+let dragActive = false
+export function isDragActive() {
+  return dragActive
+}
+
 export function registerDropZone(id, handler) {
   dropZones.set(id, handler)
 }
@@ -29,6 +37,7 @@ export function DragProvider({ children }) {
   const ghostRef = useRef(null)
 
   const startDrag = useCallback((data, clientX, clientY, touch = false) => {
+    dragActive = true
     draggingRef.current = data
     setDragging(data)
     setIsTouch(touch)
@@ -70,6 +79,7 @@ export function DragProvider({ children }) {
     })
 
     draggingRef.current = null
+    dragActive = false
     setDragging(null)
     setIsTouch(false)
   }, [])
