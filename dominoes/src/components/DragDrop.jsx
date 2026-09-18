@@ -15,42 +15,21 @@ export function unregisterDropZone(id) {
 
 export function DragProvider({ children }) {
   const [dragging, setDragging] = useState(null)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
   const [isTouch, setIsTouch] = useState(false)
 
   const draggingRef = useRef(null)
-  // Ghost position is tracked here and written straight to the DOM on every
-  // move — NOT via useState. Routing every touchmove through React state
-  // re-renders the whole drag tree (Board, every tile, every drop zone) up
-  // to 60x/sec, and on a phone that competes with any other re-render
-  // (e.g. the board syncing another player's move) for the same frame,
-  // causing missed/batched events and the ghost visibly jumping ahead of
-  // the finger. Direct DOM mutation makes ghost-tracking immune to that.
-  const posRef = useRef({ x: 0, y: 0 })
-  const ghostRef = useRef(null)
-  const safetyTimerRef = useRef(null)
-
-  const clearDragState = useCallback(() => {
-    clearTimeout(safetyTimerRef.current)
-    draggingRef.current = null
-    setDragging(null)
-    setIsTouch(false)
-  }, [])
 
   const startDrag = useCallback((data, clientX, clientY, touch = false) => {
     draggingRef.current = data
     setDragging(data)
     setIsTouch(touch)
 
-    posRef.current = { x: clientX, y: clientY }
-    if (ghostRef.current) {
-      ghostRef.current.style.left = `${clientX}px`
-      ghostRef.current.style.top = `${clientY}px`
-    }
-
-    // Safety valve: clear stale drag state if a gesture never cleanly ends.
-    clearTimeout(safetyTimerRef.current)
-    safetyTimerRef.current = setTimeout(clearDragState, 15000)
-  }, [clearDragState])
+    setPos({
+      x: clientX,
+      y: clientY,
+    })
+  }, [])
 
   const endDrag = useCallback((clientX, clientY) => {
     if (!draggingRef.current) return
@@ -81,28 +60,19 @@ export function DragProvider({ children }) {
       }
     })
 
-    clearDragState()
-  }, [clearDragState])
-
-  // touchcancel: a gesture the OS/browser interrupts fires this instead of
-  // touchend, which would otherwise leave stale drag state behind.
-  const cancelDrag = useCallback(() => {
-    if (!draggingRef.current) return
-    clearDragState()
-  }, [clearDragState])
+    draggingRef.current = null
+    setDragging(null)
+    setIsTouch(false)
+  }, [])
 
   useEffect(() => {
-    function setGhostPos(x, y) {
-      posRef.current = { x, y }
-      if (ghostRef.current) {
-        ghostRef.current.style.left = `${x}px`
-        ghostRef.current.style.top = `${y}px`
-      }
-    }
-
     function onMouseMove(e) {
       if (!draggingRef.current) return
-      setGhostPos(e.clientX, e.clientY)
+
+      setPos({
+        x: e.clientX,
+        y: e.clientY,
+      })
     }
 
     function onMouseUp(e) {
@@ -121,7 +91,10 @@ export function DragProvider({ children }) {
 
       if (!t) return
 
-      setGhostPos(t.clientX, t.clientY)
+      setPos({
+        x: t.clientX,
+        y: t.clientY,
+      })
     }
 
     function onTouchEnd(e) {
@@ -135,10 +108,6 @@ export function DragProvider({ children }) {
         t.clientX,
         t.clientY
       )
-    }
-
-    function onTouchCancel() {
-      cancelDrag()
     }
 
     window.addEventListener(
@@ -162,11 +131,6 @@ export function DragProvider({ children }) {
       onTouchEnd
     )
 
-    window.addEventListener(
-      'touchcancel',
-      onTouchCancel
-    )
-
     return () => {
       window.removeEventListener(
         'mousemove',
@@ -187,17 +151,11 @@ export function DragProvider({ children }) {
         'touchend',
         onTouchEnd
       )
-
-      window.removeEventListener(
-        'touchcancel',
-        onTouchCancel
-      )
     }
-  }, [endDrag, cancelDrag])
+  }, [endDrag])
 
   const dragGhost = dragging ? (
     <div
-      ref={ghostRef}
       style={{
         /*
          * IMPORTANT:
@@ -207,16 +165,12 @@ export function DragProvider({ children }) {
          *
          * That prevents any rotated/transformed game
          * container from changing its coordinates.
-         *
-         * Position is set here only for the very first paint —
-         * every subsequent move updates ghostRef.current.style
-         * directly (see setGhostPos above), bypassing React.
          */
 
         position: 'fixed',
 
-        left: `${posRef.current.x}px`,
-        top: `${posRef.current.y}px`,
+        left: `${pos.x}px`,
+        top: `${pos.y}px`,
 
         /*
          * Put the exact CENTER of the domino
@@ -300,7 +254,7 @@ export function DragProvider({ children }) {
       value={{
         dragging,
         draggingRef,
-        posRef,
+        pos,
         startDrag,
         endDrag,
       }}
