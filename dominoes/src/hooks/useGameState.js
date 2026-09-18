@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
 import { chooseTile, getPersonality } from '../lib/botAI'
-import { isDragActive } from '../components/DragDrop'
 
 // ── Pure helpers ────────────────────────────────────────────────────────────
 export function generateRoomCode() {
@@ -99,18 +98,7 @@ export function useGameState(myInfo, navigate) {
 
   const scheduleReload = useCallback(() => {
     clearTimeout(reloadTimer.current)
-    reloadTimer.current = setTimeout(function tick() {
-      // Never re-render Board/PlayerHand out from under an in-progress touch
-      // drag — a real opponent's device can write to these tables (a
-      // reconnect, a disconnect) at any moment regardless of whose turn it
-      // is, which a bot never does mid-gesture. Wait the drag out, then
-      // catch up immediately once it ends.
-      if (isDragActive()) {
-        reloadTimer.current = setTimeout(tick, 100)
-        return
-      }
-      loadGameState()
-    }, 50)
+    reloadTimer.current = setTimeout(loadGameState, 50)
   }, [loadGameState])
 
   useEffect(() => {
@@ -294,21 +282,21 @@ export function useGameState(myInfo, navigate) {
     }
   }, [myInfo, loadGameState])
 
-  const advanceTurn = useCallback(async (newHand, lastTile, updatedBoard, wasPass = false) => {
+  const advanceTurn = useCallback(async (newHand, lastTile, updatedBoard) => {
     if (newHand.length === 0) {
       const boardToCheck = updatedBoard || boardRef.current
       await endRound(myInfo.seat, lastTile ? checkDekabess(lastTile, boardToCheck) : false)
       return
     }
-    // Check if all 4 players passed consecutively — a placement can never complete a
-    // pass streak, so this query only needs to run right after an actual pass.
-    if (wasPass && boardRef.current?.tiles?.length > 0) {
+    // Check if all 4 players passed consecutively — only valid if board has tiles
+    if (boardRef.current?.tiles?.length > 0) {
       const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
       if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
     }
-    // isMyTurn gates every call site (selectTile/placeTile/passMove), so it's always the
-    // acting player's own turn already — no need to re-fetch current_turn first.
-    const nextSeat = (myInfo.seat + 1) % 4
+    // Read actual current_turn from DB to advance correctly
+    const { data: latestRoom } = await db.from('domino_rooms').select('current_turn').eq('id', myInfo.roomId).single()
+    const fromSeat = latestRoom?.current_turn ?? myInfo.seat
+    const nextSeat = (fromSeat + 1) % 4
     await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
   }, [myInfo, endRound])
 
@@ -368,7 +356,7 @@ export function useGameState(myInfo, navigate) {
 
   const passMove = useCallback(async () => {
     await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null })
-    await advanceTurn(hand, null, undefined, true)
+    await advanceTurn(hand, null)
   }, [hand, myInfo, advanceTurn])
 
   const startNextRound = useCallback(async () => {
