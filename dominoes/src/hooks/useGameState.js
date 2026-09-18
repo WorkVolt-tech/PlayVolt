@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
 import { chooseTile, getPersonality } from '../lib/botAI'
+import { isDragActive } from '../components/DragDrop'
 
 // ── Pure helpers ────────────────────────────────────────────────────────────
 export function generateRoomCode() {
@@ -98,7 +99,18 @@ export function useGameState(myInfo, navigate) {
 
   const scheduleReload = useCallback(() => {
     clearTimeout(reloadTimer.current)
-    reloadTimer.current = setTimeout(loadGameState, 50)
+    reloadTimer.current = setTimeout(function tick() {
+      // Never re-render Board/PlayerHand out from under an in-progress touch
+      // drag — a real opponent's device can write to these tables (a
+      // reconnect, a disconnect) at any moment regardless of whose turn it
+      // is, which a bot never does mid-gesture. Wait the drag out, then
+      // catch up immediately once it ends.
+      if (isDragActive()) {
+        reloadTimer.current = setTimeout(tick, 100)
+        return
+      }
+      loadGameState()
+    }, 50)
   }, [loadGameState])
 
   useEffect(() => {
