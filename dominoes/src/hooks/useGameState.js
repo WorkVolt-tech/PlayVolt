@@ -148,14 +148,10 @@ export function useGameState(myInfo, navigate) {
   const hasTilesOnBoard = !!boardData?.tiles?.length
 
   const endRound = useCallback(async (winningSeat, isDek) => {
-    console.log('[endRound] called, winningSeat:', winningSeat, 'isDek:', isDek)
     try {
       const { data: room, error: roomErr } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single()
-      console.log('[endRound] room status:', room?.status, 'error:', roomErr)
-      if (!room) { console.log('[endRound] no room found'); return }
+      if (!room) return
       if (room.status !== 'playing') {
-        console.log('[endRound] guard hit, status:', room.status)
-        // Still load state so overlay shows if round already ended
         if (room.status === 'round_end' || room.status === 'finished') await loadGameState()
         return
       }
@@ -171,8 +167,6 @@ export function useGameState(myInfo, navigate) {
       const isVyej    = newStreak.count >= 4
       const winnerKey = mode === 'asosye' ? (resolvedSeat === 0 || resolvedSeat === 2 ? 'A' : 'B') : resolvedSeat
       
-      console.log('[endRound] resolvedSeat:', resolvedSeat, 'isVyej:', isVyej, 'newStreak:', newStreak)
-
       // Record Vyèj in Wa Tab La leaderboard — for the winner only
       if (isVyej && resolvedSeat === myInfo.seat) {
         // Get or create persistent player ID
@@ -187,12 +181,13 @@ export function useGameState(myInfo, navigate) {
         const weekStr = weekStart.toISOString().split('T')[0]
         const leaderMode = room.game_mode === 'asosye' ? 'teams' : 'solo'
         const nickname = players.find(p => p.seat === myInfo.seat)?.nickname || 'Player'
-        await db.rpc('increment_wa_tab_la', {
+        const { error: wtlErr } = await db.rpc('increment_wa_tab_la', {
           p_player_id: playerId,
           p_nickname: nickname,
           p_mode: leaderMode,
           p_week_start: weekStr,
-        }).catch(async () => {
+        })
+        if (wtlErr) {
           await db.from('wa_tab_la').upsert({
             player_id: playerId,
             player_nickname: nickname,
@@ -200,15 +195,13 @@ export function useGameState(myInfo, navigate) {
             week_start: weekStr,
             wins: 1,
           }, { onConflict: 'player_id,week_start,mode' })
-        })
+        }
       }
       
-      const [delEvents, delBoard] = await Promise.all([
+      await Promise.all([
         db.from('game_events').delete().eq('room_id', myInfo.roomId),
         db.from('board').delete().eq('room_id', myInfo.roomId),
       ])
-      console.log('[endRound] deleted events/board, errors:', delEvents.error, delBoard.error)
-      
       const { error: updateErr } = await db.from('domino_rooms').update({
         status: isVyej ? 'finished' : 'round_end',
         current_turn: resolvedSeat,
@@ -217,8 +210,7 @@ export function useGameState(myInfo, navigate) {
         pending_point: isDek,
         blocked: winningSeat === null,
       }).eq('id', myInfo.roomId)
-      console.log('[endRound] room update error:', updateErr)
-      
+      if (updateErr) { await loadGameState(); return }
       // Update profile stats for signed-in player
       const { data: { user } } = await db.auth.getUser()
       if (user) {
@@ -247,7 +239,6 @@ export function useGameState(myInfo, navigate) {
       }
 
       await loadGameState()
-      console.log('[endRound] loadGameState done, showOverlay should be true')
       
       // If winner is a bot and we are the host, auto-start next round after delay
       if (!isVyej && myInfo.seat === 0) {
