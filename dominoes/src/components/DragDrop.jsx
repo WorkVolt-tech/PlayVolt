@@ -5,14 +5,6 @@ const DragContext = createContext(null)
 
 const dropZones = new Map()
 
-// Module-level flag so code outside the React tree (useGameState's realtime
-// subscription) can tell whether a drag gesture is in progress right now,
-// without needing to be a React consumer of drag state.
-let dragActive = false
-export function isDragActive() {
-  return dragActive
-}
-
 export function registerDropZone(id, handler) {
   dropZones.set(id, handler)
 }
@@ -35,9 +27,16 @@ export function DragProvider({ children }) {
   // the finger. Direct DOM mutation makes ghost-tracking immune to that.
   const posRef = useRef({ x: 0, y: 0 })
   const ghostRef = useRef(null)
+  const safetyTimerRef = useRef(null)
+
+  const clearDragState = useCallback(() => {
+    clearTimeout(safetyTimerRef.current)
+    draggingRef.current = null
+    setDragging(null)
+    setIsTouch(false)
+  }, [])
 
   const startDrag = useCallback((data, clientX, clientY, touch = false) => {
-    dragActive = true
     draggingRef.current = data
     setDragging(data)
     setIsTouch(touch)
@@ -47,7 +46,11 @@ export function DragProvider({ children }) {
       ghostRef.current.style.left = `${clientX}px`
       ghostRef.current.style.top = `${clientY}px`
     }
-  }, [])
+
+    // Safety valve: clear stale drag state if a gesture never cleanly ends.
+    clearTimeout(safetyTimerRef.current)
+    safetyTimerRef.current = setTimeout(clearDragState, 15000)
+  }, [clearDragState])
 
   const endDrag = useCallback((clientX, clientY) => {
     if (!draggingRef.current) return
@@ -78,11 +81,15 @@ export function DragProvider({ children }) {
       }
     })
 
-    draggingRef.current = null
-    dragActive = false
-    setDragging(null)
-    setIsTouch(false)
-  }, [])
+    clearDragState()
+  }, [clearDragState])
+
+  // touchcancel: a gesture the OS/browser interrupts fires this instead of
+  // touchend, which would otherwise leave stale drag state behind.
+  const cancelDrag = useCallback(() => {
+    if (!draggingRef.current) return
+    clearDragState()
+  }, [clearDragState])
 
   useEffect(() => {
     function setGhostPos(x, y) {
@@ -130,6 +137,10 @@ export function DragProvider({ children }) {
       )
     }
 
+    function onTouchCancel() {
+      cancelDrag()
+    }
+
     window.addEventListener(
       'mousemove',
       onMouseMove
@@ -149,6 +160,11 @@ export function DragProvider({ children }) {
     window.addEventListener(
       'touchend',
       onTouchEnd
+    )
+
+    window.addEventListener(
+      'touchcancel',
+      onTouchCancel
     )
 
     return () => {
@@ -171,8 +187,13 @@ export function DragProvider({ children }) {
         'touchend',
         onTouchEnd
       )
+
+      window.removeEventListener(
+        'touchcancel',
+        onTouchCancel
+      )
     }
-  }, [endDrag])
+  }, [endDrag, cancelDrag])
 
   const dragGhost = dragging ? (
     <div
