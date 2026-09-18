@@ -133,12 +133,9 @@ export function useGameState(myInfo, navigate) {
     if (isMyTurn) showToastMsg('Your turn!')
     else if (active) showToastMsg(`${active.nickname}'s turn`)
     if (roomData.status === 'finished' || roomData.status === 'round_end') {
-      if (!overlayShownRef.current) {
-        overlayShownRef.current = true
-        setShowOverlay(true)
-      }
+      overlayShownRef.current = true
+      setShowOverlay(true)
     } else if (roomData.status === 'playing') {
-      // Status went back to playing — hide overlay for ALL players
       overlayShownRef.current = false
       setShowOverlay(false)
     }
