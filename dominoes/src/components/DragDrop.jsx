@@ -11,10 +11,8 @@ export function DragProvider({ children }) {
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const draggingRef = useRef(null)
 
-  const isTouch = useRef(false)
-  const startDrag = useCallback((data, clientX, clientY, touch = false) => {
+  const startDrag = useCallback((data, clientX, clientY) => {
     draggingRef.current = data
-    isTouch.current = touch
     setDragging(data)
     setPos({ x: clientX, y: clientY })
   }, [])
@@ -53,7 +51,9 @@ export function DragProvider({ children }) {
       if (!draggingRef.current) return
       e.preventDefault() // prevent scroll while dragging
       const t = e.touches[0]
-      setPos({ x: t.clientX, y: t.clientY })
+      // Use pageX/Y minus scroll offset for accurate position on iOS Safari
+      const vvOffset = window.visualViewport ? window.visualViewport.offsetTop : 0
+      setPos({ x: t.clientX, y: t.clientY - vvOffset })
     }
     function onTouchEnd(e) {
       if (!draggingRef.current) return
@@ -80,7 +80,7 @@ export function DragProvider({ children }) {
         <div style={{
           position: 'fixed',
           left: pos.x - 14,
-          top: isTouch.current ? pos.y - 80 : pos.y - 28,  /* above finger on touch so it's visible */
+          top: pos.y - 28,
           width: 28,
           height: 56,
           background: '#fffef8',
@@ -129,7 +129,7 @@ export function Draggable({ children, data, disabled }) {
       if (disabled) return
       e.preventDefault() // prevents scroll + click delay on mobile
       const t = e.touches[0]
-      startDrag(data, t.clientX, t.clientY, true)
+      startDrag(data, t.clientX, t.clientY)
     }
 
     el.addEventListener('mousedown', onMouseDown)
