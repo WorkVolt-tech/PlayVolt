@@ -51,14 +51,16 @@ export function DragProvider({ children }) {
       if (!draggingRef.current) return
       e.preventDefault() // prevent scroll while dragging
       const t = e.touches[0]
-      // Use pageX/Y minus scroll offset for accurate position on iOS Safari
-      const vvOffset = window.visualViewport ? window.visualViewport.offsetTop : 0
-      setPos({ x: t.clientX, y: t.clientY - vvOffset })
+      const x = t.pageX - window.scrollX
+      const y = t.pageY - window.scrollY
+      setPos({ x, y })
     }
     function onTouchEnd(e) {
       if (!draggingRef.current) return
       const t = e.changedTouches[0]
-      endDrag(t.clientX, t.clientY)
+      const x = t.pageX - window.scrollX
+      const y = t.pageY - window.scrollY
+      endDrag(x, y)
     }
 
     window.addEventListener('mousemove', onMouseMove)
@@ -129,7 +131,9 @@ export function Draggable({ children, data, disabled }) {
       if (disabled) return
       e.preventDefault() // prevents scroll + click delay on mobile
       const t = e.touches[0]
-      startDrag(data, t.clientX, t.clientY)
+      const x = t.pageX - window.scrollX
+      const y = t.pageY - window.scrollY
+      startDrag(data, x, y)
     }
 
     el.addEventListener('mousedown', onMouseDown)
