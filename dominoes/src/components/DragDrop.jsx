@@ -9,11 +9,13 @@ export function unregisterDropZone(id) { dropZones.delete(id) }
 export function DragProvider({ children }) {
   const [dragging, setDragging] = useState(null)
   const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [isTouch, setIsTouch] = useState(false)
   const draggingRef = useRef(null)
 
-  const startDrag = useCallback((data, clientX, clientY) => {
+  const startDrag = useCallback((data, clientX, clientY, touch = false) => {
     draggingRef.current = data
     setDragging(data)
+    setIsTouch(touch)
     setPos({ x: clientX, y: clientY })
   }, [])
 
@@ -21,15 +23,19 @@ export function DragProvider({ children }) {
     if (!draggingRef.current) return
     const data = draggingRef.current
 
-    // Find drop zone under finger/cursor
     let dropped = false
     dropZones.forEach((handler, id) => {
       if (dropped) return
       const el = document.querySelector(`[data-dropzone-id="${id}"]`)
       if (!el) return
       const rect = el.getBoundingClientRect()
-      if (clientX >= rect.left && clientX <= rect.right &&
-          clientY >= rect.top  && clientY <= rect.bottom) {
+
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
         dropped = true
         handler(data)
       }
@@ -37,36 +43,49 @@ export function DragProvider({ children }) {
 
     draggingRef.current = null
     setDragging(null)
+    setIsTouch(false)
   }, [])
 
   useEffect(() => {
     function onMouseMove(e) {
       if (!draggingRef.current) return
-      setPos({ x: e.clientX, y: e.clientY })
+
+      setPos({
+        x: e.clientX,
+        y: e.clientY,
+      })
     }
+
     function onMouseUp(e) {
       endDrag(e.clientX, e.clientY)
     }
+
     function onTouchMove(e) {
       if (!draggingRef.current) return
-      e.preventDefault() // prevent scroll while dragging
+
+      e.preventDefault()
+
       const t = e.touches[0]
-      const x = t.pageX - window.scrollX
-      const y = t.pageY - window.scrollY
-      setPos({ x, y })
+
+      setPos({
+        x: t.clientX,
+        y: t.clientY,
+      })
     }
+
     function onTouchEnd(e) {
       if (!draggingRef.current) return
+
       const t = e.changedTouches[0]
-      const x = t.pageX - window.scrollX
-      const y = t.pageY - window.scrollY
-      endDrag(x, y)
+
+      endDrag(t.clientX, t.clientY)
     }
 
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
-    window.addEventListener('touchmove', onTouchMove, { passive: false }) // must be non-passive to preventDefault
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
     window.addEventListener('touchend', onTouchEnd)
+
     return () => {
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
@@ -76,33 +95,74 @@ export function DragProvider({ children }) {
   }, [endDrag])
 
   return (
-    <DragContext.Provider value={{ dragging, draggingRef, pos, startDrag, endDrag }}>
+    <DragContext.Provider
+      value={{
+        dragging,
+        draggingRef,
+        pos,
+        startDrag,
+        endDrag,
+      }}
+    >
       {children}
+
+      {/* Dragged domino stays centered directly under mouse/finger */}
       {dragging && (
-        <div style={{
-          position: 'fixed',
-          left: pos.x - 14,
-          top: pos.y - 28,
-          width: 28,
-          height: 56,
-          background: '#fffef8',
-          borderRadius: 5,
-          border: '2px solid #c9a84c',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-          pointerEvents: 'none',
-          zIndex: 9999,
-          opacity: 0.9,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'space-around',
-          padding: '4px 0',
-        }}>
-          <img src={`/tiles-white/${dragging.tile[0]}.png`} alt="" draggable={false}
-            style={{ width: '70%', pointerEvents: 'none' }} />
-          <div style={{ width: '80%', height: 1, background: 'rgba(0,0,0,0.2)' }} />
-          <img src={`/tiles-white/${dragging.tile[1]}.png`} alt="" draggable={false}
-            style={{ width: '70%', pointerEvents: 'none' }} />
+        <div
+          style={{
+            position: 'fixed',
+
+            // Pointer/finger position
+            left: pos.x,
+            top: pos.y,
+
+            // Center domino directly under pointer/finger
+            transform: 'translate(-50%, -50%)',
+
+            width: 28,
+            height: 56,
+            background: '#fffef8',
+            borderRadius: 5,
+            border: '2px solid #c9a84c',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            opacity: isTouch ? 0.9 : 0.9,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+            padding: '4px 0',
+            boxSizing: 'border-box',
+          }}
+        >
+          <img
+            src={`/tiles-white/${dragging.tile[0]}.png`}
+            alt=""
+            draggable={false}
+            style={{
+              width: '70%',
+              pointerEvents: 'none',
+            }}
+          />
+
+          <div
+            style={{
+              width: '80%',
+              height: 1,
+              background: 'rgba(0,0,0,0.2)',
+            }}
+          />
+
+          <img
+            src={`/tiles-white/${dragging.tile[1]}.png`}
+            alt=""
+            draggable={false}
+            style={{
+              width: '70%',
+              pointerEvents: 'none',
+            }}
+          />
         </div>
       )}
     </DragContext.Provider>
@@ -114,8 +174,13 @@ export function useDrag() {
 }
 
 export function Draggable({ children, data, disabled }) {
-  const { startDrag } = useDrag()
+  const { startDrag, dragging } = useDrag()
   const ref = useRef(null)
+
+  const isDragging =
+    dragging &&
+    `${dragging.tile[0]}-${dragging.tile[1]}` ===
+      `${data?.tile?.[0]}-${data?.tile?.[1]}`
 
   useEffect(() => {
     const el = ref.current
@@ -123,21 +188,37 @@ export function Draggable({ children, data, disabled }) {
 
     function onMouseDown(e) {
       if (disabled) return
+
       e.preventDefault()
-      startDrag(data, e.clientX, e.clientY)
+
+      startDrag(
+        data,
+        e.clientX,
+        e.clientY,
+        false
+      )
     }
 
     function onTouchStart(e) {
       if (disabled) return
-      e.preventDefault() // prevents scroll + click delay on mobile
+
+      e.preventDefault()
+
       const t = e.touches[0]
-      const x = t.pageX - window.scrollX
-      const y = t.pageY - window.scrollY
-      startDrag(data, x, y)
+
+      startDrag(
+        data,
+        t.clientX,
+        t.clientY,
+        true
+      )
     }
 
     el.addEventListener('mousedown', onMouseDown)
-    el.addEventListener('touchstart', onTouchStart, { passive: false })
+    el.addEventListener('touchstart', onTouchStart, {
+      passive: false,
+    })
+
     return () => {
       el.removeEventListener('mousedown', onMouseDown)
       el.removeEventListener('touchstart', onTouchStart)
@@ -145,27 +226,56 @@ export function Draggable({ children, data, disabled }) {
   }, [data, disabled, startDrag])
 
   return (
-    <div ref={ref} style={{ cursor: disabled ? 'default' : 'grab', display: 'contents' }}>
+    <div
+      ref={ref}
+      style={{
+        cursor: disabled ? 'default' : 'grab',
+        display: 'contents',
+
+        // Highlight the tile being dragged
+        ...(isDragging
+          ? {
+              filter: 'brightness(1.2)',
+              transform: 'scale(1.1)',
+            }
+          : {}),
+      }}
+    >
       {children}
     </div>
   )
 }
 
 let zoneCounter = 0
-export function DropZone({ onDrop, children, style, className }) {
+
+export function DropZone({
+  onDrop,
+  children,
+  style,
+  className,
+}) {
   const id = useRef(`dz-${++zoneCounter}`).current
   const onDropRef = useRef(onDrop)
-  
-  // Always keep ref current so drop handler never goes stale
-  useEffect(() => { onDropRef.current = onDrop }, [onDrop])
 
   useEffect(() => {
-    registerDropZone(id, (data) => onDropRef.current(data))
+    onDropRef.current = onDrop
+  }, [onDrop])
+
+  useEffect(() => {
+    registerDropZone(
+      id,
+      (data) => onDropRef.current(data)
+    )
+
     return () => unregisterDropZone(id)
   }, [id])
 
   return (
-    <div data-dropzone-id={id} style={style} className={className}>
+    <div
+      data-dropzone-id={id}
+      style={style}
+      className={className}
+    >
       {children}
     </div>
   )
