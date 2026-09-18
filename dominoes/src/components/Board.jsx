@@ -804,6 +804,46 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     return () => el.removeEventListener('tile-touch-drop-board', onTouchBoard)
   }, [])
 
+  // resolveNearestDropSide closes over `positions` and `dims`, which change
+  // every render. Keep a ref to the latest one so the listener below never
+  // uses a stale first-render closure.
+  const resolveSideRef = useRef(null)
+  useEffect(() => { resolveSideRef.current = resolveNearestDropSide })
+
+  // Fallback for touch releases where no DropZone element was in the DOM at
+  // the moment of release. Those zones are conditionally rendered from
+  // boardData, so a realtime reload landing mid-gesture unmounts them and the
+  // drop silently does nothing — which is why this only bites in multiplayer
+  // (other clients write constantly) and never in solo (the bot only writes on
+  // its own turn). Desktop is unaffected because the native-drop path already
+  // resolves by coordinates. This gives touch the same treatment.
+  // isMyTurn is enforced upstream in Game.jsx's onDragPlace handler.
+  useEffect(() => {
+    const onFallback = (e) => {
+      const { data: raw, clientX, clientY } = e.detail || {}
+
+      const data = mergeDragPayload(
+        raw,
+        draggingRef.current,
+        selectedTileRef.current,
+      )
+      if (!data?.tile) return
+
+      if (!hasTilesRef.current) {
+        placeDraggedDomino(data, 'first')
+        return
+      }
+
+      const side = resolveSideRef.current?.({ clientX, clientY }, data)
+      if (side === 'left' || side === 'right') {
+        placeDraggedDomino(data, side)
+      }
+    }
+
+    document.addEventListener('tile-drop-fallback', onFallback)
+    return () => document.removeEventListener('tile-drop-fallback', onFallback)
+  }, [])
+
   const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h) : []
 
   // Use the newest available drag source for previews. `dragging` is preferred,
