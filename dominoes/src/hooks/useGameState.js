@@ -156,7 +156,12 @@ export function useGameState(myInfo, navigate) {
       const { data: room, error: roomErr } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single()
       console.log('[endRound] room status:', room?.status, 'error:', roomErr)
       if (!room) { console.log('[endRound] no room found'); return }
-      if (room.status !== 'playing') { console.log('[endRound] guard hit, status:', room.status); return }
+      if (room.status !== 'playing') {
+        console.log('[endRound] guard hit, status:', room.status)
+        // Still load state so overlay shows if round already ended
+        if (room.status === 'round_end' || room.status === 'finished') await loadGameState()
+        return
+      }
       
       const mode   = room.game_mode || 'chien'
       const streak = room.streak || { seat: null, team: null, count: 0 }
