@@ -60,6 +60,18 @@ export function DragProvider({ children }) {
       }
     })
 
+    // The lookup above depends on a DropZone element being in the DOM at the
+    // exact moment of release. Those zones are conditionally rendered from
+    // boardData, so any realtime reload landing mid-gesture unmounts them and
+    // the drop silently does nothing. When nothing matched, fall back to
+    // coordinate-based resolution — the same approach the desktop native-drop
+    // path already uses via resolveNearestDropSide.
+    if (!dropped) {
+      document.dispatchEvent(new CustomEvent('tile-drop-fallback', {
+        detail: { data, clientX, clientY },
+      }))
+    }
+
     draggingRef.current = null
     setDragging(null)
     setIsTouch(false)
