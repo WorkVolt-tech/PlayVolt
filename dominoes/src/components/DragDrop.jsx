@@ -9,11 +9,13 @@ export function unregisterDropZone(id) { dropZones.delete(id) }
 export function DragProvider({ children }) {
   const [dragging, setDragging] = useState(null)
   const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [isTouch, setIsTouch] = useState(false)
   const draggingRef = useRef(null)
 
-  const startDrag = useCallback((data, clientX, clientY) => {
+  const startDrag = useCallback((data, clientX, clientY, touch = false) => {
     draggingRef.current = data
     setDragging(data)
+    setIsTouch(touch)
     setPos({ x: clientX, y: clientY })
   }, [])
 
@@ -21,7 +23,6 @@ export function DragProvider({ children }) {
     if (!draggingRef.current) return
     const data = draggingRef.current
 
-    // Find drop zone under finger/cursor
     let dropped = false
     dropZones.forEach((handler, id) => {
       if (dropped) return
@@ -37,6 +38,7 @@ export function DragProvider({ children }) {
 
     draggingRef.current = null
     setDragging(null)
+    setIsTouch(false)
   }, [])
 
   useEffect(() => {
@@ -44,28 +46,21 @@ export function DragProvider({ children }) {
       if (!draggingRef.current) return
       setPos({ x: e.clientX, y: e.clientY })
     }
-    function onMouseUp(e) {
-      endDrag(e.clientX, e.clientY)
-    }
+    function onMouseUp(e) { endDrag(e.clientX, e.clientY) }
     function onTouchMove(e) {
       if (!draggingRef.current) return
-      e.preventDefault() // prevent scroll while dragging
+      e.preventDefault()
       const t = e.touches[0]
-      const x = t.pageX - window.scrollX
-      const y = t.pageY - window.scrollY
-      setPos({ x, y })
+      setPos({ x: t.clientX, y: t.clientY })
     }
     function onTouchEnd(e) {
       if (!draggingRef.current) return
       const t = e.changedTouches[0]
-      const x = t.pageX - window.scrollX
-      const y = t.pageY - window.scrollY
-      endDrag(x, y)
+      endDrag(t.clientX, t.clientY)
     }
-
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
-    window.addEventListener('touchmove', onTouchMove, { passive: false }) // must be non-passive to preventDefault
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
     window.addEventListener('touchend', onTouchEnd)
     return () => {
       window.removeEventListener('mousemove', onMouseMove)
@@ -78,7 +73,8 @@ export function DragProvider({ children }) {
   return (
     <DragContext.Provider value={{ dragging, draggingRef, pos, startDrag, endDrag }}>
       {children}
-      {dragging && (
+      {/* Only show ghost on desktop — on touch the selected tile highlights instead */}
+      {dragging && !isTouch && (
         <div style={{
           position: 'fixed',
           left: pos.x - 14,
@@ -114,8 +110,9 @@ export function useDrag() {
 }
 
 export function Draggable({ children, data, disabled }) {
-  const { startDrag } = useDrag()
+  const { startDrag, dragging } = useDrag()
   const ref = useRef(null)
+  const isDragging = dragging && `${dragging.tile[0]}-${dragging.tile[1]}` === `${data?.tile?.[0]}-${data?.tile?.[1]}`
 
   useEffect(() => {
     const el = ref.current
@@ -124,16 +121,14 @@ export function Draggable({ children, data, disabled }) {
     function onMouseDown(e) {
       if (disabled) return
       e.preventDefault()
-      startDrag(data, e.clientX, e.clientY)
+      startDrag(data, e.clientX, e.clientY, false)
     }
 
     function onTouchStart(e) {
       if (disabled) return
-      e.preventDefault() // prevents scroll + click delay on mobile
+      e.preventDefault()
       const t = e.touches[0]
-      const x = t.pageX - window.scrollX
-      const y = t.pageY - window.scrollY
-      startDrag(data, x, y)
+      startDrag(data, t.clientX, t.clientY, true)
     }
 
     el.addEventListener('mousedown', onMouseDown)
@@ -145,7 +140,15 @@ export function Draggable({ children, data, disabled }) {
   }, [data, disabled, startDrag])
 
   return (
-    <div ref={ref} style={{ cursor: disabled ? 'default' : 'grab', display: 'contents' }}>
+    <div
+      ref={ref}
+      style={{
+        cursor: disabled ? 'default' : 'grab',
+        display: 'contents',
+        // On touch, scale up the tile being dragged so user knows it's selected
+        ...(isDragging ? { filter: 'brightness(1.2)', transform: 'scale(1.1)' } : {}),
+      }}
+    >
       {children}
     </div>
   )
@@ -155,8 +158,7 @@ let zoneCounter = 0
 export function DropZone({ onDrop, children, style, className }) {
   const id = useRef(`dz-${++zoneCounter}`).current
   const onDropRef = useRef(onDrop)
-  
-  // Always keep ref current so drop handler never goes stale
+
   useEffect(() => { onDropRef.current = onDrop }, [onDrop])
 
   useEffect(() => {
