@@ -15,20 +15,29 @@ export function unregisterDropZone(id) {
 
 export function DragProvider({ children }) {
   const [dragging, setDragging] = useState(null)
-  const [pos, setPos] = useState({ x: 0, y: 0 })
   const [isTouch, setIsTouch] = useState(false)
 
   const draggingRef = useRef(null)
+  // Ghost position is tracked here and written straight to the DOM on every
+  // move — NOT via useState. Routing every touchmove through React state
+  // re-renders the whole drag tree (Board, every tile, every drop zone) up
+  // to 60x/sec, and on a phone that competes with any other re-render
+  // (e.g. the board syncing another player's move) for the same frame,
+  // causing missed/batched events and the ghost visibly jumping ahead of
+  // the finger. Direct DOM mutation makes ghost-tracking immune to that.
+  const posRef = useRef({ x: 0, y: 0 })
+  const ghostRef = useRef(null)
 
   const startDrag = useCallback((data, clientX, clientY, touch = false) => {
     draggingRef.current = data
     setDragging(data)
     setIsTouch(touch)
 
-    setPos({
-      x: clientX,
-      y: clientY,
-    })
+    posRef.current = { x: clientX, y: clientY }
+    if (ghostRef.current) {
+      ghostRef.current.style.left = `${clientX}px`
+      ghostRef.current.style.top = `${clientY}px`
+    }
   }, [])
 
   const endDrag = useCallback((clientX, clientY) => {
@@ -66,13 +75,17 @@ export function DragProvider({ children }) {
   }, [])
 
   useEffect(() => {
+    function setGhostPos(x, y) {
+      posRef.current = { x, y }
+      if (ghostRef.current) {
+        ghostRef.current.style.left = `${x}px`
+        ghostRef.current.style.top = `${y}px`
+      }
+    }
+
     function onMouseMove(e) {
       if (!draggingRef.current) return
-
-      setPos({
-        x: e.clientX,
-        y: e.clientY,
-      })
+      setGhostPos(e.clientX, e.clientY)
     }
 
     function onMouseUp(e) {
@@ -91,10 +104,7 @@ export function DragProvider({ children }) {
 
       if (!t) return
 
-      setPos({
-        x: t.clientX,
-        y: t.clientY,
-      })
+      setGhostPos(t.clientX, t.clientY)
     }
 
     function onTouchEnd(e) {
@@ -156,6 +166,7 @@ export function DragProvider({ children }) {
 
   const dragGhost = dragging ? (
     <div
+      ref={ghostRef}
       style={{
         /*
          * IMPORTANT:
@@ -165,12 +176,16 @@ export function DragProvider({ children }) {
          *
          * That prevents any rotated/transformed game
          * container from changing its coordinates.
+         *
+         * Position is set here only for the very first paint —
+         * every subsequent move updates ghostRef.current.style
+         * directly (see setGhostPos above), bypassing React.
          */
 
         position: 'fixed',
 
-        left: `${pos.x}px`,
-        top: `${pos.y}px`,
+        left: `${posRef.current.x}px`,
+        top: `${posRef.current.y}px`,
 
         /*
          * Put the exact CENTER of the domino
@@ -254,7 +269,7 @@ export function DragProvider({ children }) {
       value={{
         dragging,
         draggingRef,
-        pos,
+        posRef,
         startDrag,
         endDrag,
       }}
