@@ -211,15 +211,10 @@ export function useGameState(myInfo, navigate) {
         blocked: winningSeat === null,
       }).eq('id', myInfo.roomId)
       if (updateErr) { await loadGameState(); return }
-      // Room is now in its correct state — load it immediately. Everything below is a
-      // side effect (profile stats) and must never be able to block the round transition.
-      await loadGameState()
-
       // Update profile stats for signed-in player.
-      // NOTE: db.rpc(...) returns a PostgREST "thenable" (only implements .then()), not a
-      // real Promise — it has no .catch(). Calling .catch() on it threw synchronously and
-      // was the root cause of the "stuck at round end / Vyèj / bot win" bug. Fixed by
-      // awaiting it and checking the returned error, all wrapped in try/catch below.
+      // db.rpc(...) is a PostgREST thenable, NOT a real Promise — it has no
+      // .catch(), so calling .catch() on it threw synchronously and aborted
+      // endRound. Await it and check the returned error instead.
       try {
         const { data: { user } } = await db.auth.getUser()
         if (user) {
@@ -246,9 +241,11 @@ export function useGameState(myInfo, navigate) {
             }).eq('id', user.id)
           }
         }
-      } catch (statsErr) {
-        console.error('[endRound] profile stats update failed (non-fatal):', statsErr)
+      } catch (e) {
+        console.error('[endRound] stats update failed (non-fatal):', e)
       }
+
+      await loadGameState()
       
       // If winner is a bot and we are the host, auto-start next round after delay
       if (!isVyej && myInfo.seat === 0) {
@@ -309,12 +306,24 @@ export function useGameState(myInfo, navigate) {
     const newHand = currentHand.filter((_, i) => i !== idx)
 
     try {
+      // Duplicate-drop guard — mirrors the bot path's existing `alreadyPlayed`
+      // check. Board.jsx has several independent drop paths (DropZone registry,
+      // custom-drop, tile-touch-drop-board, two native HTML5 handlers) and more
+      // than one can fire for a single touch gesture. processingRef only blocks
+      // a duplicate arriving DURING the first call; one arriving after it
+      // finished would remove a second tile from the hand and could leave
+      // newHand empty — falsely triggering the empty-hand win. Every domino is
+      // unique in a 28-tile set, so "already on the board" means this exact
+      // placement already happened: make it a no-op.
+      const alreadyPlayed = currentBoard?.tiles?.some(
+        e => e.tile[0] === tile[0] && e.tile[1] === tile[1]
+      )
+      if (alreadyPlayed) return
+
       if (!currentBoard?.tiles?.length || side === 'first') {
-        await Promise.all([
-          db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId),
-          db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat),
-          db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile }),
-        ])
+        await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
+        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
+        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
         await advanceTurn(newHand, tile)
       } else {
         const end = side === 'left' ? currentBoard.left_end : currentBoard.right_end
@@ -328,11 +337,9 @@ export function useGameState(myInfo, navigate) {
         const newTiles    = side === 'left' ? [newEntry, ...currentBoard.tiles] : [...currentBoard.tiles, newEntry]
         const newLeftEnd  = side === 'left'  ? newOpenEnd : currentBoard.left_end
         const newRightEnd = side === 'right' ? newOpenEnd : currentBoard.right_end
-        await Promise.all([
-          db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId),
-          db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat),
-          db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile }),
-        ])
+        await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
+        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
+        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
         // Pass OLD board ends for Dekabess check — tile must match both ends BEFORE it's placed
         await advanceTurn(newHand, tile, { left_end: currentBoard.left_end, right_end: currentBoard.right_end })
       }
