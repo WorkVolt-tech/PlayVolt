@@ -84,6 +84,49 @@ export function useGameState(myInfo, navigate) {
   useEffect(() => { boardRef.current = boardData }, [boardData])
   useEffect(() => { playersRef.current = players }, [players])
 
+  // ── Profile stats ─────────────────────────────────────────────────────────
+  // Every client records its OWN result, exactly once per round, by watching
+  // the room's status flip from 'playing' to 'round_end'/'finished'. This runs
+  // the same way in every game mode — it depends only on the room row, never
+  // on who ran endRound or whether opponents are bots. The room row carries
+  // everything needed: current_turn = winning seat, status 'finished' = Vyèj,
+  // pending_point = Dekabess.
+  const prevStatusRef = useRef(null)
+  useEffect(() => {
+    const status = roomData?.status
+    const prev = prevStatusRef.current
+    prevStatusRef.current = status
+
+    if (!status || status === prev) return
+    // Only a genuine end-of-round transition counts. If this client mounted
+    // straight into round_end (e.g. a page refresh), prev is null and we skip,
+    // which prevents double-counting.
+    if (prev !== 'playing') return
+    if (status !== 'round_end' && status !== 'finished') return
+
+    ;(async () => {
+      try {
+        const { data: { user } } = await db.auth.getUser()
+        if (!user) return
+
+        const iWon   = roomData.current_turn === myInfo.seat
+        const iVyej  = iWon && status === 'finished'
+        const iDek   = iWon && !!roomData.pending_point
+
+        const { error: statsErr } = await db.rpc('increment_profile_stats', {
+          p_user_id: user.id,
+          p_games: 1,
+          p_wins: iWon ? 1 : 0,
+          p_vyej: iVyej ? 1 : 0,
+          p_dekabess: iDek ? 1 : 0,
+        })
+        if (statsErr) console.error('[stats] increment failed:', statsErr.message)
+      } catch (e) {
+        console.error('[stats] exception (non-fatal):', e)
+      }
+    })()
+  }, [roomData, myInfo])
+
   const loadGameState = useCallback(async () => {
     const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
       db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
@@ -211,40 +254,12 @@ export function useGameState(myInfo, navigate) {
         blocked: winningSeat === null,
       }).eq('id', myInfo.roomId)
       if (updateErr) { await loadGameState(); return }
-      // Update profile stats for signed-in player.
-      // db.rpc(...) is a PostgREST thenable, NOT a real Promise — it has no
-      // .catch(), so calling .catch() on it threw synchronously and aborted
-      // endRound. Await it and check the returned error instead.
-      try {
-        const { data: { user } } = await db.auth.getUser()
-        if (user) {
-          const iWon = resolvedSeat === myInfo.seat
-          const iDekabessed = iWon && isDek
-          const { error: statsErr } = await db.rpc('increment_profile_stats', {
-            p_user_id: user.id,
-            p_games: 1,
-            p_wins: iWon ? 1 : 0,
-            p_vyej: (iWon && isVyej) ? 1 : 0,
-            p_dekabess: iDekabessed ? 1 : 0,
-          })
-          if (statsErr) {
-            // Fallback if RPC not set up — direct update
-            const { data: prof } = await db.from('profiles')
-              .select('total_games,total_wins,total_vyej,total_dekabess')
-              .eq('id', user.id).single()
-            if (prof) await db.from('profiles').update({
-              total_games:    (prof.total_games    || 0) + 1,
-              total_wins:     (prof.total_wins     || 0) + (iWon ? 1 : 0),
-              total_vyej:     (prof.total_vyej     || 0) + ((iWon && isVyej) ? 1 : 0),
-              total_dekabess: (prof.total_dekabess || 0) + (iDekabessed ? 1 : 0),
-              updated_at: new Date().toISOString(),
-            }).eq('id', user.id)
-          }
-        }
-      } catch (e) {
-        console.error('[endRound] stats update failed (non-fatal):', e)
-      }
-
+      // Profile stats are NOT written here. endRound runs on exactly one
+      // client (the player whose hand emptied, or the host when a bot wins),
+      // so writing stats here only ever recorded that one player — everyone
+      // else got nothing, and it behaved differently per game mode. Each
+      // client now records its own result from the room row; see the
+      // stats-recording effect below.
       await loadGameState()
       
       // If winner is a bot and we are the host, auto-start next round after delay
