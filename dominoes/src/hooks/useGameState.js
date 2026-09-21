@@ -372,7 +372,7 @@ export function useGameState(myInfo, navigate) {
       loadGameState()
       return 'error'
     }
-    return { blocked: !!data?.blocked }
+    return { blocked: !!data?.blocked, stale: !!data?.stale }
   }, [myInfo, loadGameState])
 
   const placeTile = useCallback(async (tile, idx, side) => {
@@ -398,6 +398,11 @@ export function useGameState(myInfo, navigate) {
       })
       if (res === 'missing') return false
       if (res === 'error') return true
+      if (res.stale) {
+        // Not our turn anymore (duplicate drop) — server wrote nothing.
+        loadGameState()
+        return true
+      }
       if (handEmpty) {
         await endRound(myInfo.seat, checkDekabess(tile, dekBoard || boardRef.current))
       } else if (res.blocked) {
@@ -476,26 +481,37 @@ export function useGameState(myInfo, navigate) {
   }, [isMyTurn, selectedTile, hasTilesOnBoard, placeTile])
 
   const passMove = useCallback(async () => {
-    // An empty hand can't legally pass; keep the original handling for it.
-    if (hand.length > 0) {
-      const res = await commitMove({
-        action: 'pass',
-        tile: null,
-        board: null,
-        hand: null,
-        advance: true,
-        checkBlock: boardRef.current?.tiles?.length > 0,
-      })
-      if (res === 'error') return
-      if (res !== 'missing') {
-        if (res.blocked) await endRound(null, false)
-        else loadGameState()
-        return
+    // Double-tap guard — the same one placeTile has always had. passMove
+    // never had it, so two quick taps fired two passes.
+    if (processingRef.current) return
+    processingRef.current = true
+    setProcessing(true)
+    try {
+      // An empty hand can't legally pass; keep the original handling for it.
+      if (hand.length > 0) {
+        const res = await commitMove({
+          action: 'pass',
+          tile: null,
+          board: null,
+          hand: null,
+          advance: true,
+          checkBlock: boardRef.current?.tiles?.length > 0,
+        })
+        if (res === 'error') return
+        if (res !== 'missing') {
+          if (res.stale) loadGameState()          // duplicate tap — nothing written
+          else if (res.blocked) await endRound(null, false)
+          else loadGameState()
+          return
+        }
       }
+      // Original path (play_move not installed) — unchanged.
+      await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null })
+      await advanceTurn(hand, null)
+    } finally {
+      processingRef.current = false
+      setProcessing(false)
     }
-    // Original path (play_move not installed) — unchanged.
-    await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null })
-    await advanceTurn(hand, null)
   }, [hand, myInfo, advanceTurn, commitMove, endRound, loadGameState])
 
   const startNextRound = useCallback(async () => {
