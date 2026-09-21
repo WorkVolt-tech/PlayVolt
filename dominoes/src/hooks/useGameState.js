@@ -122,12 +122,18 @@ export function useGameState(myInfo, navigate) {
         if (!user) return
 
         const iWon  = room.current_turn === myInfo.seat
-        const iVyej = iWon && room.status === 'finished'
+        const isMatchOver = room.status === 'finished'   // a match ends on a Vyèj
+        const iVyej = iWon && isMatchOver
         const iDek  = iWon && !!room.pending_point
 
         const { error: statsErr } = await db.rpc('increment_profile_stats', {
           p_user_id: user.id,
-          p_games: 1,
+          // Games counts MATCHES played, so it only ticks when the match ends.
+          // Rounds (the total_wins column) counts individual rounds won.
+          // Keeping both in their own unit is what stops the counters from
+          // contradicting each other — a Vyèj needs 4 round wins, so Rounds
+          // will always be >= 4x Vyèj, and Games stays comparable to Vyèj.
+          p_games: isMatchOver ? 1 : 0,
           p_wins: iWon ? 1 : 0,
           p_vyej: iVyej ? 1 : 0,
           p_dekabess: iDek ? 1 : 0,
