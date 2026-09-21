@@ -121,28 +121,25 @@ export function useGameState(myInfo, navigate) {
         const { data: { user } } = await db.auth.getUser()
         if (!user) return
 
-        // Round and Vyèj follow the game's own scoring: in asosyé the round is
-        // a TEAM win (endRound uses winnerKey 'A' = seats 0&2, 'B' = seats 1&3,
-        // and the round overlay shows it as your team's win), so a partner
-        // going out counts for you too. In every other mode it's your seat.
-        // Dekabess is a personal feat — only the player who made it.
+        // Round, Vyèj and Dekabess all follow the game's own scoring: in
+        // asosyé the round is a TEAM win (endRound uses winnerKey 'A' = seats
+        // 0&2, 'B' = seats 1&3, and the round overlay shows it as your team's
+        // win), so when your partner goes out — or makes a Dekabess — it
+        // counts for you too. In every other mode it's your seat only.
         const mode   = room.game_mode || 'chien'
         const teamOf = s => (s === 0 || s === 2) ? 'A' : 'B'
-        const iPlayedLast = room.current_turn === myInfo.seat
         const iWon = mode === 'asosye'
           ? teamOf(room.current_turn) === teamOf(myInfo.seat)
-          : iPlayedLast
+          : room.current_turn === myInfo.seat
         const isMatchOver = room.status === 'finished'   // a match ends on a Vyèj
         const iVyej = iWon && isMatchOver
-        const iDek  = iPlayedLast && !!room.pending_point
+        const iDek  = iWon && !!room.pending_point
 
         const { error: statsErr } = await db.rpc('increment_profile_stats', {
           p_user_id: user.id,
           // Games counts MATCHES played, so it only ticks when the match ends.
-          // Rounds (the total_wins column) counts individual rounds won.
-          // Keeping both in their own unit is what stops the counters from
-          // contradicting each other — a Vyèj needs 4 round wins, so Rounds
-          // will always be >= 4x Vyèj, and Games stays comparable to Vyèj.
+          // p_wins is this round's result (1 won / 0 lost); the database uses
+          // it to advance or reset round_streak. It is not stored as a total.
           p_games: isMatchOver ? 1 : 0,
           p_wins: iWon ? 1 : 0,
           p_vyej: iVyej ? 1 : 0,
