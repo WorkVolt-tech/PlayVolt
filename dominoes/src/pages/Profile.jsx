@@ -53,11 +53,11 @@ export default function Profile() {
   )
 
   // Games   = matches played (a match ends on a Vyèj)
-  // Rounds  = individual rounds won (reuses the total_wins column)
+  // Streak  = consecutive rounds won; resets to 0 on a round lost
   // Vyèj    = matches won — this is the real "win" in Dekabess
   const stats = [
     { label: 'Games', value: profile?.total_games ?? 0 },
-    { label: 'Rounds', value: profile?.total_wins ?? 0 },
+    { label: 'Streak', value: profile?.round_streak ?? 0 },
     { label: 'Vyèj', value: profile?.total_vyej ?? 0 },
     { label: 'Dekabess', value: profile?.total_dekabess ?? 0 },
   ]
