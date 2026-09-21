@@ -121,10 +121,20 @@ export function useGameState(myInfo, navigate) {
         const { data: { user } } = await db.auth.getUser()
         if (!user) return
 
-        const iWon  = room.current_turn === myInfo.seat
+        // Round and Vyèj follow the game's own scoring: in asosyé the round is
+        // a TEAM win (endRound uses winnerKey 'A' = seats 0&2, 'B' = seats 1&3,
+        // and the round overlay shows it as your team's win), so a partner
+        // going out counts for you too. In every other mode it's your seat.
+        // Dekabess is a personal feat — only the player who made it.
+        const mode   = room.game_mode || 'chien'
+        const teamOf = s => (s === 0 || s === 2) ? 'A' : 'B'
+        const iPlayedLast = room.current_turn === myInfo.seat
+        const iWon = mode === 'asosye'
+          ? teamOf(room.current_turn) === teamOf(myInfo.seat)
+          : iPlayedLast
         const isMatchOver = room.status === 'finished'   // a match ends on a Vyèj
         const iVyej = iWon && isMatchOver
-        const iDek  = iWon && !!room.pending_point
+        const iDek  = iPlayedLast && !!room.pending_point
 
         const { error: statsErr } = await db.rpc('increment_profile_stats', {
           p_user_id: user.id,
