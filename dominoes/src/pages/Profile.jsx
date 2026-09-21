@@ -52,15 +52,19 @@ export default function Profile() {
     </div>
   )
 
+  // Games   = matches played (a match ends on a Vyèj)
+  // Rounds  = individual rounds won (reuses the total_wins column)
+  // Vyèj    = matches won — this is the real "win" in Dekabess
   const stats = [
     { label: 'Games', value: profile?.total_games ?? 0 },
-    { label: 'Wins', value: profile?.total_wins ?? 0 },
+    { label: 'Rounds', value: profile?.total_wins ?? 0 },
     { label: 'Vyèj', value: profile?.total_vyej ?? 0 },
     { label: 'Dekabess', value: profile?.total_dekabess ?? 0 },
   ]
 
+  // Win rate = matches won / matches played, so both sides are in the same unit.
   const winRate = profile?.total_games > 0
-    ? Math.round((profile.total_wins / profile.total_games) * 100) : 0
+    ? Math.round((profile.total_vyej / profile.total_games) * 100) : 0
 
   return (
     <div className="profile-page">
