@@ -338,6 +338,43 @@ export function useGameState(myInfo, navigate) {
     await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
   }, [myInfo, endRound])
 
+  // ── Single-round-trip move ───────────────────────────────────────────────
+  // Sends one move to the play_move RPC, which performs the same writes the
+  // original code does (board, hand, event, block check, turn advance) in one
+  // request and one transaction. All game decisions stay in this file.
+  //
+  // Returns:
+  //   { blocked }  — success
+  //   'missing'    — play_move not installed; caller runs the ORIGINAL code
+  //   'error'      — any other failure; the transaction rolled back, so
+  //                  nothing was written — resync and let the player retry.
+  //                  (Deliberately NOT falling back here: if the RPC committed
+  //                  but the response was lost, re-running the writes would
+  //                  advance the turn twice and skip a player.)
+  const commitMove = useCallback(async ({ action, tile, board, hand, advance, checkBlock }) => {
+    const { data, error } = await db.rpc('play_move', {
+      p_room_id: myInfo.roomId,
+      p_seat: myInfo.seat,
+      p_action: action,
+      p_tile: tile ?? null,
+      p_board: board ?? null,
+      p_hand: hand ?? null,
+      p_advance: advance,
+      p_check_block: checkBlock,
+    })
+    if (error) {
+      const missing =
+        error.code === 'PGRST202' ||
+        error.code === '42883' ||
+        /could not find the function/i.test(error.message || '')
+      if (missing) return 'missing'
+      console.error('[play_move] failed, resyncing:', error.message)
+      loadGameState()
+      return 'error'
+    }
+    return { blocked: !!data?.blocked }
+  }, [myInfo, loadGameState])
+
   const placeTile = useCallback(async (tile, idx, side) => {
     if (processingRef.current) return
     processingRef.current = true
@@ -345,6 +382,33 @@ export function useGameState(myInfo, navigate) {
     const currentBoard = boardRef.current
     const currentHand  = playersRef.current.find(p => p.seat === myInfo.seat)?.hand || []
     const newHand = currentHand.filter((_, i) => i !== idx)
+
+    // Fast path. Mirrors advanceTurn exactly: empty hand -> endRound (no
+    // advance, no block check); otherwise block check when the board has
+    // tiles, then advance. Returns false only when the RPC isn't installed.
+    const finishPlace = async (boardPatch, dekBoard) => {
+      const handEmpty = newHand.length === 0
+      const res = await commitMove({
+        action: 'place',
+        tile,
+        board: boardPatch,
+        hand: newHand,
+        advance: !handEmpty,
+        checkBlock: !handEmpty && boardRef.current?.tiles?.length > 0,
+      })
+      if (res === 'missing') return false
+      if (res === 'error') return true
+      if (handEmpty) {
+        await endRound(myInfo.seat, checkDekabess(tile, dekBoard || boardRef.current))
+      } else if (res.blocked) {
+        await endRound(null, false)
+      } else {
+        // Show the mover their own tile now instead of waiting for the
+        // realtime echo. Read-only — same query realtime triggers anyway.
+        loadGameState()
+      }
+      return true
+    }
 
     try {
       // Duplicate-drop guard — mirrors the bot path's existing `alreadyPlayed`
@@ -362,10 +426,14 @@ export function useGameState(myInfo, navigate) {
       if (alreadyPlayed) return
 
       if (!currentBoard?.tiles?.length || side === 'first') {
-        await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
-        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
-        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
-        await advanceTurn(newHand, tile)
+        const boardPatch = { tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }
+        if (!(await finishPlace(boardPatch, undefined))) {
+          // Original path (play_move not installed) — unchanged.
+          await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
+          await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
+          await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
+          await advanceTurn(newHand, tile)
+        }
       } else {
         const end = side === 'left' ? currentBoard.left_end : currentBoard.right_end
         let flipped = false, newOpenEnd
@@ -378,11 +446,16 @@ export function useGameState(myInfo, navigate) {
         const newTiles    = side === 'left' ? [newEntry, ...currentBoard.tiles] : [...currentBoard.tiles, newEntry]
         const newLeftEnd  = side === 'left'  ? newOpenEnd : currentBoard.left_end
         const newRightEnd = side === 'right' ? newOpenEnd : currentBoard.right_end
-        await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
-        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
-        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
-        // Pass OLD board ends for Dekabess check — tile must match both ends BEFORE it's placed
-        await advanceTurn(newHand, tile, { left_end: currentBoard.left_end, right_end: currentBoard.right_end })
+        const oldEnds = { left_end: currentBoard.left_end, right_end: currentBoard.right_end }
+        const boardPatch = { tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }
+        if (!(await finishPlace(boardPatch, oldEnds))) {
+          // Original path (play_move not installed) — unchanged.
+          await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
+          await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
+          await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
+          // Pass OLD board ends for Dekabess check — tile must match both ends BEFORE it's placed
+          await advanceTurn(newHand, tile, { left_end: currentBoard.left_end, right_end: currentBoard.right_end })
+        }
       }
     } finally {
       setSelectedTile(null)
@@ -390,7 +463,7 @@ export function useGameState(myInfo, navigate) {
       processingRef.current = false
       setProcessing(false)
     }
-  }, [myInfo, advanceTurn])
+  }, [myInfo, advanceTurn, commitMove, endRound, loadGameState])
 
   const selectTile = useCallback((tile, idx) => {
     if (!isMyTurn) return
@@ -403,9 +476,27 @@ export function useGameState(myInfo, navigate) {
   }, [isMyTurn, selectedTile, hasTilesOnBoard, placeTile])
 
   const passMove = useCallback(async () => {
+    // An empty hand can't legally pass; keep the original handling for it.
+    if (hand.length > 0) {
+      const res = await commitMove({
+        action: 'pass',
+        tile: null,
+        board: null,
+        hand: null,
+        advance: true,
+        checkBlock: boardRef.current?.tiles?.length > 0,
+      })
+      if (res === 'error') return
+      if (res !== 'missing') {
+        if (res.blocked) await endRound(null, false)
+        else loadGameState()
+        return
+      }
+    }
+    // Original path (play_move not installed) — unchanged.
     await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null })
     await advanceTurn(hand, null)
-  }, [hand, myInfo, advanceTurn])
+  }, [hand, myInfo, advanceTurn, commitMove, endRound, loadGameState])
 
   const startNextRound = useCallback(async () => {
     overlayShownRef.current = false
