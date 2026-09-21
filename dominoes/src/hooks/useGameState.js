@@ -85,33 +85,45 @@ export function useGameState(myInfo, navigate) {
   useEffect(() => { playersRef.current = players }, [players])
 
   // ── Profile stats ─────────────────────────────────────────────────────────
-  // Every client records its OWN result, exactly once per round, by watching
-  // the room's status flip from 'playing' to 'round_end'/'finished'. This runs
-  // the same way in every game mode — it depends only on the room row, never
-  // on who ran endRound or whether opponents are bots. The room row carries
-  // everything needed: current_turn = winning seat, status 'finished' = Vyèj,
-  // pending_point = Dekabess.
-  const prevStatusRef = useRef(null)
+  // Every client records its OWN result. domino_players has no auth user_id,
+  // so no single client can write stats for the whole table — each player must
+  // record themselves.
+  //
+  // Recording is keyed on the room's persisted `round` number, NOT on
+  // witnessing the status flip live. An earlier version required seeing
+  // 'playing' -> 'round_end' in real time, which silently dropped rounds on a
+  // refresh, a backgrounded phone, a dropped realtime event, or two reloads
+  // coalescing. Keying on the round means a client that arrives late still
+  // records it, and the localStorage key makes it idempotent across reloads.
+  //
+  // Identical in every game mode: it reads only the room row, never who ran
+  // endRound and never whether opponents are bots.
+  //   current_turn  = winning seat
+  //   status 'finished' = Vyèj (streak reached 4)
+  //   pending_point = Dekabess
+  const statsInFlightRef = useRef(new Set())
   useEffect(() => {
-    const status = roomData?.status
-    const prev = prevStatusRef.current
-    prevStatusRef.current = status
+    const room = roomData
+    if (!room) return
+    if (room.status !== 'round_end' && room.status !== 'finished') return
 
-    if (!status || status === prev) return
-    // Only a genuine end-of-round transition counts. If this client mounted
-    // straight into round_end (e.g. a page refresh), prev is null and we skip,
-    // which prevents double-counting.
-    if (prev !== 'playing') return
-    if (status !== 'round_end' && status !== 'finished') return
+    const roundNo = room.round ?? 1
+    const key = `dekabess_stat:${myInfo.roomId}:${roundNo}`
+
+    if (statsInFlightRef.current.has(key)) return
+    try { if (localStorage.getItem(key)) return } catch { /* storage blocked */ }
+
+    // Claim before awaiting so a re-render mid-flight can't double-record.
+    statsInFlightRef.current.add(key)
 
     ;(async () => {
       try {
         const { data: { user } } = await db.auth.getUser()
         if (!user) return
 
-        const iWon   = roomData.current_turn === myInfo.seat
-        const iVyej  = iWon && status === 'finished'
-        const iDek   = iWon && !!roomData.pending_point
+        const iWon  = room.current_turn === myInfo.seat
+        const iVyej = iWon && room.status === 'finished'
+        const iDek  = iWon && !!room.pending_point
 
         const { error: statsErr } = await db.rpc('increment_profile_stats', {
           p_user_id: user.id,
@@ -120,9 +132,17 @@ export function useGameState(myInfo, navigate) {
           p_vyej: iVyej ? 1 : 0,
           p_dekabess: iDek ? 1 : 0,
         })
-        if (statsErr) console.error('[stats] increment failed:', statsErr.message)
+
+        if (statsErr) {
+          console.error('[stats] increment failed:', statsErr.message)
+          statsInFlightRef.current.delete(key)   // allow a retry
+          return
+        }
+        // Only mark recorded once the write actually succeeded.
+        try { localStorage.setItem(key, '1') } catch { /* storage blocked */ }
       } catch (e) {
         console.error('[stats] exception (non-fatal):', e)
+        statsInFlightRef.current.delete(key)
       }
     })()
   }, [roomData, myInfo])
