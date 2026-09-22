@@ -159,3 +159,25 @@ input[type="text"]::placeholder { color: #4a4538; }
   display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
   animation: pulse 1.5s ease-in-out infinite;
 }
+
+/* ── Solo opponent picker ─────────────────────────────────────────────── */
+.bot-picker { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.bot-picker-label { margin-bottom: 0.1rem; }
+.bot-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.4rem 0.6rem;
+}
+.bot-seat {
+  flex-shrink: 0; font-size: 0.58rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--ivory-dim); min-width: 3.2rem;
+}
+.bot-select {
+  flex: 1; min-width: 0;
+  background: var(--surface2); color: var(--ivory);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 0.5rem 0.6rem; font-family: 'DM Mono', monospace; font-size: 0.72rem;
+  cursor: pointer; outline: none;
+}
+.bot-select:focus { border-color: var(--gold); }
+.bot-select option { background: var(--surface2); color: var(--ivory); }
