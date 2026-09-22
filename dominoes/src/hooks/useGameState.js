@@ -694,7 +694,7 @@ export function useGameState(myInfo, navigate) {
         opponentTileCounts,
         tileCountsBySeat,
       }
-      // Ti-Jòj, Ti-Tid and Ti-Sere see everyone's real tiles — by design. No other
+      // Ti-Jòj, Ti-Tid and Ti-Roro see everyone's real tiles — by design. No other
       // personality is ever given them.
       if (seesAllHands(personality)) {
         botCtx.hands = [0, 1, 2, 3].map(s => players.find(p => p.seat === s)?.hand || [])
