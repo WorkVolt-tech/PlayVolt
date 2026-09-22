@@ -6,7 +6,7 @@ import './Lobby.css'
 
 // ── Solo opponents ───────────────────────────────────────────────────────────
 // A bot's personality comes from its name (see getPersonality in botAI.js).
-// Ti-Jòj and Ti-Tid are ONLY ever seated when picked here — they are
+// Ti-Jòj, Ti-Tid and Ti-Sere are ONLY ever seated when picked here — they are
 // deliberately absent from the random replacement-bot name lists, so an
 // all-seeing bot can never silently take a disconnected player's seat in PvP.
 const BOT_ROSTER = [
@@ -15,6 +15,7 @@ const BOT_ROSTER = [
   { name: 'Ti-Jean', role: 'Blocker' },
   { name: 'Ti-Jòj',  role: 'Expert' },
   { name: 'Ti-Tid',  role: 'Expert' },
+  { name: 'Ti-Sere', role: 'Expert' },
 ]
 
 // Same bot picked more than once → "Ti-Jòj", "Ti-Jòj 2", … so every seat
