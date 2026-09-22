@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
-import { chooseTile, getPersonality } from '../lib/botAI'
+import { chooseTile, getPersonality, seesAllHands } from '../lib/botAI'
 
 // ── Pure helpers ────────────────────────────────────────────────────────────
 export function generateRoomCode() {
@@ -687,7 +687,19 @@ export function useGameState(myInfo, navigate) {
       const opponentTileCounts = players
         .filter(p => p.seat !== currentPlayer.seat && p.seat !== partnerSeat)
         .map(p => (p.hand || []).length)
-      const move = chooseTile(personality, botPlayable, botHand, board, { opponentTileCounts })
+      const tileCountsBySeat = [0, 1, 2, 3].map(s => (players.find(p => p.seat === s)?.hand || []).length)
+      const botCtx = {
+        seat: currentPlayer.seat,
+        mode: roomData.game_mode || 'chien',
+        opponentTileCounts,
+        tileCountsBySeat,
+      }
+      // Ti-Jòj and Ti-Tid see everyone's real tiles — by design. No other
+      // personality is ever given them.
+      if (seesAllHands(personality)) {
+        botCtx.hands = [0, 1, 2, 3].map(s => players.find(p => p.seat === s)?.hand || [])
+      }
+      const move = chooseTile(personality, botPlayable, botHand, board, botCtx)
       let tile = move?.tile || botPlayable[0]
       // Override side from AI recommendation if available
       const aiSide = move?.side
