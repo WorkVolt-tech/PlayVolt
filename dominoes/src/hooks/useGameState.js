@@ -358,10 +358,11 @@ export function useGameState(myInfo, navigate) {
   //                  (Deliberately NOT falling back here: if the RPC committed
   //                  but the response was lost, re-running the writes would
   //                  advance the turn twice and skip a player.)
-  const commitMove = useCallback(async ({ action, tile, board, hand, advance, checkBlock }) => {
+  const commitMove = useCallback(async ({ seat, action, tile, board, hand, advance, checkBlock }) => {
     const { data, error } = await db.rpc('play_move', {
       p_room_id: myInfo.roomId,
-      p_seat: myInfo.seat,
+      // Humans move for their own seat; the host passes a bot's seat.
+      p_seat: seat ?? myInfo.seat,
       p_action: action,
       p_tile: tile ?? null,
       p_board: board ?? null,
@@ -638,19 +639,55 @@ export function useGameState(myInfo, navigate) {
       botRunningRef.current = true
       const botHand     = currentPlayer.hand || []
       const botPlayable = getPlayableTiles(botHand, board, roomData)
-      if (botPlayable.length === 0) {
-        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'pass', tile: null })
-        if (board?.tiles?.length > 0) {
-          const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
-          if (events?.length === 4 && events.every(e => e.action === 'pass')) { botRunningRef.current = false; await endRound(null, false); return }
+
+      // Bot moves are written through play_move — the exact function human
+      // moves use — so every mode shares one move path: one request, one
+      // transaction, and the server-side turn guard. Retried on a transient
+      // error, because unlike a human a bot can't tap again. Retrying is safe
+      // only because of the turn guard: if an attempt actually committed and
+      // just its response was lost, the retry is rejected as stale.
+      const commitBot = async (args) => {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const res = await commitMove({ ...args, seat: currentPlayer.seat })
+          if (res !== 'error') return res
+          await new Promise(r => setTimeout(r, 800))
         }
-        await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
+        return 'error'
+      }
+
+      if (botPlayable.length === 0) {
+        const res = await commitBot({
+          action: 'pass', tile: null, board: null, hand: null,
+          advance: true,
+          checkBlock: board?.tiles?.length > 0,   // same condition as before
+        })
+        if (res === 'missing') {
+          // Original path (play_move not installed) — unchanged.
+          await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'pass', tile: null })
+          if (board?.tiles?.length > 0) {
+            const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
+            if (events?.length === 4 && events.every(e => e.action === 'pass')) { botRunningRef.current = false; await endRound(null, false); return }
+          }
+          await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
+          botRunningRef.current = false
+          return
+        }
         botRunningRef.current = false
+        if (res === 'error' || res.stale) return
+        if (res.blocked) { await endRound(null, false); return }
+        loadGameState()
         return
       }
       // Use personality-based AI engine
       const personality = getPersonality(currentPlayer.nickname)
-      const move = chooseTile(personality, botPlayable, botHand, board)
+      // Public info only: how many tiles each opponent holds (shown on every
+      // screen). Lets the bot block harder when someone is about to go out.
+      // In asosyé the partner across the table (seat + 2) is not an opponent.
+      const partnerSeat = roomData.game_mode === 'asosye' ? (currentPlayer.seat + 2) % 4 : null
+      const opponentTileCounts = players
+        .filter(p => p.seat !== currentPlayer.seat && p.seat !== partnerSeat)
+        .map(p => (p.hand || []).length)
+      const move = chooseTile(personality, botPlayable, botHand, board, { opponentTileCounts })
       let tile = move?.tile || botPlayable[0]
       // Override side from AI recommendation if available
       const aiSide = move?.side
@@ -659,10 +696,9 @@ export function useGameState(myInfo, navigate) {
       // Verify tile not already on board (prevent duplicate on double-fire)
       const alreadyPlayed = board?.tiles?.some(e => e.tile[0] === tile[0] && e.tile[1] === tile[1])
       if (alreadyPlayed) { botRunningRef.current = false; return }
+      let boardPatch
       if (!board?.tiles?.length) {
-        await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
-        await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', currentPlayer.seat)
-        await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'place', tile })
+        boardPatch = { tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }
       } else {
         const cL   = canPlayOnSide(tile, 'left', board)
         const cR   = canPlayOnSide(tile, 'right', board)
@@ -680,13 +716,29 @@ export function useGameState(myInfo, navigate) {
         const newTiles    = side === 'left' ? [{ tile, flipped }, ...board.tiles] : [...board.tiles, { tile, flipped }]
         const newLeftEnd  = side === 'left'  ? newOpenEnd : board.left_end
         const newRightEnd = side === 'right' ? newOpenEnd : board.right_end
-        await db.from('board').update({ tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }).eq('room_id', myInfo.roomId)
+        boardPatch = { tiles: newTiles, left_end: newLeftEnd, right_end: newRightEnd }
+      }
+
+      const handEmpty = newHand.length === 0
+      const res = await commitBot({
+        action: 'place', tile, board: boardPatch, hand: newHand,
+        advance: !handEmpty,     // last tile: endRound takes over, as before
+        checkBlock: false,       // the bot never block-checked after placing
+      })
+      if (res === 'missing') {
+        // Original path (play_move not installed) — same writes as before.
+        await db.from('board').update(boardPatch).eq('room_id', myInfo.roomId)
         await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', currentPlayer.seat)
         await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'place', tile })
+        if (newHand.length === 0) { botRunningRef.current = false; await endRound(currentPlayer.seat, checkDekabess(tile, board)); return }
+        await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
+        botRunningRef.current = false
+        return
       }
-      if (newHand.length === 0) { botRunningRef.current = false; await endRound(currentPlayer.seat, checkDekabess(tile, board)); return }
-      await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
       botRunningRef.current = false
+      if (res === 'error' || res.stale) return
+      if (handEmpty) { await endRound(currentPlayer.seat, checkDekabess(tile, board)); return }
+      loadGameState()
     }, 1200)
     return () => { clearTimeout(timer); clearTimeout(safetyTimer); botRunningRef.current = false }
   }, [roomData?.current_turn, roomData?.status])
