@@ -7,7 +7,7 @@
 //   opponentTileCounts  tiles each opponent holds (public — shown on screen)
 //   tileCountsBySeat    same, indexed by seat 0-3 (public)
 //   seat, mode          the bot's seat and the game mode
-//   hands               EVERY player's real tiles — passed ONLY to Ti-Jòj / Ti-Tid
+//   hands               EVERY player's real tiles — passed ONLY to Ti-Jòj / Ti-Tid / Ti-Sere
 //
 // All three personalities share one evaluation of what a move does to the
 // bot's OWN hand. Earlier versions only looked at opponents' options, and
@@ -218,7 +218,7 @@ function blocker(playable, hand, board, ctx) {
 }
 
 
-// ── Lookahead search (Expert & Cheater) ──────────────────────────────────────
+// ── Lookahead search (Ti-Jòj, Ti-Tid & Ti-Sere) ──────────────────────────────────────
 // Plays the round forward several turns and picks the move whose future is
 // best for this bot's side. Rules modelled exactly as the game plays them:
 // turn passes clockwise, a player with no legal tile passes, four passes in
@@ -447,16 +447,19 @@ function pickBest(moves, scores, hand, board, ctx) {
   return moves[bi]
 }
 
-// ── Ti-Jòj & Ti-Tid ──────────────────────────────────────────────────────────
+// ── Ti-Jòj, Ti-Tid & Ti-Sere ──────────────────────────────────────────────────────────
 // Both see every player's real tiles, predict what each player will do, and
 // plan their own moves so the following plays fall their way.
 //   Ti-Jòj — plays purely to win the round.
 //   Ti-Tid — loves making you knock: still plays to win, but prefers the line
 //            that forces opponents to pass the most (closing the numbers
 //            they're holding).
+//   Ti-Sere — the strangler: blocks hard so you knock constantly, and doesn't
+//            care about finishing by Dekabess — he just shuts you out.
 const SEER_BUDGET = 60000
 const TIJOJ_STYLE = { dekBonus: 300, knockBonus: 0 }
 const TITID_STYLE = { dekBonus: 300, knockBonus: 100 }
+const TISERE_STYLE = { dekBonus: 0, knockBonus: 250 }
 
 function seer(playable, hand, board, ctx, style) {
   const moves = legalRootMoves(playable, board)
@@ -474,10 +477,11 @@ function seer(playable, hand, board, ctx, style) {
 
 const tijoj = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIJOJ_STYLE)
 const titid = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TITID_STYLE)
+const tisere = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TISERE_STYLE)
 
 // Which personalities are given every player's real tiles by the game.
 export function seesAllHands(personality) {
-  return personality === 'tijoj' || personality === 'titid'
+  return personality === 'tijoj' || personality === 'titid' || personality === 'tisere'
 }
 
 // ── Personality map ───────────────────────────────────────────────────────────
@@ -487,6 +491,7 @@ export const PERSONALITIES = {
   blocker,
   tijoj,
   titid,
+  tisere,
 }
 
 // Default assignment by bot name
@@ -495,6 +500,7 @@ export function getPersonality(nickname) {
   const n = (nickname || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   if (n.includes('ti-joj'))                         return 'tijoj'
   if (n.includes('ti-tid'))                         return 'titid'
+  if (n.includes('ti-sere'))                        return 'tisere'
   if (n.includes('ti-djo') || n.includes('djo'))    return 'strategist'
   if (n.includes('ti-cam') || n.includes('ticam')) return 'gambler'
   if (n.includes('ti-jean') || n.includes('jean'))   return 'blocker'
