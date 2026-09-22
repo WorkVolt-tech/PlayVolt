@@ -4,6 +4,30 @@ import { db } from '../lib/supabase'
 import { generateRoomCode, generateDominoSet, shuffle } from '../hooks/useGameState'
 import './Lobby.css'
 
+// ── Solo opponents ───────────────────────────────────────────────────────────
+// A bot's personality comes from its name (see getPersonality in botAI.js).
+// Ti-Jòj and Ti-Tid are ONLY ever seated when picked here — they are
+// deliberately absent from the random replacement-bot name lists, so an
+// all-seeing bot can never silently take a disconnected player's seat in PvP.
+const BOT_ROSTER = [
+  { name: 'Ti-Djo',  role: 'Strategist' },
+  { name: 'Ti-Cam',  role: 'Gambler' },
+  { name: 'Ti-Jean', role: 'Blocker' },
+  { name: 'Ti-Jòj',  role: 'Expert' },
+  { name: 'Ti-Tid',  role: 'Expert' },
+]
+
+// Same bot picked more than once → "Ti-Jòj", "Ti-Jòj 2", … so every seat
+// has a distinct name. getPersonality matches on the name, so the number
+// suffix keeps the personality.
+function resolveBotNames(picks) {
+  const seen = {}
+  return picks.map(name => {
+    seen[name] = (seen[name] || 0) + 1
+    return seen[name] === 1 ? name : `${name} ${seen[name]}`
+  })
+}
+
 export default function Lobby() {
   const navigate = useNavigate()
   const [authUser, setAuthUser] = useState(null)
@@ -56,6 +80,8 @@ export default function Lobby() {
   const [players, setPlayers]       = useState([])
   const [selectedMode, setMode]     = useState('chien')
   const [selectedAI, setAI]         = useState('beginner')
+  // Solo: which bot sits in each of the 3 AI seats (defaults = the original trio)
+  const [botPicks, setBotPicks]     = useState(['Ti-Djo', 'Ti-Cam', 'Ti-Jean'])
   const [selectedPartner, setPartner] = useState(null)
   const [amHost, setAmHost]         = useState(false)
   const [queueCount, setQueueCount] = useState(0)
@@ -294,7 +320,7 @@ export default function Lobby() {
 
     // Solo: fill with AI
     if (selectedMode === 'solo') {
-      const aiNames = ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
+      const aiNames = resolveBotNames(botPicks)
       let botIdx = 0
       for (let seat = 0; seat < 4; seat++) {
         if (!allPlayers.find(p => p.seat === seat)) {
@@ -489,6 +515,28 @@ export default function Lobby() {
                     </button>
                   ))}
                 </div>
+                {selectedMode === 'solo' && (
+                  <div className="bot-picker">
+                    <div className="mode-label bot-picker-label">Opponents</div>
+                    {botPicks.map((pick, i) => (
+                      <div key={i} className="bot-row">
+                        <span className="bot-seat">Bot {i + 1}</span>
+                        <select
+                          className="bot-select"
+                          value={pick}
+                          onChange={e => {
+                            const v = e.target.value
+                            setBotPicks(prev => prev.map((p, j) => (j === i ? v : p)))
+                          }}
+                        >
+                          {BOT_ROSTER.map(b => (
+                            <option key={b.name} value={b.name}>{b.name} — {b.role}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <button
                   className="btn btn-primary"
                   disabled={!canStart}
