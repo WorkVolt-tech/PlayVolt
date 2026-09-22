@@ -7,7 +7,7 @@
 //   opponentTileCounts  tiles each opponent holds (public — shown on screen)
 //   tileCountsBySeat    same, indexed by seat 0-3 (public)
 //   seat, mode          the bot's seat and the game mode
-//   hands               EVERY player's real tiles — passed ONLY to Ti-Jòj / Ti-Tid / Ti-Sere
+//   hands               EVERY player's real tiles — passed ONLY to Ti-Jòj / Ti-Tid / Ti-Roro
 //
 // All three personalities share one evaluation of what a move does to the
 // bot's OWN hand. Earlier versions only looked at opponents' options, and
@@ -218,7 +218,7 @@ function blocker(playable, hand, board, ctx) {
 }
 
 
-// ── Lookahead search (Ti-Jòj, Ti-Tid & Ti-Sere) ──────────────────────────────────────
+// ── Lookahead search (Ti-Jòj, Ti-Tid & Ti-Roro) ──────────────────────────────────────
 // Plays the round forward several turns and picks the move whose future is
 // best for this bot's side. Rules modelled exactly as the game plays them:
 // turn passes clockwise, a player with no legal tile passes, four passes in
@@ -254,7 +254,7 @@ const handPips = h => h.reduce((s, t) => s + t[0] + t[1], 0)
 const WIN = 1000, BLOCK_WIN = 800
 
 // Static judgement of an unfinished position, from our side's point of view.
-function leafValue(st, mine) {
+function leafValue(st, mine, pipWeight = 0.3) {
   let v = 0
   let myMin = 99, oppMin = 99, myPips = 0, oppPips = 0
   for (let s = 0; s < 4; s++) {
@@ -264,7 +264,7 @@ function leafValue(st, mine) {
     else         { oppMin = Math.min(oppMin, h.length); oppPips += handPips(h); v -= playable * 4 }
   }
   v += (oppMin - myMin) * 30          // closest to going out matters most
-  v += (oppPips - myPips) * 0.3       // pips decide a blocked round
+  v += (oppPips - myPips) * pipWeight // pips decide a blocked round
   // Our doubles that can never come back onto an end
   for (let s = 0; s < 4; s++) {
     if (!mine(s)) continue
@@ -323,11 +323,13 @@ function predictMove(st, p, moves) {
 function makeSearch(mine, me, budget, style) {
   const dekBonus = style.dekBonus
   const knockBonus = style.knockBonus || 0
+  const blockWin   = style.blockWin   || BLOCK_WIN   // value of WINNING a blocked round
+  const pipWeight  = style.pipWeight  ?? 0.3
   let nodes = 0
   // `knocks` = passes forced on the other side so far along this line
   function value(st, depth, ply, knocks) {
     if (++nodes > budget) return null
-    if (depth === 0) return leafValue(st, mine) + knocks * knockBonus
+    if (depth === 0) return leafValue(st, mine, pipWeight) + knocks * knockBonus
     const p = st.turn
     const hand = st.hands[p]
     const moves = movesFor(hand, st.L, st.R, st.empty)
@@ -336,7 +338,7 @@ function makeSearch(mine, me, budget, style) {
       const k = knocks + (mine(p) ? 0 : 1)
       if (st.passes + 1 >= 4) {
         const w = blockedWinner(st.hands)
-        return (mine(w) ? BLOCK_WIN - ply : -BLOCK_WIN + ply) + k * knockBonus
+        return (mine(w) ? blockWin - ply : -BLOCK_WIN + ply) + k * knockBonus
       }
       const sp = st.passes, sTurn = st.turn
       st.passes = sp + 1; st.turn = (p + 1) % 4
@@ -447,19 +449,21 @@ function pickBest(moves, scores, hand, board, ctx) {
   return moves[bi]
 }
 
-// ── Ti-Jòj, Ti-Tid & Ti-Sere ──────────────────────────────────────────────────────────
+// ── Ti-Jòj, Ti-Tid & Ti-Roro ──────────────────────────────────────────────────────────
 // Both see every player's real tiles, predict what each player will do, and
 // plan their own moves so the following plays fall their way.
 //   Ti-Jòj — plays purely to win the round.
 //   Ti-Tid — loves making you knock: still plays to win, but prefers the line
 //            that forces opponents to pass the most (closing the numbers
 //            they're holding).
-//   Ti-Sere — the strangler: blocks hard so you knock constantly, and doesn't
-//            care about finishing by Dekabess — he just shuts you out.
+//   Ti-Roro — the pip counter: steers the round toward a block that he wins
+//            by holding the fewest pips. If only a win by going out is
+//            available he takes it, but a block win is his first choice.
 const SEER_BUDGET = 60000
 const TIJOJ_STYLE = { dekBonus: 300, knockBonus: 0 }
 const TITID_STYLE = { dekBonus: 300, knockBonus: 100 }
-const TISERE_STYLE = { dekBonus: 0, knockBonus: 250 }
+// blockWin above WIN (1000) = a won block is worth more to him than going out
+const TIRORO_STYLE = { dekBonus: 0, knockBonus: 0, blockWin: 1200 }
 
 function seer(playable, hand, board, ctx, style) {
   const moves = legalRootMoves(playable, board)
@@ -477,11 +481,11 @@ function seer(playable, hand, board, ctx, style) {
 
 const tijoj = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIJOJ_STYLE)
 const titid = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TITID_STYLE)
-const tisere = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TISERE_STYLE)
+const tiroro = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIRORO_STYLE)
 
 // Which personalities are given every player's real tiles by the game.
 export function seesAllHands(personality) {
-  return personality === 'tijoj' || personality === 'titid' || personality === 'tisere'
+  return personality === 'tijoj' || personality === 'titid' || personality === 'tiroro'
 }
 
 // ── Personality map ───────────────────────────────────────────────────────────
@@ -491,7 +495,7 @@ export const PERSONALITIES = {
   blocker,
   tijoj,
   titid,
-  tisere,
+  tiroro,
 }
 
 // Default assignment by bot name
@@ -500,7 +504,7 @@ export function getPersonality(nickname) {
   const n = (nickname || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   if (n.includes('ti-joj'))                         return 'tijoj'
   if (n.includes('ti-tid'))                         return 'titid'
-  if (n.includes('ti-sere'))                        return 'tisere'
+  if (n.includes('ti-roro'))                        return 'tiroro'
   if (n.includes('ti-djo') || n.includes('djo'))    return 'strategist'
   if (n.includes('ti-cam') || n.includes('ticam')) return 'gambler'
   if (n.includes('ti-jean') || n.includes('jean'))   return 'blocker'
