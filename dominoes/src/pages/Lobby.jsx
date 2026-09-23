@@ -29,6 +29,15 @@ function resolveBotNames(picks) {
   })
 }
 
+// How many HUMAN players a mode allows at the table.
+// The host's choice is written to the room as soon as it's picked, so a
+// player joining by code can be turned away before taking a seat.
+function humanCapacity(mode) {
+  if (mode === 'solo') return 1   // you vs 3 AI
+  if (mode === 'duo')  return 2   // you + 1 friend vs 2 AI
+  return 4
+}
+
 export default function Lobby() {
   const navigate = useNavigate()
   const [authUser, setAuthUser] = useState(null)
@@ -250,11 +259,18 @@ export default function Lobby() {
       .subscribe()
   }
 
+  // Store the host's mode on the room so joiners can see the table's capacity.
+  // At start-up, 'duo' is rewritten to 'asosye' (see startGame).
+  async function publishMode(mode) {
+    if (!myRoomId) return
+    await db.from('domino_rooms').update({ game_mode: mode }).eq('id', myRoomId)
+  }
+
   async function createRoom() {
     const nick = getNickname(); if (!nick) return
     const code = generateRoomCode()
     const { data: room, error } = await db.from('domino_rooms')
-      .insert({ code, status: 'waiting', current_turn: 0 }).select().single()
+      .insert({ code, status: 'waiting', current_turn: 0, game_mode: selectedMode }).select().single()
     if (error) { setMsg({ text: 'Error: ' + error.message, type: 'error' }); return }
 
     const { data: player } = await db.from('domino_players')
@@ -278,7 +294,15 @@ export default function Lobby() {
     if (!room) { setMsg({ text: 'Room not found or game already started.', type: 'error' }); return }
 
     const { data: existing } = await db.from('domino_players').select('seat').eq('room_id', room.id)
-    if ((existing || []).length >= 4) { setMsg({ text: 'Room is full!', type: 'error' }); return }
+    const capacity = humanCapacity(room.game_mode)
+    if ((existing || []).length >= capacity) {
+      setMsg({
+        text: capacity === 2 ? 'This table is full — Asosyé vs AI is 2 players only.'
+            : capacity === 1 ? 'This table is a solo game vs AI.'
+            : 'Room is full!',
+        type: 'error',
+      }); return
+    }
 
     const takenSeats = (existing || []).map(p => p.seat)
     const freeSeat = [0,1,2,3].find(s => !takenSeats.includes(s))
@@ -287,6 +311,18 @@ export default function Lobby() {
       .insert({ room_id: room.id, seat: freeSeat, nickname: nick, hand: [], is_connected: true })
       .select().single()
     if (error) { setMsg({ text: 'Error: ' + error.message, type: 'error' }); return }
+
+    // Two people can pass the check above at the same instant. Re-count after
+    // taking the seat; whoever overflowed the table steps back out.
+    const { data: after } = await db.from('domino_players').select('seat').eq('room_id', room.id)
+    const seatsNow = (after || []).map(p => p.seat).sort((x, y) => x - y)
+    if (seatsNow.length > capacity && seatsNow.indexOf(freeSeat) >= capacity) {
+      await db.from('domino_players').delete().eq('id', player.id)
+      setMsg({
+        text: capacity === 2 ? 'This table is full — Asosyé vs AI is 2 players only.' : 'Room is full!',
+        type: 'error',
+      }); return
+    }
 
     setMyRoomId(room.id); setMyRoomCode(code)
     setMyPlayerId(player.id); myPlayerIdRef.current = player.id
@@ -319,6 +355,25 @@ export default function Lobby() {
       }
     }
 
+    // Asosyé vs AI: the two humans are partners at seats 0 & 2, bots at 1 & 3.
+    // Temporary seats first, so the unique (room, seat) constraint can't clash.
+    if (selectedMode === 'duo') {
+      const me     = allPlayers.find(p => p.id === myPlayerId)
+      const friend = allPlayers.find(p => p.id !== myPlayerId)
+      if (!me || !friend || allPlayers.length !== 2) {
+        alert('Asosyé vs AI needs exactly 2 players.'); return
+      }
+      await db.from('domino_players').update({ seat: 10 }).eq('id', me.id)
+      await db.from('domino_players').update({ seat: 12 }).eq('id', friend.id)
+      await db.from('domino_players').update({ seat: 0 }).eq('id', me.id)
+      await db.from('domino_players').update({ seat: 2 }).eq('id', friend.id)
+      setMySeat(0)
+      const aiNames = resolveBotNames(botPicks.slice(0, 2))
+      await db.from('domino_players').insert({ room_id: myRoomId, seat: 1, nickname: aiNames[0], hand: [], is_connected: true, is_ai: true })
+      await db.from('domino_players').insert({ room_id: myRoomId, seat: 3, nickname: aiNames[1], hand: [], is_connected: true, is_ai: true })
+      allPlayers = await loadPlayers(myRoomId)
+    }
+
     // Solo: fill with AI
     if (selectedMode === 'solo') {
       const aiNames = resolveBotNames(botPicks)
@@ -329,7 +384,7 @@ export default function Lobby() {
         }
       }
       allPlayers = await loadPlayers(myRoomId)
-    } else if (allPlayers.length < 4) {
+    } else if (selectedMode !== 'duo' && allPlayers.length < 4) {
       alert('Need 4 players to start!'); return
     }
 
@@ -348,8 +403,10 @@ export default function Lobby() {
     await db.from('domino_rooms').update({
       status: 'playing',
       current_turn: startingSeat,
-      game_mode: selectedMode,
-      ai_difficulty: selectedMode === 'solo' ? selectedAI : null,
+      // 'duo' is an asosyé game whose second pair happens to be AI — stored as
+      // asosyé so scoring, team streaks, Vyèj and stats treat it like any other.
+      game_mode: selectedMode === 'duo' ? 'asosye' : selectedMode,
+      ai_difficulty: (selectedMode === 'solo' || selectedMode === 'duo') ? selectedAI : null,
       scores: [0,0,0,0],
       streak: { seat: null, team: null, count: 0 },
       pending_point: false,
@@ -366,7 +423,11 @@ export default function Lobby() {
     })
   }
 
-  const canStart = selectedMode === 'solo' ? true : players.length >= 4
+  // duo = 2 humans (partners) + 2 AI
+  const canStart =
+    selectedMode === 'solo' ? true :
+    selectedMode === 'duo'  ? players.length === 2 :
+    players.length >= 4
 
   return (
     <div className="lobby-page">
@@ -502,11 +563,12 @@ export default function Lobby() {
                     { id: 'chien', icon: '🐶', name: 'Chien Manjé Chien', desc: 'Every man for himself · 4 players' },
                     { id: 'asosye', icon: '🤝', name: 'Asosyé', desc: 'Partners · Teams of 2' },
                     { id: 'solo', icon: '🤖', name: 'Solo vs AI', desc: 'You vs 3 AI opponents' },
+                    { id: 'duo', icon: '👥', name: 'Asosyé vs AI', desc: 'You + 1 friend vs 2 AI · teams of 2' },
                   ].map(m => (
                     <button
                       key={m.id}
                       className={`mode-btn ${selectedMode === m.id ? 'selected' : ''}`}
-                      onClick={() => setMode(m.id)}
+                      onClick={() => { setMode(m.id); publishMode(m.id) }}
                     >
                       <span className="mode-icon">{m.icon}</span>
                       <div>
@@ -516,10 +578,16 @@ export default function Lobby() {
                     </button>
                   ))}
                 </div>
-                {selectedMode === 'solo' && (
+                {selectedMode === 'duo' && players.length > 2 && (
+                  <div className="bot-hint">
+                    Asosyé vs AI is 2 players — {players.length - 2} extra player
+                    {players.length - 2 > 1 ? 's' : ''} must leave, or pick another mode.
+                  </div>
+                )}
+                {(selectedMode === 'solo' || selectedMode === 'duo') && (
                   <div className="bot-picker">
                     <div className="mode-label bot-picker-label">Opponents</div>
-                    {botPicks.map((pick, i) => (
+                    {botPicks.slice(0, selectedMode === 'duo' ? 2 : 3).map((pick, i) => (
                       <div key={i} className="bot-row">
                         <span className="bot-seat">Bot {i + 1}</span>
                         <select
@@ -544,7 +612,11 @@ export default function Lobby() {
                   onClick={startGame}
                   style={{ marginTop: '1rem' }}
                 >
-                  {canStart ? 'Start Game!' : `Start Game (${players.length}/4 Players)`}
+                  {canStart
+                    ? 'Start Game!'
+                    : selectedMode === 'duo'
+                      ? `Start Game (${players.length}/2 Players)`
+                      : `Start Game (${players.length}/4 Players)`}
                 </button>
               </div>
             )}
