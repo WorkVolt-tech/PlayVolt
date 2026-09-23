@@ -274,19 +274,36 @@ export function useGameState(myInfo, navigate) {
         }
       }
       
-      await Promise.all([
-        db.from('game_events').delete().eq('room_id', myInfo.roomId),
-        db.from('board').delete().eq('room_id', myInfo.roomId),
-      ])
-      const { error: updateErr } = await db.from('domino_rooms').update({
+      // ORDER MATTERS: end the round FIRST, clear the table afterwards.
+      // Clearing first meant that if the room update then failed, the board
+      // and hands were already gone while the room still said 'playing' —
+      // no overlay, no tiles, no way to continue. Doing the status write
+      // first means a later failure leaves only stale board/event rows,
+      // which the next round deletes anyway.
+      const roundEndPayload = {
         status: isVyej ? 'finished' : 'round_end',
         current_turn: resolvedSeat,
         streak: newStreak,
         match_winner: isVyej ? winnerKey : null,
         pending_point: isDek,
         blocked: winningSeat === null,
-      }).eq('id', myInfo.roomId)
-      if (updateErr) { await loadGameState(); return }
+      }
+      let { error: updateErr } = await db.from('domino_rooms').update(roundEndPayload).eq('id', myInfo.roomId)
+      if (updateErr) {
+        // One retry — this write is what ends the round for everyone.
+        console.error('[endRound] room update failed, retrying:', updateErr.message)
+        ;({ error: updateErr } = await db.from('domino_rooms').update(roundEndPayload).eq('id', myInfo.roomId))
+      }
+      if (updateErr) {
+        console.error('[endRound] room update FAILED twice — round not ended:', updateErr.message)
+        await loadGameState()
+        return
+      }
+
+      await Promise.all([
+        db.from('game_events').delete().eq('room_id', myInfo.roomId),
+        db.from('board').delete().eq('room_id', myInfo.roomId),
+      ])
       // Profile stats are NOT written here. endRound runs on exactly one
       // client (the player whose hand emptied, or the host when a bot wins),
       // so writing stats here only ever recorded that one player — everyone
@@ -326,6 +343,30 @@ export function useGameState(myInfo, navigate) {
       await loadGameState()
     }
   }, [myInfo, loadGameState])
+
+  // ── Stuck-round watchdog ─────────────────────────────────────────────────
+  // A round ends when someone empties their hand. If that player's browser
+  // dies (or loses the network) between playing the last tile and writing
+  // the round result, the room stays on 'playing' with an empty-handed
+  // player and nobody can move — the table is stranded.
+  //
+  // Any client that notices this finishes the round. endRound re-reads the
+  // room and returns immediately unless it is still 'playing', so several
+  // clients noticing at once is harmless. The winner's own client acts
+  // first; others wait ~3s so it normally heals itself silently.
+  const watchdogRef = useRef(null)
+  useEffect(() => {
+    clearTimeout(watchdogRef.current)
+    if (!roomData || roomData.status !== 'playing' || !players.length) return
+    const emptyHanded = players.find(p => Array.isArray(p.hand) && p.hand.length === 0)
+    if (!emptyHanded) return
+    const iAmTheWinner = emptyHanded.seat === myInfo.seat
+    watchdogRef.current = setTimeout(() => {
+      console.warn('[watchdog] round never ended for seat', emptyHanded.seat, '— finishing it')
+      endRound(emptyHanded.seat, false)
+    }, iAmTheWinner ? 1200 : 3500)
+    return () => clearTimeout(watchdogRef.current)
+  }, [roomData?.status, players, myInfo, endRound])
 
   const advanceTurn = useCallback(async (newHand, lastTile, updatedBoard) => {
     if (newHand.length === 0) {
