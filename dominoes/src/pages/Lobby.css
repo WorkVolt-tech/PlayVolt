@@ -181,3 +181,9 @@ input[type="text"]::placeholder { color: #4a4538; }
 }
 .bot-select:focus { border-color: var(--gold); }
 .bot-select option { background: var(--surface2); color: var(--ivory); }
+
+.bot-hint {
+  margin-top: 0.75rem; font-size: 0.62rem; color: var(--red);
+  border: 1px solid rgba(201,76,76,0.35); background: rgba(201,76,76,0.08);
+  border-radius: 4px; padding: 0.45rem 0.6rem;
+}
