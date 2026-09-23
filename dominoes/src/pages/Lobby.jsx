@@ -89,6 +89,9 @@ export default function Lobby() {
   const myRoomCodeRef = useRef(null)
   const [players, setPlayers]       = useState([])
   const [selectedMode, setMode]     = useState('chien')
+  // The mode stored ON THE ROOM — drives how many seats the table shows, for
+  // the host and for anyone who joined by code alike.
+  const [roomMode, setRoomMode]     = useState('chien')
   const [selectedAI, setAI]         = useState('beginner')
   // Solo: which bot sits in each of the 3 AI seats (defaults = the original trio)
   const [botPicks, setBotPicks]     = useState(['Ti-Djo', 'Ti-Cam', 'Ti-Jean'])
@@ -239,6 +242,7 @@ export default function Lobby() {
         () => loadPlayers(roomId))
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
         async (payload) => {
+          if (payload.new.game_mode) setRoomMode(payload.new.game_mode)
           if (payload.new.status === 'playing') {
             let finalSeat = mySeatRef.current
             if (myPlayerIdRef.current) {
@@ -262,6 +266,7 @@ export default function Lobby() {
   // Store the host's mode on the room so joiners can see the table's capacity.
   // At start-up, 'duo' is rewritten to 'asosye' (see startGame).
   async function publishMode(mode) {
+    setRoomMode(mode)
     if (!myRoomId) return
     await db.from('domino_rooms').update({ game_mode: mode }).eq('id', myRoomId)
   }
@@ -280,6 +285,7 @@ export default function Lobby() {
     setMyRoomId(room.id); setMyRoomCode(code)
     setMyPlayerId(player?.id); myPlayerIdRef.current = player?.id
     setMySeat(0); mySeatRef.current = 0; setAmHost(true)
+    setRoomMode(selectedMode)
     setPlayers(player ? [player] : [])
     subscribeToRoom(room.id, 'create')
     setTab('waiting')
@@ -325,6 +331,7 @@ export default function Lobby() {
     }
 
     setMyRoomId(room.id); setMyRoomCode(code)
+    setRoomMode(room.game_mode || 'chien')
     setMyPlayerId(player.id); myPlayerIdRef.current = player.id
     setMySeat(freeSeat); mySeatRef.current = freeSeat
     await loadPlayers(room.id)
@@ -547,9 +554,11 @@ export default function Lobby() {
                   )}
                 </div>
               ))}
-              {Array.from({ length: Math.max(0, 4 - players.length) }).map((_, i) => (
+              {Array.from({ length: Math.max(0, humanCapacity(roomMode) - players.length) }).map((_, i) => (
                 <div key={i} className="player-row empty">
-                  <span className="player-row-name">Waiting…</span>
+                  <span className="player-row-name">
+                    {roomMode === 'duo' ? 'Waiting for your partner…' : 'Waiting…'}
+                  </span>
                 </div>
               ))}
             </div>
