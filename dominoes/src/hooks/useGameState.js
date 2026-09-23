@@ -684,8 +684,20 @@ export function useGameState(myInfo, navigate) {
       // screen). Lets the bot block harder when someone is about to go out.
       // In asosyé the partner across the table (seat + 2) is not an opponent.
       const partnerSeat = roomData.game_mode === 'asosye' ? (currentPlayer.seat + 2) % 4 : null
+      // When Ti-Jòj, Ti-Tid AND Ti-Roro are all at the table they play as one
+      // bloc: each counts the other two's win as its own. Only when all three
+      // are present — any other line-up and they play for themselves.
+      const UNISON = ['tijoj', 'titid', 'tiroro']
+      const seatPersonalities = players
+        .filter(p => p.is_ai)
+        .map(p => ({ seat: p.seat, pers: getPersonality(p.nickname) }))
+      const unisonPresent = UNISON.every(u => seatPersonalities.some(x => x.pers === u))
+      const allySeats = unisonPresent && UNISON.includes(personality)
+        ? seatPersonalities.filter(x => UNISON.includes(x.pers)).map(x => x.seat)
+        : []
+      // "Danger" means an OPPONENT is about to go out — never our own side.
       const opponentTileCounts = players
-        .filter(p => p.seat !== currentPlayer.seat && p.seat !== partnerSeat)
+        .filter(p => p.seat !== currentPlayer.seat && p.seat !== partnerSeat && !allySeats.includes(p.seat))
         .map(p => (p.hand || []).length)
       const tileCountsBySeat = [0, 1, 2, 3].map(s => (players.find(p => p.seat === s)?.hand || []).length)
       const botCtx = {
@@ -693,6 +705,7 @@ export function useGameState(myInfo, navigate) {
         mode: roomData.game_mode || 'chien',
         opponentTileCounts,
         tileCountsBySeat,
+        allySeats,
       }
       // Ti-Jòj, Ti-Tid and Ti-Roro see everyone's real tiles — by design. No other
       // personality is ever given them.
