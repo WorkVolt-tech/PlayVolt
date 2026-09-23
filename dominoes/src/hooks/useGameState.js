@@ -536,7 +536,14 @@ export function useGameState(myInfo, navigate) {
 
     // Only the winner (or host in solo) deals the next round
     // Everyone else just waits for the subscription to update them
-    if (myInfo.seat !== winnerSeat && !isSoloMode) {
+    //
+    // A bot can win the round too — in solo, in "asosyé vs AI", and in PvP
+    // when a bot replaced someone who disconnected. A bot has no client to
+    // deal, so the host (seat 0) deals on its behalf; otherwise every human
+    // would sit waiting for a dealer that doesn't exist.
+    const winnerIsBot = !!playersRef.current.find(p => p.seat === winnerSeat)?.is_ai
+    const iDeal = myInfo.seat === winnerSeat || isSoloMode || (winnerIsBot && myInfo.seat === 0)
+    if (!iDeal) {
       // Non-winner clicked — just close overlay and wait
       await loadGameState()
       return
