@@ -12,22 +12,25 @@ import './Lobby.css'
 // deliberately absent from the random replacement-bot name lists, so an
 // all-seeing bot can never silently take a disconnected player's seat in PvP.
 const BOT_ROSTER = [
-  { name: 'Ti-Djo',  role: 'Strategist' },
-  { name: 'Ti-Cam',  role: 'Gambler' },
-  { name: 'Ti-Jean', role: 'Blocker' },
-  { name: 'Ti-Jòj',  role: 'Expert' },
-  { name: 'Ti-Tid',  role: 'Expert' },
-  { name: 'Ti-Roro', role: 'Expert' },
-  { name: 'Ti-Chasè', role: 'Expert' },
-  { name: 'Ti-Frè',   role: 'Expert' },
-  { name: 'Ti-Sak',   role: 'Hoarder' },
-  { name: 'Ti-Bebe',  role: 'Beginner' },
-  { name: 'Ti-Chaj',  role: 'Expert' },
-  { name: 'Ti-Pyèj',  role: 'Expert' },
-  { name: 'Ti-Wa',    role: 'Expert' },
-  { name: 'Ti-Mèt',   role: 'Controller' },
-  { name: 'Ti-Doub',  role: 'Doubles First' },
+  // Ordinary bots first — these play fair, they only see their own tiles.
+  // Roughly easiest to hardest.
+  { name: 'Ti-Bebe',   role: 'Beginner' },
   { name: 'Ti-Pridan', role: 'Careful' },
+  { name: 'Ti-Sak',    role: 'Hoarder' },
+  { name: 'Ti-Cam',    role: 'Gambler' },
+  { name: 'Ti-Mèt',    role: 'Controller' },
+  { name: 'Ti-Jean',   role: 'Blocker' },
+  { name: 'Ti-Djo',    role: 'Strategist' },
+  { name: 'Ti-Doub',   role: 'Doubles First' },
+  // Experts last — these see every player's tiles.
+  { name: 'Ti-Jòj',    role: 'Expert' },
+  { name: 'Ti-Tid',    role: 'Expert' },
+  { name: 'Ti-Roro',   role: 'Expert' },
+  { name: 'Ti-Chasè',  role: 'Expert' },
+  { name: 'Ti-Frè',    role: 'Expert' },
+  { name: 'Ti-Chaj',   role: 'Expert' },
+  { name: 'Ti-Pyèj',   role: 'Expert' },
+  { name: 'Ti-Wa',     role: 'Expert' },
 ]
 
 // Same bot picked more than once → "Ti-Jòj", "Ti-Jòj 2", … so every seat
