@@ -6,7 +6,9 @@ import './Lobby.css'
 
 // ── Solo opponents ───────────────────────────────────────────────────────────
 // A bot's personality comes from its name (see getPersonality in botAI.js).
-// Ti-Jòj, Ti-Tid and Ti-Roro are ONLY ever seated when picked here — they are
+// The all-seeing bots (Ti-Jòj, Ti-Tid, Ti-Roro, Ti-Chasè, Ti-Frè, Ti-Chaj,
+// Ti-Pyèj, Ti-Wa) are ONLY
+// ever seated when picked here — they are
 // deliberately absent from the random replacement-bot name lists, so an
 // all-seeing bot can never silently take a disconnected player's seat in PvP.
 const BOT_ROSTER = [
@@ -16,6 +18,16 @@ const BOT_ROSTER = [
   { name: 'Ti-Jòj',  role: 'Expert' },
   { name: 'Ti-Tid',  role: 'Expert' },
   { name: 'Ti-Roro', role: 'Expert' },
+  { name: 'Ti-Chasè', role: 'Expert' },
+  { name: 'Ti-Frè',   role: 'Expert' },
+  { name: 'Ti-Sak',   role: 'Hoarder' },
+  { name: 'Ti-Bebe',  role: 'Beginner' },
+  { name: 'Ti-Chaj',  role: 'Expert' },
+  { name: 'Ti-Pyèj',  role: 'Expert' },
+  { name: 'Ti-Wa',    role: 'Expert' },
+  { name: 'Ti-Mèt',   role: 'Controller' },
+  { name: 'Ti-Doub',  role: 'Doubles First' },
+  { name: 'Ti-Pridan', role: 'Careful' },
 ]
 
 // Same bot picked more than once → "Ti-Jòj", "Ti-Jòj 2", … so every seat
