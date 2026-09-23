@@ -8,6 +8,7 @@
 //   tileCountsBySeat    same, indexed by seat 0-3 (public)
 //   seat, mode          the bot's seat and the game mode
 //   hands               EVERY player's real tiles — passed ONLY to Ti-Jòj / Ti-Tid / Ti-Roro
+//   allySeats           seats that play as one side with this bot
 //
 // All three personalities share one evaluation of what a move does to the
 // bot's OWN hand. Earlier versions only looked at opponents' options, and
@@ -132,6 +133,11 @@ function evaluate(move, hand, board, unknown, ctx, W) {
   // 3) Block opponents: fewer tiles they could play on the new ends.
   //    Weighted up when an opponent is about to go out — this is the one
   //    case where sacrificing my own flexibility (even a double) can be right.
+  //    NOTE: in asosyé this still counts the partner's unseen tiles too.
+  //    Measured attempts to discount them made these bots no better (and the
+  //    gambler worse), because opening the board for a partner opens it for
+  //    both opponents as well. Real partner play needs to know which numbers
+  //    the partner knocked on, which the bots aren't told yet.
   score -= opponentOptionsCount(L, R, unknown) * W.block * dangerMultiplier(ctx)
 
   // 4) Shed pips: if the round gets blocked, lowest pip total wins.
@@ -412,10 +418,14 @@ function deepScores(st, rootMoves, mine, budget, style) {
   return last
 }
 
+// Who counts as "our side" when judging an outcome: me, my asosyé partner,
+// and — when all three all-seeing bots are at the table — the other two, so
+// they play as one bloc (ctx.allySeats, set by the game).
 function teamCheck(ctx) {
   const me = ctx.seat
   const partner = ctx.mode === 'asosye' ? (me + 2) % 4 : -1
-  return s => s === me || s === partner
+  const allies = ctx.allySeats || []
+  return s => s === me || s === partner || allies.includes(s)
 }
 
 function buildState(hands, board, turn, passes) {
