@@ -5,12 +5,20 @@ export default function DekabessOverlay({ playerName, onDone }) {
   const canvasRef = useRef(null)
   const [visible, setVisible] = useState(false)
 
+  // Keep the latest onDone in a ref. It used to be an effect dependency, but
+  // the parent passes a fresh arrow function on every render, so the effect
+  // tore down and restarted on each re-render — restarting the 3.8s timer
+  // every time. During a busy round the celebration could stay up forever,
+  // and it hides the round-over overlay while it's showing.
+  const onDoneRef = useRef(onDone)
+  useEffect(() => { onDoneRef.current = onDone }, [onDone])
+
   useEffect(() => {
     // Fade in first, then start confetti
     const showTimer = setTimeout(() => setVisible(true), 50)
-    const doneTimer = setTimeout(() => onDone(), 3800)
+    const doneTimer = setTimeout(() => onDoneRef.current?.(), 3800)
     return () => { clearTimeout(showTimer); clearTimeout(doneTimer) }
-  }, [onDone])
+  }, [])
 
   useEffect(() => {
     if (!visible) return
