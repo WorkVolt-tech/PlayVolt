@@ -15,7 +15,12 @@ export function unregisterDropZone(id) {
 
 export function DragProvider({ children }) {
   const [dragging, setDragging] = useState(null)
-  const [pos, setPos] = useState({ x: 0, y: 0 })
+  // Ghost position is tracked in a ref and written straight to the DOM on each
+  // move — NOT React state. Routing every touchmove through setState re-renders
+  // the whole drag tree (Board, every tile, every drop zone) up to 60x/sec; on
+  // a phone those renders fall behind the finger and the ghost jumps ahead.
+  const posRef = useRef({ x: 0, y: 0 })
+  const ghostRef = useRef(null)
   const [isTouch, setIsTouch] = useState(false)
 
   const draggingRef = useRef(null)
@@ -25,10 +30,11 @@ export function DragProvider({ children }) {
     setDragging(data)
     setIsTouch(touch)
 
-    setPos({
-      x: clientX,
-      y: clientY,
-    })
+    posRef.current = { x: clientX, y: clientY }
+    if (ghostRef.current) {
+      ghostRef.current.style.left = `${clientX}px`
+      ghostRef.current.style.top = `${clientY}px`
+    }
   }, [])
 
   const endDrag = useCallback((clientX, clientY) => {
@@ -78,13 +84,17 @@ export function DragProvider({ children }) {
   }, [])
 
   useEffect(() => {
+    function setGhostPos(x, y) {
+      posRef.current = { x, y }
+      if (ghostRef.current) {
+        ghostRef.current.style.left = `${x}px`
+        ghostRef.current.style.top = `${y}px`
+      }
+    }
+
     function onMouseMove(e) {
       if (!draggingRef.current) return
-
-      setPos({
-        x: e.clientX,
-        y: e.clientY,
-      })
+      setGhostPos(e.clientX, e.clientY)
     }
 
     function onMouseUp(e) {
@@ -103,10 +113,7 @@ export function DragProvider({ children }) {
 
       if (!t) return
 
-      setPos({
-        x: t.clientX,
-        y: t.clientY,
-      })
+      setGhostPos(t.clientX, t.clientY)
     }
 
     function onTouchEnd(e) {
@@ -168,6 +175,7 @@ export function DragProvider({ children }) {
 
   const dragGhost = dragging ? (
     <div
+      ref={ghostRef}
       style={{
         /*
          * IMPORTANT:
@@ -181,8 +189,9 @@ export function DragProvider({ children }) {
 
         position: 'fixed',
 
-        left: `${pos.x}px`,
-        top: `${pos.y}px`,
+        /* first paint only — every later move writes straight to this node */
+        left: `${posRef.current.x}px`,
+        top: `${posRef.current.y}px`,
 
         /*
          * Put the exact CENTER of the domino
@@ -266,7 +275,7 @@ export function DragProvider({ children }) {
       value={{
         dragging,
         draggingRef,
-        pos,
+        posRef,
         startDrag,
         endDrag,
       }}
