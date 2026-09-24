@@ -219,6 +219,16 @@
   letter-spacing: 0.2em;
 }
 
+/* ── Keep the hand clear of the phone's bottom gesture strip ──────
+   Dragging a tile upward from the very bottom edge is the system's
+   "close app" swipe, so the hand area is lifted above it. On desktop and
+   anywhere without a gesture bar, env() resolves to 0 and nothing moves. */
+.hand-area {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+}
+
 /* ── Landscape ───────────────────────────────────────────────── */
 /* A phone on its side has very little height, and the hand bar was eating
    most of it: the bar shrank but the TILES stayed full size (28x56), so they
@@ -246,6 +256,15 @@
   .hand-label { display: none; }
 
   .btn-pass { padding: 0.35rem 0.6rem; font-size: 0.55rem; }
+
+  /* Lift the tiles off the bottom edge: a drag started right at the edge is
+     read by the phone as the close-app gesture. */
+  .hand-area {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    height: calc(62px + env(safe-area-inset-bottom, 0px) + 10px);
+    min-height: calc(62px + env(safe-area-inset-bottom, 0px) + 10px);
+    max-height: calc(62px + env(safe-area-inset-bottom, 0px) + 10px);
+  }
 }
 
 /* Very short screens (small phones on their side) — trim once more */
