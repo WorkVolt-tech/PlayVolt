@@ -10,6 +10,14 @@
   background: var(--bg);
 }
 
+/* Safari sizes dvh to the viewport WITHOUT its toolbars, so while the address
+   bar is showing the layout is taller than the screen and the hand — the last
+   row — gets cut off at the bottom. svh is the smallest viewport height (the
+   one with toolbars visible), so the hand always fits. */
+@supports (height: 100svh) {
+  .game-layout { height: 100svh; }
+}
+
 /* ── Top bar ─────────────────────────────────────────────────── */
 .top-bar {
   background: var(--surface);
