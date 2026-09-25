@@ -91,6 +91,7 @@ export default function Lobby() {
     if (authProfile?.nickname) setNickname(authProfile.nickname)
   }, [authProfile?.nickname])
   const [tab, setTab] = useState('create')
+  const [myUserId, setMyUserId] = useState(null)   // links a seat to an account
   const [joinCode, setJoinCode] = useState('')
   const [msg, setMsg] = useState({ text: '', type: '' })
 
@@ -125,6 +126,10 @@ export default function Lobby() {
   useEffect(() => { myRoomCodeRef.current = myRoomCode }, [myRoomCode])
 
   useEffect(() => {
+    db.auth.getUser().then(({ data }) => setMyUserId(data?.user?.id ?? null))
+  }, [])
+
+  useEffect(() => {
     const code = new URLSearchParams(location.search).get('join')
     if (code) { setTab('join'); setJoinCode(code.toUpperCase()) }
     loadQueueCount()
@@ -145,7 +150,7 @@ export default function Lobby() {
 
     // Insert into queue
     const { data: entry, error } = await db.from('queue')
-      .insert({ nickname: nick, status: 'waiting' })
+      .insert({ nickname: nick, status: 'waiting', user_id: myUserId })
       .select().single()
     if (error) { setMsg({ text: 'Queue error: ' + error.message, type: 'error' }); setInQueue(false); return }
     setMyQueueId(entry.id)
@@ -186,6 +191,7 @@ export default function Lobby() {
                 nickname: first4[i].nickname,
                 hand: hands[i],
                 is_connected: true, is_ai: false,
+                user_id: first4[i].user_id ?? null,
               })
               await db.from('queue').update({ status: 'matched', room_id: room.id }).eq('id', first4[i].id)
             }
@@ -294,7 +300,7 @@ export default function Lobby() {
     if (error) { setMsg({ text: 'Error: ' + error.message, type: 'error' }); return }
 
     const { data: player } = await db.from('domino_players')
-      .insert({ room_id: room.id, seat: 0, nickname: nick, hand: [], is_connected: true })
+      .insert({ room_id: room.id, seat: 0, nickname: nick, hand: [], is_connected: true, user_id: myUserId })
       .select().single()
 
     setMyRoomId(room.id); setMyRoomCode(code)
@@ -329,7 +335,7 @@ export default function Lobby() {
     const freeSeat = [0,1,2,3].find(s => !takenSeats.includes(s))
 
     const { data: player, error } = await db.from('domino_players')
-      .insert({ room_id: room.id, seat: freeSeat, nickname: nick, hand: [], is_connected: true })
+      .insert({ room_id: room.id, seat: freeSeat, nickname: nick, hand: [], is_connected: true, user_id: myUserId })
       .select().single()
     if (error) { setMsg({ text: 'Error: ' + error.message, type: 'error' }); return }
 
