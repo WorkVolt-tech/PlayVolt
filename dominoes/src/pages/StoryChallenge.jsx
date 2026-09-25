@@ -29,14 +29,32 @@ export default function StoryChallenge() {
   const [wins, setWins] = useState(0)        // rounds won, for best-of-three
   const [losses, setLosses] = useState(0)
   const [result, setResult] = useState(null) // challenge finished
+  const [partner, setPartner] = useState(null)   // chosen teammate, when the challenge says 'pick'
+  const [unlocked, setUnlocked] = useState([])   // bots this player has earned
   const [saving, setSaving] = useState(false)
   const busyRef = useRef(false)
 
   const challenge = chapter?.challenges?.[index] || null
+  const needsPartner = challenge?.partner === 'pick' && !partner
+
+  useEffect(() => {
+    if (!user) return
+    let off = false
+    ;(async () => {
+      const { data } = await db.rpc('ensure_story_progress')
+      const row = Array.isArray(data) ? data[0] : data
+      if (!off) setUnlocked((row?.unlocked_bots || []).filter(b => b !== chapter?.featured))
+    })()
+    return () => { off = true }
+  }, [user, chapter])
+
+  // a new challenge clears the previous pick
+  useEffect(() => { setPartner(null) }, [index])
 
   // ── set up a round ─────────────────────────────────────────────────────────
   const deal = useCallback(() => {
     if (!challenge) return
+    if (challenge.partner === 'pick' && !partner) return   // wait for the pick
     const cfg = challenge.type === 'puzzle'
       ? { seats: 4, deal: challenge.deal, objective: challenge.objective, moves: challenge.moves }
       : {
@@ -46,20 +64,25 @@ export default function StoryChallenge() {
         }
     setSt(Engine.settleTurn(Engine.startGame(cfg)))
     setSelected(null)
-  }, [challenge])
+  }, [challenge, partner])
 
   useEffect(() => { deal() }, [deal])
 
-  // who sits where: seat 0 is the player, opponents fill the rest
+  // Who sits where. Seat 0 is always the player.
+  //   2 seats  -> opponent at 1
+  //   4 seats, no partner -> opponents at 1, 2, 3
+  //   4 seats with a partner -> partner across at 2, opponents at 1 and 3
   const seatBot = useCallback((seat) => {
     if (!challenge || challenge.type === 'puzzle') return null
     const names = challenge.opponents || []
     if ((challenge.seats || 4) === 2) return seat === 1 ? names[0] : null
-    // 4 seats: partner (if any) sits across at seat 2
-    if (seat === 2 && challenge.partner && challenge.partner !== 'pick') return challenge.partner
-    const order = [names[0], challenge.partner ? null : names[1], names[2] ?? names[1]]
-    return seat === 1 ? names[0] : seat === 2 ? names[1] : names[2]
-  }, [challenge])
+    const mate = challenge.partner === 'pick' ? partner : challenge.partner
+    if (mate) {
+      if (seat === 2) return mate
+      return seat === 1 ? names[0] : names[1]
+    }
+    return [null, names[0], names[1], names[2]][seat]
+  }, [challenge, partner])
 
   // ── bots take their turns ──────────────────────────────────────────────────
   useEffect(() => {
@@ -82,6 +105,12 @@ export default function StoryChallenge() {
           opponentTileCounts: next.hands.map((h, i) => (i === seat ? null : h.length)).filter(x => x !== null),
         }
         if (seesAllHands(pers)) ctx.hands = next.hands
+        // A cooperating table: every bot treats the other bots' win as its own.
+        if (challenge.coop) ctx.allySeats = [1, 2, 3].filter(x => x < (challenge.seats || 4))
+        // With a teammate, seats 0 and 2 are one side — the bot at 2 plays for us.
+        if (!challenge.coop && (challenge.partner === 'pick' || challenge.partner)) {
+          ctx.mode = 'asosye'
+        }
         const pick = chooseTile(pers, moves.map(m => m.tile), next.hands[seat], next.board, ctx)
         const move =
           moves.find(m => m.tile[0] === pick?.tile?.[0] && m.tile[1] === pick?.tile?.[1] && m.side === pick.side) ||
@@ -92,7 +121,7 @@ export default function StoryChallenge() {
       busyRef.current = false
     }, BOT_DELAY)
     return () => { clearTimeout(timer); busyRef.current = false }
-  }, [st, seatBot])
+  }, [st, seatBot, challenge])
 
   // ── the player can't play: draw, or pass when the pile is empty ────────────
   useEffect(() => {
@@ -158,6 +187,21 @@ export default function StoryChallenge() {
       <div className="sc-empty">
         <p>This chapter doesn’t have its challenges written yet.</p>
         <button className="sc-btn" onClick={() => navigate('/story')}>Back to the map</button>
+      </div>
+    )
+  }
+
+  if (needsPartner) {
+    return (
+      <div className="sc-empty">
+        <p>Choose your partner. They sit across from you.</p>
+        {unlocked.length === 0 && <p className="sc-dim">You haven’t unlocked anyone yet — beat some chapters first.</p>}
+        <div className="sc-picks">
+          {unlocked.map(b => (
+            <button key={b} className="sc-btn" onClick={() => setPartner(b)}>{b}</button>
+          ))}
+        </div>
+        <button className="sc-btn ghost" onClick={() => navigate('/story')}>Back to the map</button>
       </div>
     )
   }
