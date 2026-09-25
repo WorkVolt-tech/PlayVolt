@@ -100,3 +100,32 @@
 .tp-item-meta { font-size: 0.55rem; color: var(--ivory-dim); letter-spacing: 0.1em; text-transform: uppercase; }
 
 .tp-empty { font-size: 0.65rem; color: var(--ivory-dim); text-align: center; padding: 0.8rem 0; }
+
+.tp-btn.small.gold { background: var(--gold); color: var(--bg); border: none; }
+
+.tp-overlay {
+  position: fixed; inset: 0; background: rgba(10,9,8,0.9);
+  display: flex; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(3px);
+}
+.tp-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1.4rem 1.3rem; width: min(340px, 88vw); text-align: center;
+}
+.tp-card h3 { font-family: 'Playfair Display', serif; color: var(--gold); margin: 0 0 0.3rem; font-size: 1.05rem; }
+.tp-card p { color: var(--ivory-dim); font-size: 0.65rem; margin: 0 0 0.9rem; line-height: 1.5; }
+.tp-botlist { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-bottom: 1rem; }
+
+/* "your match is live" prompt */
+.tp-live {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.7rem;
+  background: rgba(201,168,76,0.12);
+  border: 1px solid var(--gold);
+  border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 0.75rem;
+  animation: tpPulse 2s ease-in-out infinite;
+}
+.tp-live strong { display: block; color: var(--gold); font-size: 0.74rem; margin-bottom: 2px; }
+.tp-live span { font-size: 0.6rem; color: var(--ivory-dim); }
+@keyframes tpPulse {
+  0%, 100% { border-color: var(--gold); }
+  50%      { border-color: rgba(201,168,76,0.35); }
+}
