@@ -404,14 +404,17 @@ function makeSearch(mine, me, budget, style) {
   const huntBonus  = style.hunt || 0   // extra for knocking the player nearest to going out
   const crush      = style.crush || 0  // value opponents' leftover pips when we win
   const slow       = style.slow  || 0  // prefer winning LATE instead of fast
+  const lateDouble = style.lateDouble || 0  // hold doubles back for the right moment
+  const control    = style.control || 0     // keep the open ends on numbers I'm deep in
+  const killNum    = style.killNum || 0     // kill numbers off the board for good
   const chain      = style.chain || 0  // extra for knocks that land on an already-knocking table
   const blockWin   = style.blockWin   || BLOCK_WIN   // value of WINNING a blocked round
   const pipWeight  = style.pipWeight  ?? 0.3
   let nodes = 0
   // `knocks` = passes forced on the other side so far along this line
-  function value(st, depth, ply, knocks) {
+  function value(st, depth, ply, knocks, gain = 0) {
     if (++nodes > budget) return null
-    if (depth === 0) return leafValue(st, mine, pipWeight, style) + knocks * knockBonus
+    if (depth === 0) return leafValue(st, mine, pipWeight, style) + knocks * knockBonus + gain
     const p = st.turn
     const hand = st.hands[p]
     const moves = movesFor(hand, st.L, st.R, st.empty)
@@ -444,11 +447,11 @@ function makeSearch(mine, me, budget, style) {
           for (let q = 0; q < 4; q++) if (!mine(q)) opp += handPips(st.hands[q])
           bw += opp * crush
         }
-        return (mine(w) ? (slow ? bw + ply * slow : bw - ply) : -BLOCK_WIN + ply) + k * knockBonus
+        return (mine(w) ? (slow ? bw + ply * slow : bw - ply) : -BLOCK_WIN + ply) + k * knockBonus + gain
       }
       const sp = st.passes, sTurn = st.turn
       st.passes = sp + 1; st.turn = (p + 1) % 4
-      const v = value(st, depth - 1, ply + 1, k)
+      const v = value(st, depth - 1, ply + 1, k, gain)
       st.passes = sp; st.turn = sTurn
       return v
     }
@@ -458,6 +461,41 @@ function makeSearch(mine, me, budget, style) {
     for (const m of options) {
       const i = hand.indexOf(m.tile)
       hand.splice(i, 1)
+      // Scoring OUR OWN move, for the styles that care how the board is left.
+      let g = gain
+      if (p === me) {
+        // Ti-Tid: a double spent early costs him; held back it costs nothing.
+        if (lateDouble && isDouble(m.tile)) g -= lateDouble * hand.length
+
+        if (control || killNum) {
+          const [cL, cR] = endsAfter(m.tile, m.side, st.L, st.R, st.empty)
+
+          // Ti-Chasè (the controller): the ends should sit on numbers HE still
+          // holds plenty of, so he can always answer and others often can't.
+          if (control) {
+            let mine_ = 0
+            for (const t of hand) if (hasNum(t, cL) || hasNum(t, cR)) mine_++
+            g += mine_ * control
+          }
+
+          // Ti-Chaj (the counter): a number is DEAD once no unplayed tile can
+          // bring it back and it isn't showing. Killing one is his whole game —
+          // everyone still holding that number is stuck with it.
+          if (killNum) {
+            for (let n = 0; n <= 6; n++) {
+              if (n === cL || n === cR) continue
+              if (n === st.L || n === st.R) {
+                // it was showing before this move; is anything left to revive it?
+                let alive = false
+                for (let q = 0; q < 4 && !alive; q++)
+                  for (const t of st.hands[q])
+                    if (!isDouble(t) && hasNum(t, n)) { alive = true; break }
+                if (!alive) g += killNum
+              }
+            }
+          }
+        }
+      }
       const sL = st.L, sR = st.R, sE = st.empty, sP = st.passes, sT = st.turn
       let v
       if (hand.length === 0) {
@@ -474,14 +512,14 @@ function makeSearch(mine, me, budget, style) {
             amount += opp * crush
           }
           // Ti-Pyèj: drag it out — a later win scores higher, not lower.
-          v = (slow ? amount + ply * slow : amount - ply) + knocks * knockBonus
+          v = (slow ? amount + ply * slow : amount - ply) + knocks * knockBonus + g
         } else {
-          v = -amount + ply + knocks * knockBonus     // lose as late as possible
+          v = -amount + ply + knocks * knockBonus + g // lose as late as possible
         }
       } else {
         const [nL, nR] = endsAfter(m.tile, m.side, sL, sR, sE)
         st.L = nL; st.R = nR; st.empty = false; st.passes = 0; st.turn = (p + 1) % 4
-        v = value(st, depth - 1, ply + 1, knocks)
+        v = value(st, depth - 1, ply + 1, knocks, g)
         st.L = sL; st.R = sR; st.empty = sE; st.passes = sP; st.turn = sT
       }
       hand.splice(i, 0, m.tile)
@@ -510,7 +548,8 @@ function rootScores(st, rootMoves, mine, depth, budget, style) {
     } else {
       const [nL, nR] = endsAfter(tile, m.side, sL, sR, sE)
       st.L = nL; st.R = nR; st.empty = false; st.passes = 0; st.turn = (p + 1) % 4
-      v = search.value(st, depth - 1, 1, 0)
+      const rootGain = (style.lateDouble && isDouble(tile)) ? -style.lateDouble * hand.length : 0
+      v = search.value(st, depth - 1, 1, 0, rootGain)
       st.L = sL; st.R = sR; st.empty = sE; st.passes = sP; st.turn = sT
     }
     hand.splice(i, 0, tile)
@@ -576,15 +615,15 @@ function pickBest(moves, scores, hand, board, ctx) {
 // Both see every player's real tiles, predict what each player will do, and
 // plan their own moves so the following plays fall their way.
 //   Ti-Jòj — plays purely to win the round.
-//   Ti-Tid — loves making you knock: still plays to win, but prefers the line
-//            that forces opponents to pass the most (closing the numbers
-//            they're holding).
+//   Ti-Tid — the double master: refuses to dump doubles early. He holds them
+//            until they do real work — controlling a number, or landing when
+//            the table is short of it so opponents knock.
 //   Ti-Roro — the pip counter: steers the round toward a block that he wins
 //            by holding the fewest pips. If only a win by going out is
 //            available he takes it, but a block win is his first choice.
 const SEER_BUDGET = 60000
 const TIJOJ_STYLE = { dekBonus: 300, knockBonus: 0 }
-const TITID_STYLE = { dekBonus: 300, knockBonus: 100 }
+const TITID_STYLE = { dekBonus: 300, knockBonus: 25, lateDouble: 100 }
 // blockWin above WIN (1000) = a won block is worth more to him than going out
 const TIRORO_STYLE = { dekBonus: 0, knockBonus: 0, blockWin: 1200 }
 
@@ -608,24 +647,25 @@ const tijoj = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, T
 const titid = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TITID_STYLE)
 const tiroro = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIRORO_STYLE)
 
-//   Ti-Chasè — the hunter: locks onto whoever is closest to going out and
-//            starves that player, rather than simply racing to win.
+//   Ti-Chasè — the controller: keeps both open ends on numbers he is deep in,
+//            so he can always answer while the rest of the table can't.
 //   Ti-Frè  — the brother: plays for his PARTNER, setting them up to go out
 //            even at his own expense. Shows up in asosyé and 2v2 vs AI.
-const TICHASE_STYLE = { dekBonus: 300, knockBonus: 60, hunt: 5 }
+const TICHASE_STYLE = { dekBonus: 300, knockBonus: 20, control: 150 }
 const TIFRE_STYLE   = { dekBonus: 300, knockBonus: 0, partnerFirst: 10 }
 
 const tichase = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TICHASE_STYLE)
 const tifre   = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIFRE_STYLE)
 
-//   Ti-Chaj — leaves you carrying the load: wins while you're still holding
-//            the heaviest tiles you own.
+//   Ti-Chaj — the counter: kills numbers off the board. Once the last tile of
+//            a number is gone and it isn't showing, it can never come back —
+//            and everyone still holding it is stuck.
 //   Ti-Pyèj — the trap: hunts the moment the table seizes up. A knock counts
 //            for far more when others are already knocking, so he engineers
 //            runs of passes where nobody can move.
 //   Ti-Wa   — goes after whoever is BEST PLACED (lowest pips, the one who'd
 //            win a jammed round), not whoever is closest to going out.
-const TICHAJ_STYLE = { dekBonus: 300, knockBonus: 0, crush: 3 }
+const TICHAJ_STYLE = { dekBonus: 300, knockBonus: 20, killNum: 300, crush: 1 }
 const TIPYEJ_STYLE = { dekBonus: 300, knockBonus: 20, chain: 8 }
 const TIWA_STYLE   = { dekBonus: 300, knockBonus: 60, hunt: 5, huntPips: true }
 
