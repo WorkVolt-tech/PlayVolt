@@ -655,6 +655,7 @@ export default function Lobby() {
         )}
       <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => navigate('/story')} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>📖 Story Mode</button>
           <button onClick={() => navigate('/wa-tab-la')} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>👑 Wa Tab La</button>
           <button onClick={() => navigate('/tracker')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>📊 Dekabess Tracker</button>
         </div>
