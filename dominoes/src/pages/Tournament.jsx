@@ -93,10 +93,12 @@ export default function Tournament() {
     const room = Array.isArray(data) ? data[0] : data
     if (!room?.id) { setBusy(false); setMsg({ type: 'error', text: 'Could not open the room.' }); return }
 
-    // find my seat in that room
+    // find my seat in that room — by account, so two players sharing a
+    // nickname can't be given each other's hand
     const { data: seatRows } = await db.from('domino_players')
-      .select('seat, nickname, is_ai').eq('room_id', room.id)
-    const mine = (seatRows || []).find(r => !r.is_ai && r.nickname === myMember?.nickname)
+      .select('seat, nickname, is_ai, user_id').eq('room_id', room.id)
+    const mine = (seatRows || []).find(r => !r.is_ai && r.user_id === user?.id)
+              || (seatRows || []).find(r => !r.is_ai && r.nickname === myMember?.nickname)
     setBusy(false)
     if (!mine) { setMsg({ type: 'error', text: 'Your seat is not in that room.' }); return }
 
