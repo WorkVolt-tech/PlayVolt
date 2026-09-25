@@ -7,6 +7,7 @@ import Auth from './pages/Auth'
 import Profile from './pages/Profile'
 import Game from './pages/Game'
 import StoryMap from './pages/StoryMap'
+import StoryChallenge from './pages/StoryChallenge'
 import './styles/global.css'
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/" element={<Lobby />} />
         <Route path="/game" element={<Game />} />
         <Route path="/story" element={<StoryMap />} />
+        <Route path="/story/:chapterId" element={<StoryChallenge />} />
         <Route path="/tracker" element={<Tracker />} />
         <Route path="/wa-tab-la" element={<WaTabLa />} />
         <Route path="/auth" element={<Auth />} />
