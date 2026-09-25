@@ -20,6 +20,8 @@ export default function Tournament() {
   const [matches, setMatches] = useState([])
   const [msg, setMsg] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [unlocked, setUnlocked] = useState([])   // bots earned in story mode
+  const [picking, setPicking] = useState(null)   // side id we're filling a seat for
 
   const [newName, setNewName] = useState('')
   const [newFormat, setNewFormat] = useState('duo')
@@ -47,6 +49,18 @@ export default function Tournament() {
   }, [])
 
   useEffect(() => { loadList() }, [loadList])
+
+  // bots this player has unlocked, for standing in for a missing partner
+  useEffect(() => {
+    if (!user) return
+    let off = false
+    ;(async () => {
+      const { data } = await db.rpc('ensure_story_progress')
+      const row = Array.isArray(data) ? data[0] : data
+      if (!off) setUnlocked(row?.unlocked_bots || [])
+    })()
+    return () => { off = true }
+  }, [user])
   useEffect(() => { if (open) loadOne(open.id) }, [open, loadOne])
 
   // live updates while a tournament is on screen
@@ -69,6 +83,43 @@ export default function Tournament() {
   }
 
   const mySide = sides.find(s => members.some(m => m.side_id === s.id && m.user_id === user?.id))
+  const myMember = members.find(m => m.side_id === mySide?.id && m.user_id === user?.id)
+
+  // Start (or rejoin) the room for a match and drop into the game.
+  async function playMatch(match) {
+    setBusy(true); setMsg(null)
+    const { data, error } = await db.rpc('start_tournament_match', { p_match: match.id })
+    if (error) { setBusy(false); setMsg({ type: 'error', text: error.message }); return }
+    const room = Array.isArray(data) ? data[0] : data
+    if (!room?.id) { setBusy(false); setMsg({ type: 'error', text: 'Could not open the room.' }); return }
+
+    // find my seat in that room
+    const { data: seatRows } = await db.from('domino_players')
+      .select('seat, nickname, is_ai').eq('room_id', room.id)
+    const mine = (seatRows || []).find(r => !r.is_ai && r.nickname === myMember?.nickname)
+    setBusy(false)
+    if (!mine) { setMsg({ type: 'error', text: 'Your seat is not in that room.' }); return }
+
+    sessionStorage.setItem('domino_player', JSON.stringify({
+      seat: mine.seat,
+      nickname: myMember?.nickname || nickname,
+      roomId: room.id,
+      roomCode: room.code,
+      gameMode: room.game_mode || 'chien',
+      tournamentMatchId: match.id,
+    }))
+    navigate('/game')
+  }
+
+  async function claimForfeit(match) {
+    await call('forfeit_match', { p_match_id: match.id, p_present: mySide.id },
+      () => loadOne(open.id))
+  }
+
+  async function addBot(sideId, botName) {
+    setPicking(null)
+    await call('fill_missing_partner', { p_side: sideId, p_bot: botName }, () => loadOne(open.id))
+  }
   const myMembers = mySide ? members.filter(m => m.side_id === mySide.id) : []
   const sideName = id => sides.find(s => s.id === id)?.name || '—'
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b)
@@ -174,7 +225,23 @@ export default function Tournament() {
           )}
         </div>
 
-        {rounds.map(r => (
+        {picking && (
+        <div className="tp-overlay" onClick={() => setPicking(null)}>
+          <div className="tp-card" onClick={e => e.stopPropagation()}>
+            <h3>Bring in a bot</h3>
+            <p>They take your missing partner’s seat for this tournament.</p>
+            <div className="tp-botlist">
+              {unlocked.map(b => (
+                <button key={b} className="tp-btn small" onClick={() => addBot(picking, b)}>{b}</button>
+              ))}
+              {!unlocked.length && <div className="tp-empty">You haven’t unlocked any bots yet — play Story Mode.</div>}
+            </div>
+            <button className="tp-btn small" onClick={() => setPicking(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {rounds.map(r => (
           <div className="tp-panel" key={r}>
             <div className="tp-label">Round {r}</div>
             {matches.filter(m => m.round === r).map(m => {
@@ -198,6 +265,19 @@ export default function Tournament() {
                   {mine && m.status !== 'done' && m.status !== 'forfeit' && (
                     <div className="tp-match-actions">
                       <Countdown until={m.no_show_at} />
+                      <button className="tp-btn small gold" disabled={busy} onClick={() => playMatch(m)}>
+                        {m.room_id ? 'Rejoin match' : 'Play match'}
+                      </button>
+                      {open.format === 'duo' && myMembers.length < 2 && (
+                        <button className="tp-btn small" onClick={() => setPicking(mySide.id)}>
+                          Partner didn’t show
+                        </button>
+                      )}
+                      {m.no_show_at && new Date(m.no_show_at) < new Date() && (
+                        <button className="tp-btn small" disabled={busy} onClick={() => claimForfeit(m)}>
+                          Claim the walkover
+                        </button>
+                      )}
                       <button className="tp-btn small" onClick={() => navigate('/story')}>Practice vs AI</button>
                     </div>
                   )}
