@@ -15,10 +15,10 @@ const BOT_ROSTER = [
   // Ordinary bots first — these play fair, they only see their own tiles.
   // Roughly easiest to hardest.
   { name: 'Ti-Bebe',   role: 'Beginner' },
-  { name: 'Ti-Pridan', role: 'Careful' },
+  { name: 'Ti-Pridan', role: 'Pip Counter' },
   { name: 'Ti-Sak',    role: 'Hoarder' },
   { name: 'Ti-Cam',    role: 'Gambler' },
-  { name: 'Ti-Mèt',    role: 'Controller' },
+  { name: 'Ti-Mèt',    role: 'Suit Master' },
   { name: 'Ti-Jean',   role: 'Blocker' },
   { name: 'Ti-Djo',    role: 'Strategist' },
   { name: 'Ti-Doub',   role: 'Doubles First' },
