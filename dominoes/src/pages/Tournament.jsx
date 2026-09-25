@@ -118,6 +118,11 @@ export default function Tournament() {
       () => loadOne(open.id))
   }
 
+  // A match of mine that someone has already opened the room for.
+  const liveMatch = matches.find(m =>
+    m.room_id && m.status !== 'done' && m.status !== 'forfeit' &&
+    [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean).includes(mySide?.id))
+
   async function addBot(sideId, botName) {
     setPicking(null)
     await call('fill_missing_partner', { p_side: sideId, p_bot: botName }, () => loadOne(open.id))
@@ -147,6 +152,16 @@ export default function Tournament() {
         <Header navigate={navigate} onBack={() => setOpen(null)} title={open.name} />
         <div className="tp-sub">{open.format === 'duo' ? 'Teams of two' : 'Solo — one on one on one on one'} · {open.status}</div>
         {msg && <div className={`tp-msg ${msg.type}`}>{msg.text}</div>}
+
+        {liveMatch && (
+          <div className="tp-live">
+            <div>
+              <strong>Your match is live</strong>
+              <span>Round {liveMatch.round} — the table is open and waiting for you.</span>
+            </div>
+            <button className="tp-btn" disabled={busy} onClick={() => playMatch(liveMatch)}>Join now</button>
+          </div>
+        )}
 
         {open.status === 'registration' && !mySide && (
           <div className="tp-panel">
@@ -280,7 +295,7 @@ export default function Tournament() {
                           Claim the walkover
                         </button>
                       )}
-                      <button className="tp-btn small" onClick={() => navigate('/story')}>Practice vs AI</button>
+                      <button className="tp-btn small" onClick={() => navigate('/practice')}>Practice vs AI</button>
                     </div>
                   )}
                 </div>
