@@ -1,0 +1,92 @@
+/* ── Story challenge screen ─────────────────────────────────────── */
+/* Sits on top of Game.css, which supplies the board and hand layout. */
+
+.sc-back {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sc-head { display: flex; flex-direction: column; gap: 1px; margin-left: 0.6rem; min-width: 0; }
+.sc-chapter  { font-size: 0.62rem; color: var(--gold); letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-progress { font-size: 0.52rem; color: var(--ivory-dim); letter-spacing: 0.1em; }
+
+.sc-score, .sc-pile {
+  margin-left: auto;
+  font-size: 0.58rem;
+  color: var(--ivory-dim);
+  letter-spacing: 0.1em;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 3px 9px;
+  flex-shrink: 0;
+}
+.sc-score { color: var(--gold); border-color: rgba(201,168,76,0.4); }
+
+.sc-brief {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--ivory-dim);
+  font-size: 0.62rem;
+  line-height: 1.5;
+  padding: 0.5rem 0.9rem;
+  flex-shrink: 0;
+}
+
+.sc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,9,8,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(4px);
+}
+
+.sc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.8rem 1.6rem;
+  width: min(360px, 88vw);
+  text-align: center;
+}
+
+.sc-card h2 {
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  font-size: 1.3rem;
+  margin: 0 0 0.4rem;
+}
+
+.sc-card p { color: var(--ivory-dim); font-size: 0.7rem; margin: 0 0 1rem; }
+
+.sc-stars { color: var(--gold); font-size: 1.1rem; letter-spacing: 0.2em; margin-bottom: 1.1rem; }
+
+.sc-actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+
+.sc-btn {
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: 4px;
+  padding: 0.6rem 1.1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.sc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.sc-btn.ghost { background: transparent; color: var(--ivory-dim); border: 1px solid var(--border); }
+
+.sc-empty { padding: 3rem 1.5rem; text-align: center; color: var(--ivory-dim); font-family: 'DM Mono', monospace; font-size: 0.72rem; }
+.sc-empty p { margin-bottom: 1.2rem; }
