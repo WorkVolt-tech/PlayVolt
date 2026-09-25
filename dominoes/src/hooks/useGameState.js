@@ -107,6 +107,10 @@ export function useGameState(myInfo, navigate) {
     if (!room) return
     if (room.status !== 'round_end' && room.status !== 'finished') return
 
+    // The round-ender records the whole table; only fall back to recording
+    // ourselves if that didn't happen.
+    if (room.stats_recorded) return
+
     const roundNo = room.round ?? 1
     const key = `dekabess_stat:${myInfo.roomId}:${roundNo}`
 
@@ -300,6 +304,39 @@ export function useGameState(myInfo, navigate) {
         return
       }
 
+      // ── Record EVERY player's result in one call ────────────────────────
+      // Each device used to record only itself, so anyone whose app was shut
+      // at round end was never counted — and a missed loss left their streak
+      // wrongly intact. Seats now carry the account, so whoever ends the round
+      // records the whole table. If this fails, each device still falls back
+      // to recording itself (see the effect above), which is why the room is
+      // only marked recorded on success.
+      try {
+        const teamOf = sq => (sq === 0 || sq === 2) ? 'A' : 'B'
+        const winTeam = teamOf(resolvedSeat)
+        const results = (playersRef.current || [])
+          .filter(p => p.user_id && !p.is_ai)
+          .map(p => {
+            const won = mode === 'asosye'
+              ? teamOf(p.seat) === winTeam
+              : p.seat === resolvedSeat
+            return {
+              user_id: p.user_id,
+              won,
+              vyej: won && isVyej,
+              dekabess: won && isDek,
+              match_over: isVyej,      // "Games" counts matches, not rounds
+            }
+          })
+        if (results.length) {
+          const { error: sErr } = await db.rpc('record_round_stats', { p_results: results })
+          if (sErr) console.error('[stats] table-wide record failed:', sErr.message)
+          else await db.from('domino_rooms').update({ stats_recorded: true }).eq('id', myInfo.roomId)
+        }
+      } catch (e) {
+        console.error('[stats] table-wide record threw (non-fatal):', e)
+      }
+
       await Promise.all([
         db.from('game_events').delete().eq('room_id', myInfo.roomId),
         db.from('board').delete().eq('room_id', myInfo.roomId),
@@ -362,8 +399,16 @@ export function useGameState(myInfo, navigate) {
     if (!emptyHanded) return
     const iAmTheWinner = emptyHanded.seat === myInfo.seat
     watchdogRef.current = setTimeout(() => {
-      console.warn('[watchdog] round never ended for seat', emptyHanded.seat, '— finishing it')
-      endRound(emptyHanded.seat, false)
+      // Was the last tile a Dekabess? Playing a tile that matches BOTH open
+      // ends leaves the two ends equal, so if the board is still on the table
+      // that tells us without needing the move history. If the board is
+      // already gone we can't know, and score it as an ordinary win.
+      const b = boardRef.current
+      const wasDekabess = !!(b && Array.isArray(b.tiles) && b.tiles.length > 1 &&
+        b.left_end != null && b.left_end === b.right_end)
+      console.warn('[watchdog] round never ended for seat', emptyHanded.seat,
+        '— finishing it, dekabess:', wasDekabess)
+      endRound(emptyHanded.seat, wasDekabess)
     }, iAmTheWinner ? 1200 : 3500)
     return () => clearTimeout(watchdogRef.current)
   }, [roomData?.status, players, myInfo, endRound])
@@ -417,9 +462,28 @@ export function useGameState(myInfo, navigate) {
         error.code === '42883' ||
         /could not find the function/i.test(error.message || '')
       if (missing) return 'missing'
-      console.error('[play_move] failed, resyncing:', error.message)
-      loadGameState()
-      return 'error'
+      console.error('[play_move] failed, retrying once:', error.message)
+      // Retry is safe: the server only accepts a move from the seat whose
+      // turn it is, so if the first attempt actually committed and only its
+      // response was lost, the retry comes back 'stale' instead of moving
+      // twice. Without this, a lost response on someone's LAST tile left the
+      // round finished in the database but never ended in the game.
+      const retry = await db.rpc('play_move', {
+        p_room_id: myInfo.roomId,
+        p_seat: seat ?? myInfo.seat,
+        p_action: action,
+        p_tile: tile ?? null,
+        p_board: board ?? null,
+        p_hand: hand ?? null,
+        p_advance: advance,
+        p_check_block: checkBlock,
+      })
+      if (retry.error) {
+        console.error('[play_move] failed twice, resyncing:', retry.error.message)
+        loadGameState()
+        return 'error'
+      }
+      return { blocked: !!retry.data?.blocked, stale: !!retry.data?.stale }
     }
     return { blocked: !!data?.blocked, stale: !!data?.stale }
   }, [myInfo, loadGameState])
@@ -603,6 +667,7 @@ export function useGameState(myInfo, navigate) {
       round: nextRound,
       pending_point: false,
       blocked: false,
+      stats_recorded: false,
     }).eq('id', myInfo.roomId)
     await loadGameState()
   }, [myInfo, loadGameState])
