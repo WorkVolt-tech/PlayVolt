@@ -295,7 +295,7 @@ export default function Tournament() {
                           Claim the walkover
                         </button>
                       )}
-                      <button className="tp-btn small" onClick={() => navigate('/story')}>Practice vs AI</button>
+                      <button className="tp-btn small" onClick={() => navigate('/practice')}>Practice vs AI</button>
                     </div>
                   )}
                 </div>
