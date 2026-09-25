@@ -90,3 +90,6 @@
 
 .sc-empty { padding: 3rem 1.5rem; text-align: center; color: var(--ivory-dim); font-family: 'DM Mono', monospace; font-size: 0.72rem; }
 .sc-empty p { margin-bottom: 1.2rem; }
+
+.sc-picks { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1rem 0 1.4rem; }
+.sc-dim { opacity: 0.7; font-size: 0.65rem; }
