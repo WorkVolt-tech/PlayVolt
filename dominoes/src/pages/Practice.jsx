@@ -111,10 +111,13 @@ export default function Practice() {
 
   const seatNames = [0, 1, 2, 3].map(seat =>
     seat === 0 ? 'You' : (setup.seats === 2 ? setup.opponents[0] : setup.opponents[seat - 1]))
+  // 1v1: the lone opponent sits ACROSS from you, not to your right.
+  const twoSeat = (st?.seats ?? 4) === 2
+  const shown = seat => (twoSeat && seat === 1 ? 2 : seat)
   const fakePlayers = (st?.hands || []).map((h, seat) => ({
-    seat, nickname: seatNames[seat], hand: h, is_ai: seat !== 0,
+    seat: shown(seat), nickname: seatNames[seat], hand: h, is_ai: seat !== 0,
   }))
-  const fakeRoom = { current_turn: st?.turn ?? 0, game_mode: 'chien', status: 'playing' }
+  const fakeRoom = { current_turn: shown(st?.turn ?? 0), game_mode: 'chien', status: 'playing' }
 
   return (
     <div className="game-layout">
@@ -141,6 +144,17 @@ export default function Practice() {
       </div>
 
       <div className="board-container">
+        {st?.usePile && (
+          <div className="pile-stack" title="Draw pile">
+            <div className="pile-tiles">
+              {Array.from({ length: Math.min(st.pile.length, 4) }).map((_, i) => (
+                <span key={i} className="pile-tile" style={{ transform: `translate(${i * 3}px, ${i * -3}px)` }} />
+              ))}
+            </div>
+            <span className="pile-count">{st.pile.length}</span>
+            <span className="pile-label">pile</span>
+          </div>
+        )}
         <OpponentHands players={fakePlayers} myInfo={{ seat: 0 }} roomData={fakeRoom} />
         <Board
           boardData={st?.board}
