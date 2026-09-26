@@ -25,14 +25,22 @@ export default function StoryChallenge() {
   const { user, isLoading } = useAuth()
 
   const chapter = CHAPTERS.find(c => String(c.id) === String(chapterId))
-  const [index, setIndex] = useState(0)
+
+  // Where we were, kept on the device so a refresh doesn't start the chapter
+  // over. Cleared when the chapter is finished or abandoned.
+  const posKey = `story_pos:${chapterId}`
+  const saved = (() => {
+    try { return JSON.parse(localStorage.getItem(posKey) || 'null') } catch { return null }
+  })()
+
+  const [index, setIndex] = useState(saved?.index ?? 0)
   const [st, setSt] = useState(null)
   const [selected, setSelected] = useState(null)
-  const [wins, setWins] = useState(0)        // rounds won, for best-of-three
-  const [losses, setLosses] = useState(0)
+  const [wins, setWins] = useState(saved?.wins ?? 0)        // rounds won, for best-of-three
+  const [losses, setLosses] = useState(saved?.losses ?? 0)
   const [result, setResult] = useState(null) // challenge finished
   const [partner, setPartner] = useState(null)   // chosen teammate, when the challenge says 'pick'
-  const [story, setStory] = useState('intro')   // 'intro' | null | 'outro'
+  const [story, setStory] = useState(saved?.introSeen ? null : 'intro')   // 'intro' | null | 'outro'
   const [unlocked, setUnlocked] = useState([])   // bots this player has earned
   const [saving, setSaving] = useState(false)
   const busyRef = useRef(false)
@@ -46,13 +54,37 @@ export default function StoryChallenge() {
     ;(async () => {
       const { data } = await db.rpc('ensure_story_progress')
       const row = Array.isArray(data) ? data[0] : data
-      if (!off) setUnlocked((row?.unlocked_bots || []).filter(b => b !== chapter?.featured))
+      if (off) return
+      setUnlocked((row?.unlocked_bots || []).filter(b => b !== chapter?.featured))
+
+      // With nothing saved on this device, start at the first challenge the
+      // account hasn't already completed.
+      if (!saved && chapter) {
+        const done = row?.completed_challenges?.[String(chapter.id)] || []
+        if (done.length) {
+          const next = chapter.challenges.findIndex(c => !done.includes(c.id))
+          if (next > 0) setIndex(next)
+        }
+      }
     })()
     return () => { off = true }
   }, [user, chapter])
 
   // a new challenge clears the previous pick
   useEffect(() => { setPartner(null) }, [index])
+
+  // remember where we are, so a refresh picks up here
+  useEffect(() => {
+    try {
+      localStorage.setItem(posKey, JSON.stringify({
+        index, wins, losses, introSeen: story !== 'intro',
+      }))
+    } catch { /* storage unavailable */ }
+  }, [posKey, index, wins, losses, story])
+
+  const clearSaved = useCallback(() => {
+    try { localStorage.removeItem(posKey) } catch { /* ignore */ }
+  }, [posKey])
 
   // ── set up a round ─────────────────────────────────────────────────────────
   const deal = useCallback(() => {
@@ -161,19 +193,41 @@ export default function StoryChallenge() {
     setSaving(false)
     setResult(null); setWins(0); setLosses(0)
     if (result.met && !last) setIndex(i => i + 1)
-    else if (result.met && last) setStory('outro')
+    else if (result.met && last) { clearSaved(); setStory('outro') }
     else deal()   // failed — try again
   }
 
+  // Place a tile. The side is checked against the board first — the same
+  // guard the live game applies — so a stray drop can't make an illegal move.
   function playMove(tile, side) {
     setSt(prev => {
       if (!prev || prev.status !== 'playing' || prev.turn !== 0) return prev
-      const next = Engine.playTile(prev, tile, side)
+      let use = side
+      if (prev.board?.tiles?.length) {
+        const cL = canPlayOnSide(tile, 'left', prev.board)
+        const cR = canPlayOnSide(tile, 'right', prev.board)
+        if (use === 'first') use = cL ? 'left' : 'right'
+        if (use === 'left' && !cL) use = cR ? 'right' : null
+        else if (use === 'right' && !cR) use = cL ? 'left' : null
+        if (!use) return prev            // not a legal placement — ignore it
+      } else {
+        use = 'first'
+      }
+      const next = Engine.playTile(prev, tile, use)
       return next.status === 'playing' && challenge?.type === 'puzzle'
         ? { ...next, turn: 0 }        // puzzles: only the player moves
         : next
     })
     setSelected(null)
+  }
+
+  // Tapping a tile behaves as it does in a normal game: tap again to
+  // deselect, and the very first tile of a round goes straight down.
+  function selectTile(tile, idx) {
+    if (!isMyTurn) return
+    if (selected?.idx === idx) { setSelected(null); return }
+    setSelected({ tile, idx })
+    if (!st?.board?.tiles?.length) playMove(tile, 'first')
   }
 
   if (isLoading) return <div className="story-note">Loading…</div>
@@ -200,7 +254,7 @@ export default function StoryChallenge() {
           </div>
           <div className="sc-actions">
             <button className="sc-btn" onClick={() => setStory(null)}>Sit down</button>
-            <button className="sc-btn ghost" onClick={() => navigate('/story')}>Not yet</button>
+            <button className="sc-btn ghost" onClick={() => { clearSaved(); navigate('/story') }}>Not yet</button>
           </div>
         </div>
       </div>
@@ -344,7 +398,7 @@ export default function StoryChallenge() {
         isMyTurn={isMyTurn}
         playableTiles={uniquePlayable}
         selectedIdx={selected?.idx ?? null}
-        onSelect={(tile, idx) => setSelected({ tile, idx })}
+        onSelect={selectTile}
         onPass={() => setSt(prev => (prev && prev.turn === 0 ? Engine.drawOrPass(prev) : prev))}
         hasTilesOnBoard={!!st?.board?.tiles?.length}
       />
