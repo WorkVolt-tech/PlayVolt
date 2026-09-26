@@ -129,3 +129,19 @@
   0%, 100% { border-color: var(--gold); }
   50%      { border-color: rgba(201,168,76,0.35); }
 }
+
+/* practice without leaving the tournament */
+.tp-practice {
+  position: fixed; inset: 0; z-index: 250;
+  background: var(--bg); display: flex; flex-direction: column;
+}
+.tp-practice-bar {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  padding: 0.5rem 0.7rem;
+  padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tp-practice-live { font-size: 0.58rem; color: var(--gold); letter-spacing: 0.08em; }
+.tp-practice-wait { font-size: 0.58rem; color: var(--ivory-dim); letter-spacing: 0.08em; }
+.tp-practice > :last-child { flex: 1; min-height: 0; }
