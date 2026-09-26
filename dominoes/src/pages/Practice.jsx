@@ -4,6 +4,8 @@ import * as Engine from '../story/storyEngine'
 import { chooseTile, getPersonality, seesAllHands } from '../lib/botAI'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
+import OpponentHands from '../components/OpponentHands'
+import { canPlayOnSide } from '../hooks/useGameState'
 import './Game.css'
 import './StoryChallenge.css'
 
@@ -107,27 +109,56 @@ export default function Practice() {
   const playable = moves.map(m => m.tile).filter((t, i, arr) => arr.findIndex(x => x[0] === t[0] && x[1] === t[1]) === i)
   const isMyTurn = !!st && st.status === 'playing' && st.turn === 0
 
+  const seatNames = [0, 1, 2, 3].map(seat =>
+    seat === 0 ? 'You' : (setup.seats === 2 ? setup.opponents[0] : setup.opponents[seat - 1]))
+  const fakePlayers = (st?.hands || []).map((h, seat) => ({
+    seat, nickname: seatNames[seat], hand: h, is_ai: seat !== 0,
+  }))
+  const fakeRoom = { current_turn: st?.turn ?? 0, game_mode: 'chien', status: 'playing' }
+
   return (
     <div className="game-layout">
       <div className="top-bar">
-        <button className="sc-back" onClick={() => navigate(-1)}>← Back</button>
-        <div className="sc-head">
-          <span className="sc-chapter">Practice · {setup.label}</span>
-          <span className="sc-progress">won {tally.won} — lost {tally.lost}</span>
+        <div className="top-bar-left">
+          <button className="sc-back" onClick={() => navigate(-1)}>← Back</button>
+          <span className="sc-chapter">Practice</span>
+        </div>
+        <div className="player-tags">
+          {fakePlayers.map(p => (
+            <div key={p.seat} className={[
+              'player-tag',
+              p.seat === fakeRoom.current_turn ? 'active-turn' : '',
+              p.seat === 0 ? 'is-me' : '',
+            ].join(' ')}>
+              <div className="tag-dot" />
+              <span>{p.nickname}{p.seat === 0 ? ' ★' : ''}</span>
+              <span className="tag-tiles">{p.hand.length}</span>
+            </div>
+          ))}
         </div>
         {st?.usePile && <span className="sc-pile">Pile {st.pile.length}</span>}
-        {st?.status === 'over' && (
-          <span className="sc-score">{st.winner === 0 ? 'You won' : 'You lost'} — dealing…</span>
-        )}
+        <span className="sc-score">{tally.won} — {tally.lost}</span>
       </div>
 
-      <Board
-        boardData={st?.board}
-        selectedTile={selected}
-        isMyTurn={isMyTurn}
-        onDropZone={(side) => selected && playMove(selected.tile, side)}
-        onDragPlace={(tile, _idx, side) => playMove(tile, side)}
-      />
+      <div className="board-container">
+        <OpponentHands players={fakePlayers} myInfo={{ seat: 0 }} roomData={fakeRoom} />
+        <Board
+          boardData={st?.board}
+          selectedTile={selected}
+          isMyTurn={isMyTurn}
+          onDropZone={side => { if (selected) playMove(selected.tile, side) }}
+          onDragPlace={(tile, _idx, side) => {
+            if (!isMyTurn) return
+            if (side === 'first') { playMove(tile, 'first'); return }
+            const cL = canPlayOnSide(tile, 'left', st?.board)
+            const cR = canPlayOnSide(tile, 'right', st?.board)
+            if (side === 'left' && cL) playMove(tile, 'left')
+            else if (side === 'right' && cR) playMove(tile, 'right')
+            else if (cL) playMove(tile, 'left')
+            else if (cR) playMove(tile, 'right')
+          }}
+        />
+      </div>
 
       <PlayerHand
         hand={st?.hands?.[0] || []}
