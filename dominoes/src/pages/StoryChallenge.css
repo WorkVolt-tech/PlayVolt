@@ -156,3 +156,46 @@
   .pile-tiles { grid-template-columns: repeat(3, auto); gap: 3px; max-height: 58vh; }
   .pile-tile { width: 18px; height: 30px; }
 }
+
+/* ── Chapter opening / send-off ─────────────────────────────────── */
+.sc-story {
+  min-height: 100dvh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem 1rem;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(201,168,76,0.09) 0%, transparent 60%),
+    var(--bg);
+  font-family: 'DM Mono', monospace;
+}
+.sc-story-card {
+  width: min(520px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 2rem 1.6rem;
+  text-align: center;
+}
+.sc-story-chapter {
+  font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--ivory-dim); margin-bottom: 0.4rem;
+}
+.sc-story-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem; color: var(--gold); margin: 0 0 0.3rem;
+}
+.sc-story-foe {
+  font-size: 0.65rem; color: var(--ivory-dim); letter-spacing: 0.12em;
+  margin-bottom: 1.4rem;
+}
+.sc-story-text {
+  text-align: left; color: var(--ivory); font-size: 0.74rem; line-height: 1.85;
+  margin: 1.2rem 0 1.6rem;
+}
+.sc-story-text p { margin: 0 0 0.9rem; }
+.sc-story-text p:last-child { margin-bottom: 0; color: var(--gold); }
+.sc-unlock {
+  display: inline-block; margin-bottom: 1.2rem;
+  border: 1px solid var(--gold); border-radius: 20px;
+  padding: 5px 14px; color: var(--gold);
+  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+}
