@@ -218,14 +218,19 @@ export default function StoryChallenge() {
     if (seat === 0) return 'You'
     return seatBot(seat) || (challenge.type === 'puzzle' ? `Seat ${seat + 1}` : '—')
   })
+  // In a 1v1 the only opponent is seat 1, which the table layout would place
+  // on your RIGHT. With nobody else at the table they belong across from you,
+  // so for display only they're shown as seat 2 (the "top" chair).
+  const twoSeat = (st?.seats ?? 4) === 2
+  const shown = seat => (twoSeat && seat === 1 ? 2 : seat)
   const fakePlayers = (st?.hands || []).map((h, seat) => ({
-    seat,
+    seat: shown(seat),
     nickname: seatNames[seat],
     hand: h,
     is_ai: seat !== 0,
   }))
   const fakeRoom = {
-    current_turn: st?.turn ?? 0,
+    current_turn: shown(st?.turn ?? 0),
     game_mode: challenge.partner ? 'asosye' : 'chien',
     status: st?.status === 'over' ? 'round_end' : 'playing',
   }
@@ -258,6 +263,17 @@ export default function StoryChallenge() {
       {challenge.brief && <div className="sc-brief">{challenge.brief}</div>}
 
       <div className="board-container">
+        {st?.usePile && (
+          <div className="pile-stack" title="Draw pile">
+            <div className="pile-tiles">
+              {Array.from({ length: Math.min(st.pile.length, 4) }).map((_, i) => (
+                <span key={i} className="pile-tile" style={{ transform: `translate(${i * 3}px, ${i * -3}px)` }} />
+              ))}
+            </div>
+            <span className="pile-count">{st.pile.length}</span>
+            <span className="pile-label">pile</span>
+          </div>
+        )}
         <OpponentHands players={fakePlayers} myInfo={fakeMe} roomData={fakeRoom} />
         <Board
           boardData={st?.board}
