@@ -32,6 +32,7 @@ export default function StoryChallenge() {
   const [losses, setLosses] = useState(0)
   const [result, setResult] = useState(null) // challenge finished
   const [partner, setPartner] = useState(null)   // chosen teammate, when the challenge says 'pick'
+  const [story, setStory] = useState('intro')   // 'intro' | null | 'outro'
   const [unlocked, setUnlocked] = useState([])   // bots this player has earned
   const [saving, setSaving] = useState(false)
   const busyRef = useRef(false)
@@ -160,7 +161,7 @@ export default function StoryChallenge() {
     setSaving(false)
     setResult(null); setWins(0); setLosses(0)
     if (result.met && !last) setIndex(i => i + 1)
-    else if (result.met && last) navigate('/story')
+    else if (result.met && last) setStory('outro')
     else deal()   // failed — try again
   }
 
@@ -182,6 +183,47 @@ export default function StoryChallenge() {
       <div className="sc-empty">
         <p>This chapter doesn’t have its challenges written yet.</p>
         <button className="sc-btn" onClick={() => navigate('/story')}>Back to the map</button>
+      </div>
+    )
+  }
+
+  // ── chapter opening ───────────────────────────────────────────────────────
+  if (story === 'intro' && chapter.intro) {
+    return (
+      <div className="sc-story">
+        <div className="sc-story-card">
+          <div className="sc-story-chapter">Chapter {chapter.id}</div>
+          <h1 className="sc-story-title">{chapter.title}</h1>
+          {chapter.featured && <div className="sc-story-foe">vs {chapter.featured}</div>}
+          <div className="sc-story-text">
+            {chapter.intro.split('\n\n').map((para, i) => <p key={i}>{para}</p>)}
+          </div>
+          <div className="sc-actions">
+            <button className="sc-btn" onClick={() => setStory(null)}>Sit down</button>
+            <button className="sc-btn ghost" onClick={() => navigate('/story')}>Not yet</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── chapter finished ──────────────────────────────────────────────────────
+  if (story === 'outro') {
+    return (
+      <div className="sc-story">
+        <div className="sc-story-card">
+          <div className="sc-story-chapter">Chapter {chapter.id} complete</div>
+          <h1 className="sc-story-title">{chapter.title}</h1>
+          <div className="sc-story-text">
+            {(chapter.outro || '').split('\n\n').map((para, i) => <p key={i}>{para}</p>)}
+          </div>
+          {chapter.unlocks && (
+            <div className="sc-unlock">{chapter.unlocks} unlocked</div>
+          )}
+          <div className="sc-actions">
+            <button className="sc-btn" onClick={() => navigate('/story')}>Back to the map</button>
+          </div>
+        </div>
       </div>
     )
   }
