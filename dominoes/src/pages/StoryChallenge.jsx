@@ -175,12 +175,19 @@ export default function StoryChallenge() {
     else setTimeout(deal, 1200)
   }, [st, result, challenge, wins, losses, deal])
 
-  // ── save and move on ───────────────────────────────────────────────────────
-  async function finishChallenge() {
-    if (!result || saving) return
-    setSaving(true)
+  // ── save as soon as it's won ───────────────────────────────────────────────
+  // This used to happen when you pressed "Next challenge". Press "Leave"
+  // instead — or close the tab — and a chapter you had actually finished was
+  // never recorded. The result is now saved the moment it's earned; the
+  // buttons only decide where you go next.
+  const savedResultRef = useRef(null)
+  useEffect(() => {
+    if (!result?.met || !user || !challenge) return
+    const key = `${chapter.id}:${challenge.id}`
+    if (savedResultRef.current === key) return      // already saved this one
+    savedResultRef.current = key
     const last = index === (chapter.challenges.length - 1)
-    if (user && result.met) {
+    ;(async () => {
       const { error } = await db.rpc('record_challenge', {
         p_chapter: chapter.id,
         p_challenge: challenge.id,
@@ -189,7 +196,13 @@ export default function StoryChallenge() {
         p_unlock_bot: last ? (chapter.unlocks || null) : null,
       })
       if (error) console.error('[story] could not save progress:', error.message)
-    }
+    })()
+  }, [result, user, chapter, challenge, index])
+
+  async function finishChallenge() {
+    if (!result || saving) return
+    setSaving(true)
+    const last = index === (chapter.challenges.length - 1)
     setSaving(false)
     setResult(null); setWins(0); setLosses(0)
     if (result.met && !last) setIndex(i => i + 1)
@@ -222,12 +235,12 @@ export default function StoryChallenge() {
   }
 
   // Tapping a tile behaves as it does in a normal game: tap again to
-  // deselect, and the very first tile of a round goes straight down.
+  // deselect. Nothing is placed until you drag it to the table.
   function selectTile(tile, idx) {
     if (!isMyTurn) return
     if (selected?.idx === idx) { setSelected(null); return }
     setSelected({ tile, idx })
-    if (!st?.board?.tiles?.length) playMove(tile, 'first')
+    // Selecting never places a tile, even on an empty board.
   }
 
   if (isLoading) return <div className="story-note">Loading…</div>
@@ -419,7 +432,10 @@ export default function StoryChallenge() {
                   ? (index === chapter.challenges.length - 1 ? 'Finish chapter' : 'Next challenge')
                   : 'Try again'}
               </button>
-              <button className="sc-btn ghost" onClick={() => navigate('/story')}>Leave</button>
+              <button className="sc-btn ghost" onClick={() => {
+                if (result.met && index === chapter.challenges.length - 1) { clearSaved(); setStory('outro') }
+                else navigate('/story')
+              }}>Leave</button>
             </div>
           </div>
         </div>
