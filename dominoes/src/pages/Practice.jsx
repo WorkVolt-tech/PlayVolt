@@ -22,8 +22,9 @@ const TABLE = [
   { id: 'hard',  label: 'Against experts', seats: 4, pile: false, opponents: ['Ti-Jòj', 'Ti-Roro', 'Ti-Pyèj'] },
 ]
 
-export default function Practice() {
+export default function Practice({ embedded = false, onExit }) {
   const navigate = useNavigate()
+  const leave = () => (embedded && onExit ? onExit() : navigate(-1))
   const [setup, setSetup] = useState(null)
   const [st, setSt] = useState(null)
   const [selected, setSelected] = useState(null)
@@ -117,7 +118,7 @@ export default function Practice() {
             <button key={o.id} className="sc-btn" onClick={() => setSetup(o)}>{o.label}</button>
           ))}
         </div>
-        <button className="sc-btn ghost" onClick={() => navigate(-1)}>Back</button>
+        <button className="sc-btn ghost" onClick={leave}>Back</button>
       </div>
     )
   }
@@ -142,7 +143,7 @@ export default function Practice() {
     <div className="game-layout">
       <div className="top-bar">
         <div className="top-bar-left">
-          <button className="sc-back" onClick={() => navigate(-1)}>← Back</button>
+          <button className="sc-back" onClick={leave}>← Back</button>
           <span className="sc-chapter">Practice</span>
         </div>
         <div className="player-tags">
