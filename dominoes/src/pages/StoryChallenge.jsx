@@ -7,6 +7,8 @@ import * as Engine from '../story/storyEngine'
 import { chooseTile, getPersonality, seesAllHands } from '../lib/botAI'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
+import OpponentHands from '../components/OpponentHands'
+import { canPlayOnSide } from '../hooks/useGameState'
 import '../pages/Game.css'
 import './StoryChallenge.css'
 
@@ -210,13 +212,44 @@ export default function StoryChallenge() {
   const uniquePlayable = playable.filter((t, i) => playable.findIndex(x => x[0]===t[0] && x[1]===t[1]) === i)
   const isMyTurn = !!st && st.status === 'playing' && st.turn === 0
 
+  // Present the engine's state in the shape the game's own components expect,
+  // so story mode looks and behaves exactly like a normal table.
+  const seatNames = [0, 1, 2, 3].map(seat => {
+    if (seat === 0) return 'You'
+    return seatBot(seat) || (challenge.type === 'puzzle' ? `Seat ${seat + 1}` : '—')
+  })
+  const fakePlayers = (st?.hands || []).map((h, seat) => ({
+    seat,
+    nickname: seatNames[seat],
+    hand: h,
+    is_ai: seat !== 0,
+  }))
+  const fakeRoom = {
+    current_turn: st?.turn ?? 0,
+    game_mode: challenge.partner ? 'asosye' : 'chien',
+    status: st?.status === 'over' ? 'round_end' : 'playing',
+  }
+  const fakeMe = { seat: 0 }
+
   return (
     <div className="game-layout">
       <div className="top-bar">
-        <button className="sc-back" onClick={() => navigate('/story')}>← Map</button>
-        <div className="sc-head">
-          <span className="sc-chapter">Ch {chapter.id} · {chapter.title}</span>
-          <span className="sc-progress">Challenge {index + 1}/{chapter.challenges.length}</span>
+        <div className="top-bar-left">
+          <button className="sc-back" onClick={() => navigate('/story')}>← Map</button>
+          <span className="sc-chapter">Ch {chapter.id}</span>
+        </div>
+        <div className="player-tags">
+          {fakePlayers.map(p => (
+            <div key={p.seat} className={[
+              'player-tag',
+              p.seat === fakeRoom.current_turn ? 'active-turn' : '',
+              p.seat === 0 ? 'is-me' : '',
+            ].join(' ')}>
+              <div className="tag-dot" />
+              <span>{p.nickname}{p.seat === 0 ? ' ★' : ''}</span>
+              <span className="tag-tiles">{p.hand.length}</span>
+            </div>
+          ))}
         </div>
         {challenge.rounds === 3 && <span className="sc-score">{wins} — {losses}</span>}
         {st?.usePile && <span className="sc-pile">Pile {st.pile.length}</span>}
@@ -224,13 +257,28 @@ export default function StoryChallenge() {
 
       {challenge.brief && <div className="sc-brief">{challenge.brief}</div>}
 
-      <Board
-        boardData={st?.board}
-        selectedTile={selected}
-        isMyTurn={isMyTurn}
-        onDropZone={(side) => selected && playMove(selected.tile, side)}
-        onDragPlace={(tile, _idx, side) => playMove(tile, side)}
-      />
+      <div className="board-container">
+        <OpponentHands players={fakePlayers} myInfo={fakeMe} roomData={fakeRoom} />
+        <Board
+          boardData={st?.board}
+          selectedTile={selected}
+          isMyTurn={isMyTurn}
+          onDropZone={side => {
+            if (!selected) return
+            playMove(selected.tile, side)
+          }}
+          onDragPlace={(tile, _idx, side) => {
+            if (!isMyTurn) return
+            if (side === 'first') { playMove(tile, 'first'); return }
+            const cL = canPlayOnSide(tile, 'left', st?.board)
+            const cR = canPlayOnSide(tile, 'right', st?.board)
+            if (side === 'left' && cL) playMove(tile, 'left')
+            else if (side === 'right' && cR) playMove(tile, 'right')
+            else if (cL) playMove(tile, 'left')
+            else if (cR) playMove(tile, 'right')
+          }}
+        />
+      </div>
 
       <PlayerHand
         hand={st?.hands?.[0] || []}
