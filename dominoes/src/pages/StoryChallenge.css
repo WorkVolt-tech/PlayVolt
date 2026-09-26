@@ -107,14 +107,33 @@
   z-index: 5;
   pointer-events: none;
 }
-.pile-tiles { position: relative; width: 34px; height: 46px; }
+.pile-tiles { position: relative; width: 56px; height: 78px; }
 .pile-tile {
   position: absolute; left: 0; top: 0;
-  width: 26px; height: 40px;
+  width: 24px; height: 38px;
   border-radius: 4px;
+  padding: 0;
   background: linear-gradient(160deg, #2c2a22, #1a1814);
   border: 1px solid var(--border);
   box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  cursor: default;
+}
+/* only clickable when you actually have to draw */
+.pile-stack.active { pointer-events: auto; }
+.pile-stack.active .pile-tile {
+  cursor: pointer;
+  border-color: rgba(201,168,76,0.55);
+  animation: pileGlow 1.6s ease-in-out infinite;
+}
+.pile-stack.active .pile-tile:hover {
+  border-color: var(--gold);
+  transform: translateY(-4px) !important;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.6), 0 0 12px rgba(201,168,76,0.35);
+}
+.pile-stack.active .pile-label { color: var(--gold); }
+@keyframes pileGlow {
+  0%, 100% { box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+  50%      { box-shadow: 0 2px 10px rgba(201,168,76,0.35); }
 }
 .pile-count { font-size: 0.72rem; color: var(--gold); font-family: 'DM Mono', monospace; }
 .pile-label {
@@ -124,6 +143,6 @@
 
 @media (max-height: 500px) {
   .pile-stack { left: 6px; }
-  .pile-tiles { width: 24px; height: 32px; }
+  .pile-tiles { width: 44px; height: 58px; }
   .pile-tile { width: 18px; height: 28px; }
 }
