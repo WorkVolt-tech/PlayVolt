@@ -48,6 +48,8 @@ export const CHAPTERS = [
   {
     id: 1,
     tier: 'normal',
+    intro: "Everybody starts at the small table.\n\nTi-Bebe is the one they let win sometimes, just to keep him at the table. He plays whatever looks nice in his hand and never counts what's already down.\n\nSit. Watch the two ends. That's all there is at first.",
+    outro: "Ti-Bebe laughs and pulls up a chair beside you. He's yours now \u2014 bring him along when you need an easy partner.",
     featured: 'Ti-Bebe',
     title: 'Premye Kou',
     theme: 'Placing tiles, reading the two ends',
@@ -113,6 +115,8 @@ export const CHAPTERS = [
   {
     id: 2,
     tier: 'normal',
+    intro: "Ti-Sak they call the sack, because nothing ever leaves his hand.\n\nHe holds his doubles like money in a pocket, waiting for the perfect moment that usually never comes. When the table jams, he's the one caught with the weight.\n\nMake it jam.",
+    outro: "He empties the sack at last. Ti-Sak plays with you now \u2014 he's patient, and patience wins the long ones.",
     featured: 'Ti-Sak',
     title: 'Sak La',
     theme: "He keeps his doubles back. Make him pay for the weight he's carrying.",
@@ -168,6 +172,8 @@ export const CHAPTERS = [
   {
     id: 3,
     tier: 'normal',
+    intro: "Ti-Pridan counts. Not the tiles you have \u2014 the ones you're stuck with.\n\nHe throws his heavy tiles out early, always. Ask him why and he'll tell you: when the board closes, the lightest hand walks away with it.\n\nHe's not wrong.",
+    outro: "Ti-Pridan nods once. That's approval. He'll count for your side from now on.",
     featured: 'Ti-Pridan',
     title: 'Konte Pwen',
     theme: "He sheds his heavy tiles early. If the table jams, he'll be holding almost nothing.",
@@ -224,6 +230,8 @@ export const CHAPTERS = [
   {
     id: 4,
     tier: 'normal',
+    intro: "Ti-Cam plays for the ending, not the middle.\n\nEvery hand, he's looking for the one tile that shuts both ends at the same time. Dekabess. He'll throw away a safe game chasing it, and every so often he catches it.\n\nDon't let him.",
+    outro: "Ti-Cam grins \u2014 he respects someone who saw it coming. He's on your side now, chasing endings for you instead.",
     featured: 'Ti-Cam',
     title: 'Chans',
     theme: "He hunts the Dekabess. Close the ends he needs.",
@@ -279,6 +287,8 @@ export const CHAPTERS = [
   {
     id: 5,
     tier: 'normal',
+    intro: "Ti-Jean doesn't want to win pretty. He wants you to sit there holding tiles you can't play.\n\nHe closes numbers. He watches which ends you need and takes them away one by one. Against him the board gets smaller every turn.\n\nLeave yourself a way out.",
+    outro: "Ti-Jean shrugs like it was nothing. He'll close the board for you now instead of against you.",
     featured: 'Ti-Jean',
     title: 'Bloke',
     theme: "He squeezes your options. Keep a way out.",
@@ -335,6 +345,8 @@ export const CHAPTERS = [
   {
     id: 6,
     tier: 'normal',
+    intro: "Ti-Djo has no trick. That's what makes him hard.\n\nHe protects his own hand, takes the blocks that are cheap, and never gives you a free number. Everything the last five taught you, he does all at once.\n\nThis is the real test of the small table.",
+    outro: "Ti-Djo shakes your hand. You've earned the strongest of the regulars \u2014 and you'll need him.",
     featured: 'Ti-Djo',
     title: 'Estrateji',
     theme: "No weakness to exploit \u2014 he simply plays well.",
@@ -392,6 +404,8 @@ export const CHAPTERS = [
   {
     id: 7,
     tier: 'normal',
+    intro: "Ti-M\u00e8t picks a number and makes the whole table play his way.\n\nWhatever he's deep in, he keeps showing. While that number is open he always has an answer, and you're the one reaching.\n\nTake his number away from him.",
+    outro: "Ti-M\u00e8t tips his head. The board is yours to control now \u2014 he'll help you hold it.",
     featured: 'Ti-Mèt',
     title: 'Mèt Nimewo',
     theme: "He picks a number and owns it. Take it away from him.",
@@ -449,6 +463,8 @@ export const CHAPTERS = [
   {
     id: 8,
     tier: 'normal',
+    intro: "Ti-Doub is the opposite of Ti-Sak, and twice as dangerous.\n\nEvery double goes down the second he can play it. No weight, no waiting, nothing left to get stuck with. By the end his hand is all easy tiles.\n\nBeat him and the small table is finished with you.",
+    outro: "The small table is done. Every regular plays with you now \u2014 and word is spreading about the player who beat the whole circuit.",
     featured: 'Ti-Doub',
     title: 'Doub Rapid',
     theme: "He dumps every double the moment he can. Punish the gaps that leaves.",
@@ -506,6 +522,8 @@ export const CHAPTERS = [
   {
     id: 9,
     tier: 'qualifier',
+    intro: "They've heard about you at the big table.\n\nBefore they let you sit, the regulars want one more evening \u2014 all of them, every way they know how. Puzzles, one on one, a partner at your side, and finally the three of them playing as one against you.\n\nPass this, and the experts will see you.",
+    outro: "The regulars stand up from the table. Behind them, the far door opens.\n\nThe experts have been watching.",
     featured: null,
     title: 'Kalifikasyon',
     theme: 'Everything the circuit taught you, in one sitting',
@@ -577,6 +595,8 @@ export const CHAPTERS = [
   {
     id: 10,
     tier: 'expert',
+    intro: "Ti-J\u00f2j doesn't specialise. He just doesn't lose.\n\nNo trap, no gimmick, nothing to read. He looks at the table and plays the move that wins, and he does it every single turn.\n\nThe first of the experts, and the simplest to understand. That doesn't make him easy.",
+    outro: "Ti-J\u00f2j says nothing, which from him is high praise. He sits on your side of the table now.",
     featured: 'Ti-Jòj',
     title: 'Mèt La',
     theme: "He has no trick \u2014 he simply plays better than you.",
@@ -644,6 +664,8 @@ export const CHAPTERS = [
   {
     id: 11,
     tier: 'expert',
+    intro: "Ti-Tid never throws a double away.\n\nHe carries them like cards held back, waiting until the number is scarce and the double lands like a door closing. Play against him long enough and you'll feel it \u2014 the same number, over and over, always his.\n\nForce them out early.",
+    outro: "Ti-Tid hands you a double, face down. A gift, and a warning. He plays with you now.",
     featured: 'Ti-Tid',
     title: 'Mèt Doub',
     theme: "He holds his doubles until they hurt. Force them out early.",
@@ -710,6 +732,8 @@ export const CHAPTERS = [
   {
     id: 12,
     tier: 'expert',
+    intro: "Ti-Roro doesn't race you. He closes the room.\n\nHe'd rather jam the table holding two light tiles than go out clean. Count the pips before you think you're winning \u2014 most of the time, he already has.\n\nBeat him to the jam.",
+    outro: "Ti-Roro counts his tiles one last time and pushes them aside. The Locker plays for your side now.",
     featured: 'Ti-Roro',
     title: 'Fèmen Tab',
     theme: "He wants the table jammed with him holding the least. Beat him to it.",
@@ -776,6 +800,8 @@ export const CHAPTERS = [
   {
     id: 13,
     tier: 'expert',
+    intro: "Ti-Chas\u00e8 keeps both ends where he wants them.\n\nThe numbers he's deep in stay open; the ones you need disappear. You'll have a full hand and nowhere to put any of it.\n\nTake his numbers before he takes yours.",
+    outro: "Ti-Chas\u00e8 lets go of the board. You control the ends now \u2014 with him helping.",
     featured: 'Ti-Chasè',
     title: 'Kontwòl',
     theme: "He keeps the ends on numbers he owns. Take those numbers away.",
@@ -842,6 +868,8 @@ export const CHAPTERS = [
   {
     id: 14,
     tier: 'expert',
+    intro: "Ti-Fr\u00e8 doesn't play for himself.\n\nEverything he does is for the man across from him \u2014 opening his numbers, eating the bad turns, going out second so his partner goes out first. Against a pair like that you're not playing one opponent.\n\nBreak them up.",
+    outro: "Ti-Fr\u00e8 moves his chair to your side without being asked. That's who he is.",
     featured: 'Ti-Frè',
     title: 'Asosye',
     theme: "He plays for his partner, not himself. Break up the pair.",
@@ -909,6 +937,8 @@ export const CHAPTERS = [
   {
     id: 15,
     tier: 'expert',
+    intro: "Ti-Chaj counts what's gone.\n\nHe plays the last of a number and it never comes back \u2014 and anyone still holding it is holding it forever. You won't notice until you're sitting on three tiles that can't ever be played.\n\nWatch what leaves the table.",
+    outro: "Ti-Chaj taps the dead numbers on the table, one by one, showing you what you missed. Now he counts for you.",
     featured: 'Ti-Chaj',
     title: 'Konte',
     theme: "He kills numbers off the board. Watch which ones are already gone.",
@@ -974,6 +1004,8 @@ export const CHAPTERS = [
   {
     id: 16,
     tier: 'expert',
+    intro: "Ti-Py\u00e8j waits for the table to seize.\n\nHe wants the moment nobody can move \u2014 and he wants you in it, holding everything. He'll open a number just to watch you walk into it three turns later.\n\nSee the trap before you're in it.",
+    outro: "Ti-Py\u00e8j smiles like he set this up too. Maybe he did. Either way, he's yours.",
     featured: 'Ti-Pyèj',
     title: 'Pyèj',
     theme: "He hunts the moment the table seizes. Don't walk into it.",
@@ -1041,6 +1073,8 @@ export const CHAPTERS = [
   {
     id: 17,
     tier: 'expert',
+    intro: "Ti-Wa reads the table, not the tiles.\n\nHe knows who's dangerous and goes straight at them, and tonight that's you. Everything the experts taught you, he already knows you learned.\n\nOne more, and the circuit is yours.",
+    outro: "Ti-Wa stands and offers his seat \u2014 the good one, facing the door.\n\nOnly the championship is left.",
     featured: 'Ti-Wa',
     title: 'Li Tab La',
     theme: "He reads who is dangerous and goes after them. Today that's you.",
@@ -1108,6 +1142,8 @@ export const CHAPTERS = [
   {
     id: 18,
     tier: 'final',
+    intro: "Everyone is here.\n\nThe regulars along the wall, the experts at the table, and the door closed behind you. Five rounds, every kind of game they know, and then the last one \u2014 just you and Ti-Wa, however long it takes.\n\nThis is what the small table was for.",
+    outro: "They push the table back and stand.\n\nYou came in knowing how to place a tile. You're leaving as the one they'll be telling stories about.\n\nDekabess.",
     featured: 'Ti-Wa',
     title: 'Chanpyona',
     theme: 'Five rounds, then the Master',
