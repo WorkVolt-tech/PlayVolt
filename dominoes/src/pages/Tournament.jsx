@@ -1,367 +1,407 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
-import './Tournament.css'
+import { CHAPTERS } from '../story/chapters'
+import * as Engine from '../story/storyEngine'
+import { chooseTile, getPersonality, seesAllHands } from '../lib/botAI'
+import Board from '../components/Board'
+import PlayerHand from '../components/PlayerHand'
+import OpponentHands from '../components/OpponentHands'
+import { canPlayOnSide } from '../hooks/useGameState'
+import '../pages/Game.css'
+import './StoryChallenge.css'
 
-// ── Tournaments ──────────────────────────────────────────────────────────────
-// Mostly human: you register a team of two (or alone, in a solo cup) and play
-// through a bracket. Bot pairs only appear when the bracket is uneven, and a
-// bot can stand in for a partner who never showed.
+// ── Story challenge screen ───────────────────────────────────────────────────
+// Plays one chapter, challenge by challenge, using the story engine. The board
+// and hand are the SAME components multiplayer uses, so the feel is identical.
+// Nothing here writes to a room — only the result goes to the database.
 
-export default function Tournament() {
+const BOT_DELAY = 800
+
+export default function StoryChallenge() {
+  const { chapterId } = useParams()
   const navigate = useNavigate()
   const { user, isLoading } = useAuth()
 
-  const [list, setList] = useState([])
-  const [open, setOpen] = useState(null)      // the tournament being viewed
-  const [sides, setSides] = useState([])
-  const [members, setMembers] = useState([])
-  const [matches, setMatches] = useState([])
-  const [msg, setMsg] = useState(null)
-  const [busy, setBusy] = useState(false)
-  const [unlocked, setUnlocked] = useState([])   // bots earned in story mode
-  const [picking, setPicking] = useState(null)   // side id we're filling a seat for
+  const chapter = CHAPTERS.find(c => String(c.id) === String(chapterId))
 
-  const [newName, setNewName] = useState('')
-  const [newFormat, setNewFormat] = useState('duo')
-  const [teamName, setTeamName] = useState('')
-  const [joinCode, setJoinCode] = useState('')
+  // Where we were, kept on the device so a refresh doesn't start the chapter
+  // over. Cleared when the chapter is finished or abandoned.
+  const posKey = `story_pos:${chapterId}`
+  const saved = (() => {
+    try { return JSON.parse(localStorage.getItem(posKey) || 'null') } catch { return null }
+  })()
 
-  const nickname = (typeof localStorage !== 'undefined' && localStorage.getItem('domino_nickname')) || 'Player'
+  const [index, setIndex] = useState(saved?.index ?? 0)
+  const [st, setSt] = useState(null)
+  const [selected, setSelected] = useState(null)
+  const [wins, setWins] = useState(saved?.wins ?? 0)        // rounds won, for best-of-three
+  const [losses, setLosses] = useState(saved?.losses ?? 0)
+  const [result, setResult] = useState(null) // challenge finished
+  const [partner, setPartner] = useState(null)   // chosen teammate, when the challenge says 'pick'
+  const [story, setStory] = useState(saved?.introSeen ? null : 'intro')   // 'intro' | null | 'outro'
+  const [unlocked, setUnlocked] = useState([])   // bots this player has earned
+  const [saving, setSaving] = useState(false)
+  const busyRef = useRef(false)
 
-  const loadList = useCallback(async () => {
-    const { data } = await db.from('tournaments').select('*').order('created_at', { ascending: false }).limit(20)
-    setList(data || [])
-  }, [])
+  const challenge = chapter?.challenges?.[index] || null
+  const needsPartner = challenge?.partner === 'pick' && !partner
 
-  const loadOne = useCallback(async (id) => {
-    const [{ data: s }, { data: m }] = await Promise.all([
-      db.from('tournament_sides').select('*').eq('tournament_id', id).order('created_at'),
-      db.from('tournament_matches').select('*').eq('tournament_id', id).order('round').order('slot'),
-    ])
-    setSides(s || []); setMatches(m || [])
-    const ids = (s || []).map(x => x.id)
-    if (ids.length) {
-      const { data: mem } = await db.from('tournament_members').select('*').in('side_id', ids)
-      setMembers(mem || [])
-    } else setMembers([])
-  }, [])
-
-  useEffect(() => { loadList() }, [loadList])
-
-  // bots this player has unlocked, for standing in for a missing partner
   useEffect(() => {
     if (!user) return
     let off = false
     ;(async () => {
       const { data } = await db.rpc('ensure_story_progress')
       const row = Array.isArray(data) ? data[0] : data
-      if (!off) setUnlocked(row?.unlocked_bots || [])
+      if (off) return
+      setUnlocked((row?.unlocked_bots || []).filter(b => b !== chapter?.featured))
+
+      // With nothing saved on this device, start at the first challenge the
+      // account hasn't already completed.
+      if (!saved && chapter) {
+        const done = row?.completed_challenges?.[String(chapter.id)] || []
+        if (done.length) {
+          const next = chapter.challenges.findIndex(c => !done.includes(c.id))
+          if (next > 0) setIndex(next)
+        }
+      }
     })()
     return () => { off = true }
-  }, [user])
-  useEffect(() => { if (open) loadOne(open.id) }, [open, loadOne])
+  }, [user, chapter])
 
-  // live updates while a tournament is on screen
+  // a new challenge clears the previous pick
+  useEffect(() => { setPartner(null) }, [index])
+
+  // remember where we are, so a refresh picks up here
   useEffect(() => {
-    if (!open) return
-    const ch = db.channel('tour-' + open.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches', filter: `tournament_id=eq.${open.id}` }, () => loadOne(open.id))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_sides', filter: `tournament_id=eq.${open.id}` }, () => loadOne(open.id))
-      .subscribe()
-    return () => { db.removeChannel(ch) }
-  }, [open, loadOne])
+    try {
+      localStorage.setItem(posKey, JSON.stringify({
+        index, wins, losses, introSeen: story !== 'intro',
+      }))
+    } catch { /* storage unavailable */ }
+  }, [posKey, index, wins, losses, story])
 
-  async function call(fn, args, after) {
-    setBusy(true); setMsg(null)
-    const { data, error } = await db.rpc(fn, args)
-    setBusy(false)
-    if (error) { setMsg({ type: 'error', text: error.message }); return null }
-    if (after) await after(data)
-    return data
+  const clearSaved = useCallback(() => {
+    try { localStorage.removeItem(posKey) } catch { /* ignore */ }
+  }, [posKey])
+
+  // ── set up a round ─────────────────────────────────────────────────────────
+  const deal = useCallback(() => {
+    if (!challenge) return
+    if (challenge.partner === 'pick' && !partner) return   // wait for the pick
+    const cfg = challenge.type === 'puzzle'
+      ? { seats: 4, deal: challenge.deal, objective: challenge.objective, moves: challenge.moves }
+      : {
+          seats: challenge.seats || 4,
+          pile: !!challenge.pile,
+          objective: challenge.objective || { kind: 'win' },
+        }
+    setSt(Engine.settleTurn(Engine.startGame(cfg)))
+    setSelected(null)
+  }, [challenge, partner])
+
+  useEffect(() => { deal() }, [deal])
+
+  // Who sits where. Seat 0 is always the player.
+  //   2 seats  -> opponent at 1
+  //   4 seats, no partner -> opponents at 1, 2, 3
+  //   4 seats with a partner -> partner across at 2, opponents at 1 and 3
+  const seatBot = useCallback((seat) => {
+    if (!challenge || challenge.type === 'puzzle') return null
+    const names = challenge.opponents || []
+    if ((challenge.seats || 4) === 2) return seat === 1 ? names[0] : null
+    const mate = challenge.partner === 'pick' ? partner : challenge.partner
+    if (mate) {
+      if (seat === 2) return mate
+      return seat === 1 ? names[0] : names[1]
+    }
+    return [null, names[0], names[1], names[2]][seat]
+  }, [challenge, partner])
+
+  // ── bots take their turns ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!st || st.status !== 'playing' || st.turn === 0 || busyRef.current) return
+    busyRef.current = true
+    const timer = setTimeout(() => {
+      setSt(prev => {
+        if (!prev || prev.status !== 'playing' || prev.turn === 0) return prev
+        let next = Engine.settleTurn(prev)
+        if (next.status !== 'playing' || next.turn === 0) return next
+
+        const seat = next.turn
+        const name = seatBot(seat) || 'Ti-Djo'
+        const pers = getPersonality(name)
+        const moves = Engine.legalMoves(next)
+        const ctx = {
+          seat,
+          mode: 'chien',
+          tileCountsBySeat: next.hands.map(h => h.length),
+          opponentTileCounts: next.hands.map((h, i) => (i === seat ? null : h.length)).filter(x => x !== null),
+        }
+        if (seesAllHands(pers)) ctx.hands = next.hands
+        // A cooperating table: every bot treats the other bots' win as its own.
+        if (challenge.coop) ctx.allySeats = [1, 2, 3].filter(x => x < (challenge.seats || 4))
+        // With a teammate, seats 0 and 2 are one side — the bot at 2 plays for us.
+        if (!challenge.coop && (challenge.partner === 'pick' || challenge.partner)) {
+          ctx.mode = 'asosye'
+        }
+        const pick = chooseTile(pers, moves.map(m => m.tile), next.hands[seat], next.board, ctx)
+        const move =
+          moves.find(m => m.tile[0] === pick?.tile?.[0] && m.tile[1] === pick?.tile?.[1] && m.side === pick.side) ||
+          moves.find(m => m.tile[0] === pick?.tile?.[0] && m.tile[1] === pick?.tile?.[1]) ||
+          moves[0]
+        return move ? Engine.playTile(next, move.tile, move.side) : next
+      })
+      busyRef.current = false
+    }, BOT_DELAY)
+    return () => { clearTimeout(timer); busyRef.current = false }
+  }, [st, seatBot, challenge])
+
+  // The player draws for themselves by tapping a tile in the pile — see
+  // mustDraw below. Bots still draw automatically inside settleTurn.
+
+  // ── a round ended ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!st || st.status !== 'over' || result) return
+    const best = challenge?.rounds === 3
+    const outcome = Engine.evaluateObjective(st)
+    if (!best) { setResult(outcome); return }
+
+    const w = wins + (outcome.won ? 1 : 0)
+    const l = losses + (outcome.won ? 0 : 1)
+    setWins(w); setLosses(l)
+    if (w >= 2 || l >= 2) setResult({ ...outcome, met: w >= 2, stars: w >= 2 ? (l === 0 ? 3 : 2) : 0 })
+    else setTimeout(deal, 1200)
+  }, [st, result, challenge, wins, losses, deal])
+
+  // ── save and move on ───────────────────────────────────────────────────────
+  async function finishChallenge() {
+    if (!result || saving) return
+    setSaving(true)
+    const last = index === (chapter.challenges.length - 1)
+    if (user && result.met) {
+      const { error } = await db.rpc('record_challenge', {
+        p_chapter: chapter.id,
+        p_challenge: challenge.id,
+        p_stars: result.stars,
+        p_complete_chapter: last,
+        p_unlock_bot: last ? (chapter.unlocks || null) : null,
+      })
+      if (error) console.error('[story] could not save progress:', error.message)
+    }
+    setSaving(false)
+    setResult(null); setWins(0); setLosses(0)
+    if (result.met && !last) setIndex(i => i + 1)
+    else if (result.met && last) { clearSaved(); setStory('outro') }
+    else deal()   // failed — try again
   }
 
-  const mySide = sides.find(s => members.some(m => m.side_id === s.id && m.user_id === user?.id))
-  const myMember = members.find(m => m.side_id === mySide?.id && m.user_id === user?.id)
-
-  // Start (or rejoin) the room for a match and drop into the game.
-  async function playMatch(match) {
-    setBusy(true); setMsg(null)
-    const { data, error } = await db.rpc('start_tournament_match', { p_match: match.id })
-    if (error) { setBusy(false); setMsg({ type: 'error', text: error.message }); return }
-    const room = Array.isArray(data) ? data[0] : data
-    if (!room?.id) { setBusy(false); setMsg({ type: 'error', text: 'Could not open the room.' }); return }
-
-    // find my seat in that room — by account, so two players sharing a
-    // nickname can't be given each other's hand
-    const { data: seatRows } = await db.from('domino_players')
-      .select('seat, nickname, is_ai, user_id').eq('room_id', room.id)
-    const mine = (seatRows || []).find(r => !r.is_ai && r.user_id === user?.id)
-              || (seatRows || []).find(r => !r.is_ai && r.nickname === myMember?.nickname)
-    setBusy(false)
-    if (!mine) { setMsg({ type: 'error', text: 'Your seat is not in that room.' }); return }
-
-    sessionStorage.setItem('domino_player', JSON.stringify({
-      seat: mine.seat,
-      nickname: myMember?.nickname || nickname,
-      roomId: room.id,
-      roomCode: room.code,
-      gameMode: room.game_mode || 'chien',
-      tournamentMatchId: match.id,
-    }))
-    navigate('/game')
+  function playMove(tile, side) {
+    setSt(prev => {
+      if (!prev || prev.status !== 'playing' || prev.turn !== 0) return prev
+      const next = Engine.playTile(prev, tile, side)
+      return next.status === 'playing' && challenge?.type === 'puzzle'
+        ? { ...next, turn: 0 }        // puzzles: only the player moves
+        : next
+    })
+    setSelected(null)
   }
 
-  async function claimForfeit(match) {
-    await call('forfeit_match', { p_match_id: match.id, p_present: mySide.id },
-      () => loadOne(open.id))
-  }
-
-  // A match of mine that someone has already opened the room for.
-  const liveMatch = matches.find(m =>
-    m.room_id && m.status !== 'done' && m.status !== 'forfeit' &&
-    [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean).includes(mySide?.id))
-
-  async function addBot(sideId, botName) {
-    setPicking(null)
-    await call('fill_missing_partner', { p_side: sideId, p_bot: botName }, () => loadOne(open.id))
-  }
-  const myMembers = mySide ? members.filter(m => m.side_id === mySide.id) : []
-  const sideName = id => sides.find(s => s.id === id)?.name || '—'
-  const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b)
-
-  // ── guests ────────────────────────────────────────────────────────────────
-  if (!isLoading && !user) {
+  if (isLoading) return <div className="story-note">Loading…</div>
+  if (!chapter) return <div className="story-note">Chapter not found. <button onClick={() => navigate('/story')}>Back</button></div>
+  if (!challenge) {
     return (
-      <div className="tp-page">
-        <Header navigate={navigate} />
-        <div className="tp-gate">
-          <p>Tournaments are played against other people, so you need an account.</p>
-          <button className="tp-btn" onClick={() => navigate('/auth')}>Sign in</button>
+      <div className="sc-empty">
+        <p>This chapter doesn’t have its challenges written yet.</p>
+        <button className="sc-btn" onClick={() => navigate('/story')}>Back to the map</button>
+      </div>
+    )
+  }
+
+  // ── chapter opening ───────────────────────────────────────────────────────
+  if (story === 'intro' && chapter.intro) {
+    return (
+      <div className="sc-story">
+        <div className="sc-story-card">
+          <div className="sc-story-chapter">Chapter {chapter.id}</div>
+          <h1 className="sc-story-title">{chapter.title}</h1>
+          {chapter.featured && <div className="sc-story-foe">vs {chapter.featured}</div>}
+          <div className="sc-story-text">
+            {chapter.intro.split('\n\n').map((para, i) => <p key={i}>{para}</p>)}
+          </div>
+          <div className="sc-actions">
+            <button className="sc-btn" onClick={() => setStory(null)}>Sit down</button>
+            <button className="sc-btn ghost" onClick={() => { clearSaved(); navigate('/story') }}>Not yet</button>
+          </div>
         </div>
       </div>
     )
   }
 
-  // ── one tournament ────────────────────────────────────────────────────────
-  if (open) {
-    const canStart = open.created_by === user?.id && open.status === 'registration'
+  // ── chapter finished ──────────────────────────────────────────────────────
+  if (story === 'outro') {
     return (
-      <div className="tp-page">
-        <Header navigate={navigate} onBack={() => setOpen(null)} title={open.name} />
-        <div className="tp-sub">{open.format === 'duo' ? 'Teams of two' : 'Solo — one on one on one on one'} · {open.status}</div>
-        {msg && <div className={`tp-msg ${msg.type}`}>{msg.text}</div>}
-
-        {liveMatch && (
-          <div className="tp-live">
-            <div>
-              <strong>Your match is live</strong>
-              <span>Round {liveMatch.round} — the table is open and waiting for you.</span>
-            </div>
-            <button className="tp-btn" disabled={busy} onClick={() => playMatch(liveMatch)}>Join now</button>
+      <div className="sc-story">
+        <div className="sc-story-card">
+          <div className="sc-story-chapter">Chapter {chapter.id} complete</div>
+          <h1 className="sc-story-title">{chapter.title}</h1>
+          <div className="sc-story-text">
+            {(chapter.outro || '').split('\n\n').map((para, i) => <p key={i}>{para}</p>)}
           </div>
-        )}
-
-        {open.status === 'registration' && !mySide && (
-          <div className="tp-panel">
-            <div className="tp-label">Register</div>
-            {open.format === 'duo' ? (
-              <>
-                <div className="tp-row">
-                  <input className="tp-input" placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} maxLength={20} />
-                  <button className="tp-btn" disabled={busy || !teamName.trim()}
-                    onClick={() => call('create_side', { p_tournament: open.id, p_name: teamName.trim(), p_nickname: nickname }, () => loadOne(open.id))}>
-                    Create team
-                  </button>
-                </div>
-                <div className="tp-or">or join your partner’s team</div>
-                <div className="tp-row">
-                  <input className="tp-input" placeholder="Team code" value={joinCode}
-                    onChange={e => setJoinCode(e.target.value.toUpperCase())} maxLength={6} />
-                  <button className="tp-btn" disabled={busy || joinCode.length !== 6}
-                    onClick={() => call('join_side', { p_code: joinCode, p_nickname: nickname }, () => loadOne(open.id))}>
-                    Join
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="tp-row">
-                <button className="tp-btn" disabled={busy}
-                  onClick={() => call('create_side', { p_tournament: open.id, p_name: nickname, p_nickname: nickname }, () => loadOne(open.id))}>
-                  Enter the cup
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {mySide && (
-          <div className="tp-panel">
-            <div className="tp-label">Your {open.format === 'duo' ? 'team' : 'entry'}</div>
-            <div className="tp-team">
-              <strong>{mySide.name}</strong>
-              {mySide.code && <span className="tp-code">code {mySide.code}</span>}
-            </div>
-            <div className="tp-members">
-              {myMembers.map(m => (
-                <span key={m.id} className={`tp-chip ${m.bot_name ? 'bot' : ''}`}>
-                  {m.nickname}{m.bot_name ? ' (bot)' : ''}
-                </span>
-              ))}
-              {open.format === 'duo' && myMembers.length < 2 && <span className="tp-chip empty">waiting for partner…</span>}
-            </div>
-            {open.format === 'duo' && myMembers.length < 2 && (
-              <div className="tp-hint">
-                Share the code. If they don’t show, you can bring in a bot you’ve unlocked once the match is due.
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="tp-panel">
-          <div className="tp-label">Entries ({sides.length})</div>
-          <div className="tp-sides">
-            {sides.map(s => (
-              <div key={s.id} className={`tp-side ${s.eliminated ? 'out' : ''} ${s.is_bot ? 'bot' : ''}`}>
-                <span>{s.name}{s.is_bot ? ' · bots' : ''}</span>
-                <span className="tp-side-members">
-                  {members.filter(m => m.side_id === s.id).map(m => m.nickname).join(' & ') || (s.is_bot ? 'expert pair' : '—')}
-                </span>
-              </div>
-            ))}
-            {!sides.length && <div className="tp-empty">Nobody has entered yet.</div>}
-          </div>
-          {canStart && (
-            <button className="tp-btn wide" disabled={busy}
-              onClick={() => call('start_tournament', { p_tournament: open.id }, async () => {
-                await loadOne(open.id); setOpen({ ...open, status: 'running' })
-              })}>
-              Start the tournament
-            </button>
+          {chapter.unlocks && (
+            <div className="sc-unlock">{chapter.unlocks} unlocked</div>
           )}
+          <div className="sc-actions">
+            <button className="sc-btn" onClick={() => navigate('/story')}>Back to the map</button>
+          </div>
         </div>
+      </div>
+    )
+  }
 
-        {picking && (
-        <div className="tp-overlay" onClick={() => setPicking(null)}>
-          <div className="tp-card" onClick={e => e.stopPropagation()}>
-            <h3>Bring in a bot</h3>
-            <p>They take your missing partner’s seat for this tournament.</p>
-            <div className="tp-botlist">
-              {unlocked.map(b => (
-                <button key={b} className="tp-btn small" onClick={() => addBot(picking, b)}>{b}</button>
-              ))}
-              {!unlocked.length && <div className="tp-empty">You haven’t unlocked any bots yet — play Story Mode.</div>}
+  if (needsPartner) {
+    return (
+      <div className="sc-empty">
+        <p>Choose your partner. They sit across from you.</p>
+        {unlocked.length === 0 && <p className="sc-dim">You haven’t unlocked anyone yet — beat some chapters first.</p>}
+        <div className="sc-picks">
+          {unlocked.map(b => (
+            <button key={b} className="sc-btn" onClick={() => setPartner(b)}>{b}</button>
+          ))}
+        </div>
+        <button className="sc-btn ghost" onClick={() => navigate('/story')}>Back to the map</button>
+      </div>
+    )
+  }
+
+  const playable = st ? Engine.legalMoves(st, 0).map(m => m.tile) : []
+  const uniquePlayable = playable.filter((t, i) => playable.findIndex(x => x[0]===t[0] && x[1]===t[1]) === i)
+  const isMyTurn = !!st && st.status === 'playing' && st.turn === 0
+  // you may only draw when you have nothing to play
+  const mustDraw = isMyTurn && !!st?.usePile && st.pile.length > 0 && !Engine.canPlay(st)
+
+  // Present the engine's state in the shape the game's own components expect,
+  // so story mode looks and behaves exactly like a normal table.
+  const seatNames = [0, 1, 2, 3].map(seat => {
+    if (seat === 0) return 'You'
+    return seatBot(seat) || (challenge.type === 'puzzle' ? `Seat ${seat + 1}` : '—')
+  })
+  // In a 1v1 the only opponent is seat 1, which the table layout would place
+  // on your RIGHT. With nobody else at the table they belong across from you,
+  // so for display only they're shown as seat 2 (the "top" chair).
+  const twoSeat = (st?.seats ?? 4) === 2
+  const shown = seat => (twoSeat && seat === 1 ? 2 : seat)
+  const fakePlayers = (st?.hands || []).map((h, seat) => ({
+    seat: shown(seat),
+    nickname: seatNames[seat],
+    hand: h,
+    is_ai: seat !== 0,
+  }))
+  const fakeRoom = {
+    current_turn: shown(st?.turn ?? 0),
+    game_mode: challenge.partner ? 'asosye' : 'chien',
+    status: st?.status === 'over' ? 'round_end' : 'playing',
+  }
+  const fakeMe = { seat: 0 }
+
+  return (
+    <div className="game-layout">
+      <div className="top-bar">
+        <div className="top-bar-left">
+          <button className="sc-back" onClick={() => navigate('/story')}>← Map</button>
+          <span className="sc-chapter">Ch {chapter.id}</span>
+        </div>
+        <div className="player-tags">
+          {fakePlayers.map(p => (
+            <div key={p.seat} className={[
+              'player-tag',
+              p.seat === fakeRoom.current_turn ? 'active-turn' : '',
+              p.seat === 0 ? 'is-me' : '',
+            ].join(' ')}>
+              <div className="tag-dot" />
+              <span>{p.nickname}{p.seat === 0 ? ' ★' : ''}</span>
+              <span className="tag-tiles">{p.hand.length}</span>
             </div>
-            <button className="tp-btn small" onClick={() => setPicking(null)}>Cancel</button>
+          ))}
+        </div>
+        {challenge.rounds === 3 && <span className="sc-score">{wins} — {losses}</span>}
+        {st?.usePile && <span className="sc-pile">Pile {st.pile.length}</span>}
+      </div>
+
+      {challenge.brief && <div className="sc-brief">{challenge.brief}</div>}
+
+      <div className="board-container">
+        {st?.usePile && st.pile.length > 0 && (
+          <div className={`pile-stack ${mustDraw ? 'active' : ''}`}>
+            <div className="pile-tiles">
+              {st.pile.map((_, i) => (
+                <button
+                  key={i}
+                  className="pile-tile"
+                  disabled={!mustDraw}
+                  onClick={() => setSt(prev => (prev && prev.turn === 0 ? Engine.drawFrom(prev, i) : prev))}
+                  title={mustDraw ? 'Take this one' : 'Draw pile'}
+                />
+              ))}
+            </div>
+            <span className="pile-count">{st.pile.length}</span>
+            <span className="pile-label">{mustDraw ? 'pick one' : 'pile'}</span>
+          </div>
+        )}
+        <OpponentHands players={fakePlayers} myInfo={fakeMe} roomData={fakeRoom} />
+        <Board
+          boardData={st?.board}
+          selectedTile={selected}
+          isMyTurn={isMyTurn}
+          onDropZone={side => {
+            if (!selected) return
+            playMove(selected.tile, side)
+          }}
+          onDragPlace={(tile, _idx, side) => {
+            if (!isMyTurn) return
+            if (side === 'first') { playMove(tile, 'first'); return }
+            const cL = canPlayOnSide(tile, 'left', st?.board)
+            const cR = canPlayOnSide(tile, 'right', st?.board)
+            if (side === 'left' && cL) playMove(tile, 'left')
+            else if (side === 'right' && cR) playMove(tile, 'right')
+            else if (cL) playMove(tile, 'left')
+            else if (cR) playMove(tile, 'right')
+          }}
+        />
+      </div>
+
+      <PlayerHand
+        hand={st?.hands?.[0] || []}
+        isMyTurn={isMyTurn}
+        playableTiles={uniquePlayable}
+        selectedIdx={selected?.idx ?? null}
+        onSelect={(tile, idx) => setSelected({ tile, idx })}
+        onPass={() => setSt(prev => (prev && prev.turn === 0 ? Engine.drawOrPass(prev) : prev))}
+        hasTilesOnBoard={!!st?.board?.tiles?.length}
+      />
+
+      {result && (
+        <div className="sc-overlay">
+          <div className="sc-card">
+            <h2>{result.met ? 'Challenge complete' : 'Not this time'}</h2>
+            <p>
+              {result.met
+                ? (result.dekabess ? 'Dekabess!' : result.blocked ? 'Won on pips.' : 'You went out first.')
+                : 'Objective not met.'}
+            </p>
+            {result.met && <div className="sc-stars">{'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}</div>}
+            <div className="sc-actions">
+              <button className="sc-btn" disabled={saving} onClick={finishChallenge}>
+                {result.met
+                  ? (index === chapter.challenges.length - 1 ? 'Finish chapter' : 'Next challenge')
+                  : 'Try again'}
+              </button>
+              <button className="sc-btn ghost" onClick={() => navigate('/story')}>Leave</button>
+            </div>
           </div>
         </div>
       )}
-
-      {rounds.map(r => (
-          <div className="tp-panel" key={r}>
-            <div className="tp-label">Round {r}</div>
-            {matches.filter(m => m.round === r).map(m => {
-              const ids = [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean)
-              const mine = ids.includes(mySide?.id)
-              return (
-                <div key={m.id} className={`tp-match ${m.status} ${mine ? 'mine' : ''}`}>
-                  <div className="tp-match-sides">
-                    {ids.map(id => (
-                      <span key={id} className={m.winner_side === id ? 'won' : ''}>
-                        {sideName(id)}
-                        <em>{m.wins?.[id] ?? 0}</em>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="tp-match-state">
-                    {m.status === 'done' ? `${sideName(m.winner_side)} through`
-                      : m.status === 'forfeit' ? `${sideName(m.winner_side)} through (no show)`
-                      : m.status}
-                  </div>
-                  {mine && m.status !== 'done' && m.status !== 'forfeit' && (
-                    <div className="tp-match-actions">
-                      <Countdown until={m.no_show_at} />
-                      <button className="tp-btn small gold" disabled={busy} onClick={() => playMatch(m)}>
-                        {m.room_id ? 'Rejoin match' : 'Play match'}
-                      </button>
-                      {open.format === 'duo' && myMembers.length < 2 && (
-                        <button className="tp-btn small" onClick={() => setPicking(mySide.id)}>
-                          Partner didn’t show
-                        </button>
-                      )}
-                      {m.no_show_at && new Date(m.no_show_at) < new Date() && (
-                        <button className="tp-btn small" disabled={busy} onClick={() => claimForfeit(m)}>
-                          Claim the walkover
-                        </button>
-                      )}
-                      <button className="tp-btn small" onClick={() => navigate('/practice')}>Practice vs AI</button>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  // ── the list ──────────────────────────────────────────────────────────────
-  return (
-    <div className="tp-page">
-      <Header navigate={navigate} />
-      {msg && <div className={`tp-msg ${msg.type}`}>{msg.text}</div>}
-
-      <div className="tp-panel">
-        <div className="tp-label">Start a tournament</div>
-        <div className="tp-row">
-          <input className="tp-input" placeholder="Name it" value={newName} onChange={e => setNewName(e.target.value)} maxLength={30} />
-          <select className="tp-select" value={newFormat} onChange={e => setNewFormat(e.target.value)}>
-            <option value="duo">Teams of 2</option>
-            <option value="solo">Solo (1v1v1v1)</option>
-          </select>
-        </div>
-        <button className="tp-btn wide" disabled={busy || !newName.trim()}
-          onClick={() => call('create_tournament', { p_name: newName.trim(), p_format: newFormat }, async (t) => {
-            setNewName(''); await loadList(); setOpen(Array.isArray(t) ? t[0] : t)
-          })}>
-          Create
-        </button>
-      </div>
-
-      <div className="tp-panel">
-        <div className="tp-label">Tournaments</div>
-        {list.map(t => (
-          <button key={t.id} className="tp-item" onClick={() => setOpen(t)}>
-            <span className="tp-item-name">{t.name}</span>
-            <span className="tp-item-meta">{t.format === 'duo' ? '2v2' : 'solo'} · {t.status}</span>
-          </button>
-        ))}
-        {!list.length && <div className="tp-empty">None yet — start one above.</div>}
-      </div>
     </div>
   )
 }
-
-function Header({ navigate, onBack, title }) {
-  return (
-    <div className="tp-header">
-      <button className="tp-back" onClick={() => (onBack ? onBack() : navigate('/'))}>← Back</button>
-      <h1 className="tp-title">{title || 'Tournaments'}</h1>
-      <span style={{ width: 54 }} />
-    </div>
-  )
-}
-
-function Countdown({ until }) {
-  const [left, setLeft] = useState(() => remaining(until))
-  useEffect(() => {
-    const t = setInterval(() => setLeft(remaining(until)), 1000)
-    return () => clearInterval(t)
-  }, [until])
-  if (!until) return null
-  return <span className="tp-count">{left > 0 ? `starts within ${fmt(left)}` : 'no-show deadline passed'}</span>
-}
-function remaining(until) { return until ? Math.max(0, Math.floor((new Date(until) - Date.now()) / 1000)) : 0 }
-function fmt(s) { return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
