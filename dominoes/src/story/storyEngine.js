@@ -131,6 +131,21 @@ export function playTile(st, tile, side) {
   return next
 }
 
+// Take a specific tile from the pile. Players pick which one they want —
+// they're face down, so it's a choice of position, not of tile. You may only
+// draw when you have nothing to play, as in a normal game.
+export function drawFrom(st, index = 0) {
+  if (st.status !== 'playing') return st
+  const seat = st.turn
+  if (!st.usePile || !st.pile.length) return st
+  if (canPlay(st, seat)) return st            // you can play — no drawing
+  const i = Math.max(0, Math.min(index, st.pile.length - 1))
+  const drawn = st.pile[i]
+  const pile = st.pile.filter((_, j) => j !== i)
+  const hands = st.hands.map((h, k) => (k === seat ? [...h, drawn] : h))
+  return { ...st, hands, pile, log: [...st.log, { seat, action: 'draw' }] }
+}
+
 // "Can't play" — draw from the pile if there is one, otherwise pass.
 // Returns the new state; the seat keeps its turn while it is drawing.
 export function drawOrPass(st) {
@@ -138,9 +153,7 @@ export function drawOrPass(st) {
   const seat = st.turn
 
   if (st.usePile && st.pile.length && !canPlay(st, seat)) {
-    const [drawn, ...rest] = st.pile
-    const hands = st.hands.map((h, i) => (i === seat ? [...h, drawn] : h))
-    return { ...st, hands, pile: rest, log: [...st.log, { seat, action: 'draw' }] }
+    return drawFrom(st, 0)
   }
 
   // Nothing to draw and nothing to play — pass.
