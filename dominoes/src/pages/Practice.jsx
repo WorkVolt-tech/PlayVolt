@@ -100,12 +100,12 @@ export default function Practice() {
     setSelected(null)
   }
 
-  // Same tap behaviour as a normal game.
+  // Same tap behaviour as a normal game — select only, never place.
   function selectTile(tile, idx) {
     if (!isMyTurn) return
     if (selected?.idx === idx) { setSelected(null); return }
     setSelected({ tile, idx })
-    if (!st?.board?.tiles?.length) playMove(tile, 'first')
+    // Selecting never places a tile, even on an empty board.
   }
 
   if (!setup) {
