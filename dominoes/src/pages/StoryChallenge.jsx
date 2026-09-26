@@ -267,7 +267,6 @@ export default function StoryChallenge() {
                   className="pile-tile"
                   disabled={!mustDraw}
                   onClick={() => setSt(prev => (prev && prev.turn === 0 ? Engine.drawFrom(prev, i) : prev))}
-                  style={{ transform: `translate(${(i % 6) * 4}px, ${-Math.floor(i / 6) * 5}px)`, zIndex: i }}
                   title={mustDraw ? 'Take this one' : 'Draw pile'}
                 />
               ))}
