@@ -588,10 +588,9 @@ export function useGameState(myInfo, navigate) {
     // Toggle deselect
     if (selectedTile?.idx === idx) { setSelectedTile(null); setShowPicker(false); return }
     setSelectedTile({ tile, idx })
-    // Just select — user then drags to board or uses side picker / drop zones
-    // Only auto-place first tile (no choice needed)
-    if (!hasTilesOnBoard) { placeTile(tile, idx, 'first'); return }
-  }, [isMyTurn, selectedTile, hasTilesOnBoard, placeTile])
+    // Selecting never places a tile — not even the first one on an empty
+    // board. The player drags it to the table, or taps a drop zone.
+  }, [isMyTurn, selectedTile])
 
   const passMove = useCallback(async () => {
     // Double-tap guard — the same one placeTile has always had. passMove
