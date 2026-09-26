@@ -68,15 +68,8 @@ export default function Practice() {
     return () => { clearTimeout(t); busyRef.current = false }
   }, [st, setup])
 
-  // you can't play: draw from the pile if there is one
-  useEffect(() => {
-    if (!st || st.status !== 'playing' || st.turn !== 0) return
-    if (Engine.canPlay(st)) return
-    if (st.usePile && st.pile.length) {
-      const t = setTimeout(() => setSt(p => (p && p.turn === 0 ? Engine.drawOrPass(p) : p)), 400)
-      return () => clearTimeout(t)
-    }
-  }, [st])
+  // The player draws for themselves by tapping a tile in the pile — see
+  // mustDraw below. Bots still draw automatically inside settleTurn.
 
   // round over — count it and deal again
   useEffect(() => {
@@ -108,6 +101,8 @@ export default function Practice() {
   const moves = st ? Engine.legalMoves(st, 0) : []
   const playable = moves.map(m => m.tile).filter((t, i, arr) => arr.findIndex(x => x[0] === t[0] && x[1] === t[1]) === i)
   const isMyTurn = !!st && st.status === 'playing' && st.turn === 0
+  // you may only draw when you have nothing to play
+  const mustDraw = isMyTurn && !!st?.usePile && st.pile.length > 0 && !Engine.canPlay(st)
 
   const seatNames = [0, 1, 2, 3].map(seat =>
     seat === 0 ? 'You' : (setup.seats === 2 ? setup.opponents[0] : setup.opponents[seat - 1]))
@@ -144,15 +139,22 @@ export default function Practice() {
       </div>
 
       <div className="board-container">
-        {st?.usePile && (
-          <div className="pile-stack" title="Draw pile">
+        {st?.usePile && st.pile.length > 0 && (
+          <div className={`pile-stack ${mustDraw ? 'active' : ''}`}>
             <div className="pile-tiles">
-              {Array.from({ length: Math.min(st.pile.length, 4) }).map((_, i) => (
-                <span key={i} className="pile-tile" style={{ transform: `translate(${i * 3}px, ${i * -3}px)` }} />
+              {st.pile.map((_, i) => (
+                <button
+                  key={i}
+                  className="pile-tile"
+                  disabled={!mustDraw}
+                  onClick={() => setSt(prev => (prev && prev.turn === 0 ? Engine.drawFrom(prev, i) : prev))}
+                  style={{ transform: `translate(${(i % 6) * 4}px, ${-Math.floor(i / 6) * 5}px)`, zIndex: i }}
+                  title={mustDraw ? 'Take this one' : 'Draw pile'}
+                />
               ))}
             </div>
             <span className="pile-count">{st.pile.length}</span>
-            <span className="pile-label">pile</span>
+            <span className="pile-label">{mustDraw ? 'pick one' : 'pile'}</span>
           </div>
         )}
         <OpponentHands players={fakePlayers} myInfo={{ seat: 0 }} roomData={fakeRoom} />
