@@ -79,9 +79,33 @@ export default function Practice() {
     return () => clearTimeout(t)
   }, [st?.status])
 
+  // Place a tile, checking the side against the board first — the same guard
+  // the live game applies.
   function playMove(tile, side) {
-    setSt(prev => (prev && prev.status === 'playing' && prev.turn === 0 ? Engine.playTile(prev, tile, side) : prev))
+    setSt(prev => {
+      if (!prev || prev.status !== 'playing' || prev.turn !== 0) return prev
+      let use = side
+      if (prev.board?.tiles?.length) {
+        const cL = canPlayOnSide(tile, 'left', prev.board)
+        const cR = canPlayOnSide(tile, 'right', prev.board)
+        if (use === 'first') use = cL ? 'left' : 'right'
+        if (use === 'left' && !cL) use = cR ? 'right' : null
+        else if (use === 'right' && !cR) use = cL ? 'left' : null
+        if (!use) return prev
+      } else {
+        use = 'first'
+      }
+      return Engine.playTile(prev, tile, use)
+    })
     setSelected(null)
+  }
+
+  // Same tap behaviour as a normal game.
+  function selectTile(tile, idx) {
+    if (!isMyTurn) return
+    if (selected?.idx === idx) { setSelected(null); return }
+    setSelected({ tile, idx })
+    if (!st?.board?.tiles?.length) playMove(tile, 'first')
   }
 
   if (!setup) {
@@ -180,7 +204,7 @@ export default function Practice() {
         isMyTurn={isMyTurn}
         playableTiles={playable}
         selectedIdx={selected?.idx ?? null}
-        onSelect={(tile, idx) => setSelected({ tile, idx })}
+        onSelect={selectTile}
         onPass={() => setSt(p => (p && p.turn === 0 ? Engine.drawOrPass(p) : p))}
         hasTilesOnBoard={!!st?.board?.tiles?.length}
       />
