@@ -61,7 +61,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Bebe'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Just the two of you. Seven tiles each — draw from the pile when you cannot play.',
       },
       {
@@ -94,7 +94,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Bebe', 'Ti-Bebe', 'Ti-Bebe'],
-        rounds: 3,
+        rounds: 1,
         brief: 'A full table. Three of them, all still learning.',
       },
       {
@@ -128,7 +128,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Sak'],
-        rounds: 3,
+        rounds: 1,
         brief: "He keeps his doubles back. Make him pay for the weight he's carrying.",
       },
       {
@@ -154,7 +154,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Sak', 'Ti-Bebe', 'Ti-Bebe'],
-        rounds: 3,
+        rounds: 1,
         brief: 'A full table, with Ti-Sak across from you.',
       },
       {
@@ -185,7 +185,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Pridan'],
-        rounds: 3,
+        rounds: 1,
         brief: "He sheds his heavy tiles early. If the table jams, he'll be holding almost nothing.",
       },
       {
@@ -212,7 +212,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Pridan', 'Ti-Bebe', 'Ti-Bebe'],
-        rounds: 3,
+        rounds: 1,
         brief: 'A full table, with Ti-Pridan across from you.',
       },
       {
@@ -243,7 +243,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Cam'],
-        rounds: 3,
+        rounds: 1,
         brief: "He hunts the Dekabess. Close the ends he needs.",
       },
       {
@@ -269,7 +269,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Cam', 'Ti-Bebe', 'Ti-Bebe'],
-        rounds: 3,
+        rounds: 1,
         brief: 'A full table, with Ti-Cam across from you.',
       },
       {
@@ -300,7 +300,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Jean'],
-        rounds: 3,
+        rounds: 1,
         brief: "He squeezes your options. Keep a way out.",
       },
       {
@@ -327,7 +327,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Jean', 'Ti-Bebe', 'Ti-Bebe'],
-        rounds: 3,
+        rounds: 1,
         brief: 'A full table, with Ti-Jean across from you.',
       },
       {
@@ -358,7 +358,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Djo'],
-        rounds: 3,
+        rounds: 1,
         brief: "No weakness to exploit \u2014 he simply plays well.",
       },
       {
@@ -386,7 +386,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Djo', 'Ti-Bebe', 'Ti-Bebe'],
-        rounds: 3,
+        rounds: 1,
         brief: 'A full table, with Ti-Djo across from you.',
       },
       {
@@ -417,7 +417,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Mèt'],
-        rounds: 3,
+        rounds: 1,
         brief: "He picks a number and owns it. Take it away from him.",
       },
       {
@@ -445,7 +445,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Mèt', 'Ti-Bebe', 'Ti-Bebe'],
-        rounds: 3,
+        rounds: 1,
         brief: 'A full table, with Ti-Mèt across from you.',
       },
       {
@@ -476,7 +476,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Doub'],
-        rounds: 3,
+        rounds: 1,
         brief: "He dumps every double the moment he can. Punish the gaps that leaves.",
       },
       {
@@ -503,7 +503,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Doub', 'Ti-Bebe', 'Ti-Bebe'],
-        rounds: 3,
+        rounds: 1,
         brief: 'A full table, with Ti-Doub across from you.',
       },
       {
@@ -535,7 +535,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Doub'],
-        rounds: 3,
+        rounds: 1,
         brief: 'The strongest of the circuit, one on one.',
       },
       {
@@ -568,7 +568,7 @@ export const CHAPTERS = [
         seats: 4,
         opponents: ['Ti-Jean', 'Ti-Mèt'],
         partner: 'pick',
-        rounds: 3,
+        rounds: 1,
         brief: 'Pick a partner you have earned. Two of the circuit against the two of you.',
       },
       {
@@ -576,7 +576,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Djo', 'Ti-Mèt', 'Ti-Doub'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Three of them, each playing for themselves.',
       },
       {
@@ -608,7 +608,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Jòj'],
-        rounds: 3,
+        rounds: 1,
         brief: "He has no trick \u2014 he simply plays better than you.",
       },
       {
@@ -638,7 +638,7 @@ export const CHAPTERS = [
         seats: 4,
         opponents: ['Ti-Jòj', 'Ti-Doub'],
         partner: 'pick',
-        rounds: 3,
+        rounds: 1,
         brief: 'Pick a partner. Ti-Jòj and Ti-Doub against the two of you.',
       },
       {
@@ -646,7 +646,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Jòj', 'Ti-Doub', 'Ti-Djo'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Three of them, each for themselves.',
       },
       {
@@ -677,7 +677,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Tid'],
-        rounds: 3,
+        rounds: 1,
         brief: "He holds his doubles until they hurt. Force them out early.",
       },
       {
@@ -706,7 +706,7 @@ export const CHAPTERS = [
         seats: 4,
         opponents: ['Ti-Tid', 'Ti-Jòj'],
         partner: 'pick',
-        rounds: 3,
+        rounds: 1,
         brief: 'Pick a partner. Ti-Tid and Ti-Jòj against the two of you.',
       },
       {
@@ -714,7 +714,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Tid', 'Ti-Jòj', 'Ti-Doub'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Three of them, each for themselves.',
       },
       {
@@ -745,7 +745,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Roro'],
-        rounds: 3,
+        rounds: 1,
         brief: "He wants the table jammed with him holding the least. Beat him to it.",
       },
       {
@@ -774,7 +774,7 @@ export const CHAPTERS = [
         seats: 4,
         opponents: ['Ti-Roro', 'Ti-Jòj'],
         partner: 'pick',
-        rounds: 3,
+        rounds: 1,
         brief: 'Pick a partner. Ti-Roro and Ti-Jòj against the two of you.',
       },
       {
@@ -782,7 +782,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Roro', 'Ti-Jòj', 'Ti-Tid'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Three of them, each for themselves.',
       },
       {
@@ -813,7 +813,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Chasè'],
-        rounds: 3,
+        rounds: 1,
         brief: "He keeps the ends on numbers he owns. Take those numbers away.",
       },
       {
@@ -842,7 +842,7 @@ export const CHAPTERS = [
         seats: 4,
         opponents: ['Ti-Chasè', 'Ti-Tid'],
         partner: 'pick',
-        rounds: 3,
+        rounds: 1,
         brief: 'Pick a partner. Ti-Chasè and Ti-Tid against the two of you.',
       },
       {
@@ -850,7 +850,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Chasè', 'Ti-Tid', 'Ti-Roro'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Three of them, each for themselves.',
       },
       {
@@ -881,7 +881,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Frè'],
-        rounds: 3,
+        rounds: 1,
         brief: "He plays for his partner, not himself. Break up the pair.",
       },
       {
@@ -911,7 +911,7 @@ export const CHAPTERS = [
         seats: 4,
         opponents: ['Ti-Frè', 'Ti-Roro'],
         partner: 'pick',
-        rounds: 3,
+        rounds: 1,
         brief: 'Pick a partner. Ti-Frè and Ti-Roro against the two of you.',
       },
       {
@@ -919,7 +919,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Frè', 'Ti-Roro', 'Ti-Chasè'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Three of them, each for themselves.',
       },
       {
@@ -950,7 +950,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Chaj'],
-        rounds: 3,
+        rounds: 1,
         brief: "He kills numbers off the board. Watch which ones are already gone.",
       },
       {
@@ -978,7 +978,7 @@ export const CHAPTERS = [
         seats: 4,
         opponents: ['Ti-Chaj', 'Ti-Chasè'],
         partner: 'pick',
-        rounds: 3,
+        rounds: 1,
         brief: 'Pick a partner. Ti-Chaj and Ti-Chasè against the two of you.',
       },
       {
@@ -986,7 +986,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Chaj', 'Ti-Chasè', 'Ti-Frè'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Three of them, each for themselves.',
       },
       {
@@ -1017,7 +1017,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Pyèj'],
-        rounds: 3,
+        rounds: 1,
         brief: "He hunts the moment the table seizes. Don't walk into it.",
       },
       {
@@ -1047,7 +1047,7 @@ export const CHAPTERS = [
         seats: 4,
         opponents: ['Ti-Pyèj', 'Ti-Frè'],
         partner: 'pick',
-        rounds: 3,
+        rounds: 1,
         brief: 'Pick a partner. Ti-Pyèj and Ti-Frè against the two of you.',
       },
       {
@@ -1055,7 +1055,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Pyèj', 'Ti-Frè', 'Ti-Chaj'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Three of them, each for themselves.',
       },
       {
@@ -1086,7 +1086,7 @@ export const CHAPTERS = [
         seats: 2,
         pile: true,
         opponents: ['Ti-Wa'],
-        rounds: 3,
+        rounds: 1,
         brief: "He reads who is dangerous and goes after them. Today that's you.",
       },
       {
@@ -1115,7 +1115,7 @@ export const CHAPTERS = [
         seats: 4,
         opponents: ['Ti-Wa', 'Ti-Chaj'],
         partner: 'pick',
-        rounds: 3,
+        rounds: 1,
         brief: 'Pick a partner. Ti-Wa and Ti-Chaj against the two of you.',
       },
       {
@@ -1123,7 +1123,7 @@ export const CHAPTERS = [
         type: 'match',
         seats: 4,
         opponents: ['Ti-Wa', 'Ti-Chaj', 'Ti-Pyèj'],
-        rounds: 3,
+        rounds: 1,
         brief: 'Three of them, each for themselves.',
       },
       {
