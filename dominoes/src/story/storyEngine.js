@@ -92,13 +92,23 @@ export const canPlay = (st, seat = st.turn) => legalMoves(st, seat).length > 0
 
 // ── Playing ──────────────────────────────────────────────────────────────────
 
+// Lay a tile on the chain. The `flipped` flag decides which way round the
+// tile is DRAWN, and the rule differs by side — copied exactly from the live
+// game's placeTile, or the pips won't line up with the end they're joining:
+//   right: flipped when tile[1] meets the end
+//   left : flipped when tile[0] meets the end
 function applyTile(board, tile, side) {
   if (!board.tiles.length) {
     return { tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }
   }
   const end = side === 'left' ? board.left_end : board.right_end
-  const open = tile[1] === end ? tile[0] : tile[1]
-  const flipped = tile[1] === end
+  let flipped = false
+  let open
+  if (side === 'right') {
+    if (tile[1] === end) { flipped = true; open = tile[0] } else { open = tile[1] }
+  } else {
+    if (tile[0] === end) { flipped = true; open = tile[1] } else { open = tile[0] }
+  }
   return side === 'left'
     ? { tiles: [{ tile, flipped }, ...board.tiles], left_end: open, right_end: board.right_end }
     : { tiles: [...board.tiles, { tile, flipped }], left_end: board.left_end, right_end: open }
