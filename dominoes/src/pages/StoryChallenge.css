@@ -94,48 +94,58 @@
 .sc-picks { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1rem 0 1.4rem; }
 .sc-dim { opacity: 0.7; font-size: 0.65rem; }
 
-/* ── Draw pile, shown on the table ─────────────────────────────── */
+/* ── Draw pile, laid out on the table so you can pick one ─────── */
 .pile-stack {
   position: absolute;
-  left: 12px;
+  left: 10px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   z-index: 5;
-  pointer-events: none;
+  max-height: 88%;
 }
-.pile-tiles { position: relative; width: 56px; height: 78px; }
+
+/* a real spread — every remaining tile visible and tappable */
+.pile-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 4px;
+  justify-content: center;
+  overflow-y: auto;
+  max-height: 60vh;
+  padding: 2px;
+}
+
 .pile-tile {
-  position: absolute; left: 0; top: 0;
-  width: 24px; height: 38px;
-  border-radius: 4px;
+  width: 26px;
+  height: 42px;
   padding: 0;
-  background: linear-gradient(160deg, #2c2a22, #1a1814);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 3px, transparent 3px 6px),
+    linear-gradient(160deg, #35322a, #1d1b16);
   border: 1px solid var(--border);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
   cursor: default;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
-/* only clickable when you actually have to draw */
-.pile-stack.active { pointer-events: auto; }
+
+/* only live when you actually have to draw */
 .pile-stack.active .pile-tile {
   cursor: pointer;
   border-color: rgba(201,168,76,0.55);
-  animation: pileGlow 1.6s ease-in-out infinite;
 }
 .pile-stack.active .pile-tile:hover {
   border-color: var(--gold);
-  transform: translateY(-4px) !important;
+  transform: translateY(-3px);
   box-shadow: 0 6px 14px rgba(0,0,0,0.6), 0 0 12px rgba(201,168,76,0.35);
 }
 .pile-stack.active .pile-label { color: var(--gold); }
-@keyframes pileGlow {
-  0%, 100% { box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
-  50%      { box-shadow: 0 2px 10px rgba(201,168,76,0.35); }
-}
-.pile-count { font-size: 0.72rem; color: var(--gold); font-family: 'DM Mono', monospace; }
+
+.pile-count { font-size: 0.7rem; color: var(--gold); font-family: 'DM Mono', monospace; }
 .pile-label {
   font-size: 0.45rem; letter-spacing: 0.18em; text-transform: uppercase;
   color: var(--ivory-dim);
@@ -143,6 +153,6 @@
 
 @media (max-height: 500px) {
   .pile-stack { left: 6px; }
-  .pile-tiles { width: 44px; height: 58px; }
-  .pile-tile { width: 18px; height: 28px; }
+  .pile-tiles { grid-template-columns: repeat(3, auto); gap: 3px; max-height: 58vh; }
+  .pile-tile { width: 18px; height: 30px; }
 }
