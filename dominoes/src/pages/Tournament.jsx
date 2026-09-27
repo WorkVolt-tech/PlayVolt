@@ -115,6 +115,28 @@ export default function Tournament() {
     navigate('/game')
   }
 
+  // Warm up with your partner in a real room: the two of you against two bots.
+  // Nothing is recorded — the room is flagged as practice.
+  async function practiseWithPartner() {
+    setBusy(true); setMsg(null)
+    const { data, error } = await db.rpc('start_partner_practice', { p_side: mySide.id })
+    setBusy(false)
+    if (error) { setMsg({ type: 'error', text: error.message }); return }
+    const room = Array.isArray(data) ? data[0] : data
+    const { data: seatRows } = await db.from('domino_players')
+      .select('seat, nickname, is_ai, user_id').eq('room_id', room.id)
+    const mine = (seatRows || []).find(r => !r.is_ai && r.user_id === user?.id)
+    if (!mine) { setMsg({ type: 'error', text: 'Could not seat you in the practice room.' }); return }
+    sessionStorage.setItem('domino_player', JSON.stringify({
+      seat: mine.seat,
+      nickname: myMember?.nickname || nickname,
+      roomId: room.id,
+      roomCode: room.code,
+      gameMode: 'asosye',
+    }))
+    navigate('/game')
+  }
+
   async function claimForfeit(match) {
     await call('forfeit_match', { p_match_id: match.id, p_present: mySide.id },
       () => loadOne(open.id))
@@ -342,7 +364,12 @@ export default function Tournament() {
                           Claim the walkover
                         </button>
                       )}
-                      <button className="tp-btn small" onClick={() => setPractising(true)}>Practice vs AI</button>
+                      <button className="tp-btn small" onClick={() => setPractising(true)}>Practice alone</button>
+                      {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length === 2 && (
+                        <button className="tp-btn small" disabled={busy} onClick={practiseWithPartner}>
+                          Practice with partner
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
