@@ -2,6 +2,14 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
 import { chooseTile, getPersonality, seesAllHands } from '../lib/botAI'
 
+// Turn timing. Off by default; switch it on from the console with
+//   localStorage.setItem('domino_timing','1')   (then reload)
+// and off again with localStorage.removeItem('domino_timing').
+const TIMING = (() => {
+  try { return !!localStorage.getItem('domino_timing') } catch { return false }
+})()
+const tlog = (...a) => { if (TIMING) console.log('[timing]', ...a) }
+
 // ── Pure helpers ────────────────────────────────────────────────────────────
 export function generateRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -80,6 +88,20 @@ export function useGameState(myInfo, navigate) {
   const playersRef    = useRef([])
   const overlayShownRef = useRef(false)
   const botRunningRef   = useRef(false)
+
+  // How long each turn actually takes, from this device's point of view.
+  const turnClock = useRef({ seat: null, at: 0 })
+  useEffect(() => {
+    if (!TIMING || !roomData) return
+    const now = performance.now()
+    const prev = turnClock.current
+    if (prev.seat !== null && prev.seat !== roomData.current_turn) {
+      const who = players.find(p => p.seat === prev.seat)
+      tlog(`seat ${prev.seat} (${who?.nickname || '?'}${who?.is_ai ? ', bot' : ''}) ` +
+           `took ${((now - prev.at) / 1000).toFixed(2)}s — now seat ${roomData.current_turn}`)
+    }
+    turnClock.current = { seat: roomData.current_turn, at: now }
+  }, [roomData?.current_turn, players])
 
   useEffect(() => { boardRef.current = boardData }, [boardData])
   useEffect(() => { playersRef.current = players }, [players])
@@ -181,7 +203,12 @@ export function useGameState(myInfo, navigate) {
 
   const scheduleReload = useCallback(() => {
     clearTimeout(reloadTimer.current)
-    reloadTimer.current = setTimeout(loadGameState, 50)
+    const queued = performance.now()
+    reloadTimer.current = setTimeout(async () => {
+      const began = performance.now()
+      await loadGameState()
+      tlog(`reload: waited ${(began - queued).toFixed(0)}ms, queries took ${(performance.now() - began).toFixed(0)}ms`)
+    }, 50)
   }, [loadGameState])
 
   useEffect(() => {
@@ -449,6 +476,7 @@ export function useGameState(myInfo, navigate) {
   //                  but the response was lost, re-running the writes would
   //                  advance the turn twice and skip a player.)
   const commitMove = useCallback(async ({ seat, action, tile, board, hand, advance, checkBlock }) => {
+    const t0 = performance.now()
     const { data, error } = await db.rpc('play_move', {
       p_room_id: myInfo.roomId,
       // Humans move for their own seat; the host passes a bot's seat.
@@ -460,6 +488,7 @@ export function useGameState(myInfo, navigate) {
       p_advance: advance,
       p_check_block: checkBlock,
     })
+    tlog(`play_move (${action}, seat ${seat ?? myInfo.seat}) took ${(performance.now() - t0).toFixed(0)}ms`)
     if (error) {
       const missing =
         error.code === 'PGRST202' ||
