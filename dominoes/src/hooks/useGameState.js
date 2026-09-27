@@ -107,6 +107,9 @@ export function useGameState(myInfo, navigate) {
     if (!room) return
     if (room.status !== 'round_end' && room.status !== 'finished') return
 
+    // Practice games never count toward anyone's record.
+    if (room.practice) return
+
     // The round-ender records the whole table; only fall back to recording
     // ourselves if that didn't happen.
     if (room.stats_recorded) return
@@ -312,6 +315,7 @@ export function useGameState(myInfo, navigate) {
       // to recording itself (see the effect above), which is why the room is
       // only marked recorded on success.
       try {
+        if (room.practice) throw new Error('practice room — not recorded')
         const teamOf = sq => (sq === 0 || sq === 2) ? 'A' : 'B'
         const winTeam = teamOf(resolvedSeat)
         const results = (playersRef.current || [])
