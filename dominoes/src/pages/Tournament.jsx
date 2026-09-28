@@ -52,6 +52,15 @@ export default function Tournament() {
 
   useEffect(() => { loadList() }, [loadList])
 
+  // Watch for tournaments being created or started, so the list updates
+  // without anyone having to refresh.
+  useEffect(() => {
+    const ch = db.channel('tournaments-list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments' }, () => loadList())
+      .subscribe()
+    return () => { db.removeChannel(ch) }
+  }, [loadList])
+
   // bots this player has unlocked, for standing in for a missing partner
   useEffect(() => {
     if (!user) return
@@ -71,6 +80,13 @@ export default function Tournament() {
     const ch = db.channel('tour-' + open.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_matches', filter: `tournament_id=eq.${open.id}` }, () => loadOne(open.id))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_sides', filter: `tournament_id=eq.${open.id}` }, () => loadOne(open.id))
+      // members have no tournament_id to filter on, so watch them all and
+      // reload — it's a small table and this is how a partner joining your
+      // team shows up without a refresh.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournament_members' }, () => loadOne(open.id))
+      // the tournament row itself: status moving to 'running' when it starts
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments', filter: `id=eq.${open.id}` },
+        payload => { if (payload.new) setOpen(o => (o ? { ...o, ...payload.new } : o)); loadOne(open.id) })
       .subscribe()
     return () => { db.removeChannel(ch) }
   }, [open, loadOne])
