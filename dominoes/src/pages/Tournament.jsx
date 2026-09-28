@@ -471,7 +471,9 @@ export default function Tournament() {
                           <button className="tp-btn small" disabled={busy} onClick={practiseWithPartner}>Practice with partner</button>
                         )}
                         <button className="tp-btn small" onClick={() => setPractising(true)}>Practice alone</button>
-                        {m.no_show_at && new Date(m.no_show_at) < new Date() && (
+                        {/* Only when the opponents never turned up at all. Once the
+                            table has been opened, the match is played, not awarded. */}
+                        {!m.room_id && m.no_show_at && new Date(m.no_show_at) < new Date() && (
                           <button className="tp-btn small" disabled={busy} onClick={() => claimForfeit(m)}>Claim the walkover</button>
                         )}
                       </div>
