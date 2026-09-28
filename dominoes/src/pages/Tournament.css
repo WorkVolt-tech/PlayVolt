@@ -145,3 +145,28 @@
 .tp-practice-live { font-size: 0.58rem; color: var(--gold); letter-spacing: 0.08em; }
 .tp-practice-wait { font-size: 0.58rem; color: var(--ivory-dim); letter-spacing: 0.08em; }
 .tp-practice > :last-child { flex: 1; min-height: 0; }
+
+.tp-stale { color: var(--red); }
+.tp-refresh {
+  background: none; border: none; color: var(--ivory-dim);
+  font-size: 0.75rem; cursor: pointer; margin-left: 0.4rem; padding: 0 2px;
+}
+.tp-refresh:hover { color: var(--gold); }
+
+/* champion / knocked out */
+.tp-champion {
+  text-align: center; padding: 1.2rem 1rem; margin-bottom: 0.75rem;
+  border: 1px solid var(--gold); border-radius: 8px;
+  background: rgba(201,168,76,0.1);
+}
+.tp-champion-label { font-size: 0.52rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--ivory-dim); }
+.tp-champion-name { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--gold); margin: 0.2rem 0; }
+.tp-champion-who  { font-size: 0.62rem; color: var(--ivory-dim); }
+.tp-champion-you  { margin-top: 0.5rem; font-size: 0.68rem; color: var(--gold); }
+
+.tp-out {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.7rem 0.8rem; margin-bottom: 0.75rem; background: var(--surface);
+}
+.tp-out strong { display: block; color: var(--red); font-size: 0.72rem; margin-bottom: 2px; }
+.tp-out span { font-size: 0.6rem; color: var(--ivory-dim); }
