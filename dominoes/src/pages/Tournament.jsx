@@ -198,6 +198,7 @@ export default function Tournament() {
     const stuck = matches.some(m => m.status !== 'done' && m.status !== 'forfeit')
     if (!stuck) return
     const t = setTimeout(async () => {
+      await db.rpc('name_bot_sides', { p_tournament: open.id })   // harmless if already named
       const { data, error } = await db.rpc('resolve_bot_matches', { p_tournament: open.id })
       if (!error && data > 0) loadOne(open.id)
     }, 2000)
@@ -213,7 +214,10 @@ export default function Tournament() {
     const thisRound = matches.filter(m => m.round === last)
     const allDone = thisRound.every(m => m.status === 'done' || m.status === 'forfeit')
     if (!allDone) return
-    if (thisRound.length === 1) return          // that was the final
+    // Note: a single-match round IS the final, and advance_bracket is still
+    // what closes the tournament and names the champion — so it has to be
+    // called here too. Skipping it left a finished bracket stuck on
+    // "running" with no result shown.
     const t = setTimeout(async () => {
       const { error } = await db.rpc('advance_bracket', { p_tournament: open.id })
       if (!error) loadOne(open.id)
@@ -424,8 +428,10 @@ export default function Tournament() {
                     ))}
                   </div>
                   <div className="tp-match-state">
-                    {m.status === 'done' ? `${sideName(m.winner_side)} through`
-                      : m.status === 'forfeit' ? `${sideName(m.winner_side)} through (no show)`
+                    {m.status === 'done' ? `${sideName(m.winner_side)} won the match`
+                      : m.status === 'forfeit' ? `${sideName(m.winner_side)} through — opponents didn't show`
+                      : m.status === 'playing' ? 'in progress'
+                      : m.status === 'waiting' ? 'waiting for both sides'
                       : m.status}
                   </div>
                   {mine && m.status !== 'done' && m.status !== 'forfeit' && (
