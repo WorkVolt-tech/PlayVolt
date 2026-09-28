@@ -231,7 +231,22 @@ export default function Tournament() {
   }
   const myMembers = mySide ? members.filter(m => m.side_id === mySide.id) : []
   const sideName = id => sides.find(s => s.id === id)?.name || '—'
-  const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b)
+  // The whole bracket, not just the matches that exist yet. Every round from
+  // the first to the final is drawn, with placeholders for ties that haven't
+  // been decided — so you can see the path to the winner from the start.
+  const perTie = open?.format === 'solo' ? 4 : 2
+  const roundShape = (() => {
+    const out = []
+    let n = sides.length || perTie
+    let r = 1
+    while (n > 1 && r < 10) {
+      out.push({ round: r, ties: Math.max(1, Math.ceil(n / perTie)) })
+      n = Math.ceil(n / perTie)
+      r += 1
+    }
+    return out.length ? out : [{ round: 1, ties: 1 }]
+  })()
+  const rounds = roundShape.map(x => x.round)
   const champion = open?.status === 'finished'
     ? sides.find(x => !x.eliminated)
     : null
@@ -412,8 +427,9 @@ export default function Tournament() {
       )}
 
       <div className="tp-bracket">
-        {rounds.map(r => {
+        {roundShape.map(({ round: r, ties }) => {
           const inRound = matches.filter(m => m.round === r)
+          const blanks = Math.max(0, ties - inRound.length)
           return (
             <div className="tp-round" key={r}>
               <div className="tp-round-label">{bracketLabel(r, rounds.length)}</div>
@@ -463,11 +479,30 @@ export default function Tournament() {
                   </div>
                 )
               })}
+              {Array.from({ length: blanks }).map((_, i) => (
+                <div className="tp-tie pending" key={`blank-${r}-${i}`}>
+                  <div className="tp-tie-side"><span className="tp-tie-name">—</span></div>
+                  <div className="tp-tie-side"><span className="tp-tie-name">—</span></div>
+                  <div className="tp-tie-state">
+                    {r === 1 ? 'not drawn yet' : `winners of ${bracketLabel(r - 1, rounds.length)}`}
+                  </div>
+                </div>
+              ))}
             </div>
           )
         })}
 
-        {champion && (
+        <div className="tp-round">
+          <div className="tp-round-label">Winner</div>
+          <div className={`tp-tie ${champion ? 'over champ' : 'pending'}`}>
+            <div className={`tp-tie-side ${champion ? 'won' : ''}`}>
+              <span className="tp-tie-name">{champion ? `🏆 ${champion.name}` : '—'}</span>
+            </div>
+            {!champion && <div className="tp-tie-state">still to be decided</div>}
+          </div>
+        </div>
+
+        {false && champion && (
           <div className="tp-round">
             <div className="tp-round-label">Winner</div>
             <div className="tp-tie over champ">
