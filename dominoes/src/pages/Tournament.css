@@ -173,10 +173,18 @@
 
 /* ── the bracket ───────────────────────────────────────────────── */
 .tp-bracket {
-  display: flex; gap: 0.8rem; align-items: flex-start;
-  overflow-x: auto; padding-bottom: 0.5rem;
+  display: flex; gap: 2rem; align-items: stretch;
+  overflow-x: auto; padding: 0.2rem 0 0.6rem;
 }
-.tp-round { min-width: 210px; flex: 1 0 210px; display: flex; flex-direction: column; gap: 0.6rem; }
+/* fixed-width columns so it reads as a tree, not full-width panels.
+   Ties spread out evenly down each column, and each later round is
+   centred against the pair it comes from. */
+.tp-round {
+  width: 230px; flex: 0 0 230px;
+  display: flex; flex-direction: column;
+  justify-content: space-around; gap: 0.8rem;
+  position: relative;
+}
 .tp-round-label {
   font-size: 0.52rem; letter-spacing: 0.22em; text-transform: uppercase;
   color: var(--ivory-dim); text-align: center; padding-bottom: 0.3rem;
@@ -208,3 +216,22 @@
 
 .tp-tie.pending { opacity: 0.45; border-style: dashed; }
 .tp-tie.pending .tp-tie-name { color: var(--ivory-dim); }
+
+/* connector lines between rounds */
+.tp-round:not(:first-child)::before {
+  content: '';
+  position: absolute; left: -1.05rem; top: 12%; bottom: 12%;
+  width: 1px; background: var(--border);
+}
+.tp-tie { position: relative; }
+.tp-round:not(:first-child) .tp-tie::before {
+  content: '';
+  position: absolute; left: -1.05rem; top: 50%;
+  width: 1.05rem; height: 1px; background: var(--border);
+}
+.tp-round:not(:last-child) .tp-tie::after {
+  content: '';
+  position: absolute; right: -1rem; top: 50%;
+  width: 1rem; height: 1px; background: var(--border);
+}
+.tp-round-label { position: sticky; top: 0; background: var(--bg); z-index: 1; }
