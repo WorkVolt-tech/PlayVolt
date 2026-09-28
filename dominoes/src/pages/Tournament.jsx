@@ -411,58 +411,73 @@ export default function Tournament() {
         </div>
       )}
 
-      {rounds.map(r => (
-          <div className="tp-panel" key={r}>
-            <div className="tp-label">Round {r}</div>
-            {matches.filter(m => m.round === r).map(m => {
-              const ids = [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean)
-              const mine = ids.includes(mySide?.id)
-              return (
-                <div key={m.id} className={`tp-match ${m.status} ${mine ? 'mine' : ''}`}>
-                  <div className="tp-match-sides">
-                    {ids.map(id => (
-                      <span key={id} className={m.winner_side === id ? 'won' : ''}>
-                        {sideName(id)}
-                        <em>{m.wins?.[id] ?? 0}</em>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="tp-match-state">
-                    {m.status === 'done' ? `${sideName(m.winner_side)} won the match`
-                      : m.status === 'forfeit' ? `${sideName(m.winner_side)} through — opponents didn't show`
-                      : m.status === 'playing' ? 'in progress'
-                      : m.status === 'waiting' ? 'waiting for both sides'
-                      : m.status}
-                  </div>
-                  {mine && m.status !== 'done' && m.status !== 'forfeit' && (
-                    <div className="tp-match-actions">
-                      <Countdown until={m.no_show_at} />
-                      <button className="tp-btn small gold" disabled={busy} onClick={() => playMatch(m)}>
-                        {m.room_id ? 'Rejoin match' : 'Play match'}
-                      </button>
-                      {open.format === 'duo' && myMembers.length < 2 && (
-                        <button className="tp-btn small" onClick={() => setPicking(mySide.id)}>
-                          Partner didn’t show
-                        </button>
-                      )}
-                      {m.no_show_at && new Date(m.no_show_at) < new Date() && (
-                        <button className="tp-btn small" disabled={busy} onClick={() => claimForfeit(m)}>
-                          Claim the walkover
-                        </button>
-                      )}
-                      <button className="tp-btn small" onClick={() => setPractising(true)}>Practice alone</button>
-                      {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length === 2 && (
-                        <button className="tp-btn small" disabled={busy} onClick={practiseWithPartner}>
-                          Practice with partner
-                        </button>
-                      )}
+      <div className="tp-bracket">
+        {rounds.map(r => {
+          const inRound = matches.filter(m => m.round === r)
+          return (
+            <div className="tp-round" key={r}>
+              <div className="tp-round-label">{bracketLabel(r, rounds.length)}</div>
+              {inRound.map(m => {
+                const ids = [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean)
+                const mine = ids.includes(mySide?.id)
+                const over = m.status === 'done' || m.status === 'forfeit'
+                return (
+                  <div key={m.id} className={`tp-tie ${mine ? 'mine' : ''} ${over ? 'over' : ''}`}>
+                    {ids.map(id => {
+                      const won = m.winner_side === id
+                      return (
+                        <div key={id} className={`tp-tie-side ${won ? 'won' : over ? 'lost' : ''}`}>
+                          <span className="tp-tie-name">
+                            {sideName(id)}{id === mySide?.id ? ' (you)' : ''}
+                          </span>
+                          <span className="tp-tie-score">
+                            {m.status === 'forfeit' ? (won ? 'W/O' : '—') : (m.wins?.[id] ?? 0)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                    <div className="tp-tie-state">
+                      {m.status === 'done' ? 'final'
+                        : m.status === 'forfeit' ? 'walkover — opponents never showed'
+                        : m.status === 'playing' ? 'in progress'
+                        : 'waiting for both sides'}
                     </div>
-                  )}
-                </div>
-              )
-            })}
+                    {mine && !over && (
+                      <div className="tp-match-actions">
+                        <Countdown until={m.no_show_at} />
+                        <button className="tp-btn small gold" disabled={busy} onClick={() => playMatch(m)}>
+                          {m.room_id ? 'Rejoin' : 'Play'}
+                        </button>
+                        {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length < 2 && (
+                          <button className="tp-btn small" onClick={() => setPicking(mySide.id)}>Partner didn’t show</button>
+                        )}
+                        {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length === 2 && (
+                          <button className="tp-btn small" disabled={busy} onClick={practiseWithPartner}>Practice with partner</button>
+                        )}
+                        <button className="tp-btn small" onClick={() => setPractising(true)}>Practice alone</button>
+                        {m.no_show_at && new Date(m.no_show_at) < new Date() && (
+                          <button className="tp-btn small" disabled={busy} onClick={() => claimForfeit(m)}>Claim the walkover</button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })}
+
+        {champion && (
+          <div className="tp-round">
+            <div className="tp-round-label">Winner</div>
+            <div className="tp-tie over champ">
+              <div className="tp-tie-side won">
+                <span className="tp-tie-name">🏆 {champion.name}</span>
+              </div>
+            </div>
           </div>
-        ))}
+        )}
+      </div>
       </div>
     )
   }
@@ -502,6 +517,15 @@ export default function Tournament() {
       </div>
     </div>
   )
+}
+
+// Quarter-final, semi-final, final — counted back from the last round.
+function bracketLabel(round, total) {
+  const fromEnd = total - round
+  if (fromEnd === 0) return 'Final'
+  if (fromEnd === 1) return 'Semi-final'
+  if (fromEnd === 2) return 'Quarter-final'
+  return `Round ${round}`
 }
 
 function Header({ navigate, onBack, title }) {
