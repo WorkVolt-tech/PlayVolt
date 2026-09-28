@@ -205,3 +205,6 @@
   color: var(--ivory-dim); padding: 0.3rem 0.6rem; background: var(--surface2);
 }
 .tp-tie .tp-match-actions { padding: 0.5rem 0.6rem; margin: 0; }
+
+.tp-tie.pending { opacity: 0.45; border-style: dashed; }
+.tp-tie.pending .tp-tie-name { color: var(--ivory-dim); }
