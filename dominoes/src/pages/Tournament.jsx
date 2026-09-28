@@ -24,6 +24,7 @@ export default function Tournament() {
   const [unlocked, setUnlocked] = useState([])   // bots earned in story mode
   const [picking, setPicking] = useState(null)   // side id we're filling a seat for
   const [practising, setPractising] = useState(false)
+  const [realtime, setRealtime] = useState(null)   // null = unknown, false = using the timer
 
   const [newName, setNewName] = useState('')
   const [newFormat, setNewFormat] = useState('duo')
@@ -74,6 +75,23 @@ export default function Tournament() {
   }, [user])
   useEffect(() => { if (open) loadOne(open.id) }, [open, loadOne])
 
+  // Realtime is the fast path, but it only works if the tables are in the
+  // supabase_realtime publication and the project has Realtime enabled. A
+  // timer underneath means the bracket still keeps up if any of that is off.
+  useEffect(() => {
+    if (!open) return
+    const t = setInterval(() => { if (document.visibilityState === 'visible') loadOne(open.id) }, 4000)
+    const onShow = () => { if (document.visibilityState === 'visible') loadOne(open.id) }
+    document.addEventListener('visibilitychange', onShow)
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', onShow) }
+  }, [open, loadOne])
+
+  // and the list, so a new tournament turns up on its own
+  useEffect(() => {
+    const t = setInterval(() => { if (document.visibilityState === 'visible') loadList() }, 8000)
+    return () => clearInterval(t)
+  }, [loadList])
+
   // live updates while a tournament is on screen
   useEffect(() => {
     if (!open) return
@@ -87,7 +105,13 @@ export default function Tournament() {
       // the tournament row itself: status moving to 'running' when it starts
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments', filter: `id=eq.${open.id}` },
         payload => { if (payload.new) setOpen(o => (o ? { ...o, ...payload.new } : o)); loadOne(open.id) })
-      .subscribe()
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') setRealtime(true)
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setRealtime(false)
+          console.warn('[tournament] realtime not connected (' + status + ') — falling back to refreshing every few seconds')
+        }
+      })
     return () => { db.removeChannel(ch) }
   }, [open, loadOne])
 
@@ -160,10 +184,25 @@ export default function Tournament() {
 
   // My next match: either the table is already open (someone pressed Play),
   // or the round has been drawn and it's waiting for us.
-  const myNextMatch = matches.find(m =>
+  const iAmOut = !!mySide?.eliminated
+  const myNextMatch = iAmOut ? null : matches.find(m =>
     m.status !== 'done' && m.status !== 'forfeit' &&
     [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean).includes(mySide?.id))
   const liveMatch = myNextMatch?.room_id ? myNextMatch : null
+
+  // A match between two bot pairs has nobody to run it, so it would sit
+  // unplayed forever. Have the database decide those, then the bracket can
+  // keep moving even after every human is knocked out.
+  useEffect(() => {
+    if (!open || open.status !== 'running' || !matches.length) return
+    const stuck = matches.some(m => m.status !== 'done' && m.status !== 'forfeit')
+    if (!stuck) return
+    const t = setTimeout(async () => {
+      const { data, error } = await db.rpc('resolve_bot_matches', { p_tournament: open.id })
+      if (!error && data > 0) loadOne(open.id)
+    }, 2000)
+    return () => clearTimeout(t)
+  }, [matches, open, loadOne])
 
   // When every match in the latest round has finished, draw the next round.
   // Any client can do it — the function refuses if a match is still running,
@@ -189,6 +228,9 @@ export default function Tournament() {
   const myMembers = mySide ? members.filter(m => m.side_id === mySide.id) : []
   const sideName = id => sides.find(s => s.id === id)?.name || '—'
   const rounds = [...new Set(matches.map(m => m.round))].sort((a, b) => a - b)
+  const champion = open?.status === 'finished'
+    ? sides.find(x => !x.eliminated)
+    : null
 
   // ── guests ────────────────────────────────────────────────────────────────
   if (!isLoading && !user) {
@@ -209,8 +251,30 @@ export default function Tournament() {
     return (
       <div className="tp-page">
         <Header navigate={navigate} onBack={() => setOpen(null)} title={open.name} />
-        <div className="tp-sub">{open.format === 'duo' ? 'Teams of two' : 'Solo — one on one on one on one'} · {open.status}</div>
+        <div className="tp-sub">
+          {open.format === 'duo' ? 'Teams of two' : 'Solo — one on one on one on one'} · {open.status}
+          {realtime === false && <span className="tp-stale"> · updates delayed</span>}
+          <button className="tp-refresh" onClick={() => loadOne(open.id)} title="Refresh now">⟳</button>
+        </div>
         {msg && <div className={`tp-msg ${msg.type}`}>{msg.text}</div>}
+
+        {open.status === 'finished' && champion && (
+          <div className="tp-champion">
+            <div className="tp-champion-label">Champion</div>
+            <div className="tp-champion-name">{champion.name}{champion.is_bot ? ' (bots)' : ''}</div>
+            <div className="tp-champion-who">
+              {members.filter(m => m.side_id === champion.id).map(m => m.nickname).join(' & ') || 'expert pair'}
+            </div>
+            {champion.id === mySide?.id && <div className="tp-champion-you">That's you.</div>}
+          </div>
+        )}
+
+        {iAmOut && open.status !== 'finished' && (
+          <div className="tp-out">
+            <strong>You're out of this one.</strong>
+            <span>The bracket plays on below — the remaining matches finish themselves.</span>
+          </div>
+        )}
 
         {myNextMatch && open.status === 'running' && (
           <div className="tp-live">
