@@ -327,6 +327,18 @@ export default function Tournament() {
           {realtime === false && <span className="tp-stale"> · updates delayed</span>}
           <button className="tp-refresh" onClick={() => loadOne(open.id)} title="Refresh now">⟳</button>
         </div>
+
+        {open.created_by === user?.id && (
+          <div className="tp-organiser">
+            <button className="tp-btn small danger" disabled={busy} onClick={async () => {
+              if (!window.confirm(`Delete "${open.name}"? Everyone in it loses their place, and any match in progress ends.`)) return
+              const ok = await call('delete_tournament', { p_tournament: open.id })
+              if (ok !== null) { setOpen(null); loadList() }
+            }}>
+              Delete tournament
+            </button>
+          </div>
+        )}
         {msg && <div className={`tp-msg ${msg.type}`}>{msg.text}</div>}
 
         {open.status === 'finished' && champion && (
