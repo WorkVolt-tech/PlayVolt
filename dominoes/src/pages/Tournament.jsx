@@ -27,6 +27,22 @@ export default function Tournament() {
   const [practising, setPractising] = useState(false)
   const [botA, setBotA] = useState('Ti-Djo')
   const [botB, setBotB] = useState('Ti-Cam')
+  const [copied, setCopied] = useState(null)
+
+  // Copy, with a fallback for browsers that refuse the clipboard API.
+  async function copy(text, what) {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const el = document.createElement('textarea')
+      el.value = text; el.style.position = 'fixed'; el.style.opacity = '0'
+      document.body.appendChild(el); el.select()
+      try { document.execCommand('copy') } catch { /* nothing more to try */ }
+      document.body.removeChild(el)
+    }
+    setCopied(what)
+    setTimeout(() => setCopied(c => (c === what ? null : c)), 1800)
+  }
   const [realtime, setRealtime] = useState(null)   // null = unknown, false = using the timer
 
   const [newName, setNewName] = useState('')
@@ -55,6 +71,20 @@ export default function Tournament() {
   }, [])
 
   useEffect(() => { loadList() }, [loadList])
+
+  // A shared link: /tournament?join=XZ4TQB opens that tournament with the
+  // code already filled in, so the invite is one tap.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('join')
+    if (!code || open) return
+    ;(async () => {
+      const { data: side } = await db.from('tournament_sides')
+        .select('tournament_id, code').eq('code', code.toUpperCase()).maybeSingle()
+      if (!side) { setMsg({ type: 'error', text: 'That invite code doesn’t match any team.' }); return }
+      const { data: t } = await db.from('tournaments').select('*').eq('id', side.tournament_id).maybeSingle()
+      if (t) { setJoinCode(code.toUpperCase()); setOpen(t) }
+    })()
+  }, [open])
 
   // Watch for tournaments being created or started, so the list updates
   // without anyone having to refresh.
@@ -366,8 +396,19 @@ export default function Tournament() {
             <div className="tp-label">Your {open.format === 'duo' ? 'team' : 'entry'}</div>
             <div className="tp-team">
               <strong>{mySide.name}</strong>
-              {mySide.code && <span className="tp-code">code {mySide.code}</span>}
+              {mySide.code && <span className="tp-code">{mySide.code}</span>}
             </div>
+            {mySide.code && (
+              <div className="tp-share">
+                <button className="tp-btn small" onClick={() => copy(mySide.code, 'code')}>
+                  {copied === 'code' ? 'Copied' : 'Copy code'}
+                </button>
+                <button className="tp-btn small" onClick={() =>
+                  copy(`${window.location.origin}/tournament?join=${mySide.code}`, 'link')}>
+                  {copied === 'link' ? 'Copied' : 'Copy invite link'}
+                </button>
+              </div>
+            )}
             <div className="tp-members">
               {myMembers.map(m => (
                 <span key={m.id} className={`tp-chip ${m.bot_name ? 'bot' : ''}`}>
