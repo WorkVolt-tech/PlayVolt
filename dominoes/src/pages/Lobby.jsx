@@ -98,6 +98,7 @@ export default function Lobby() {
   // Create room state
   const [myRoomId, setMyRoomId]     = useState(null)
   const [myRoomCode, setMyRoomCode] = useState(null)
+  const [copied, setCopied] = useState(null)
   const [myPlayerId, setMyPlayerId] = useState(null)
   const [mySeat, setMySeat]         = useState(null)
   const myPlayerIdRef = useRef(null)
@@ -443,6 +444,22 @@ export default function Lobby() {
     }).eq('id', myRoomId)
   }
 
+  // Copy that falls back when the clipboard API is refused (it needs a secure
+  // context and a user gesture, and some in-app browsers block it outright).
+  async function copyText(text, what) {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const el = document.createElement('textarea')
+      el.value = text; el.style.position = 'fixed'; el.style.opacity = '0'
+      document.body.appendChild(el); el.select()
+      try { document.execCommand('copy') } catch { /* nothing more to try */ }
+      document.body.removeChild(el)
+    }
+    setCopied(what)
+    setTimeout(() => setCopied(c => (c === what ? null : c)), 1800)
+  }
+
   function copyLink() {
     const url = `${location.origin}/?join=${myRoomCode}`
     navigator.clipboard.writeText(url).then(() => {
@@ -554,8 +571,15 @@ export default function Lobby() {
             {myRoomCode && (
               <div className="room-code-display">
                 <div className="room-code-label">Room Code</div>
-                <div className="room-code-value">{myRoomCode}</div>
-                <button className="copy-btn" onClick={copyLink}>Copy Invite Link</button>
+                <div className="room-code-value" style={{ userSelect: 'all' }}>{myRoomCode}</div>
+                <div className="code-actions">
+                  <button className="copy-btn" onClick={() => copyText(myRoomCode, 'code')}>
+                    {copied === 'code' ? 'Copied' : 'Copy code'}
+                  </button>
+                  <button className="copy-btn" onClick={() => copyText(`${location.origin}/?join=${myRoomCode}`, 'link')}>
+                    {copied === 'link' ? 'Copied' : 'Copy invite link'}
+                  </button>
+                </div>
               </div>
             )}
 
