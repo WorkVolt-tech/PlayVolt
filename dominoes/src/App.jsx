@@ -10,6 +10,7 @@ import StoryMap from './pages/StoryMap'
 import StoryChallenge from './pages/StoryChallenge'
 import Tournament from './pages/Tournament'
 import Practice from './pages/Practice'
+import SoloGame from './pages/SoloGame'
 import './styles/global.css'
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/story/:chapterId" element={<StoryChallenge />} />
         <Route path="/tournament" element={<Tournament />} />
         <Route path="/practice" element={<Practice />} />
+        <Route path="/solo" element={<SoloGame />} />
         <Route path="/tracker" element={<Tracker />} />
         <Route path="/wa-tab-la" element={<WaTabLa />} />
         <Route path="/auth" element={<Auth />} />
