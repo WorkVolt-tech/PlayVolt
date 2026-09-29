@@ -11,6 +11,14 @@ import OpponentHands from '../components/OpponentHands'
 import './Game.css'
 
 export default function Game() {
+  // A tournament match, or a practice room started from one: the way out is
+  // back to the bracket, not the lobby.
+  const fromTournament = (() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('domino_player') || 'null')
+      return !!(saved?.tournamentMatchId || saved?.fromTournament)
+    } catch { return false }
+  })()
   const navigate = useNavigate()
   const myInfo   = JSON.parse(sessionStorage.getItem('domino_player') || 'null')
 
@@ -194,7 +202,11 @@ export default function Game() {
           players={players}
           myInfo={myInfo}
           onNextRound={startNextRound}
-          onLeaveLobby={() => { sessionStorage.removeItem('domino_player'); navigate('/') }}
+          leaveLabel={fromTournament ? 'Back to the tournament' : undefined}
+          onLeaveLobby={() => {
+            sessionStorage.removeItem('domino_player')
+            navigate(fromTournament ? '/tournament' : '/')
+          }}
         />
       )}
     </div>
