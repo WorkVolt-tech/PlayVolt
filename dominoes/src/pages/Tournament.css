@@ -58,7 +58,13 @@
 .tp-gate p { color: var(--ivory-dim); font-size: 0.72rem; margin-bottom: 1.4rem; }
 
 .tp-team { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
-.tp-code { font-size: 0.6rem; color: var(--gold); letter-spacing: 0.22em; border: 1px dashed rgba(201,168,76,0.45); border-radius: 4px; padding: 2px 8px; }
+.tp-code {
+  font-size: 0.8rem; color: var(--gold); letter-spacing: 0.3em;
+  border: 1px dashed rgba(201,168,76,0.45); border-radius: 4px;
+  padding: 4px 10px; font-family: 'DM Mono', monospace;
+  user-select: all;                 /* tap to select the whole code */
+}
+.tp-share { display: flex; gap: 0.4rem; margin: 0.5rem 0 0.2rem; flex-wrap: wrap; }
 .tp-members { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .tp-chip { font-size: 0.6rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 3px 9px; }
 .tp-chip.bot { color: var(--gold); border-color: rgba(201,168,76,0.4); }
