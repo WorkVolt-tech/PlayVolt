@@ -47,9 +47,14 @@ export function startGame(cfg = {}) {
     for (let s = 0; s < seats; s++) hands.push(deck.slice(s * 7, s * 7 + 7))
     pile = usePile ? deck.slice(seats * 7) : []
     board = { tiles: [], left_end: null, right_end: null }
-    // Whoever holds 6-6 opens, as in a normal round
-    turn = hands.findIndex(h => h.some(t => t[0] === 6 && t[1] === 6))
-    if (turn < 0) turn = 0
+    if (Number.isInteger(cfg.starter)) {
+      // Later rounds: the previous round's winner opens, free choice of tile
+      turn = cfg.starter
+    } else {
+      // First round: whoever holds 6-6 opens, as in a normal game
+      turn = hands.findIndex(h => h.some(t => t[0] === 6 && t[1] === 6))
+      if (turn < 0) turn = 0
+    }
   }
 
   return {
