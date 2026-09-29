@@ -363,6 +363,21 @@ export default function Lobby() {
 
   async function startGame() {
     if (!myRoomId) return
+
+    // Solo vs AI runs on the device — no database game at all. The room the
+    // lobby made while you chose a mode isn't needed, so it's removed.
+    if (selectedMode === 'solo') {
+      sessionStorage.setItem('solo_setup', JSON.stringify({
+        bots: resolveBotNames(botPicks.slice(0, 3)),
+        nickname: nickname || 'You',
+      }))
+      const roomId = myRoomId
+      db.from('domino_players').delete().eq('room_id', roomId)
+        .then(() => db.from('domino_rooms').delete().eq('id', roomId))
+      navigate('/solo')
+      return
+    }
+
     let allPlayers = await loadPlayers(myRoomId)
 
     // Asosye: reassign seats for teams
