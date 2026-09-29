@@ -124,17 +124,22 @@ export default function Tournament() {
   // Realtime is the fast path, but it only works if the tables are in the
   // supabase_realtime publication and the project has Realtime enabled. A
   // timer underneath means the bracket still keeps up if any of that is off.
+  //
+  // With realtime connected the timer is only a slow safety net (every 30s).
+  // It speeds up to every 5s only if the realtime channel failed — polling
+  // constantly on top of a working realtime connection was pure disk load.
   useEffect(() => {
     if (!open) return
-    const t = setInterval(() => { if (document.visibilityState === 'visible') loadOne(open.id) }, 4000)
+    const every = realtime === false ? 5000 : 30000
+    const t = setInterval(() => { if (document.visibilityState === 'visible') loadOne(open.id) }, every)
     const onShow = () => { if (document.visibilityState === 'visible') loadOne(open.id) }
     document.addEventListener('visibilitychange', onShow)
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', onShow) }
-  }, [open, loadOne])
+  }, [open, loadOne, realtime])
 
-  // and the list, so a new tournament turns up on its own
+  // the list: realtime covers new tournaments; this is just a backstop
   useEffect(() => {
-    const t = setInterval(() => { if (document.visibilityState === 'visible') loadList() }, 8000)
+    const t = setInterval(() => { if (document.visibilityState === 'visible') loadList() }, 60000)
     return () => clearInterval(t)
   }, [loadList])
 
@@ -534,6 +539,9 @@ export default function Tournament() {
           return (
             <div className="tp-round" key={r}>
               <div className="tp-round-label">{bracketLabel(r, rounds.length)}</div>
+              {r === rounds[0] && (
+                <div className="tp-legend">rounds won · first to 4 takes the match</div>
+              )}
               {inRound.map(m => {
                 const ids = [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean)
                 const mine = ids.includes(mySide?.id)
@@ -546,6 +554,14 @@ export default function Tournament() {
                         <div key={id} className={`tp-tie-side ${won ? 'won' : over ? 'lost' : ''}`}>
                           <span className="tp-tie-name">
                             {sideName(id)}{id === mySide?.id ? ' (you)' : ''}
+                            {won && over && m.status !== 'forfeit' && (
+                              <span className="tp-vyej" title="Took the match">Vyèj</span>
+                            )}
+                            {(m.deks?.[id] ?? 0) > 0 && (
+                              <span className="tp-dek" title="Rounds won with a Dekabess">
+                                {m.deks[id]}× Dekabess
+                              </span>
+                            )}
                           </span>
                           <span className="tp-tie-score">
                             {m.status === 'forfeit' ? (won ? 'W/O' : '—') : (m.wins?.[id] ?? 0)}
@@ -556,14 +572,16 @@ export default function Tournament() {
                     <div className="tp-tie-state">
                       {m.status === 'done' ? 'final'
                         : m.status === 'forfeit' ? 'walkover — opponents never showed'
-                        : m.status === 'playing' ? 'in progress'
+                        : m.status === 'playing' ? matchNeeds(m, ids)
                         : 'waiting for both sides'}
                     </div>
                     {mine && !over && (
                       <div className="tp-match-actions">
                         <Countdown until={m.no_show_at} />
                         <button className="tp-btn small gold" disabled={busy} onClick={() => playMatch(m)}>
-                          {m.room_id ? 'Rejoin' : 'Play'}
+                          {Object.values(m.wins || {}).reduce((x, y) => x + y, 0) === 0
+                            ? 'Play'
+                            : m.room_id ? 'Back to the table' : 'Play next round'}
                         </button>
                         {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length < 2 && (
                           <button className="tp-btn small" onClick={() => setPicking(mySide.id)}>Partner didn’t show</button>
@@ -655,6 +673,15 @@ export default function Tournament() {
       </div>
     </div>
   )
+}
+
+// What still has to happen in a match that's under way.
+function matchNeeds(m, ids) {
+  const top = ids.map(id => m.wins?.[id] ?? 0).sort((a, b) => b - a)[0] || 0
+  const onThree = ids.find(id => (m.streaks?.[id] ?? 0) >= 3)
+  if (onThree) return 'someone is on 3 straight — lose the next and they are out'
+  const left = Math.max(1, 4 - top)
+  return `in progress · ${left} more round${left === 1 ? '' : 's'} to take it`
 }
 
 // Quarter-final, semi-final, final — counted back from the last round.
