@@ -1,0 +1,271 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { db } from '../lib/supabase'
+import * as Engine from '../story/storyEngine'
+import { chooseTile, getPersonality, seesAllHands } from '../lib/botAI'
+import { canPlayOnSide } from '../hooks/useGameState'
+import Board from '../components/Board'
+import PlayerHand from '../components/PlayerHand'
+import OpponentHands from '../components/OpponentHands'
+import RoundOverlay from '../components/RoundOverlay'
+import DekabessOverlay from '../components/DekabessOverlay'
+import './Game.css'
+
+// ── Solo vs AI, on the device ────────────────────────────────────────────────
+//
+// One human and three bots don't need a database to talk through: there's
+// nobody else to tell. This plays the whole match locally — instant moves, no
+// network, nothing to throttle — and only reaches the database once per round
+// to record your result.
+//
+// The rules are the live game's own. Playable tiles, sides and Dekabess come
+// from useGameState; the round and match logic below mirrors endRound and
+// startNextRound exactly:
+//   • round 1 — whoever holds the 6-6 opens, and must play it
+//   • later rounds — the previous round's winner opens, any tile
+//   • a blocked round goes to the lowest pip count, ties to the lowest seat
+//   • the same seat winning again extends the streak; a Dekabess counts double
+//   • a streak of 4 is a Vyèj, and the match is over
+
+const BOT_DELAY = 900
+const baseName = n => String(n || '').replace(/\s+\d+$/, '')   // "Ti-Djo 2" -> "Ti-Djo"
+
+// Same as computeNewStreak in useGameState, for a game with no partners.
+function nextStreak(streak, winner, isDek) {
+  if (streak.seat === winner) return { ...streak, count: streak.count + (isDek ? 2 : 1) }
+  return { seat: winner, team: winner, count: isDek ? 2 : 1 }
+}
+
+export default function SoloGame() {
+  const navigate = useNavigate()
+
+  const setup = (() => {
+    try { return JSON.parse(sessionStorage.getItem('solo_setup') || 'null') } catch { return null }
+  })()
+  const bots = setup?.bots?.length === 3 ? setup.bots : ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
+  const myName = setup?.nickname || 'You'
+
+  const [round, setRound] = useState(1)
+  const [st, setSt] = useState(() => Engine.startGame({ seats: 4, forceDoubleSix: true }))
+  const [streak, setStreak] = useState({ seat: null, team: null, count: 0 })
+  const [selected, setSelected] = useState(null)
+  const [roundEnd, setRoundEnd] = useState(null)   // { winner, isDek, blocked, vyej }
+  const [showDek, setShowDek] = useState(false)
+  const botBusy = useRef(false)
+  const recorded = useRef(new Set())
+
+  const names = [myName, ...bots]
+  const isMyTurn = st.status === 'playing' && st.turn === 0
+
+  // ── bots play ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (st.status !== 'playing' || st.turn === 0 || botBusy.current) return
+    botBusy.current = true
+    const t = setTimeout(() => {
+      setSt(prev => {
+        if (prev.status !== 'playing' || prev.turn === 0) return prev
+        let next = Engine.settleTurn(prev)
+        if (next.status !== 'playing' || next.turn === 0) return next
+        const seat = next.turn
+        const pers = getPersonality(baseName(bots[seat - 1]))
+        const moves = Engine.legalMoves(next)
+        if (!moves.length) return Engine.drawOrPass(next)
+        const ctx = {
+          seat,
+          mode: 'chien',
+          tileCountsBySeat: next.hands.map(h => h.length),
+          opponentTileCounts: next.hands.map((h, i) => (i === seat ? null : h.length)).filter(x => x !== null),
+        }
+        if (seesAllHands(pers)) ctx.hands = next.hands
+        const pick = chooseTile(pers, moves.map(m => m.tile), next.hands[seat], next.board, ctx)
+        const mv = moves.find(m => m.tile[0] === pick?.tile?.[0] && m.tile[1] === pick?.tile?.[1] && m.side === pick.side)
+                || moves.find(m => m.tile[0] === pick?.tile?.[0] && m.tile[1] === pick?.tile?.[1])
+                || moves[0]
+        return Engine.playTile(next, mv.tile, mv.side)
+      })
+      botBusy.current = false
+    }, BOT_DELAY)
+    return () => { clearTimeout(t); botBusy.current = false }
+  }, [st])
+
+  // you can't play and there's no pile: pass for you, as the live game does
+  useEffect(() => {
+    if (st.status !== 'playing' || st.turn !== 0) return
+    if (Engine.canPlay(st)) return
+    const t = setTimeout(() => setSt(p => (p.turn === 0 ? Engine.drawOrPass(p) : p)), 700)
+    return () => clearTimeout(t)
+  }, [st])
+
+  // ── a round ended ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (st.status !== 'over' || roundEnd) return
+    const winner = st.winner
+    const isDek = !!st.dekabess
+    const s2 = nextStreak(streak, winner, isDek)
+    const vyej = s2.count >= 4
+    setStreak(s2)
+    setRoundEnd({ winner, isDek, blocked: !!st.blocked, vyej })
+    if (isDek) setShowDek(true)
+    recordRound({ won: winner === 0, isDek: isDek && winner === 0, vyej: vyej && winner === 0, matchOver: vyej })
+  }, [st.status])
+
+  // One database call per round, and only for your own record.
+  async function recordRound({ won, isDek, vyej, matchOver }) {
+    const key = `${round}`
+    if (recorded.current.has(key)) return
+    recorded.current.add(key)
+    try {
+      const { data } = await db.auth.getUser()
+      const uid = data?.user?.id
+      if (!uid) return                               // guests aren't recorded
+      await db.rpc('record_round_stats', {
+        p_results: [{ user_id: uid, won, vyej, dekabess: isDek, match_over: matchOver }],
+      })
+    } catch (e) {
+      console.error('[solo] could not record the round (non-fatal):', e)
+    }
+  }
+
+  const nextRound = useCallback(() => {
+    if (!roundEnd) return
+    const starter = roundEnd.winner
+    setRound(r => r + 1)
+    setRoundEnd(null)
+    setShowDek(false)
+    setSelected(null)
+    setSt(Engine.settleTurn(Engine.startGame({ seats: 4, starter })))
+  }, [roundEnd])
+
+  const newMatch = useCallback(() => {
+    setRound(1)
+    setStreak({ seat: null, team: null, count: 0 })
+    setRoundEnd(null)
+    setShowDek(false)
+    setSelected(null)
+    recorded.current = new Set()
+    setSt(Engine.startGame({ seats: 4, forceDoubleSix: true }))
+  }, [])
+
+  const leave = () => { sessionStorage.removeItem('solo_setup'); navigate('/') }
+
+  // ── placing tiles: same rules and tap behaviour as the live game ───────────
+  function playMove(tile, side) {
+    setSt(prev => {
+      if (prev.status !== 'playing' || prev.turn !== 0) return prev
+      let use = side
+      if (prev.board.tiles.length) {
+        const cL = canPlayOnSide(tile, 'left', prev.board)
+        const cR = canPlayOnSide(tile, 'right', prev.board)
+        if (use === 'first') use = cL ? 'left' : 'right'
+        if (use === 'left' && !cL) use = cR ? 'right' : null
+        else if (use === 'right' && !cR) use = cL ? 'left' : null
+        if (!use) return prev
+      } else {
+        // the opening tile must be a legal opener (6-6 in round 1)
+        const ok = Engine.legalMoves(prev, 0).some(m => m.tile[0] === tile[0] && m.tile[1] === tile[1])
+        if (!ok) return prev
+        use = 'first'
+      }
+      return Engine.playTile(prev, tile, use)
+    })
+    setSelected(null)
+  }
+
+  function selectTile(tile, idx) {
+    if (!isMyTurn) return
+    if (selected?.idx === idx) { setSelected(null); return }
+    setSelected({ tile, idx })          // selecting never places a tile
+  }
+
+  // ── shapes the shared components expect ────────────────────────────────────
+  const players = st.hands.map((h, seat) => ({
+    seat, nickname: names[seat], hand: h, is_ai: seat !== 0,
+  }))
+  const roomLike = {
+    status: roundEnd ? (roundEnd.vyej ? 'finished' : 'round_end') : 'playing',
+    current_turn: roundEnd ? roundEnd.winner : st.turn,
+    streak,
+    pending_point: !!roundEnd?.isDek,
+    blocked: !!roundEnd?.blocked,
+    game_mode: 'chien',
+    round,
+  }
+  const me = { seat: 0, nickname: myName }
+  const moves = Engine.legalMoves(st, 0)
+  const playable = moves.map(m => m.tile)
+    .filter((t, i, arr) => arr.findIndex(x => x[0] === t[0] && x[1] === t[1]) === i)
+
+  return (
+    <div className="game-layout">
+      <div className="top-bar">
+        <div className="top-bar-left">
+          <span className="game-title">Solo</span>
+          <span className="room-code-badge">Round {round}</span>
+        </div>
+        <div className="player-tags">
+          {players.map(p => (
+            <div key={p.seat} className={[
+              'player-tag',
+              p.seat === roomLike.current_turn && !roundEnd ? 'active-turn' : '',
+              p.seat === 0 ? 'is-me' : '',
+            ].join(' ')}>
+              <div className="tag-dot" />
+              <span>{p.nickname}{p.seat === 0 ? ' ★' : ''}</span>
+              <span className="tag-tiles">{p.hand.length}</span>
+            </div>
+          ))}
+        </div>
+        <button className="btn-leave" onClick={leave}>Leave</button>
+      </div>
+
+      <div className="board-container">
+        <OpponentHands players={players} myInfo={me} roomData={roomLike} />
+        <Board
+          boardData={st.board}
+          selectedTile={selected}
+          isMyTurn={isMyTurn}
+          onDropZone={side => { if (selected) playMove(selected.tile, side) }}
+          onDragPlace={(tile, _idx, side) => {
+            if (!isMyTurn) return
+            if (side === 'first') { playMove(tile, 'first'); return }
+            const cL = canPlayOnSide(tile, 'left', st.board)
+            const cR = canPlayOnSide(tile, 'right', st.board)
+            if (side === 'left' && cL) playMove(tile, 'left')
+            else if (side === 'right' && cR) playMove(tile, 'right')
+            else if (cL) playMove(tile, 'left')
+            else if (cR) playMove(tile, 'right')
+          }}
+        />
+      </div>
+
+      <PlayerHand
+        hand={st.hands[0]}
+        isMyTurn={isMyTurn}
+        playableTiles={playable}
+        selectedIdx={selected?.idx ?? null}
+        onSelect={selectTile}
+        onPass={() => setSt(p => (p.turn === 0 ? Engine.drawOrPass(p) : p))}
+        hasTilesOnBoard={st.board.tiles.length > 0}
+      />
+
+      {showDek && roundEnd && (
+        <DekabessOverlay
+          playerName={names[roundEnd.winner]}
+          onDone={() => setShowDek(false)}
+        />
+      )}
+
+      {roundEnd && !showDek && (
+        <RoundOverlay
+          roomData={roomLike}
+          players={players}
+          myInfo={me}
+          canContinue
+          onNextRound={nextRound}
+          onPlayAgain={newMatch}
+          onLeaveLobby={leave}
+        />
+      )}
+    </div>
+  )
+}
