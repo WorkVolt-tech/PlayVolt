@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
+import { NORMAL_CIRCUIT, EXPERT_CIRCUIT } from '../story/chapters'
 import Practice from './Practice'
 import './Tournament.css'
 
@@ -24,6 +25,8 @@ export default function Tournament() {
   const [unlocked, setUnlocked] = useState([])   // bots earned in story mode
   const [picking, setPicking] = useState(null)   // side id we're filling a seat for
   const [practising, setPractising] = useState(false)
+  const [botA, setBotA] = useState('Ti-Djo')
+  const [botB, setBotB] = useState('Ti-Cam')
   const [realtime, setRealtime] = useState(null)   // null = unknown, false = using the timer
 
   const [newName, setNewName] = useState('')
@@ -381,14 +384,57 @@ export default function Tournament() {
           </div>
         )}
 
+        {open.status === 'registration' && open.created_by === user?.id && (
+          <div className="tp-panel">
+            <div className="tp-label">Add an AI {open.format === 'duo' ? 'team' : 'player'}</div>
+            <div className="tp-row">
+              <select className="tp-select" value={botA} onChange={e => setBotA(e.target.value)}>
+                <optgroup label="Ordinary">
+                  {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
+                </optgroup>
+                <optgroup label="Expert">
+                  {EXPERT_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
+                </optgroup>
+              </select>
+              {open.format === 'duo' && (
+                <select className="tp-select" value={botB} onChange={e => setBotB(e.target.value)}>
+                  <optgroup label="Ordinary">
+                    {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
+                  </optgroup>
+                  <optgroup label="Expert">
+                    {EXPERT_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
+                  </optgroup>
+                </select>
+              )}
+              <button className="tp-btn" disabled={busy}
+                onClick={() => call('add_bot_side', {
+                  p_tournament: open.id,
+                  p_bot_a: botA,
+                  p_bot_b: open.format === 'duo' ? botB : null,
+                }, () => loadOne(open.id))}>
+                Add
+              </button>
+            </div>
+            <div className="tp-hint">
+              They play like they do everywhere else — the experts see every hand.
+              Their matches against each other are decided on form, so the bracket
+              keeps moving even when you're knocked out.
+            </div>
+          </div>
+        )}
+
         <div className="tp-panel">
           <div className="tp-label">Entries ({sides.length})</div>
           <div className="tp-sides">
             {sides.map(s => (
               <div key={s.id} className={`tp-side ${s.eliminated ? 'out' : ''} ${s.is_bot ? 'bot' : ''}`}>
-                <span>{s.name}{s.is_bot ? ' · bots' : ''}</span>
+                <span>{s.name}{s.is_bot ? ' · AI' : ''}</span>
                 <span className="tp-side-members">
-                  {members.filter(m => m.side_id === s.id).map(m => m.nickname).join(' & ') || (s.is_bot ? 'expert pair' : '—')}
+                  {members.filter(m => m.side_id === s.id).map(m => m.nickname).join(' & ') || (s.is_bot ? 'AI' : '—')}
+                  {s.is_bot && open.status === 'registration' && open.created_by === user?.id && (
+                    <button className="tp-remove" title="Remove"
+                      onClick={() => call('remove_bot_side', { p_side: s.id }, () => loadOne(open.id))}>×</button>
+                  )}
                 </span>
               </div>
             ))}
