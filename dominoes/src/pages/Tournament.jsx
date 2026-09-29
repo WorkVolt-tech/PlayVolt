@@ -219,6 +219,7 @@ export default function Tournament() {
       roomId: room.id,
       roomCode: room.code,
       gameMode: 'asosye',
+      fromTournament: true,      // so leaving goes back to the bracket
     }))
     navigate('/game')
   }
