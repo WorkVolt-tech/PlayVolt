@@ -1,6 +1,6 @@
 import './RoundOverlay.css'
 
-export default function RoundOverlay({ roomData, players, myInfo, onNextRound, onLeaveLobby }) {
+export default function RoundOverlay({ roomData, players, myInfo, onNextRound, onLeaveLobby, leaveLabel }) {
   if (!roomData) return null
   const isMatchOver = roomData.status === 'finished'
   const isDekabess  = roomData.pending_point
@@ -77,7 +77,7 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
             <p className="waiting-msg">Waiting for {roundWinner?.nickname} to start next round…</p>
           )}
           <button className="btn btn-outline" onClick={onLeaveLobby}>
-            {isMatchOver ? 'Back to Lobby' : 'Leave Table'}
+            {leaveLabel || (isMatchOver ? 'Back to Lobby' : 'Leave Table')}
           </button>
         </div>
       </div>
