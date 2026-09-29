@@ -248,3 +248,19 @@
   margin-left: 0.5rem; padding: 0 3px;
 }
 .tp-remove:hover { color: #ff8080; }
+
+.tp-legend {
+  font-size: 0.48rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ivory-dim); text-align: center; margin-top: -0.4rem;
+}
+.tp-vyej, .tp-dek {
+  display: inline-block; margin-left: 0.4rem;
+  font-size: 0.45rem; letter-spacing: 0.1em; text-transform: uppercase;
+  border-radius: 8px; padding: 1px 6px; vertical-align: middle;
+}
+.tp-vyej { color: var(--gold); border: 1px solid rgba(201,168,76,0.5); }
+.tp-dek  { color: var(--green); border: 1px solid rgba(76,170,110,0.45); }
+
+.tp-organiser { display: flex; justify-content: flex-end; margin: -0.4rem 0 0.7rem; }
+.tp-btn.small.danger { background: transparent; border: 1px solid rgba(201,76,76,0.55); color: var(--red); }
+.tp-btn.small.danger:hover { background: rgba(201,76,76,0.1); }
