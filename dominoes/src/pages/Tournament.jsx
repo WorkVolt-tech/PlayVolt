@@ -75,6 +75,19 @@ export default function Tournament() {
   }, [user])
   useEffect(() => { if (open) loadOne(open.id) }, [open, loadOne])
 
+  // Bot sides get real names (e.g. "Ti-Roro & Ti-Chaj") rather than
+  // "Bot Pair 2", so you can see who you're up against in the bracket.
+  // Harmless to call repeatedly — it only touches sides with no members.
+  useEffect(() => {
+    if (!open || open.status === 'registration') return
+    let off = false
+    ;(async () => {
+      const { data, error } = await db.rpc('name_bot_sides', { p_tournament: open.id })
+      if (!off && !error && data > 0) loadOne(open.id)
+    })()
+    return () => { off = true }
+  }, [open?.id, open?.status, loadOne])
+
   // Realtime is the fast path, but it only works if the tables are in the
   // supabase_realtime publication and the project has Realtime enabled. A
   // timer underneath means the bracket still keeps up if any of that is off.
