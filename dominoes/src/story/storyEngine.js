@@ -31,6 +31,7 @@ export function startGame(cfg = {}) {
   const usePile = !!cfg.pile
 
   let hands, board, turn, pile
+  let openingTile = null     // the one tile the opener must lead with, if any
   if (cfg.deal) {
     // A puzzle: exact position, no shuffle.
     hands = cfg.deal.hands.map(h => h.map(t => [t[0], t[1]]))
@@ -50,8 +51,19 @@ export function startGame(cfg = {}) {
     if (Number.isInteger(cfg.starter)) {
       // Later rounds: the previous round's winner opens, free choice of tile
       turn = cfg.starter
+    } else if (cfg.forceDoubleSix) {
+      // First round, as at a real table:
+      //   1. whoever holds the 6-6 opens, and must play it
+      //   2. nobody has it (it's in the pile): the HIGHEST double opens, and
+      //      that double is the only tile they may open with
+      //   3. nobody has any double: the player (seat 0) opens, any tile
+      turn = 0
+      for (let d = 6; d >= 0; d--) {
+        const holder = hands.findIndex(h => h.some(t => t[0] === d && t[1] === d))
+        if (holder >= 0) { turn = holder; openingTile = [d, d]; break }
+      }
     } else {
-      // First round: whoever holds 6-6 opens, as in a normal game
+      // No first-round rule asked for: 6-6 holder if there is one, else seat 0
       turn = hands.findIndex(h => h.some(t => t[0] === 6 && t[1] === 6))
       if (turn < 0) turn = 0
     }
@@ -73,6 +85,7 @@ export function startGame(cfg = {}) {
     objective: cfg.objective || { kind: 'win' },
     moveLimit: cfg.moves || null,
     forceDoubleSix: !!cfg.forceDoubleSix,
+    openingTile,
     log: [],
   }
 }
@@ -80,7 +93,14 @@ export function startGame(cfg = {}) {
 // ── Reading the state ────────────────────────────────────────────────────────
 
 export function legalMoves(st, seat = st.turn) {
-  const roomLike = { round: st.forceDoubleSix ? 1 : 2 }
+  // Opening a first round: the required double, and nothing else.
+  if (!st.board.tiles.length && Array.isArray(st.openingTile)) {
+    const [a, b] = st.openingTile
+    const holds = st.hands[seat].some(t => (t[0] === a && t[1] === b) || (t[0] === b && t[1] === a))
+    return holds ? [{ tile: [a, b], side: 'first' }] : []
+  }
+  // (a round saved before openingTile existed still gets the 6-6 rule)
+  const roomLike = { round: st.forceDoubleSix && st.openingTile === undefined ? 1 : 2 }
   const playable = getPlayableTiles(st.hands[seat], st.board, roomLike)
   if (!st.board.tiles.length) return playable.map(tile => ({ tile, side: 'first' }))
   const out = []
