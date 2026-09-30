@@ -191,7 +191,9 @@ export default function Tournament() {
     // nickname can't be given each other's hand
     const { data: seatRows } = await db.from('domino_players')
       .select('seat, nickname, is_ai, user_id').eq('room_id', room.id)
-    const mine = (seatRows || []).find(r => !r.is_ai && r.user_id === user?.id)
+    // Your seat by account — including while a bot is standing in for you,
+    // which is exactly when you'd be rejoining. The game hands it back.
+    const mine = (seatRows || []).find(r => r.user_id && r.user_id === user?.id)
               || (seatRows || []).find(r => !r.is_ai && r.nickname === myMember?.nickname)
     setBusy(false)
     if (!mine) { setMsg({ type: 'error', text: 'Your seat is not in that room.' }); return }
