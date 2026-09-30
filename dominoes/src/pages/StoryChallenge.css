@@ -94,108 +94,89 @@
 .sc-picks { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1rem 0 1.4rem; }
 .sc-dim { opacity: 0.7; font-size: 0.65rem; }
 
-/* ── Draw pile, laid out on the table so you can pick one ─────── */
+/* ── Draw pile ──────────────────────────────────────────────────
+   On the table it's a small stack in the top-left corner, so it never
+   covers the chain on a narrow phone. Drawing opens a sheet with every
+   tile laid out to pick from. */
 .pile-stack {
   position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  z-index: 5;
-  max-height: 88%;
+  left: 8px;
+  top: 44px;
+  z-index: 6;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: rgba(15,14,12,0.55);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 7px 5px;
+  font-family: 'DM Mono', monospace;
+  cursor: default;
+}
+.pile-stack:disabled { opacity: 0.85; }
+.pile-stack.active {
+  cursor: pointer;
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(201,168,76,0.35);
+  animation: pileGlow 1.6s ease-in-out infinite;
+}
+@keyframes pileGlow {
+  0%, 100% { box-shadow: 0 0 6px rgba(201,168,76,0.2); }
+  50%      { box-shadow: 0 0 16px rgba(201,168,76,0.5); }
 }
 
-/* a real spread — every remaining tile visible and tappable */
-.pile-tiles {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
-  gap: 4px;
-  justify-content: center;
-  overflow-y: auto;
-  max-height: 60vh;
-  padding: 2px;
-}
-
-.pile-tile {
-  width: 26px;
-  height: 42px;
-  padding: 0;
-  border-radius: 4px;
+/* three face-down tiles, fanned */
+.pile-mini { position: relative; width: 30px; height: 34px; display: block; }
+.pile-mini span {
+  position: absolute; top: 0; width: 18px; height: 30px; border-radius: 3px;
   background:
     repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 3px, transparent 3px 6px),
     linear-gradient(160deg, #35322a, #1d1b16);
   border: 1px solid var(--border);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-  cursor: default;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
+.pile-mini span:nth-child(1) { left: 0; }
+.pile-mini span:nth-child(2) { left: 5px; top: 2px; }
+.pile-mini span:nth-child(3) { left: 10px; top: 4px; }
 
-/* only live when you actually have to draw */
-.pile-stack.active .pile-tile {
-  cursor: pointer;
-  border-color: rgba(201,168,76,0.55);
-}
-.pile-stack.active .pile-tile:hover {
-  border-color: var(--gold);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.6), 0 0 12px rgba(201,168,76,0.35);
-}
+.pile-count { font-size: 0.7rem; color: var(--gold); line-height: 1; }
+.pile-label { font-size: 0.42rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ivory-dim); }
 .pile-stack.active .pile-label { color: var(--gold); }
 
-.pile-count { font-size: 0.7rem; color: var(--gold); font-family: 'DM Mono', monospace; }
-.pile-label {
-  font-size: 0.45rem; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--ivory-dim);
+/* the pick sheet */
+.pile-sheet-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(10,9,8,0.72);
+  display: flex; align-items: flex-end; justify-content: center;
 }
-
-@media (max-height: 500px) {
-  .pile-stack { left: 6px; }
-  .pile-tiles { grid-template-columns: repeat(3, auto); gap: 3px; max-height: 58vh; }
-  .pile-tile { width: 18px; height: 30px; }
-}
-
-/* ── Chapter opening / send-off ─────────────────────────────────── */
-.sc-story {
-  min-height: 100dvh;
-  display: flex; align-items: center; justify-content: center;
-  padding: 1.5rem 1rem;
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(201,168,76,0.09) 0%, transparent 60%),
-    var(--bg);
-  font-family: 'DM Mono', monospace;
-}
-.sc-story-card {
-  width: min(520px, 100%);
+.pile-sheet {
+  width: min(560px, 100%);
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 2rem 1.6rem;
-  text-align: center;
+  border-top: 1px solid var(--gold);
+  border-radius: 14px 14px 0 0;
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  max-height: 70vh; overflow-y: auto;
 }
-.sc-story-chapter {
-  font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase;
-  color: var(--ivory-dim); margin-bottom: 0.4rem;
+.pile-sheet-title {
+  font-family: 'DM Mono', monospace; font-size: 0.66rem; color: var(--gold);
+  text-align: center; letter-spacing: 0.08em; margin-bottom: 0.9rem;
 }
-.sc-story-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.8rem; color: var(--gold); margin: 0 0 0.3rem;
+.pile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 0.5rem; justify-items: center;
 }
-.sc-story-foe {
-  font-size: 0.65rem; color: var(--ivory-dim); letter-spacing: 0.12em;
-  margin-bottom: 1.4rem;
+.pile-tile {
+  width: 36px; height: 60px; padding: 0; border-radius: 5px;
+  background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 3px, transparent 3px 6px),
+    linear-gradient(160deg, #35322a, #1d1b16);
+  border: 1px solid rgba(201,168,76,0.5);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
 }
-.sc-story-text {
-  text-align: left; color: var(--ivory); font-size: 0.74rem; line-height: 1.85;
-  margin: 1.2rem 0 1.6rem;
-}
-.sc-story-text p { margin: 0 0 0.9rem; }
-.sc-story-text p:last-child { margin-bottom: 0; color: var(--gold); }
-.sc-unlock {
-  display: inline-block; margin-bottom: 1.2rem;
-  border: 1px solid var(--gold); border-radius: 20px;
-  padding: 5px 14px; color: var(--gold);
-  font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase;
+.pile-tile:hover, .pile-tile:active { transform: translateY(-3px); border-color: var(--gold); }
+.pile-sheet-close {
+  display: block; margin: 1rem auto 0;
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--ivory-dim); font-family: 'DM Mono', monospace;
+  font-size: 0.58rem; letter-spacing: 0.1em; padding: 0.45rem 0.9rem; cursor: pointer;
 }
