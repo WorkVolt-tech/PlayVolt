@@ -518,7 +518,7 @@ export default function Tournament() {
               </button>
             </div>
             <div className="tp-hint">
-              They play like they do everywhere else — the experts see every hand.
+              They play like they do everywhere else.
               Their matches against each other are decided on form, so the bracket
               keeps moving even when you're knocked out.
             </div>
