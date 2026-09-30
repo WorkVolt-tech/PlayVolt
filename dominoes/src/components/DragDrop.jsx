@@ -406,6 +406,7 @@ let zoneCounter = 0
 
 export function DropZone({
   onDrop,
+  onTap,
   children,
   style,
   className,
@@ -438,6 +439,8 @@ export function DropZone({
       data-dropzone-id={id}
       style={style}
       className={className}
+      onClick={onTap}
+      role={onTap ? 'button' : undefined}
     >
       {children}
     </div>
