@@ -28,9 +28,25 @@ const TABLE = [
 
 export default function Practice({ embedded = false, onExit }) {
   const navigate = useNavigate()
-  const leave = () => (embedded && onExit ? onExit() : navigate(-1))
-  const [setup, setSetup] = useState(null)
-  const [st, setSt] = useState(null)
+
+  // Saved on the device as you play, so a refresh picks up the same table,
+  // the same hand and the same tally. Leaving clears it.
+  const SAVE_KEY = 'practice_game'
+  const saved = (() => {
+    try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') } catch { return null }
+  })()
+
+  const leave = () => {
+    try { localStorage.removeItem(SAVE_KEY) } catch { /* ignore */ }
+    embedded && onExit ? onExit() : navigate(-1)
+  }
+  const [setup, setSetup] = useState(saved?.setup ?? null)
+  const [st, setSt] = useState(saved?.st ?? null)
+  // rounds already counted in the tally, by deal — so a refresh right after a
+  // round can't count it twice
+  const counted = useRef(new Set(saved?.counted || []))
+  // restoring a round in play: skip the automatic first deal
+  const resumeRound = useRef(!!saved?.st)
   const [selected, setSelected] = useState(null)
   const [pileOpen, setPileOpen] = useState(false)   // the pick-a-tile sheet
   // Open the pile by itself the moment you have nothing to play
@@ -40,19 +56,38 @@ export default function Practice({ embedded = false, onExit }) {
     if (must) setPileOpen(true)
     else setPileOpen(false)
   }, [st])
-  const [tally, setTally] = useState({ won: 0, lost: 0 })
+  const [tally, setTally] = useState(saved?.tally ?? { won: 0, lost: 0 })
   const busyRef = useRef(false)
   const [knock, setKnock] = useState(null)
-  const [passingSeats, setPassingSeats] = useState(new Set())
+  const [passingSeats, setPassingSeats] = useState(() => new Set(saved?.passing || []))
   const knockQueue = useRef([])
-  const seenLog = useRef(0)
+  // start from the end of a restored log, so a refresh doesn't replay knocks
+  const seenLog = useRef(saved?.st?.log?.length || 0)
 
   const deal = useCallback((cfg) => {
-    setSt(Engine.settleTurn(Engine.startGame({ seats: cfg.seats, pile: cfg.pile })))
+    const fresh = Engine.settleTurn(Engine.startGame({ seats: cfg.seats, pile: cfg.pile }))
+    setSt({ ...fresh, dealId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
     setSelected(null)
   }, [])
 
-  useEffect(() => { if (setup) deal(setup) }, [setup, deal])
+  useEffect(() => {
+    if (!setup) return
+    // after a refresh the saved round is already on the table — don't deal over it
+    if (resumeRound.current) { resumeRound.current = false; return }
+    deal(setup)
+  }, [setup, deal])
+
+  // save as you play
+  useEffect(() => {
+    if (!setup) return
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({
+        setup, st, tally,
+        passing: [...passingSeats],
+        counted: [...counted.current],
+      }))
+    } catch { /* storage full or unavailable — practice still plays */ }
+  }, [setup, st, tally, passingSeats])
 
   // bots play
   useEffect(() => {
@@ -130,7 +165,11 @@ export default function Practice({ embedded = false, onExit }) {
   // round over — count it and deal again
   useEffect(() => {
     if (!st || st.status !== 'over' || !setup) return
-    setTally(t => (st.winner === 0 ? { ...t, won: t.won + 1 } : { ...t, lost: t.lost + 1 }))
+    // a round already counted (you refreshed right after it) isn't counted again
+    if (!st.dealId || !counted.current.has(st.dealId)) {
+      if (st.dealId) counted.current.add(st.dealId)
+      setTally(t => (st.winner === 0 ? { ...t, won: t.won + 1 } : { ...t, lost: t.lost + 1 }))
+    }
     const t = setTimeout(() => deal(setup), 2000)
     return () => clearTimeout(t)
   }, [st?.status])
