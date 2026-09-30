@@ -168,7 +168,9 @@ export default function Practice({ embedded = false, onExit }) {
     // a round already counted (you refreshed right after it) isn't counted again
     if (!st.dealId || !counted.current.has(st.dealId)) {
       if (st.dealId) counted.current.add(st.dealId)
-      setTally(t => (st.winner === 0 ? { ...t, won: t.won + 1 } : { ...t, lost: t.lost + 1 }))
+      // a Dekabess counts as two, as everywhere else in the game
+      const worth = st.dekabess ? 2 : 1
+      setTally(t => (st.winner === 0 ? { ...t, won: t.won + worth } : { ...t, lost: t.lost + worth }))
     }
     const t = setTimeout(() => deal(setup), 2000)
     return () => clearTimeout(t)
