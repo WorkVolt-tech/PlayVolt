@@ -180,3 +180,73 @@
   color: var(--ivory-dim); font-family: 'DM Mono', monospace;
   font-size: 0.58rem; letter-spacing: 0.1em; padding: 0.45rem 0.9rem; cursor: pointer;
 }
+
+/* ── Chapter opening and send-off ─────────────────────────────────
+   (Restored — an earlier rewrite of the pile styles cut these off.) */
+.sc-story {
+  min-height: 100dvh;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(201,168,76,0.10) 0%, transparent 60%),
+    var(--bg);
+  font-family: 'DM Mono', monospace;
+  color: var(--ivory);
+}
+.sc-story-card {
+  width: min(540px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--gold);
+  border-radius: 12px;
+  padding: 2.2rem 1.8rem 1.9rem;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.55);
+  animation: storyIn 0.45s ease both;
+}
+@keyframes storyIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sc-story-chapter {
+  font-size: 0.56rem; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--ivory-dim); margin-bottom: 0.5rem;
+}
+.sc-story-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.7rem, 6vw, 2.3rem); font-weight: 700;
+  color: var(--gold); margin: 0 0 0.35rem; line-height: 1.1;
+}
+.sc-story-foe {
+  display: inline-block;
+  font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ivory-dim);
+  border: 1px solid var(--border); border-radius: 20px;
+  padding: 3px 12px; margin-bottom: 0.4rem;
+}
+.sc-story-text {
+  text-align: left;
+  font-size: 0.76rem; line-height: 1.9;
+  color: var(--ivory);
+  margin: 1.4rem 0 1.8rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+}
+.sc-story-text p { margin: 0 0 0.95rem; }
+.sc-story-text p:last-child { margin-bottom: 0; color: var(--gold); }
+.sc-story .sc-actions { justify-content: center; }
+.sc-unlock {
+  display: inline-block; margin-bottom: 1.3rem;
+  border: 1px solid var(--gold); border-radius: 20px;
+  padding: 5px 14px; color: var(--gold);
+  font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase;
+  background: rgba(201,168,76,0.08);
+}
+
+/* the loading line, in case the map page's stylesheet isn't loaded yet */
+.story-note { color: var(--ivory-dim); font-size: 0.7rem; text-align: center; padding: 2rem 0; font-family: 'DM Mono', monospace; }
+
+@media (max-width: 420px) {
+  .sc-story-card { padding: 1.8rem 1.2rem 1.5rem; }
+  .sc-story-text { font-size: 0.72rem; }
+}
