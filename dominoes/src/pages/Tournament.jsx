@@ -27,6 +27,7 @@ export default function Tournament() {
   const [practising, setPractising] = useState(false)
   const [botA, setBotA] = useState('Ti-Djo')
   const [botB, setBotB] = useState('Ti-Cam')
+  const [aiPartner, setAiPartner] = useState('Ti-Djo')
   const [copied, setCopied] = useState(null)
 
   // Copy, with a fallback for browsers that refuse the clipboard API.
@@ -430,15 +431,43 @@ export default function Tournament() {
             <div className="tp-members">
               {myMembers.map(m => (
                 <span key={m.id} className={`tp-chip ${m.bot_name ? 'bot' : ''}`}>
-                  {m.nickname}{m.bot_name ? ' (bot)' : ''}
+                  {m.nickname}{m.bot_name ? ' (AI partner)' : ''}
+                  {m.bot_name && open.status === 'registration' && (
+                    <button className="tp-remove" title="Remove your AI partner"
+                      onClick={() => call('remove_ai_partner', { p_side: mySide.id }, () => loadOne(open.id))}>×</button>
+                  )}
                 </span>
               ))}
               {open.format === 'duo' && myMembers.length < 2 && <span className="tp-chip empty">waiting for partner…</span>}
             </div>
-            {open.format === 'duo' && myMembers.length < 2 && (
-              <div className="tp-hint">
-                Share the code. If they don’t show, you can bring in a bot you’ve unlocked once the match is due.
-              </div>
+
+            {open.format === 'duo' && myMembers.length < 2 && open.status === 'registration' && (
+              <>
+                <div className="tp-hint">
+                  Share the code with a friend — or play with an AI partner instead.
+                </div>
+                <div className="tp-row" style={{ marginTop: '0.5rem' }}>
+                  <select className="tp-select" value={aiPartner} onChange={e => setAiPartner(e.target.value)}>
+                    <optgroup label="Ordinary">
+                      {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
+                    </optgroup>
+                    <optgroup label="Expert">
+                      {EXPERT_CIRCUIT.map(b => {
+                        const locked = !unlocked.includes(b)
+                        return (
+                          <option key={b} value={b} disabled={locked}>
+                            {locked ? `🔒 ${b} — beat chapter ${EXPERT_CIRCUIT.indexOf(b) + 10}` : b}
+                          </option>
+                        )
+                      })}
+                    </optgroup>
+                  </select>
+                  <button className="tp-btn" disabled={busy}
+                    onClick={() => call('fill_missing_partner', { p_side: mySide.id, p_bot: aiPartner }, () => loadOne(open.id))}>
+                    Add AI partner
+                  </button>
+                </div>
+              </>
             )}
           </div>
         )}
