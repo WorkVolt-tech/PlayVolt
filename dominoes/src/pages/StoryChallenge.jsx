@@ -292,8 +292,11 @@ export default function StoryChallenge() {
 
     // A round already counted (you refreshed right after it) isn't counted again
     const already = !!st.dealId && counted.current.has(st.dealId)
-    const w = already ? wins : wins + (outcome.won ? 1 : 0)
-    const l = already ? losses : losses + (outcome.won ? 0 : 1)
+    // A Dekabess counts as two wins — the same house rule the table's streak
+    // and the tournament use. In a best-of-three that settles the series.
+    const worth = st.dekabess ? 2 : 1
+    const w = already ? wins : wins + (outcome.won ? worth : 0)
+    const l = already ? losses : losses + (outcome.won ? 0 : worth)
     if (!already) {
       if (st.dealId) counted.current.add(st.dealId)
       setWins(w); setLosses(l)
@@ -616,8 +619,13 @@ export default function StoryChallenge() {
               {result.met
                 ? (challenge?.type === 'puzzle'
                     ? (result.dekabess ? 'Solved — Dekabess!' : result.blocked ? 'Solved — the table jammed in your favour.' : 'Solved.')
-                    : (challenge?.rounds === 3 ? `You took the series ${wins}–${losses}.` : 'You won.'))
-                : (challenge?.type === 'puzzle' ? 'That line didn’t get there.' : (challenge?.rounds === 3 ? `They took the series ${losses}–${wins}.` : 'Objective not met.'))}
+                    : (challenge?.rounds === 3
+                        ? `You took the series ${wins}–${losses}${result.dekabess ? ' — a Dekabess counts as two' : ''}.`
+                        : 'You won.'))
+                : (challenge?.type === 'puzzle' ? 'That line didn’t get there.'
+                    : (challenge?.rounds === 3
+                        ? `They took the series ${losses}–${wins}${result.dekabess ? ' — a Dekabess counts as two' : ''}.`
+                        : 'Objective not met.'))}
             </p>
             {result.met && <div className="sc-stars">{'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}</div>}
             <div className="sc-actions">
