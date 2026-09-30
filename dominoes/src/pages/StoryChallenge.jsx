@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
-import { CHAPTERS } from '../story/chapters'
+import { CHAPTERS, NORMAL_CIRCUIT } from '../story/chapters'
 import * as Engine from '../story/storyEngine'
 import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 import Board from '../components/Board'
@@ -80,7 +80,10 @@ export default function StoryChallenge() {
       const { data } = await db.rpc('ensure_story_progress')
       const row = Array.isArray(data) ? data[0] : data
       if (off) return
-      setUnlocked((row?.unlocked_bots || []).filter(b => b !== chapter?.featured))
+      // Ordinary bots are always available; experts once earned.
+      const earned = row?.unlocked_bots || []
+      const pool = [...NORMAL_CIRCUIT, ...earned.filter(b => !NORMAL_CIRCUIT.includes(b))]
+      setUnlocked(pool.filter(b => b !== chapter?.featured))
 
       // With nothing saved on this device, start at the first challenge the
       // account hasn't already completed.
