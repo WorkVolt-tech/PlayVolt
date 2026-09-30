@@ -28,6 +28,14 @@ export default function Practice({ embedded = false, onExit }) {
   const [setup, setSetup] = useState(null)
   const [st, setSt] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [pileOpen, setPileOpen] = useState(false)   // the pick-a-tile sheet
+  // Open the pile by itself the moment you have nothing to play
+  useEffect(() => {
+    const must = !!st && st.status === 'playing' && st.turn === 0 &&
+                 !!st.usePile && st.pile.length > 0 && !Engine.canPlay(st)
+    if (must) setPileOpen(true)
+    else setPileOpen(false)
+  }, [st])
   const [tally, setTally] = useState({ won: 0, lost: 0 })
   const busyRef = useRef(false)
 
@@ -165,21 +173,45 @@ export default function Practice({ embedded = false, onExit }) {
 
       <div className="board-container">
         {st?.usePile && st.pile.length > 0 && (
-          <div className={`pile-stack ${mustDraw ? 'active' : ''}`}>
-            <div className="pile-tiles">
-              {st.pile.map((_, i) => (
-                <button
-                  key={i}
-                  className="pile-tile"
-                  disabled={!mustDraw}
-                  onClick={() => setSt(prev => (prev && prev.turn === 0 ? Engine.drawFrom(prev, i) : prev))}
-                  title={mustDraw ? 'Take this one' : 'Draw pile'}
-                />
-              ))}
-            </div>
-            <span className="pile-count">{st.pile.length}</span>
-            <span className="pile-label">{mustDraw ? 'pick one' : 'pile'}</span>
-          </div>
+          <>
+            {/* Compact in the corner, so it never covers the chain on a narrow
+                phone. When you have to draw, tap it (or it opens itself) and
+                every tile is laid out to pick from. */}
+            <button
+              className={`pile-stack ${mustDraw ? 'active' : ''}`}
+              disabled={!mustDraw}
+              onClick={() => setPileOpen(true)}
+              title={mustDraw ? 'Draw from the pile' : 'Draw pile'}
+            >
+              <span className="pile-mini" aria-hidden="true">
+                <span /><span /><span />
+              </span>
+              <span className="pile-count">{st.pile.length}</span>
+              <span className="pile-label">{mustDraw ? 'tap to draw' : 'pile'}</span>
+            </button>
+
+            {pileOpen && mustDraw && (
+              <div className="pile-sheet-overlay" onClick={() => setPileOpen(false)}>
+                <div className="pile-sheet" onClick={e => e.stopPropagation()}>
+                  <div className="pile-sheet-title">Nothing to play — pick a tile from the pile</div>
+                  <div className="pile-grid">
+                    {st.pile.map((_, i) => (
+                      <button
+                        key={i}
+                        className="pile-tile"
+                        onClick={() => {
+                          setSt(prev => (prev && prev.turn === 0 ? Engine.drawFrom(prev, i) : prev))
+                          setPileOpen(false)
+                        }}
+                        title="Take this one"
+                      />
+                    ))}
+                  </div>
+                  <button className="pile-sheet-close" onClick={() => setPileOpen(false)}>Look at the board first</button>
+                </div>
+              </div>
+            )}
+          </>
         )}
         <OpponentHands players={fakePlayers} myInfo={{ seat: 0 }} roomData={fakeRoom} />
         <Board
