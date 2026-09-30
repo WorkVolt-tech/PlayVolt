@@ -92,6 +92,27 @@ export function useGameState(myInfo, navigate) {
   const [syncing, setSyncing] = useState(false)
   const syncingRef = useRef(false)
 
+  // ── Who is actually at the table ──────────────────────────────────────────
+  // Every device announces its seat over the game's live connection
+  // (Supabase presence), so everyone knows who's really connected — a phone
+  // that dies simply drops out of this set. null until the first update.
+  const [presentSeats, setPresentSeats] = useState(null)
+
+  // The device that runs the bots and deals for them: the lowest seat among
+  // the humans who are actually here. It used to be seat 0, always — so if
+  // seat 0's phone died, every bot at the table stopped with it.
+  const runnerSeat = (() => {
+    if (!presentSeats) return 0
+    const here = players
+      .filter(p => !p.is_ai && presentSeats.has(p.seat))
+      .map(p => p.seat)
+      .sort((a, b) => a - b)
+    return here.length ? here[0] : 0
+  })()
+  const amRunner = !!myInfo && runnerSeat === myInfo.seat
+  const amRunnerRef = useRef(amRunner)
+  amRunnerRef.current = amRunner
+
   // How long each turn actually takes, from this device's point of view.
   const turnClock = useRef({ seat: null, at: 0 })
   useEffect(() => {
@@ -234,7 +255,7 @@ export function useGameState(myInfo, navigate) {
     if (!roomData || roomData.status !== 'playing' || !myInfo) return
     const turn = roomData.current_turn
     const seatAtTurn = players.find(p => p.seat === turn)
-    const iAct = turn === myInfo.seat || (myInfo.seat === 0 && !!seatAtTurn?.is_ai)
+    const iAct = turn === myInfo.seat || (amRunnerRef.current && !!seatAtTurn?.is_ai)
     if (!iAct) return
     let cancelled = false
     syncingRef.current = true
@@ -247,7 +268,7 @@ export function useGameState(myInfo, navigate) {
       tlog(`synced before acting: ${(performance.now() - began).toFixed(0)}ms`)
     })
     return () => { cancelled = true }
-  }, [roomData?.current_turn, roomData?.status, roomData?.round])
+  }, [roomData?.current_turn, roomData?.status, roomData?.round, runnerSeat])
 
   useEffect(() => {
     if (!myInfo) { navigate('/'); return }
@@ -258,7 +279,13 @@ export function useGameState(myInfo, navigate) {
     // to a full reload, and the device whose turn it is re-reads the table
     // before acting (see the sync effect below), so a message arriving out
     // of order can't lead to a move built on a stale board.
-    const ch = db.channel('game-' + myInfo.roomId)
+    const ch = db.channel('game-' + myInfo.roomId, {
+      config: { presence: { key: String(myInfo.seat) } },
+    })
+      .on('presence', { event: 'sync' }, () => {
+        const state = ch.presenceState()
+        setPresentSeats(new Set(Object.keys(state).map(Number).filter(n => !Number.isNaN(n))))
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players', filter: `room_id=eq.${myInfo.roomId}` }, (payload) => {
         if (payload.eventType === 'DELETE') {
           const id = payload.old?.id
@@ -300,7 +327,10 @@ export function useGameState(myInfo, navigate) {
       })
       .subscribe(status => {
         // (re)connected: anything could have been missed while we were away
-        if (status === 'SUBSCRIBED') scheduleReload()
+        if (status === 'SUBSCRIBED') {
+          scheduleReload()
+          ch.track({ seat: myInfo.seat, at: Date.now() })   // "I'm at the table"
+        }
       })
     return () => { db.removeChannel(ch); clearTimeout(reloadTimer.current) }
   }, [])
@@ -456,7 +486,7 @@ export function useGameState(myInfo, navigate) {
       await loadGameState()
       
       // If winner is a bot and we are the host, auto-start next round after delay
-      if (!isVyej && myInfo.seat === 0) {
+      if (!isVyej && amRunnerRef.current) {
         const winnerPlayer = playersRef.current.find(p => p.seat === resolvedSeat)
         if (winnerPlayer?.is_ai) {
           // Wait longer when Dekabess — overlay takes 3.8s + round overlay needs time
@@ -757,7 +787,7 @@ export function useGameState(myInfo, navigate) {
     // deal, so the host (seat 0) deals on its behalf; otherwise every human
     // would sit waiting for a dealer that doesn't exist.
     const winnerIsBot = !!playersRef.current.find(p => p.seat === winnerSeat)?.is_ai
-    const iDeal = myInfo.seat === winnerSeat || isSoloMode || (winnerIsBot && myInfo.seat === 0)
+    const iDeal = myInfo.seat === winnerSeat || isSoloMode || (winnerIsBot && amRunnerRef.current)
     if (!iDeal) {
       // Non-winner clicked — just close overlay and wait
       await loadGameState()
@@ -829,32 +859,70 @@ export function useGameState(myInfo, navigate) {
     navigate(backTo)
   }, [myInfo, navigate])
 
-  // Watch for disconnected players and replace with bots (host only)
+  // ── Stand-ins ─────────────────────────────────────────────────────────────
+  // A player who drops (phone died, lost signal) keeps their seat. A bot plays
+  // it for them — same name, same account — until they come back, when the
+  // seat is theirs again. This replaces the old behaviour, which renamed the
+  // seat to a bot permanently, so nobody could ever get back in.
+  const standIn = useCallback(async (seat) => {
+    if (!myInfo) return
+    await db.from('domino_players')
+      .update({ is_ai: true, stand_in: true })
+      .eq('room_id', myInfo.roomId).eq('seat', seat).eq('is_ai', false)
+  }, [myInfo])
+
+  // Back at the table: if a bot has been standing in for you, take your seat back.
   useEffect(() => {
-    if (!roomData || !players.length || roomData.status !== 'playing') return
-    if (myInfo.seat !== 0) return
-    players.forEach(p => {
-      if (!p.is_ai && !p.is_connected && p.seat !== myInfo.seat) {
-        const allBotNames = ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
-        const usedNames = players.map(pl => pl.nickname)
-        const available = allBotNames.filter(n => !usedNames.includes(n))
-        const botName = available.length > 0
-          ? available[Math.floor(Math.random() * available.length)]
-          : allBotNames[Math.floor(Math.random() * allBotNames.length)]
-        db.from('domino_players').update({
-          nickname: botName, is_ai: true, is_connected: true,
-        }).eq('room_id', myInfo.roomId).eq('seat', p.seat)
+    if (!myInfo || !players.length) return
+    const mine = players.find(p => p.seat === myInfo.seat)
+    if (mine?.stand_in) {
+      db.from('domino_players')
+        .update({ is_ai: false, stand_in: false, is_connected: true })
+        .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
+        .then(() => scheduleReload())
+    }
+  }, [players, myInfo?.seat])
+
+  // Who has dropped: humans who aren't connected. Presence can blink during a
+  // brief network hiccup, so a seat only counts as away after 10 seconds gone.
+  const [awaySeats, setAwaySeats] = useState([])
+  const goneSince = useRef({})
+  useEffect(() => {
+    if (!presentSeats || !players.length) return
+    const tick = () => {
+      const now = Date.now()
+      const away = []
+      for (const p of players) {
+        if (p.is_ai || p.seat === myInfo.seat) { delete goneSince.current[p.seat]; continue }
+        if (presentSeats.has(p.seat)) { delete goneSince.current[p.seat]; continue }
+        goneSince.current[p.seat] ??= now
+        if (now - goneSince.current[p.seat] >= 10000) away.push(p.seat)
       }
-    })
-  }, [players])
+      setAwaySeats(prev => (prev.join(',') === away.join(',') ? prev : away))
+    }
+    tick()
+    const t = setInterval(tick, 2000)
+    return () => clearInterval(t)
+  }, [presentSeats, players, myInfo?.seat])
+
+  // Safety net: if it's an away player's turn and nobody has put a bot in
+  // for them after a minute, the table's runner does — so a dead phone can
+  // never freeze the game for everyone else.
+  useEffect(() => {
+    if (!roomData || roomData.status !== 'playing' || !amRunner) return
+    const turn = roomData.current_turn
+    if (!awaySeats.includes(turn)) return
+    const t = setTimeout(() => standIn(turn), 60000)
+    return () => clearTimeout(t)
+  }, [roomData?.current_turn, roomData?.status, awaySeats, amRunner, standIn])
 
   // AI turns
   useEffect(() => {
     if (!roomData || !players.length || roomData.status !== 'playing') return
     const currentPlayer = players.find(p => p.seat === roomData.current_turn)
     if (!currentPlayer?.is_ai) return
-    // Only the host (seat 0) runs AI logic to prevent double-fire
-    if (myInfo.seat !== 0) return
+    // Only the table's runner plays the bots, so each bot moves exactly once
+    if (!amRunner) return
     // Prevent double-fire within the same turn
     if (botRunningRef.current) return
     // Wait for the table to be re-read before the bot decides anything
@@ -868,6 +936,8 @@ export function useGameState(myInfo, navigate) {
       // not when the turn changed, when they could have been a tile behind.
       const board = boardRef.current
       const freshBot = (playersRef.current || []).find(p => p.seat === currentPlayer.seat) || currentPlayer
+      // The player took their seat back while the bot was thinking: stand down.
+      if (!freshBot.is_ai) { botRunningRef.current = false; return }
       const botHand     = freshBot.hand || []
       const botPlayable = getPlayableTiles(botHand, board, roomData)
 
@@ -996,7 +1066,7 @@ export function useGameState(myInfo, navigate) {
       loadGameState()
     }, 1200)
     return () => { clearTimeout(timer); clearTimeout(safetyTimer); botRunningRef.current = false }
-  }, [roomData?.current_turn, roomData?.status, syncing])
+  }, [roomData?.current_turn, roomData?.status, syncing, amRunner])
 
   return {
     roomData, players, boardData, selectedTile, showPicker,
@@ -1004,6 +1074,7 @@ export function useGameState(myInfo, navigate) {
     me, hand, isMyTurn, playable, hasTilesOnBoard,
     selectTile, placeTile, passMove,
     startNextRound, leaveTable, setShowOverlay, replaceWithBot,
+    presentSeats, awaySeats, standIn,
     cancelSelection: () => { setSelectedTile(null); setShowPicker(false) },
   }
 }
