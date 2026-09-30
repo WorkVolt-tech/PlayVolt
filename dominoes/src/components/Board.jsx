@@ -660,7 +660,21 @@ function mergeDragPayload(primary, fallback, selectedTile) {
 export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace }) {
   const { draggingRef, endDrag } = useDrag()
 
+  // Tap-to-place: tapping a highlighted side places the SELECTED tile there.
+  // The screens have always handed the board an onDropZone for this, but the
+  // board never called it — so dragging was the only way to play a tile.
+  const onDropZoneRef = useRef(onDropZone)
+  onDropZoneRef.current = onDropZone
+  const lastDropAt = useRef(0)
+  function tapSide(side) {
+    if (!isMyTurn) return
+    // A drag that ends over a zone also produces a click — ignore that one.
+    if (Date.now() - lastDropAt.current < 500) return
+    onDropZoneRef.current?.(side)
+  }
+
   function commitDrop(data, side) {
+    lastDropAt.current = Date.now()
     if (!data?.tile) return
     const idx = typeof data.idx === 'number' ? data.idx : 0
     onDragPlaceRef.current?.(data.tile, idx, side)
@@ -1108,6 +1122,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
 
           <DropZone
             onDrop={data => commitDrop(data, 'left')}
+            onTap={() => tapSide('left')}
             className={`domino-drop-target ${dragOver === 'left' ? 'drag-over' : ''}`}
             style={getDropHitStyle(previewLeft, dims.w, dims.h)}
           />
@@ -1125,6 +1140,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
 
           <DropZone
             onDrop={data => commitDrop(data, 'right')}
+            onTap={() => tapSide('right')}
             className={`domino-drop-target ${dragOver === 'right' ? 'drag-over' : ''}`}
             style={getDropHitStyle(previewRight, dims.w, dims.h)}
           />
