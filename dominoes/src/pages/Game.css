@@ -292,3 +292,26 @@
   0%, 100% { box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 0 rgba(201,168,76,0); }
   50%      { box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 18px rgba(201,168,76,0.45); }
 }
+
+/* ── a player dropped out ────────────────────────────────────────── */
+.away-notice {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--hand-h, 110px) + 10px);
+  z-index: 350;
+  width: min(520px, calc(100vw - 16px));
+  background: rgba(26,24,20,0.97);
+  border: 1px solid rgba(201,168,76,0.6); border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+.away-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.35rem; }
+.away-row span { font-size: 0.64rem; color: var(--ivory); }
+.away-row strong { color: var(--gold); }
+.away-row .btn { flex-shrink: 0; padding: 0.45rem 0.8rem; font-size: 0.56rem; }
+.away-hint { font-size: 0.54rem; color: var(--ivory-dim); line-height: 1.5; }
+.tag-away, .tag-standin {
+  font-size: 0.46rem; letter-spacing: 0.08em; text-transform: uppercase;
+  border-radius: 8px; padding: 1px 5px; margin-left: 3px;
+}
+.tag-away    { color: var(--red); border: 1px solid rgba(201,76,76,0.5); }
+.tag-standin { color: var(--ivory-dim); border: 1px solid var(--border); }
