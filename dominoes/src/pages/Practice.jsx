@@ -5,6 +5,7 @@ import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
+import KnockAnimation from '../components/KnockAnimation'
 import { canPlayOnSide } from '../hooks/useGameState'
 import './Game.css'
 import './StoryChallenge.css'
@@ -14,7 +15,10 @@ import './StoryChallenge.css'
 // Runs on the device through the story engine — no room, no database, nothing
 // to clean up afterwards. Leave whenever you like.
 
-const BOT_DELAY = 700
+// Same pace as the live game: bots think for 1.2s, a knock plays out in full
+// before anyone moves again, and drawing from the pile is quicker.
+const BOT_DELAY = 1200
+const DRAW_DELAY = 450
 
 const TABLE = [
   { id: 'quick', label: '1v1 with a pile', seats: 2, pile: true,  opponents: ['Ti-Djo'] },
@@ -38,6 +42,10 @@ export default function Practice({ embedded = false, onExit }) {
   }, [st])
   const [tally, setTally] = useState({ won: 0, lost: 0 })
   const busyRef = useRef(false)
+  const [knock, setKnock] = useState(null)
+  const [passingSeats, setPassingSeats] = useState(new Set())
+  const knockQueue = useRef([])
+  const seenLog = useRef(0)
 
   const deal = useCallback((cfg) => {
     setSt(Engine.settleTurn(Engine.startGame({ seats: cfg.seats, pile: cfg.pile })))
@@ -48,13 +56,15 @@ export default function Practice({ embedded = false, onExit }) {
 
   // bots play
   useEffect(() => {
-    if (!st || !setup || st.status !== 'playing' || st.turn === 0 || busyRef.current) return
+    if (!st || !setup || st.status !== 'playing' || st.turn === 0 || busyRef.current || knock) return
     busyRef.current = true
+    const drawing = !Engine.canPlay(st) && st.usePile && st.pile.length > 0
     const t = setTimeout(() => {
       setSt(prev => {
         if (!prev || prev.status !== 'playing' || prev.turn === 0) return prev
-        let next = Engine.settleTurn(prev)
-        if (next.status !== 'playing' || next.turn === 0) return next
+        // ONE action per turn: draw one tile, or knock once, or play.
+        if (!Engine.canPlay(prev)) return Engine.drawOrPass(prev)
+        const next = prev
         const seat = next.turn
         const name = setup.seats === 2 ? setup.opponents[0] : setup.opponents[seat - 1]
         const pers = getPersonality(name || 'Ti-Djo')
@@ -73,12 +83,49 @@ export default function Practice({ embedded = false, onExit }) {
         return Engine.playTile(next, mv.tile, mv.side)
       })
       busyRef.current = false
-    }, BOT_DELAY)
+    }, drawing ? DRAW_DELAY : BOT_DELAY)
     return () => { clearTimeout(t); busyRef.current = false }
-  }, [st, setup])
+  }, [st, setup, knock])
 
-  // The player draws for themselves by tapping a tile in the pile — see
-  // mustDraw below. Bots still draw automatically inside settleTurn.
+  // You, with nothing to play and nothing to draw: you knock — and you SEE it.
+  useEffect(() => {
+    if (!st || st.status !== 'playing' || st.turn !== 0 || knock) return
+    if (Engine.canPlay(st)) return
+    if (st.usePile && st.pile.length > 0) return
+    const t = setTimeout(() => setSt(p => (p && p.turn === 0 && !Engine.canPlay(p) ? Engine.drawOrPass(p) : p)), BOT_DELAY)
+    return () => clearTimeout(t)
+  }, [st, knock])
+
+  const knockName = seat => (seat === 0 ? 'You'
+    : (setup?.seats === 2 ? setup.opponents[0] : setup?.opponents?.[seat - 1]) || 'Player')
+  const knockPos = seat => {
+    if ((st?.seats ?? 4) === 2) return seat === 0 ? 'bottom' : 'top'
+    return ({ 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' })[seat]
+  }
+
+  // Watch the move log: every pass gets its knock, and a seat stops showing
+  // PASS the moment it plays a tile again. A new deal starts clean.
+  useEffect(() => {
+    const log = st?.log || []
+    if (log.length < seenLog.current) {           // a new deal
+      seenLog.current = 0
+      setPassingSeats(new Set())
+    }
+    const fresh = log.slice(seenLog.current)
+    seenLog.current = log.length
+    for (const e of fresh) {
+      if (e.action === 'pass') {
+        setPassingSeats(prev => new Set(prev).add(e.seat))
+        const k = { name: knockName(e.seat), position: knockPos(e.seat) }
+        setKnock(cur => { if (cur) { knockQueue.current.push(k); return cur } return k })
+      } else if (e.action === 'play') {
+        setPassingSeats(prev => {
+          if (!prev.has(e.seat)) return prev
+          const next = new Set(prev); next.delete(e.seat); return next
+        })
+      }
+    }
+  }, [st?.log])
 
   // round over — count it and deal again
   useEffect(() => {
@@ -143,7 +190,7 @@ export default function Practice({ embedded = false, onExit }) {
   const twoSeat = (st?.seats ?? 4) === 2
   const shown = seat => (twoSeat && seat === 1 ? 2 : seat)
   const fakePlayers = (st?.hands || []).map((h, seat) => ({
-    seat: shown(seat), nickname: seatNames[seat], hand: h, is_ai: seat !== 0,
+    seat: shown(seat), engineSeat: seat, nickname: seatNames[seat], hand: h, is_ai: seat !== 0,
   }))
   const fakeRoom = { current_turn: shown(st?.turn ?? 0), game_mode: 'chien', status: 'playing' }
 
@@ -164,6 +211,7 @@ export default function Practice({ embedded = false, onExit }) {
               <div className="tag-dot" />
               <span>{p.nickname}{p.seat === 0 ? ' ★' : ''}</span>
               <span className="tag-tiles">{p.hand.length}</span>
+              {passingSeats.has(p.engineSeat) && <span className="tag-pass">PASS</span>}
             </div>
           ))}
         </div>
@@ -231,6 +279,14 @@ export default function Practice({ embedded = false, onExit }) {
           }}
         />
       </div>
+
+      {knock && (
+        <KnockAnimation
+          playerName={knock.name}
+          position={knock.position}
+          onDone={() => setKnock(knockQueue.current.shift() || null)}
+        />
+      )}
 
       <PlayerHand
         hand={st?.hands?.[0] || []}
