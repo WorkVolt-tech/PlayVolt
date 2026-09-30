@@ -786,7 +786,9 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
       if (!data) return
 
       if (!hasTilesRef.current) {
-        placeDraggedDomino(data, 'first')
+        // no selected-tile fallback for the opening tile
+        const dragged = mergeDragPayload(e?.detail?.dragging || e?.detail, draggingRef.current, null)
+        if (dragged?.tile) placeDraggedDomino(dragged, 'first')
         return
       }
 
@@ -829,8 +831,21 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
       )
       if (!data?.tile) return
 
+      // The tile must actually be released OVER THE BOARD. Without this, any
+      // release — including a plain tap on a tile still sitting in your hand —
+      // counted as a drop, and on an empty board it played the first tile
+      // immediately with no way to change your mind.
+      const area = areaRef.current
+      if (!area || typeof clientX !== 'number' || typeof clientY !== 'number') return
+      const rect = area.getBoundingClientRect()
+      const overBoard =
+        clientX >= rect.left && clientX <= rect.right &&
+        clientY >= rect.top  && clientY <= rect.bottom
+      if (!overBoard) return
+
       if (!hasTilesRef.current) {
-        placeDraggedDomino(data, 'first')
+        const dragged = mergeDragPayload(raw, draggingRef.current, null)
+        if (dragged?.tile) placeDraggedDomino(dragged, 'first')
         return
       }
 
@@ -855,6 +870,15 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
 
   const activeTile = activePlay?.tile || null
 
+  // The OPENING tile is never placed from a selection. On an empty board the
+  // preview and its drop zone only appear while a tile is actually being
+  // dragged — so picking the wrong tile, then touching the table, can't play
+  // it. (Once tiles are down, tap-to-place via the side drop zones still works.)
+  const draggedPlay =
+    normalizeDragPayload(draggingRef?.current) ||
+    normalizeDragPayload(nativeDragging)
+  const draggedTile = draggedPlay?.tile || null
+
   const canLeft = !!(
     activeTile &&
     isMyTurn &&
@@ -875,9 +899,9 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     ? computeDropPreview(tiles, positions, activeTile, 'right', dims.w, dims.h, boardData)
     : null
 
-  const firstPreview = !hasTiles && activeTile
+  const firstPreview = !hasTiles && draggedTile
     ? (() => {
-        const isDouble = activeTile[0] === activeTile[1]
+        const isDouble = draggedTile[0] === draggedTile[1]
         const d = tileDims(isDouble, DIR.RIGHT)
 
         return {
@@ -997,7 +1021,8 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     }
 
     if (!hasTiles) {
-      placeDraggedDomino(data, 'first')
+      const dragged = mergeDragPayload(readTransferPayload(e?.dataTransfer), draggingRef.current, null)
+      if (dragged?.tile) placeDraggedDomino(dragged, 'first')
       setNativeDragging(null)
       return
     }
@@ -1058,7 +1083,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
       {!hasTiles && firstPreview && (
         <>
           <BoardTile
-            entry={{ tile: activeTile, flipped: false }}
+            entry={{ tile: draggedTile, flipped: false }}
             pos={firstPreview}
             ghost
             highlighted={dragOver === 'first'}
