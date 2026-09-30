@@ -19,9 +19,10 @@ import './StoryChallenge.css'
 // and hand are the SAME components multiplayer uses, so the feel is identical.
 // Nothing here writes to a room — only the result goes to the database.
 
-// Same pace as the live game: bots think for 1.2s, a knock plays out in full
+// Story pace: bots take 1.8s per move — a little slower than the live game,
+// so you can follow what each opponent plays. A knock plays out in full
 // before anyone moves again, and drawing from the pile is quicker.
-const BOT_DELAY = 1200
+const BOT_DELAY = 1800
 const DRAW_DELAY = 450
 
 export default function StoryChallenge() {
