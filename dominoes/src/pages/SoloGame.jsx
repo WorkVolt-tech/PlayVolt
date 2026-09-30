@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import * as Engine from '../story/storyEngine'
-import { chooseTile, getPersonality, seesAllHands } from '../lib/botAI'
+import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 import { canPlayOnSide } from '../hooks/useGameState'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
@@ -99,7 +99,7 @@ export default function SoloGame() {
           tileCountsBySeat: next.hands.map(h => h.length),
           opponentTileCounts: next.hands.map((h, i) => (i === seat ? null : h.length)).filter(x => x !== null),
         }
-        if (seesAllHands(pers)) ctx.hands = next.hands
+        if (isExpertBot(pers)) ctx.hands = next.hands
         const pick = chooseTile(pers, moves.map(m => m.tile), next.hands[seat], next.board, ctx)
         const mv = moves.find(m => m.tile[0] === pick?.tile?.[0] && m.tile[1] === pick?.tile?.[1] && m.side === pick.side)
                 || moves.find(m => m.tile[0] === pick?.tile?.[0] && m.tile[1] === pick?.tile?.[1])
