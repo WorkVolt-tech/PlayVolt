@@ -20,7 +20,7 @@ const UNLOCKED_BY = Object.fromEntries(
 const isExpert = b => b.role === 'Expert'
 
 const BOT_ROSTER = [
-  // Ordinary bots first — these play fair, they only see their own tiles.
+  // Ordinary bots first — always available.
   // Roughly easiest to hardest.
   { name: 'Ti-Bebe',   role: 'Beginner' },
   { name: 'Ti-Pridan', role: 'Pip Counter' },
@@ -30,7 +30,7 @@ const BOT_ROSTER = [
   { name: 'Ti-Jean',   role: 'Blocker' },
   { name: 'Ti-Djo',    role: 'Strategist' },
   { name: 'Ti-Doub',   role: 'Doubles First' },
-  // Experts last — these see every player's tiles.
+  // Experts last — earned in Story Mode.
   { name: 'Ti-Jòj',    role: 'Expert' },
   { name: 'Ti-Tid',    role: 'Expert' },
   { name: 'Ti-Roro',   role: 'Expert' },
