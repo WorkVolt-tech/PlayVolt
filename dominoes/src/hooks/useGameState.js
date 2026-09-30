@@ -88,6 +88,9 @@ export function useGameState(myInfo, navigate) {
   const playersRef    = useRef([])
   const overlayShownRef = useRef(false)
   const botRunningRef   = useRef(false)
+  // True while this device re-reads the table before acting on its turn.
+  const [syncing, setSyncing] = useState(false)
+  const syncingRef = useRef(false)
 
   // How long each turn actually takes, from this device's point of view.
   const turnClock = useRef({ seat: null, at: 0 })
@@ -211,11 +214,67 @@ export function useGameState(myInfo, navigate) {
     }, 50)
   }, [loadGameState])
 
+  // Safety net: an occasional full re-read, and one whenever the tab comes
+  // back into view, so a missed message can never leave a device out of sync.
+  useEffect(() => {
+    if (!myInfo?.roomId) return
+    const t = setInterval(() => { if (document.visibilityState === 'visible') loadGameState() }, 20000)
+    const onShow = () => { if (document.visibilityState === 'visible') loadGameState() }
+    document.addEventListener('visibilitychange', onShow)
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', onShow) }
+  }, [myInfo?.roomId, loadGameState])
+
+  // The sync gate. Changes now arrive one table at a time, and could in
+  // principle arrive out of order — the turn moving on before the tile that
+  // moved it. Placing a tile builds the new board from the one this device
+  // holds, so before this device acts (your turn, or a bot's turn on the
+  // host) it re-reads the table once. Only the device about to act does this,
+  // so it's one read per move instead of one per player.
+  useEffect(() => {
+    if (!roomData || roomData.status !== 'playing' || !myInfo) return
+    const turn = roomData.current_turn
+    const seatAtTurn = players.find(p => p.seat === turn)
+    const iAct = turn === myInfo.seat || (myInfo.seat === 0 && !!seatAtTurn?.is_ai)
+    if (!iAct) return
+    let cancelled = false
+    syncingRef.current = true
+    setSyncing(true)
+    const began = performance.now()
+    loadGameState().finally(() => {
+      if (cancelled) return
+      syncingRef.current = false
+      setSyncing(false)
+      tlog(`synced before acting: ${(performance.now() - began).toFixed(0)}ms`)
+    })
+    return () => { cancelled = true }
+  }, [roomData?.current_turn, roomData?.status, roomData?.round])
+
   useEffect(() => {
     if (!myInfo) { navigate('/'); return }
     loadGameState()
+    // Each change notification already carries the changed row, so apply it
+    // directly. This used to reload the whole table — three queries on every
+    // device for every move. Anything that looks incomplete still falls back
+    // to a full reload, and the device whose turn it is re-reads the table
+    // before acting (see the sync effect below), so a message arriving out
+    // of order can't lead to a move built on a stale board.
     const ch = db.channel('game-' + myInfo.roomId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players', filter: `room_id=eq.${myInfo.roomId}` }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players', filter: `room_id=eq.${myInfo.roomId}` }, (payload) => {
+        if (payload.eventType === 'DELETE') {
+          const id = payload.old?.id
+          if (!id) { scheduleReload(); return }
+          setPlayers(prev => prev.filter(p => p.id !== id))
+          return
+        }
+        const row = payload.new
+        if (!row?.id || !Array.isArray(row.hand)) { scheduleReload(); return }
+        setPlayers(prev => {
+          const i = prev.findIndex(p => p.id === row.id)
+          const next = i >= 0 ? prev.map((p, j) => (j === i ? { ...p, ...row } : p)) : [...prev, row]
+          return next.sort((a, b) => a.seat - b.seat)
+        })
+        tlog(`applied player change (seat ${row.seat})`)
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_rooms', filter: `id=eq.${myInfo.roomId}` }, (payload) => {
         if (payload.new?.status === 'abandoned' && myInfo.seat !== 0) {
           alert('The host has left. Returning to lobby…')
@@ -223,10 +282,26 @@ export function useGameState(myInfo, navigate) {
           navigate('/')
           return
         }
-        scheduleReload()
+        const row = payload.new
+        if (!row?.id || row.current_turn === undefined || !row.status) { scheduleReload(); return }
+        setRoomData(prev => ({ ...(prev || {}), ...row }))
+        tlog(`applied room change (turn ${row.current_turn}, ${row.status})`)
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'board', filter: `room_id=eq.${myInfo.roomId}` }, scheduleReload)
-      .subscribe()
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'board', filter: `room_id=eq.${myInfo.roomId}` }, (payload) => {
+        if (payload.eventType === 'DELETE') {
+          // only clear it if it's OUR board being removed
+          if (!payload.old?.id || payload.old.id === boardRef.current?.id) setBoardData(null)
+          return
+        }
+        const row = payload.new
+        if (!row?.id || !Array.isArray(row.tiles)) { scheduleReload(); return }
+        setBoardData(row)
+        tlog(`applied board change (${row.tiles.length} tiles)`)
+      })
+      .subscribe(status => {
+        // (re)connected: anything could have been missed while we were away
+        if (status === 'SUBSCRIBED') scheduleReload()
+      })
     return () => { db.removeChannel(ch); clearTimeout(reloadTimer.current) }
   }, [])
 
@@ -253,7 +328,7 @@ export function useGameState(myInfo, navigate) {
 
   const me          = players.find(p => p.seat === myInfo?.seat)
   const hand        = me?.hand || []
-  const isMyTurn    = roomData?.current_turn === myInfo?.seat && roomData?.status === 'playing'
+  const isMyTurn    = roomData?.current_turn === myInfo?.seat && roomData?.status === 'playing' && !syncing
   const playable    = getPlayableTiles(hand, boardData, roomData)
   const hasTilesOnBoard = !!boardData?.tiles?.length
 
@@ -664,8 +739,11 @@ export function useGameState(myInfo, navigate) {
     setShowOverlay(false)
 
     // Get current room
-    const { data: room } = await db.from('domino_rooms').select('current_turn, round, game_mode').eq('id', myInfo.roomId).single()
+    const { data: room } = await db.from('domino_rooms').select('current_turn, round, game_mode, status').eq('id', myInfo.roomId).single()
     if (!room) return
+    // Only ever deal from between rounds. A tournament can end the match
+    // at a round's end (the knockout) — dealing then would reopen it.
+    if (room.status !== 'round_end') { await loadGameState(); return }
 
     const winnerSeat = room.current_turn ?? 0
     const nextRound = (room.round ?? 1) + 1
@@ -744,8 +822,11 @@ export function useGameState(myInfo, navigate) {
         is_connected: true,
       }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
     }
+    // A tournament match, or a practice room opened from one, goes back to
+    // the bracket rather than the lobby.
+    const backTo = myInfo?.tournamentMatchId || myInfo?.fromTournament ? '/tournament' : '/'
     sessionStorage.removeItem('domino_player')
-    navigate('/')
+    navigate(backTo)
   }, [myInfo, navigate])
 
   // Watch for disconnected players and replace with bots (host only)
@@ -776,13 +857,18 @@ export function useGameState(myInfo, navigate) {
     if (myInfo.seat !== 0) return
     // Prevent double-fire within the same turn
     if (botRunningRef.current) return
-    const board = boardRef.current
+    // Wait for the table to be re-read before the bot decides anything
+    if (syncing) return
     // Safety reset — if bot gets stuck for 6s, force unlock
     const safetyTimer = setTimeout(() => { botRunningRef.current = false }, 6000)
     const timer = setTimeout(async () => {
       if (botRunningRef.current) return
       botRunningRef.current = true
-      const botHand     = currentPlayer.hand || []
+      // Read the board and hand NOW, after the sync and the think time —
+      // not when the turn changed, when they could have been a tile behind.
+      const board = boardRef.current
+      const freshBot = (playersRef.current || []).find(p => p.seat === currentPlayer.seat) || currentPlayer
+      const botHand     = freshBot.hand || []
       const botPlayable = getPlayableTiles(botHand, board, roomData)
 
       // Bot moves are written through play_move — the exact function human
@@ -911,7 +997,7 @@ export function useGameState(myInfo, navigate) {
       loadGameState()
     }, 1200)
     return () => { clearTimeout(timer); clearTimeout(safetyTimer); botRunningRef.current = false }
-  }, [roomData?.current_turn, roomData?.status])
+  }, [roomData?.current_turn, roomData?.status, syncing])
 
   return {
     roomData, players, boardData, selectedTile, showPicker,
