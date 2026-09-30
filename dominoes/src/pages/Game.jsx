@@ -57,6 +57,62 @@ export default function Game() {
   // but the board didn't grow" — but the turn and the new tile arrive
   // separately, so it announced knocks after real moves and missed real
   // knocks. Never guess this again.)
+  // ── Practising with your partner during a tournament ────────────────────
+  // This room is a warm-up. Keep an eye on the real bracket, and the moment
+  // your team's match is ready or live, say so — with a way straight in —
+  // so a match can't be lost as a walkover while you're practising.
+  const practiceFor = (myInfo?.fromTournament && myInfo?.sideId && !myInfo?.tournamentMatchId)
+    ? { tournamentId: myInfo.tournamentId, sideId: myInfo.sideId } : null
+  const [realMatch, setRealMatch] = useState(null)
+  const [joining, setJoining] = useState(false)
+
+  useEffect(() => {
+    if (!practiceFor?.tournamentId) return
+    let off = false
+    const check = async () => {
+      const { data } = await db.from('tournament_matches')
+        .select('*').eq('tournament_id', practiceFor.tournamentId)
+      if (off) return
+      const mine = (data || []).find(m =>
+        m.status !== 'done' && m.status !== 'forfeit' &&
+        [m.side_a, m.side_b, m.side_c, m.side_d].includes(practiceFor.sideId))
+      setRealMatch(mine || null)
+    }
+    check()
+    const ch = db.channel('practice-watch-' + practiceFor.sideId)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'tournament_matches', filter: `tournament_id=eq.${practiceFor.tournamentId}` },
+        () => check())
+      .subscribe()
+    const t = setInterval(() => { if (document.visibilityState === 'visible') check() }, 30000)
+    return () => { off = true; clearInterval(t); db.removeChannel(ch) }
+  }, [practiceFor?.tournamentId, practiceFor?.sideId])
+
+  // Straight into the real match: open (or rejoin) its table and take your seat.
+  async function joinRealMatch() {
+    if (!realMatch || joining) return
+    setJoining(true)
+    const { data, error } = await db.rpc('start_tournament_match', { p_match: realMatch.id })
+    const room = Array.isArray(data) ? data[0] : data
+    if (error || !room?.id) { setJoining(false); navigate('/tournament'); return }
+    const { data: auth } = await db.auth.getUser()
+    const { data: seats } = await db.from('domino_players')
+      .select('seat, nickname, is_ai, user_id').eq('room_id', room.id)
+    const mine = (seats || []).find(r => !r.is_ai && r.user_id === auth?.user?.id)
+    if (!mine) { setJoining(false); navigate('/tournament'); return }
+    sessionStorage.setItem('domino_player', JSON.stringify({
+      seat: mine.seat,
+      nickname: mine.nickname,
+      roomId: room.id,
+      roomCode: room.code,
+      gameMode: room.game_mode || 'asosye',
+      tournamentMatchId: realMatch.id,
+      fromTournament: true,
+    }))
+    // a full load, so the game screen starts cleanly on the new table
+    window.location.assign('/game')
+  }
+
   const knockQueue = useRef([])
   const playersForKnock = useRef(players)
   useEffect(() => { playersForKnock.current = players }, [players])
@@ -108,6 +164,18 @@ export default function Game() {
   return (
     <div className="game-layout">
       {/* Top bar */}
+      {realMatch && (
+        <div className="practice-live">
+          <div>
+            <strong>{realMatch.room_id ? 'Your match is live' : 'Your match is ready'}</strong>
+            <span>This is practice — your real tournament match is waiting.</span>
+          </div>
+          <button className="btn btn-primary" disabled={joining} onClick={joinRealMatch}>
+            {joining ? 'Joining…' : 'Join now'}
+          </button>
+        </div>
+      )}
+
       <div className="top-bar">
         <div className="top-bar-left">
           <span className="game-title">Dekabess!</span>
