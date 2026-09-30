@@ -340,3 +340,11 @@
 }
 .my-clock span { color: var(--ivory-dim); }
 @keyframes clockPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+.away-replace { display: inline-flex; gap: 0.35rem; align-items: center; flex-shrink: 0; }
+.away-replace select {
+  background: var(--surface2); color: var(--ivory); border: 1px solid var(--border);
+  border-radius: 4px; padding: 0.35rem 0.4rem; font-family: 'DM Mono', monospace; font-size: 0.58rem;
+}
+.away-replace .btn { padding: 0.42rem 0.75rem; font-size: 0.56rem; }
+.away-wait { font-size: 0.56rem; color: var(--ivory-dim); font-style: normal; flex-shrink: 0; }
