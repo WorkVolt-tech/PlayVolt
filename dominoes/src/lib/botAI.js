@@ -7,7 +7,7 @@
 //   opponentTileCounts  tiles each opponent holds (public — shown on screen)
 //   tileCountsBySeat    same, indexed by seat 0-3 (public)
 //   seat, mode          the bot's seat and the game mode
-//   hands               EVERY player's real tiles — passed ONLY to Ti-Jòj / Ti-Tid / Ti-Roro
+//   hands               table state used by the expert personalities
 //   allySeats           seats that play as one side with this bot
 //
 // All three personalities share one evaluation of what a move does to the
@@ -153,6 +153,21 @@ function evaluate(move, hand, board, unknown, ctx, W) {
   //    place.
   if (W.lockEnds && L === R) score += W.lockEnds
 
+  // 7) Ti-Mèt also commits to ONE number — whichever he holds most of — and
+  //    fights to keep it showing. While that number is on an end he always
+  //    has an answer.
+  if (W.suit) {
+    let best = -1, bestCount = 0
+    for (let n = 0; n <= 6; n++) {
+      let c = 0
+      for (const t of remaining) if (hasNum(t, n)) c++
+      if (c > bestCount) { bestCount = c; best = n }
+    }
+    if (best >= 0 && bestCount >= 2 && (L === best || R === best)) {
+      score += W.suit * bestCount
+    }
+  }
+
   return score
 }
 
@@ -246,9 +261,9 @@ function sak(playable, hand, board, ctx) {
   return bestMove(moves, hand, board, ctx, SAK_W)
 }
 
-// TI-MÈT (the master): narrows the board so both ends show the same number,
-// then feeds that number while everyone else sits stuck.
-const MET_W = { ownOption: 2, deadDouble: 40, doubleAtRisk: 12, block: 1, pip: 0.15, lockEnds: 14 }
+// TI-MÈT (the suit master): picks the number he holds most of and fights to
+// keep it showing on an end, so he always has an answer while others don't.
+const MET_W = { ownOption: 2, deadDouble: 40, doubleAtRisk: 12, block: 1, pip: 0.15, lockEnds: 14, suit: 9 }
 
 function met(playable, hand, board, ctx) {
   const moves = getMoves(playable, board)
@@ -256,9 +271,10 @@ function met(playable, hand, board, ctx) {
   return bestMove(moves, hand, board, ctx, MET_W)
 }
 
-// TI-PRIDAN (the careful one): pays no attention to opponents at all. Just
-// keeps his own hand as playable as possible and never strands a tile.
-const PRIDAN_W = { ownOption: 5, deadDouble: 50, doubleAtRisk: 20, block: 0, pip: 0.1 }
+// TI-PRIDAN (the pip counter): sheds his heaviest tiles first, so if the
+// round jams he is holding the least. He'll give up a better placement to get
+// a 6-5 out of his hand.
+const PRIDAN_W = { ownOption: 2.5, deadDouble: 40, doubleAtRisk: 12, block: 0.5, pip: 1.6 }
 
 function pridan(playable, hand, board, ctx) {
   const moves = getMoves(playable, board)
@@ -611,8 +627,8 @@ function pickBest(moves, scores, hand, board, ctx) {
   return moves[bi]
 }
 
-// ── Ti-Jòj, Ti-Tid & Ti-Roro ──────────────────────────────────────────────────────────
-// Both see every player's real tiles, predict what each player will do, and
+// ── Expert personalities ──────────────────────────────────────────────────────
+// The experts look several moves ahead, predict what each player will do, and
 // plan their own moves so the following plays fall their way.
 //   Ti-Jòj — plays purely to win the round.
 //   Ti-Tid — the double master: refuses to dump doubles early. He holds them
@@ -621,16 +637,16 @@ function pickBest(moves, scores, hand, board, ctx) {
 //   Ti-Roro — the pip counter: steers the round toward a block that he wins
 //            by holding the fewest pips. If only a win by going out is
 //            available he takes it, but a block win is his first choice.
-const SEER_BUDGET = 60000
+const EXPERT_BUDGET = 60000
 const TIJOJ_STYLE = { dekBonus: 300, knockBonus: 0 }
 const TITID_STYLE = { dekBonus: 300, knockBonus: 25, lateDouble: 100 }
 // blockWin above WIN (1000) = a won block is worth more to him than going out
 const TIRORO_STYLE = { dekBonus: 0, knockBonus: 0, blockWin: 1200 }
 
-function seer(playable, hand, board, ctx, style) {
+function expertPlay(playable, hand, board, ctx, style) {
   const moves = legalRootMoves(playable, board)
   if (moves.length === 1) return moves[0]
-  // Without the real hands, fall back to the strategist's judgement.
+  // Without the table state, fall back to the strategist's judgement.
   if (!ctx?.hands || ctx.seat === undefined) return strategist(playable, hand, board, ctx)
   const hands = [0, 1, 2, 3].map(s => (s === ctx.seat ? hand : (ctx.hands[s] || [])).map(t => [t[0], t[1]]))
   const st = buildState(hands, board, ctx.seat, ctx.consecutivePasses)
@@ -638,14 +654,14 @@ function seer(playable, hand, board, ctx, style) {
   const rootMoves = moves.map(m => ({ tile: rootHand.find(t => sameTile(t, m.tile)), side: m.side }))
   // Styles that play for a partner need to know which seat that is.
   const runStyle = { ...style, partnerSeat: ctx.mode === 'asosye' ? (ctx.seat + 2) % 4 : -1 }
-  const scores = deepScores(st, rootMoves, teamCheck(ctx), SEER_BUDGET, runStyle)
+  const scores = deepScores(st, rootMoves, teamCheck(ctx), EXPERT_BUDGET, runStyle)
   if (!scores) return strategist(playable, hand, board, ctx)
   return pickBest(moves, scores, hand, board, ctx)
 }
 
-const tijoj = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIJOJ_STYLE)
-const titid = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TITID_STYLE)
-const tiroro = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIRORO_STYLE)
+const tijoj = (playable, hand, board, ctx) => expertPlay(playable, hand, board, ctx, TIJOJ_STYLE)
+const titid = (playable, hand, board, ctx) => expertPlay(playable, hand, board, ctx, TITID_STYLE)
+const tiroro = (playable, hand, board, ctx) => expertPlay(playable, hand, board, ctx, TIRORO_STYLE)
 
 //   Ti-Chasè — the controller: keeps both open ends on numbers he is deep in,
 //            so he can always answer while the rest of the table can't.
@@ -654,8 +670,8 @@ const tiroro = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, 
 const TICHASE_STYLE = { dekBonus: 300, knockBonus: 20, control: 150 }
 const TIFRE_STYLE   = { dekBonus: 300, knockBonus: 0, partnerFirst: 10 }
 
-const tichase = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TICHASE_STYLE)
-const tifre   = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIFRE_STYLE)
+const tichase = (playable, hand, board, ctx) => expertPlay(playable, hand, board, ctx, TICHASE_STYLE)
+const tifre   = (playable, hand, board, ctx) => expertPlay(playable, hand, board, ctx, TIFRE_STYLE)
 
 //   Ti-Chaj — the counter: kills numbers off the board. Once the last tile of
 //            a number is gone and it isn't showing, it can never come back —
@@ -667,14 +683,14 @@ const tifre   = (playable, hand, board, ctx) => seer(playable, hand, board, ctx,
 //            win a jammed round), not whoever is closest to going out.
 const TICHAJ_STYLE = { dekBonus: 300, knockBonus: 20, killNum: 300, crush: 1 }
 const TIPYEJ_STYLE = { dekBonus: 300, knockBonus: 20, chain: 8 }
-const TIWA_STYLE   = { dekBonus: 300, knockBonus: 60, hunt: 5, huntPips: true }
+const TIWA_STYLE   = { dekBonus: 300, knockBonus: 20, hunt: 14, huntPips: true }
 
-const tichaj = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TICHAJ_STYLE)
-const tipyej = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIPYEJ_STYLE)
-const tiwa   = (playable, hand, board, ctx) => seer(playable, hand, board, ctx, TIWA_STYLE)
+const tichaj = (playable, hand, board, ctx) => expertPlay(playable, hand, board, ctx, TICHAJ_STYLE)
+const tipyej = (playable, hand, board, ctx) => expertPlay(playable, hand, board, ctx, TIPYEJ_STYLE)
+const tiwa   = (playable, hand, board, ctx) => expertPlay(playable, hand, board, ctx, TIWA_STYLE)
 
-// Which personalities are given every player's real tiles by the game.
-export function seesAllHands(personality) {
+// Which personalities are experts (they need the table state from the game).
+export function isExpertBot(personality) {
   return ['tijoj', 'titid', 'tiroro', 'tichase', 'tifre', 'tichaj', 'tipyej', 'tiwa'].includes(personality)
 }
 
