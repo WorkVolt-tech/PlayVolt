@@ -34,12 +34,28 @@ export default function StoryChallenge() {
   })()
 
   const [index, setIndex] = useState(saved?.index ?? 0)
-  const [st, setSt] = useState(null)
+  const [st, setSt] = useState(saved?.st ?? null)
   const [selected, setSelected] = useState(null)
+  const [pileOpen, setPileOpen] = useState(false)   // the pick-a-tile sheet
+  // Open the pile by itself the moment you have nothing to play
+  useEffect(() => {
+    const must = !!st && st.status === 'playing' && st.turn === 0 &&
+                 !!st.usePile && st.pile.length > 0 && !Engine.canPlay(st)
+    if (must) setPileOpen(true)
+    else setPileOpen(false)
+  }, [st])
+  // Rounds already counted toward the best-of-three, by deal — so a refresh
+  // straight after a round can't count it twice.
+  const counted = useRef(new Set(saved?.counted || []))
+  // Challenges already written to your account on this device.
+  const recordedKeys = useRef(new Set(saved?.recorded || []))
+  // Restoring a round in play: skip the automatic first deal.
+  const resumeRound = useRef(!!saved?.st)
+
   const [wins, setWins] = useState(saved?.wins ?? 0)        // rounds won, for best-of-three
   const [losses, setLosses] = useState(saved?.losses ?? 0)
   const [result, setResult] = useState(null) // challenge finished
-  const [partner, setPartner] = useState(null)   // chosen teammate, when the challenge says 'pick'
+  const [partner, setPartner] = useState(saved?.partner ?? null)   // chosen teammate, when the challenge says 'pick'
   const [story, setStory] = useState(saved?.introSeen ? null : 'intro')   // 'intro' | null | 'outro'
   const [unlocked, setUnlocked] = useState([])   // bots this player has earned
   const [saving, setSaving] = useState(false)
@@ -71,16 +87,24 @@ export default function StoryChallenge() {
   }, [user, chapter])
 
   // a new challenge clears the previous pick
-  useEffect(() => { setPartner(null) }, [index])
+  const lastIndex = useRef(index)
+  useEffect(() => {
+    if (lastIndex.current === index) return      // first load: keep a restored partner
+    lastIndex.current = index
+    setPartner(null)
+  }, [index])
 
   // remember where we are, so a refresh picks up here
   useEffect(() => {
     try {
       localStorage.setItem(posKey, JSON.stringify({
         index, wins, losses, introSeen: story !== 'intro',
+        st, partner,
+        counted: [...counted.current],
+        recorded: [...recordedKeys.current],
       }))
     } catch { /* storage unavailable */ }
-  }, [posKey, index, wins, losses, story])
+  }, [posKey, index, wins, losses, story, st, partner])
 
   const clearSaved = useCallback(() => {
     try { localStorage.removeItem(posKey) } catch { /* ignore */ }
@@ -97,11 +121,17 @@ export default function StoryChallenge() {
           pile: !!challenge.pile,
           objective: challenge.objective || { kind: 'win' },
         }
-    setSt(Engine.settleTurn(Engine.startGame(cfg)))
+    const fresh = Engine.settleTurn(Engine.startGame(cfg))
+    setSt({ ...fresh, dealId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
     setSelected(null)
   }, [challenge, partner])
 
-  useEffect(() => { deal() }, [deal])
+  useEffect(() => {
+    // After a refresh, the saved round is already on the table — don't deal
+    // over it. Every later change (next challenge, a partner picked) deals.
+    if (resumeRound.current) { resumeRound.current = false; return }
+    deal()
+  }, [deal])
 
   // Who sits where. Seat 0 is always the player.
   //   2 seats  -> opponent at 1
@@ -168,9 +198,14 @@ export default function StoryChallenge() {
     const outcome = Engine.evaluateObjective(st)
     if (!best) { setResult(outcome); return }
 
-    const w = wins + (outcome.won ? 1 : 0)
-    const l = losses + (outcome.won ? 0 : 1)
-    setWins(w); setLosses(l)
+    // A round already counted (you refreshed right after it) isn't counted again
+    const already = !!st.dealId && counted.current.has(st.dealId)
+    const w = already ? wins : wins + (outcome.won ? 1 : 0)
+    const l = already ? losses : losses + (outcome.won ? 0 : 1)
+    if (!already) {
+      if (st.dealId) counted.current.add(st.dealId)
+      setWins(w); setLosses(l)
+    }
     if (w >= 2 || l >= 2) setResult({ ...outcome, met: w >= 2, stars: w >= 2 ? (l === 0 ? 3 : 2) : 0 })
     else setTimeout(deal, 1200)
   }, [st, result, challenge, wins, losses, deal])
@@ -180,12 +215,11 @@ export default function StoryChallenge() {
   // instead — or close the tab — and a chapter you had actually finished was
   // never recorded. The result is now saved the moment it's earned; the
   // buttons only decide where you go next.
-  const savedResultRef = useRef(null)
   useEffect(() => {
     if (!result?.met || !user || !challenge) return
     const key = `${chapter.id}:${challenge.id}`
-    if (savedResultRef.current === key) return      // already saved this one
-    savedResultRef.current = key
+    if (recordedKeys.current.has(key)) return       // already saved, even across a refresh
+    recordedKeys.current.add(key)
     const last = index === (chapter.challenges.length - 1)
     ;(async () => {
       const { error } = await db.rpc('record_challenge', {
@@ -368,21 +402,45 @@ export default function StoryChallenge() {
 
       <div className="board-container">
         {st?.usePile && st.pile.length > 0 && (
-          <div className={`pile-stack ${mustDraw ? 'active' : ''}`}>
-            <div className="pile-tiles">
-              {st.pile.map((_, i) => (
-                <button
-                  key={i}
-                  className="pile-tile"
-                  disabled={!mustDraw}
-                  onClick={() => setSt(prev => (prev && prev.turn === 0 ? Engine.drawFrom(prev, i) : prev))}
-                  title={mustDraw ? 'Take this one' : 'Draw pile'}
-                />
-              ))}
-            </div>
-            <span className="pile-count">{st.pile.length}</span>
-            <span className="pile-label">{mustDraw ? 'pick one' : 'pile'}</span>
-          </div>
+          <>
+            {/* Compact in the corner, so it never covers the chain on a narrow
+                phone. When you have to draw, tap it (or it opens itself) and
+                every tile is laid out to pick from. */}
+            <button
+              className={`pile-stack ${mustDraw ? 'active' : ''}`}
+              disabled={!mustDraw}
+              onClick={() => setPileOpen(true)}
+              title={mustDraw ? 'Draw from the pile' : 'Draw pile'}
+            >
+              <span className="pile-mini" aria-hidden="true">
+                <span /><span /><span />
+              </span>
+              <span className="pile-count">{st.pile.length}</span>
+              <span className="pile-label">{mustDraw ? 'tap to draw' : 'pile'}</span>
+            </button>
+
+            {pileOpen && mustDraw && (
+              <div className="pile-sheet-overlay" onClick={() => setPileOpen(false)}>
+                <div className="pile-sheet" onClick={e => e.stopPropagation()}>
+                  <div className="pile-sheet-title">Nothing to play — pick a tile from the pile</div>
+                  <div className="pile-grid">
+                    {st.pile.map((_, i) => (
+                      <button
+                        key={i}
+                        className="pile-tile"
+                        onClick={() => {
+                          setSt(prev => (prev && prev.turn === 0 ? Engine.drawFrom(prev, i) : prev))
+                          setPileOpen(false)
+                        }}
+                        title="Take this one"
+                      />
+                    ))}
+                  </div>
+                  <button className="pile-sheet-close" onClick={() => setPileOpen(false)}>Look at the board first</button>
+                </div>
+              </div>
+            )}
+          </>
         )}
         <OpponentHands players={fakePlayers} myInfo={fakeMe} roomData={fakeRoom} />
         <Board
