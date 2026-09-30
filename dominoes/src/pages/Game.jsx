@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
+import { NORMAL_CIRCUIT, EXPERT_CIRCUIT } from '../story/chapters'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
 import { canPlayOnSide } from '../hooks/useGameState'
@@ -32,7 +33,7 @@ export default function Game() {
     roomData, players, boardData, selectedTile, showPicker,
     showOverlay, toast, isProcessing,
     hand, isMyTurn, playable, hasTilesOnBoard, replaceWithBot,
-    awaySeats, standIn, turnStart, turnLimitMs,
+    awaySeats, standIn, turnStart, turnLimitMs, deciderSeat,
     selectTile, placeTile, passMove, cancelSelection,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
@@ -114,6 +115,22 @@ export default function Game() {
     window.location.assign('/game')
   }
 
+  // ── Choosing a replacement bot ────────────────────────────────────────────
+  // Every regular, plus any expert this player has unlocked in Story Mode.
+  const [myExperts, setMyExperts] = useState([])
+  useEffect(() => {
+    let off = false
+    db.auth.getUser().then(({ data }) => {
+      if (!data?.user) return
+      db.rpc('ensure_story_progress').then(({ data: row }) => {
+        const r = Array.isArray(row) ? row[0] : row
+        if (!off) setMyExperts((r?.unlocked_bots || []).filter(b => EXPERT_CIRCUIT.includes(b)))
+      })
+    })
+    return () => { off = true }
+  }, [])
+  const [pick, setPick] = useState({})     // seat -> chosen bot
+
   // ── Turn clock display ────────────────────────────────────────────────────
   const [clockNow, setClockNow] = useState(() => Date.now())
   useEffect(() => {
@@ -189,25 +206,56 @@ export default function Game() {
         </div>
       )}
 
-      {(awaySeats || []).length > 0 && roomData?.status === 'playing' && (
-        <div className="away-notice">
-          {(awaySeats || []).map(seat => {
-            const who = players.find(pl => pl.seat === seat)
-            if (!who || who.stand_in) return null
-            return (
-              <div key={seat} className="away-row">
-                <span><strong>{who.nickname}</strong> has dropped out — phone or connection.</span>
-                <button className="btn btn-primary" onClick={() => standIn(seat)}>
-                  Let a bot play for them
-                </button>
-              </div>
-            )
-          })}
-          <div className="away-hint">
-            Their seat stays theirs. When they reopen the game or rejoin with the room code, they take it straight back.
+      {(() => {
+        if (!roomData || (roomData.status !== 'playing' && roomData.status !== 'round_end')) return null
+        // Seats that need a decision: players who dropped out, and players who left.
+        const dropped = (awaySeats || [])
+          .map(seat => players.find(pl => pl.seat === seat))
+          .filter(p => p && !p.stand_in)
+        const left = players.filter(p => p.stand_in && p.left_at)
+        if (!dropped.length && !left.length) return null
+        const inUse = players.map(p => p.nickname)
+        const choices = [...NORMAL_CIRCUIT, ...myExperts].filter(b => !inUse.includes(b))
+        const nameOf = seat => players.find(pl => pl.seat === seat)?.nickname || 'someone'
+        const isTeam = roomData.game_mode === 'asosye'
+        return (
+          <div className="away-notice">
+            {dropped.map(p => {
+              const d = deciderSeat(p.seat)
+              return (
+                <div key={'d' + p.seat} className="away-row">
+                  <span><strong>{p.nickname}</strong> has dropped out.</span>
+                  {d === myInfo.seat
+                    ? <button className="btn btn-primary" onClick={() => standIn(p.seat)}>Let a bot play for them</button>
+                    : <em className="away-wait">{isTeam ? 'their partner' : 'the host'} ({nameOf(d)}) decides</em>}
+                </div>
+              )
+            })}
+            {left.map(p => {
+              const d = deciderSeat(p.seat)
+              const chosen = pick[p.seat] || choices[0] || 'Ti-Djo'
+              return (
+                <div key={'l' + p.seat} className="away-row">
+                  <span><strong>{p.nickname}</strong> left the table.</span>
+                  {d === myInfo.seat ? (
+                    <span className="away-replace">
+                      <select value={chosen} onChange={e => setPick(prev => ({ ...prev, [p.seat]: e.target.value }))}>
+                        {choices.map(b => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                      <button className="btn btn-primary" onClick={() => replaceWithBot(p.seat, chosen)}>Replace</button>
+                    </span>
+                  ) : (
+                    <em className="away-wait">{isTeam ? 'their partner' : 'the host'} ({nameOf(d)}) chooses a replacement</em>
+                  )}
+                </div>
+              )
+            })}
+            <div className="away-hint">
+              A bot keeps their seat moving meanwhile. Until they're replaced, they can still come back with the room code.
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       <div className="top-bar">
         <div className="top-bar-left">
@@ -223,6 +271,7 @@ export default function Game() {
             ].join(' ')}>
               <div className="tag-dot" />
               <span>{p.nickname}{p.seat === myInfo.seat ? ' ★' : ''}</span>
+              {p.stand_in && p.left_at && <span className="tag-away">left</span>}
               {p.stand_in && <span className="tag-standin" title="A bot is playing until they're back">🤖 bot playing</span>}
               {!p.stand_in && (awaySeats || []).includes(p.seat) && <span className="tag-away">away</span>}
               {passingSeats.has(p.seat) && <span className="tag-pass">PASS</span>}
