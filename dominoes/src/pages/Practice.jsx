@@ -65,7 +65,7 @@ export default function Practice({ embedded = false, onExit }) {
   const seenLog = useRef(saved?.st?.log?.length || 0)
 
   const deal = useCallback((cfg) => {
-    const fresh = Engine.settleTurn(Engine.startGame({ seats: cfg.seats, pile: cfg.pile }))
+    const fresh = Engine.settleTurn(Engine.startGame({ seats: cfg.seats, pile: cfg.pile, forceDoubleSix: true }))
     setSt({ ...fresh, dealId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
     setSelected(null)
   }, [])
@@ -188,6 +188,9 @@ export default function Practice({ embedded = false, onExit }) {
         else if (use === 'right' && !cR) use = cL ? 'left' : null
         if (!use) return prev
       } else {
+        // the opening tile has to be one the rules allow (the required double)
+        const ok = Engine.legalMoves(prev, 0).some(m => m.tile[0] === tile[0] && m.tile[1] === tile[1])
+        if (!ok) return prev
         use = 'first'
       }
       return Engine.playTile(prev, tile, use)
