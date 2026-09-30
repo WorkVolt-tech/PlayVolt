@@ -44,23 +44,36 @@ function nextStreak(streak, winner, isDek) {
 export default function SoloGame() {
   const navigate = useNavigate()
 
+  // The game is saved on the device as you play, so a refresh — or closing
+  // the app and coming back — picks up exactly where you were. The lobby
+  // clears this when you start a NEW solo game.
+  const SAVE_KEY = 'solo_game'
+  const saved = (() => {
+    try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') } catch { return null }
+  })()
+
   const setup = (() => {
     try { return JSON.parse(sessionStorage.getItem('solo_setup') || 'null') } catch { return null }
   })()
-  const bots = setup?.bots?.length === 3 ? setup.bots : ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
-  const myName = setup?.nickname || 'You'
+  const bots = setup?.bots?.length === 3 ? setup.bots
+             : saved?.bots?.length === 3 ? saved.bots
+             : ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
+  const myName = setup?.nickname || saved?.nickname || 'You'
 
-  const [round, setRound] = useState(1)
-  const [st, setSt] = useState(() => Engine.startGame({ seats: 4, forceDoubleSix: true }))
-  const [streak, setStreak] = useState({ seat: null, team: null, count: 0 })
+  const [round, setRound] = useState(saved?.round ?? 1)
+  const [st, setSt] = useState(() => saved?.st || Engine.startGame({ seats: 4, forceDoubleSix: true }))
+  const [streak, setStreak] = useState(saved?.streak || { seat: null, team: null, count: 0 })
   const [selected, setSelected] = useState(null)
-  const [roundEnd, setRoundEnd] = useState(null)   // { winner, isDek, blocked, vyej }
+  const [roundEnd, setRoundEnd] = useState(saved?.roundEnd || null)   // { winner, isDek, blocked, vyej }
   const [showDek, setShowDek] = useState(false)
   const botBusy = useRef(false)
   const [knock, setKnock] = useState(null)             // { name, position } while it plays
-  const [passingSeats, setPassingSeats] = useState(new Set())
-  const seenLog = useRef(0)
-  const recorded = useRef(new Set())
+  const [passingSeats, setPassingSeats] = useState(() => new Set(saved?.passing || []))
+  // start from the end of the saved log, so a refresh doesn't replay old knocks
+  const seenLog = useRef(saved?.st?.log?.length || 0)
+  // rounds already recorded to your stats — saved too, so a refresh right
+  // after a round can't record it a second time
+  const recorded = useRef(new Set(saved?.recorded || []))
 
   const names = [myName, ...bots]
   const isMyTurn = st.status === 'playing' && st.turn === 0
@@ -171,6 +184,17 @@ export default function SoloGame() {
     setSt(Engine.startGame({ seats: 4, starter }))
   }, [roundEnd])
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({
+        bots, nickname: myName,
+        round, st, streak, roundEnd,
+        passing: [...passingSeats],
+        recorded: [...recorded.current],
+      }))
+    } catch { /* storage full or unavailable — the game still plays */ }
+  }, [st, round, streak, roundEnd, passingSeats])
+
   const newMatch = useCallback(() => {
     setRound(1)
     setStreak({ seat: null, team: null, count: 0 })
@@ -184,7 +208,11 @@ export default function SoloGame() {
     setSt(Engine.startGame({ seats: 4, forceDoubleSix: true }))
   }, [])
 
-  const leave = () => { sessionStorage.removeItem('solo_setup'); navigate('/') }
+  const leave = () => {
+    sessionStorage.removeItem('solo_setup')
+    localStorage.removeItem(SAVE_KEY)
+    navigate('/')
+  }
 
   // ── placing tiles: same rules and tap behaviour as the live game ───────────
   function playMove(tile, side) {
