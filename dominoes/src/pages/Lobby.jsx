@@ -353,8 +353,34 @@ export default function Lobby() {
     const code = (codeOverride || joinCode).toUpperCase()
     if (code.length !== 6) { setMsg({ text: 'Enter a 6-character room code.', type: 'error' }); return }
 
+    // A game already in progress: if you had a seat at it, take it back.
+    // (Phone died, lost signal, closed the app — a bot has been holding your
+    // seat, and the same code gets you straight back in.)
+    const { data: live } = await db.from('domino_rooms').select('*')
+      .eq('code', code).in('status', ['playing', 'round_end']).maybeSingle()
+    if (live) {
+      const { data: seats } = await db.from('domino_players')
+        .select('seat, nickname, user_id').eq('room_id', live.id)
+      // signed in: match your account; guest: match your nickname
+      const mine = (seats || []).find(r => myUserId ? r.user_id === myUserId : (!r.user_id && r.nickname === nick))
+      if (!mine) {
+        setMsg({ text: 'That game has already started, and you weren’t at the table.', type: 'error' })
+        return
+      }
+      sessionStorage.setItem('domino_player', JSON.stringify({
+        seat: mine.seat,
+        nickname: mine.nickname,
+        roomId: live.id,
+        roomCode: live.code,
+        gameMode: live.game_mode || 'chien',
+        ...(live.tournament_match_id ? { tournamentMatchId: live.tournament_match_id, fromTournament: true } : {}),
+      }))
+      navigate('/game')     // the game takes the seat back from the bot on arrival
+      return
+    }
+
     const { data: room } = await db.from('domino_rooms').select('*').eq('code', code).eq('status', 'waiting').single()
-    if (!room) { setMsg({ text: 'Room not found or game already started.', type: 'error' }); return }
+    if (!room) { setMsg({ text: 'Room not found.', type: 'error' }); return }
 
     const { data: existing } = await db.from('domino_players').select('seat').eq('room_id', room.id)
     const capacity = humanCapacity(room.game_mode)
