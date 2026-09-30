@@ -49,11 +49,11 @@ export const CHAPTERS = [
     id: 1,
     tier: 'normal',
     intro: "Everybody starts at the small table.\n\nTi-Bebe is the one they let win sometimes, just to keep him at the table. He plays whatever looks nice in his hand and never counts what's already down.\n\nSit. Watch the two ends. That's all there is at first.",
-    outro: "Ti-Bebe laughs and pulls up a chair beside you. He's yours now \u2014 bring him along when you need an easy partner.",
+    outro: "Ti-Bebe laughs and waves you on. Everyone starts at this table \u2014 you've already outgrown it.",
     featured: 'Ti-Bebe',
     title: 'Premye Kou',
     theme: 'Placing tiles, reading the two ends',
-    unlocks: 'Ti-Bebe',
+    unlocks: null,          // ordinary bots are available from the start
     challenges: [
       {
         id: 1,
@@ -105,7 +105,7 @@ export const CHAPTERS = [
         opponents: ['Ti-Bebe'],
         rounds: 3,
         boss: true,
-        brief: 'Best of three. Beat him twice and he joins your table.',
+        brief: 'Best of three. Beat him twice to finish the chapter.',
       },
     ],
   },
@@ -116,11 +116,11 @@ export const CHAPTERS = [
     id: 2,
     tier: 'normal',
     intro: "Ti-Sak they call the sack, because nothing ever leaves his hand.\n\nHe holds his doubles like money in a pocket, waiting for the perfect moment that usually never comes. When the table jams, he's the one caught with the weight.\n\nMake it jam.",
-    outro: "He empties the sack at last. Ti-Sak plays with you now \u2014 he's patient, and patience wins the long ones.",
+    outro: "He empties the sack at last. Patience only pays if you can wait longer than everyone else \u2014 today that was you.",
     featured: 'Ti-Sak',
     title: 'Sak La',
     theme: "He keeps his doubles back. Make him pay for the weight he's carrying.",
-    unlocks: 'Ti-Sak',
+    unlocks: null,          // ordinary bots are available from the start
     challenges: [
       {
         id: 1,
@@ -165,7 +165,7 @@ export const CHAPTERS = [
         opponents: ['Ti-Sak'],
         rounds: 3,
         boss: true,
-        brief: 'Best of three. Win it and Ti-Sak joins your table.',
+        brief: 'Best of three against Ti-Sak. Win it to finish the chapter.',
       },
     ],
   },
@@ -173,11 +173,11 @@ export const CHAPTERS = [
     id: 3,
     tier: 'normal',
     intro: "Ti-Pridan counts. Not the tiles you have \u2014 the ones you're stuck with.\n\nHe throws his heavy tiles out early, always. Ask him why and he'll tell you: when the board closes, the lightest hand walks away with it.\n\nHe's not wrong.",
-    outro: "Ti-Pridan nods once. That's approval. He'll count for your side from now on.",
+    outro: "Ti-Pridan nods once. That's approval. He counted every pip, and you still came out lighter.",
     featured: 'Ti-Pridan',
     title: 'Konte Pwen',
     theme: "He sheds his heavy tiles early. If the table jams, he'll be holding almost nothing.",
-    unlocks: 'Ti-Pridan',
+    unlocks: null,          // ordinary bots are available from the start
     challenges: [
       {
         id: 1,
@@ -223,7 +223,7 @@ export const CHAPTERS = [
         opponents: ['Ti-Pridan'],
         rounds: 3,
         boss: true,
-        brief: 'Best of three. Win it and Ti-Pridan joins your table.',
+        brief: 'Best of three against Ti-Pridan. Win it to finish the chapter.',
       },
     ],
   },
@@ -231,11 +231,11 @@ export const CHAPTERS = [
     id: 4,
     tier: 'normal',
     intro: "Ti-Cam plays for the ending, not the middle.\n\nEvery hand, he's looking for the one tile that shuts both ends at the same time. Dekabess. He'll throw away a safe game chasing it, and every so often he catches it.\n\nDon't let him.",
-    outro: "Ti-Cam grins \u2014 he respects someone who saw it coming. He's on your side now, chasing endings for you instead.",
+    outro: "Ti-Cam grins \u2014 he respects someone who saw it coming. He'll be chasing endings at another table tonight.",
     featured: 'Ti-Cam',
     title: 'Chans',
     theme: "He hunts the Dekabess. Close the ends he needs.",
-    unlocks: 'Ti-Cam',
+    unlocks: null,          // ordinary bots are available from the start
     challenges: [
       {
         id: 1,
@@ -280,7 +280,7 @@ export const CHAPTERS = [
         opponents: ['Ti-Cam'],
         rounds: 3,
         boss: true,
-        brief: 'Best of three. Win it and Ti-Cam joins your table.',
+        brief: 'Best of three against Ti-Cam. Win it to finish the chapter.',
       },
     ],
   },
@@ -288,11 +288,11 @@ export const CHAPTERS = [
     id: 5,
     tier: 'normal',
     intro: "Ti-Jean doesn't want to win pretty. He wants you to sit there holding tiles you can't play.\n\nHe closes numbers. He watches which ends you need and takes them away one by one. Against him the board gets smaller every turn.\n\nLeave yourself a way out.",
-    outro: "Ti-Jean shrugs like it was nothing. He'll close the board for you now instead of against you.",
+    outro: "Ti-Jean shrugs like it was nothing. He closed every door he could, and you still found one open.",
     featured: 'Ti-Jean',
     title: 'Bloke',
     theme: "He squeezes your options. Keep a way out.",
-    unlocks: 'Ti-Jean',
+    unlocks: null,          // ordinary bots are available from the start
     challenges: [
       {
         id: 1,
@@ -338,7 +338,7 @@ export const CHAPTERS = [
         opponents: ['Ti-Jean'],
         rounds: 3,
         boss: true,
-        brief: 'Best of three. Win it and Ti-Jean joins your table.',
+        brief: 'Best of three against Ti-Jean. Win it to finish the chapter.',
       },
     ],
   },
@@ -346,11 +346,11 @@ export const CHAPTERS = [
     id: 6,
     tier: 'normal',
     intro: "Ti-Djo has no trick. That's what makes him hard.\n\nHe protects his own hand, takes the blocks that are cheap, and never gives you a free number. Everything the last five taught you, he does all at once.\n\nThis is the real test of the small table.",
-    outro: "Ti-Djo shakes your hand. You've earned the strongest of the regulars \u2014 and you'll need him.",
+    outro: "Ti-Djo shakes your hand. No trick, no weakness \u2014 and you beat him anyway. The regulars are running out of lessons for you.",
     featured: 'Ti-Djo',
     title: 'Estrateji',
     theme: "No weakness to exploit \u2014 he simply plays well.",
-    unlocks: 'Ti-Djo',
+    unlocks: null,          // ordinary bots are available from the start
     challenges: [
       {
         id: 1,
@@ -397,7 +397,7 @@ export const CHAPTERS = [
         opponents: ['Ti-Djo'],
         rounds: 3,
         boss: true,
-        brief: 'Best of three. Win it and Ti-Djo joins your table.',
+        brief: 'Best of three against Ti-Djo. Win it to finish the chapter.',
       },
     ],
   },
@@ -405,11 +405,11 @@ export const CHAPTERS = [
     id: 7,
     tier: 'normal',
     intro: "Ti-M\u00e8t picks a number and makes the whole table play his way.\n\nWhatever he's deep in, he keeps showing. While that number is open he always has an answer, and you're the one reaching.\n\nTake his number away from him.",
-    outro: "Ti-M\u00e8t tips his head. The board is yours to control now \u2014 he'll help you hold it.",
+    outro: "Ti-M\u00e8t tips his head. The board was his, number by number \u2014 until it wasn't.",
     featured: 'Ti-Mèt',
     title: 'Mèt Nimewo',
     theme: "He picks a number and owns it. Take it away from him.",
-    unlocks: 'Ti-Mèt',
+    unlocks: null,          // ordinary bots are available from the start
     challenges: [
       {
         id: 1,
@@ -456,7 +456,7 @@ export const CHAPTERS = [
         opponents: ['Ti-Mèt'],
         rounds: 3,
         boss: true,
-        brief: 'Best of three. Win it and Ti-Mèt joins your table.',
+        brief: 'Best of three against Ti-Mèt. Win it to finish the chapter.',
       },
     ],
   },
@@ -464,11 +464,11 @@ export const CHAPTERS = [
     id: 8,
     tier: 'normal',
     intro: "Ti-Doub is the opposite of Ti-Sak, and twice as dangerous.\n\nEvery double goes down the second he can play it. No weight, no waiting, nothing left to get stuck with. By the end his hand is all easy tiles.\n\nBeat him and the small table is finished with you.",
-    outro: "The small table is done. Every regular plays with you now \u2014 and word is spreading about the player who beat the whole circuit.",
+    outro: "The small table is done. You've beaten every regular it has \u2014 and word is spreading about the player who beat the whole circuit.",
     featured: 'Ti-Doub',
     title: 'Doub Rapid',
     theme: "He dumps every double the moment he can. Punish the gaps that leaves.",
-    unlocks: 'Ti-Doub',
+    unlocks: null,          // ordinary bots are available from the start
     challenges: [
       {
         id: 1,
@@ -514,7 +514,7 @@ export const CHAPTERS = [
         opponents: ['Ti-Doub'],
         rounds: 3,
         boss: true,
-        brief: 'Best of three. Win it and Ti-Doub joins your table.',
+        brief: 'Best of three against Ti-Doub. Win it to finish the chapter.',
       },
     ],
   },
