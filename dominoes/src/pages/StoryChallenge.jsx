@@ -9,7 +9,8 @@ import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
 import KnockAnimation from '../components/KnockAnimation'
-import { canPlayOnSide } from '../hooks/useGameState'
+import DekabessOverlay from '../components/DekabessOverlay'
+import { canPlayOnSide, pipCount } from '../hooks/useGameState'
 import '../pages/Game.css'
 import './StoryChallenge.css'
 
@@ -65,6 +66,9 @@ export default function StoryChallenge() {
   const [saving, setSaving] = useState(false)
   const busyRef = useRef(false)
   const [knock, setKnock] = useState(null)             // { name, position } while it plays
+  const [opener, setOpener] = useState(null)           // "Round 2 · Ti-Sak opens", briefly
+  const [roundPanel, setRoundPanel] = useState(null)   // a finished round, mid-series
+  const [showDek, setShowDek] = useState(false)        // the Dekabess animation
   const [passingSeats, setPassingSeats] = useState(new Set())
   const knockQueue = useRef([])
   // start from the end of a restored log, so a refresh doesn't replay knocks
@@ -163,7 +167,7 @@ export default function StoryChallenge() {
 
   // ── bots take their turns ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!st || st.status !== 'playing' || st.turn === 0 || busyRef.current || knock) return
+    if (!st || st.status !== 'playing' || st.turn === 0 || busyRef.current || knock || opener) return
     busyRef.current = true
     const drawing = !Engine.canPlay(st) && st.usePile && st.pile.length > 0
     const timer = setTimeout(() => {
@@ -200,7 +204,7 @@ export default function StoryChallenge() {
       busyRef.current = false
     }, drawing ? DRAW_DELAY : BOT_DELAY)
     return () => { clearTimeout(timer); busyRef.current = false }
-  }, [st, seatBot, challenge, knock])
+  }, [st, seatBot, challenge, knock, opener])
 
   // You, with nothing to play and nothing to draw: you knock — and you SEE it.
   // (With tiles left in the pile, the pick-a-tile sheet opens instead.)
@@ -248,11 +252,42 @@ export default function StoryChallenge() {
     }
   }, [st?.log])
 
+  // ── Narration ─────────────────────────────────────────────────────────────
+  const nameAt = seat => (seat === 0 ? 'You' : (seatBot(seat) || 'Player'))
+
+  // Who won a round, and how — said plainly, as a table would.
+  const describeRound = useCallback((state) => {
+    if (!state || state.status !== 'over') return null
+    const w = state.winner
+    if (w === -1) return { title: 'Dead end', how: 'Nothing left to play — try the puzzle again.', mine: false }
+    const who = nameAt(w)
+    const title = w === 0 ? 'You win the round' : `${who} wins the round`
+    let how
+    if (state.dekabess) how = `Dekabess — ${w === 0 ? 'you' : who} went out on a tile matching both ends.`
+    else if (state.blocked) {
+      const pips = state.hands.map((h, seat) => `${nameAt(seat)} ${pipCount(h)}`).join(' · ')
+      how = `The table jammed — nobody could play. Fewest pips wins: ${pips}.`
+    } else how = `${w === 0 ? 'You' : who} went out first.`
+    return { title, how, mine: w === 0 }
+  }, [seatBot])
+
+  // A new deal: say who opens, and give it a moment before anyone moves.
+  useEffect(() => {
+    if (!st || st.status !== 'playing' || challenge?.type === 'puzzle') return
+    if ((st.log || []).length > 0) return            // only at the very start of a round
+    const roundNo = challenge?.rounds === 3 ? wins + losses + 1 : null
+    const who = st.turn === 0 ? 'You open' : `${nameAt(st.turn)} opens`
+    setOpener(roundNo ? `Round ${roundNo} · ${who}` : who)
+    const t = setTimeout(() => setOpener(null), 2000)
+    return () => clearTimeout(t)
+  }, [st?.dealId])
+
   // ── a round ended ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!st || st.status !== 'over' || result) return
     const best = challenge?.rounds === 3
-    const outcome = Engine.evaluateObjective(st)
+    const outcome = { ...Engine.evaluateObjective(st), round: describeRound(st) }
+    if (st.dekabess && st.winner >= 0) setShowDek(true)
     if (!best) { setResult(outcome); return }
 
     // A round already counted (you refreshed right after it) isn't counted again
@@ -264,8 +299,8 @@ export default function StoryChallenge() {
       setWins(w); setLosses(l)
     }
     if (w >= 2 || l >= 2) setResult({ ...outcome, met: w >= 2, stars: w >= 2 ? (l === 0 ? 3 : 2) : 0 })
-    else setTimeout(deal, 1200)
-  }, [st, result, challenge, wins, losses, deal])
+    else setRoundPanel({ ...outcome.round, wins: w, losses: l })
+  }, [st, result, challenge, wins, losses, deal, describeRound])
 
   // ── save as soon as it's won ───────────────────────────────────────────────
   // This used to happen when you pressed "Next challenge". Press "Leave"
@@ -440,7 +475,7 @@ export default function StoryChallenge() {
           <span className="sc-chapter">Ch {chapter.id}</span>
         </div>
         <div className="player-tags">
-          {fakePlayers.map(p => (
+          {fakePlayers.filter(p => challenge?.type !== 'puzzle' || p.engineSeat === 0).map(p => (
             <div key={p.seat} className={[
               'player-tag',
               p.seat === fakeRoom.current_turn ? 'active-turn' : '',
@@ -501,7 +536,11 @@ export default function StoryChallenge() {
             )}
           </>
         )}
-        <OpponentHands players={fakePlayers} myInfo={fakeMe} roomData={fakeRoom} />
+        {/* In a puzzle only you play; the other seats just hold the puzzle's
+            remaining tiles, so they aren't shown. */}
+        {challenge?.type !== 'puzzle' && (
+          <OpponentHands players={fakePlayers} myInfo={fakeMe} roomData={fakeRoom} />
+        )}
         <Board
           boardData={st?.board}
           selectedTile={selected}
@@ -541,14 +580,44 @@ export default function StoryChallenge() {
         hasTilesOnBoard={!!st?.board?.tiles?.length}
       />
 
-      {result && (
+      {opener && <div className="sc-opener">{opener}</div>}
+
+      {showDek && st?.winner >= 0 && (
+        <DekabessOverlay playerName={nameAt(st.winner)} onDone={() => setShowDek(false)} />
+      )}
+
+      {roundPanel && !result && !showDek && (
+        <div className="sc-overlay">
+          <div className="sc-card">
+            <h2>{roundPanel.title}</h2>
+            <p>{roundPanel.how}</p>
+            <div className="sc-series">
+              {(st?.seats ?? 4) === 2
+                ? <>You <strong>{roundPanel.wins}</strong> — <strong>{roundPanel.losses}</strong> {nameAt(1)}</>
+                : <>Rounds won <strong>{roundPanel.wins}</strong> · lost <strong>{roundPanel.losses}</strong></>}
+              <span> · best of three</span>
+            </div>
+            <div className="sc-actions">
+              <button className="sc-btn" onClick={() => { setRoundPanel(null); deal() }}>Next round</button>
+              <button className="sc-btn ghost" onClick={() => navigate('/story')}>Leave</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {result && !showDek && (
         <div className="sc-overlay">
           <div className="sc-card">
             <h2>{result.met ? 'Challenge complete' : 'Not this time'}</h2>
+            {result.round && challenge?.type !== 'puzzle' && (
+              <p className="sc-round-line"><strong>{result.round.title}.</strong> {result.round.how}</p>
+            )}
             <p>
               {result.met
-                ? (result.dekabess ? 'Dekabess!' : result.blocked ? 'Won on pips.' : 'You went out first.')
-                : 'Objective not met.'}
+                ? (challenge?.type === 'puzzle'
+                    ? (result.dekabess ? 'Solved — Dekabess!' : result.blocked ? 'Solved — the table jammed in your favour.' : 'Solved.')
+                    : (challenge?.rounds === 3 ? `You took the series ${wins}–${losses}.` : 'You won.'))
+                : (challenge?.type === 'puzzle' ? 'That line didn’t get there.' : (challenge?.rounds === 3 ? `They took the series ${losses}–${wins}.` : 'Objective not met.'))}
             </p>
             {result.met && <div className="sc-stars">{'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}</div>}
             <div className="sc-actions">
