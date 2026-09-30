@@ -226,6 +226,8 @@ export default function Tournament() {
       roomCode: room.code,
       gameMode: 'asosye',
       fromTournament: true,      // so leaving goes back to the bracket
+      tournamentId: open.id,     // so the practice table can tell you when
+      sideId: mySide.id,         //   your real match is ready
     }))
     navigate('/game')
   }
