@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
-import { chooseTile, getPersonality, seesAllHands } from '../lib/botAI'
+import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 
 // Turn timing. Off by default; switch it on from the console with
 //   localStorage.setItem('domino_timing','1')   (then reload)
@@ -938,9 +938,8 @@ export function useGameState(myInfo, navigate) {
         tileCountsBySeat,
         allySeats,
       }
-      // Ti-Jòj, Ti-Tid and Ti-Roro see everyone's real tiles — by design. No other
-      // personality is ever given them.
-      if (seesAllHands(personality)) {
+      // Expert personalities get the full table state; ordinary ones don't.
+      if (isExpertBot(personality)) {
         botCtx.hands = [0, 1, 2, 3].map(s => players.find(p => p.seat === s)?.hand || [])
       }
       const move = chooseTile(personality, botPlayable, botHand, board, botCtx)
