@@ -250,3 +250,29 @@
   .sc-story-card { padding: 1.8rem 1.2rem 1.5rem; }
   .sc-story-text { font-size: 0.72rem; }
 }
+
+/* ── round narration ───────────────────────────────────────────── */
+.sc-opener {
+  position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%);
+  z-index: 250; pointer-events: none;
+  background: rgba(26,24,20,0.94);
+  border: 1px solid var(--gold); border-radius: 30px;
+  padding: 0.6rem 1.4rem;
+  font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--gold);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  animation: openerIn 2s ease both;
+}
+@keyframes openerIn {
+  0%   { opacity: 0; transform: translate(-50%, -40%); }
+  15%  { opacity: 1; transform: translate(-50%, -50%); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+.sc-series {
+  font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--ivory);
+  margin: -0.2rem 0 1.2rem;
+}
+.sc-series strong { color: var(--gold); font-size: 0.95rem; }
+.sc-series span { color: var(--ivory-dim); font-size: 0.6rem; }
+.sc-round-line { color: var(--ivory) !important; }
+.sc-round-line strong { color: var(--gold); }
