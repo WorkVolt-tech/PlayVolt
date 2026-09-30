@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { db } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
 import { canPlayOnSide } from '../hooks/useGameState'
@@ -50,53 +51,57 @@ export default function Game() {
     }
   }, [showOverlay, roomData?.pending_point])
 
-  // Knocks, worked out from what's already on screen.
-  //
-  // This used to fetch the last 8 game_events every time the turn changed —
-  // an extra round trip per turn, for every player, purely to animate a knock.
-  // The board already tells us: if the turn moved on and no tile was added,
-  // the player whose turn it was must have knocked.
-  const prevTurnRef  = useRef(null)
-  const prevCountRef = useRef(0)
+  // Knocks come from the move log itself. Every play and every pass writes a
+  // game_event saying exactly who did what, and those arrive in the order
+  // they happened. (An earlier version guessed a knock from "the turn moved
+  // but the board didn't grow" — but the turn and the new tile arrive
+  // separately, so it announced knocks after real moves and missed real
+  // knocks. Never guess this again.)
+  const knockQueue = useRef([])
+  const playersForKnock = useRef(players)
+  useEffect(() => { playersForKnock.current = players }, [players])
+
+  const showNextKnock = useCallback(() => {
+    const next = knockQueue.current.shift()
+    setKnockPlayer(next || null)
+  }, [])
 
   useEffect(() => {
-    const currentTurn = roomData?.current_turn
-    const count = boardData?.tiles?.length ?? 0
-    const prevTurn = prevTurnRef.current
-    const prevCount = prevCountRef.current
-
-    // first render, or a fresh round — just take a reading
-    if (prevTurn === null || count < prevCount) {
-      prevTurnRef.current = currentTurn
-      prevCountRef.current = count
-      setPassingSeats(new Set())
-      return
-    }
-
-    if (currentTurn !== prevTurn) {
-      const seat = prevTurn                  // whoever just had the turn
-      if (count > prevCount) {
-        // they placed a tile — they're no longer knocking
-        setPassingSeats(prev => {
-          if (!prev.has(seat)) return prev
-          const next = new Set(prev); next.delete(seat); return next
+    if (!myInfo?.roomId) return
+    const ch = db.channel('knocks-' + myInfo.roomId)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'game_events', filter: `room_id=eq.${myInfo.roomId}` },
+        payload => {
+          const e = payload.new
+          if (!e || !Number.isInteger(e.player_seat)) return
+          if (e.action === 'pass') {
+            setPassingSeats(prev => new Set(prev).add(e.player_seat))
+            const p = playersForKnock.current.find(pl => pl.seat === e.player_seat)
+            const mySeat = myInfo?.seat ?? 0
+            const diff = ((e.player_seat - mySeat) + 4) % 4
+            const posMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' }
+            const knock = { name: p?.nickname || 'Player', position: posMap[diff] }
+            // several knocks in a row each get shown, one after another
+            setKnockPlayer(cur => {
+              if (cur) { knockQueue.current.push(knock); return cur }
+              return knock
+            })
+          } else if (e.action === 'place') {
+            setPassingSeats(prev => {
+              if (!prev.has(e.player_seat)) return prev
+              const next = new Set(prev); next.delete(e.player_seat); return next
+            })
+          }
         })
-      } else {
-        // the turn moved but the board didn't grow: that was a knock
-        setPassingSeats(prev => new Set(prev).add(seat))
-        const p = players.find(pl => pl.seat === seat)
-        if (p) {
-          const mySeat = myInfo?.seat ?? 0
-          const diff = ((seat - mySeat) + 4) % 4
-          const posMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' }
-          setKnockPlayer({ name: p.nickname, position: posMap[diff] })
-        }
-      }
-    }
+      .subscribe()
+    return () => { db.removeChannel(ch) }
+  }, [myInfo?.roomId, myInfo?.seat])
 
-    prevTurnRef.current = currentTurn
-    prevCountRef.current = count
-  }, [roomData?.current_turn, boardData?.tiles?.length, players, myInfo?.seat])
+  // a new round starts clean
+  useEffect(() => {
+    setPassingSeats(new Set())
+    knockQueue.current = []
+  }, [roomData?.round])
 
   if (!myInfo || !roomData) return <div className="loading">Loading…</div>
 
@@ -183,7 +188,7 @@ export default function Game() {
         <KnockAnimation
           playerName={knockPlayer.name}
           position={knockPlayer.position}
-          onDone={() => setKnockPlayer(null)}
+          onDone={showNextKnock}
         />
       )}
 
