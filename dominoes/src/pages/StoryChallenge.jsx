@@ -127,17 +127,35 @@ export default function StoryChallenge() {
   }, [posKey])
 
   // ── set up a round ─────────────────────────────────────────────────────────
-  const deal = useCallback(() => {
+  // Who opens, as at any table:
+  //   • the first round of a challenge — whoever holds the 6-6, and they must
+  //     play it. In a pile game the 6-6 can be in the pile; then the highest
+  //     double opens (and if nobody has a double, it's a random seat — never
+  //     always you).
+  //   • every round after — the previous round's winner, with any tile.
+  const deal = useCallback((opts = {}) => {
     if (!challenge) return
     if (challenge.partner === 'pick' && !partner) return   // wait for the pick
+    const winnerOpens = Number.isInteger(opts.starter) && opts.starter >= 0
     const cfg = challenge.type === 'puzzle'
       ? { seats: 4, deal: challenge.deal, objective: challenge.objective, moves: challenge.moves }
       : {
           seats: challenge.seats || 4,
           pile: !!challenge.pile,
           objective: challenge.objective || { kind: 'win' },
+          ...(winnerOpens ? { starter: opts.starter } : { forceDoubleSix: true }),
         }
-    const fresh = Engine.settleTurn(Engine.startGame(cfg))
+    let fresh = Engine.startGame(cfg)
+    if (challenge.type !== 'puzzle' && !winnerOpens &&
+        !fresh.hands.some(h => h.some(t => t[0] === 6 && t[1] === 6))) {
+      let best = -1, seat = -1
+      fresh.hands.forEach((h, sIdx) => h.forEach(t => {
+        if (t[0] === t[1] && t[0] > best) { best = t[0]; seat = sIdx }
+      }))
+      if (seat < 0) seat = Math.floor(Math.random() * fresh.seats)
+      fresh = { ...fresh, turn: seat }
+    }
+    fresh = Engine.settleTurn(fresh)
     setSt({ ...fresh, dealId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
     setSelected(null)
   }, [challenge, partner])
@@ -302,7 +320,7 @@ export default function StoryChallenge() {
       setWins(w); setLosses(l)
     }
     if (w >= 2 || l >= 2) setResult({ ...outcome, met: w >= 2, stars: w >= 2 ? (l === 0 ? 3 : 2) : 0 })
-    else setRoundPanel({ ...outcome.round, wins: w, losses: l })
+    else setRoundPanel({ ...outcome.round, wins: w, losses: l, winner: st.winner })
   }, [st, result, challenge, wins, losses, deal, describeRound])
 
   // ── save as soon as it's won ───────────────────────────────────────────────
@@ -601,7 +619,7 @@ export default function StoryChallenge() {
               <span> · best of three</span>
             </div>
             <div className="sc-actions">
-              <button className="sc-btn" onClick={() => { setRoundPanel(null); deal() }}>Next round</button>
+              <button className="sc-btn" onClick={() => { const starter = roundPanel.winner; setRoundPanel(null); deal({ starter }) }}>Next round</button>
               <button className="sc-btn ghost" onClick={() => navigate('/story')}>Leave</button>
             </div>
           </div>
