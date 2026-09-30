@@ -71,7 +71,7 @@
   border: 1px dashed rgba(201,168,76,0.45);
   border-radius: 10px;
   background: rgba(201,168,76,0.035);
-  cursor: grab;
+  cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -103,3 +103,7 @@
 .board-area.drag-active .domino-drop-target {
   cursor: copy;
 }
+
+/* tap-to-place: the side zones answer a tap as well as a drop */
+.domino-drop-target:hover { border-color: rgba(201,168,76,0.8); background: rgba(201,168,76,0.08); }
+.domino-drop-target:active { border-color: var(--gold); background: rgba(201,168,76,0.14); }
