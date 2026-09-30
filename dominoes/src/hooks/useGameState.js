@@ -113,6 +113,16 @@ export function useGameState(myInfo, navigate) {
   const amRunnerRef = useRef(amRunner)
   amRunnerRef.current = amRunner
 
+  // ── The turn clock ────────────────────────────────────────────────────────
+  // Every player gets 2 minutes. When they run out, the game plays that one
+  // turn for them — the move a sensible regular would make, or a knock if
+  // they can't play — and the next turn is theirs again with a fresh clock.
+  // It's never a takeover.
+  const TURN_LIMIT_MS = 120000
+  const [turnStart, setTurnStart] = useState(() => Date.now())
+  const [timedOutSeat, setTimedOutSeat] = useState(null)
+  const timedOutRef = useRef(null)
+
   // How long each turn actually takes, from this device's point of view.
   const turnClock = useRef({ seat: null, at: 0 })
   useEffect(() => {
@@ -864,6 +874,29 @@ export function useGameState(myInfo, navigate) {
   // it for them — same name, same account — until they come back, when the
   // seat is theirs again. This replaces the old behaviour, which renamed the
   // seat to a bot permanently, so nobody could ever get back in.
+  // A new turn (or a new round) starts a fresh clock.
+  useEffect(() => {
+    setTurnStart(Date.now())
+    setTimedOutSeat(null)
+    timedOutRef.current = null
+  }, [roomData?.current_turn, roomData?.round, roomData?.status])
+
+  // Only the table's runner enforces the clock, so a timeout fires once. If
+  // two devices ever disagree for a moment, the server's turn guard rejects
+  // any move made out of turn.
+  useEffect(() => {
+    if (!roomData || roomData.status !== 'playing' || !amRunner) return
+    const seat = roomData.current_turn
+    const wait = Math.max(0, turnStart + TURN_LIMIT_MS - Date.now())
+    const t = setTimeout(() => {
+      const p = (playersRef.current || []).find(x => x.seat === seat)
+      if (!p || p.is_ai) return          // bots never run out of time
+      timedOutRef.current = seat
+      setTimedOutSeat(seat)
+    }, wait)
+    return () => clearTimeout(t)
+  }, [roomData?.current_turn, roomData?.round, roomData?.status, amRunner, turnStart])
+
   const standIn = useCallback(async (seat) => {
     if (!myInfo) return
     await db.from('domino_players')
@@ -920,7 +953,9 @@ export function useGameState(myInfo, navigate) {
   useEffect(() => {
     if (!roomData || !players.length || roomData.status !== 'playing') return
     const currentPlayer = players.find(p => p.seat === roomData.current_turn)
-    if (!currentPlayer?.is_ai) return
+    // A bot's turn — or a player whose 2 minutes have run out
+    const outOfTime = !!currentPlayer && timedOutSeat === currentPlayer.seat
+    if (!currentPlayer?.is_ai && !outOfTime) return
     // Only the table's runner plays the bots, so each bot moves exactly once
     if (!amRunner) return
     // Prevent double-fire within the same turn
@@ -937,7 +972,14 @@ export function useGameState(myInfo, navigate) {
       const board = boardRef.current
       const freshBot = (playersRef.current || []).find(p => p.seat === currentPlayer.seat) || currentPlayer
       // The player took their seat back while the bot was thinking: stand down.
-      if (!freshBot.is_ai) { botRunningRef.current = false; return }
+      // (Unless this is their timed-out turn being played for them.)
+      const playingForTimeout = timedOutRef.current === currentPlayer.seat
+      if (!freshBot.is_ai && !playingForTimeout) { botRunningRef.current = false; return }
+      if (playingForTimeout) {
+        showToastMsg(currentPlayer.seat === myInfo.seat
+          ? "Time's up — the game played your turn"
+          : `Time's up — the game played for ${freshBot.nickname}`)
+      }
       const botHand     = freshBot.hand || []
       const botPlayable = getPlayableTiles(botHand, board, roomData)
 
@@ -1066,7 +1108,7 @@ export function useGameState(myInfo, navigate) {
       loadGameState()
     }, 1200)
     return () => { clearTimeout(timer); clearTimeout(safetyTimer); botRunningRef.current = false }
-  }, [roomData?.current_turn, roomData?.status, syncing, amRunner])
+  }, [roomData?.current_turn, roomData?.status, syncing, amRunner, timedOutSeat])
 
   return {
     roomData, players, boardData, selectedTile, showPicker,
@@ -1075,6 +1117,7 @@ export function useGameState(myInfo, navigate) {
     selectTile, placeTile, passMove,
     startNextRound, leaveTable, setShowOverlay, replaceWithBot,
     presentSeats, awaySeats, standIn,
+    turnStart, turnLimitMs: TURN_LIMIT_MS,
     cancelSelection: () => { setSelectedTile(null); setShowPicker(false) },
   }
 }
