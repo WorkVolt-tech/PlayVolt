@@ -4,7 +4,7 @@ import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
 import { CHAPTERS } from '../story/chapters'
 import * as Engine from '../story/storyEngine'
-import { chooseTile, getPersonality, seesAllHands } from '../lib/botAI'
+import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
@@ -169,7 +169,7 @@ export default function StoryChallenge() {
           tileCountsBySeat: next.hands.map(h => h.length),
           opponentTileCounts: next.hands.map((h, i) => (i === seat ? null : h.length)).filter(x => x !== null),
         }
-        if (seesAllHands(pers)) ctx.hands = next.hands
+        if (isExpertBot(pers)) ctx.hands = next.hands
         // A cooperating table: every bot treats the other bots' win as its own.
         if (challenge.coop) ctx.allySeats = [1, 2, 3].filter(x => x < (challenge.seats || 4))
         // With a teammate, seats 0 and 2 are one side — the bot at 2 plays for us.
