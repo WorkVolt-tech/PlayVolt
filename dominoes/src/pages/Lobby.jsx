@@ -367,6 +367,7 @@ export default function Lobby() {
     // Solo vs AI runs on the device — no database game at all. The room the
     // lobby made while you chose a mode isn't needed, so it's removed.
     if (selectedMode === 'solo') {
+      localStorage.removeItem('solo_game')        // a NEW game, not a resume
       sessionStorage.setItem('solo_setup', JSON.stringify({
         bots: resolveBotNames(botPicks.slice(0, 3)),
         nickname: nickname || 'You',
