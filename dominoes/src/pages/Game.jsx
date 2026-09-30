@@ -32,7 +32,7 @@ export default function Game() {
     roomData, players, boardData, selectedTile, showPicker,
     showOverlay, toast, isProcessing,
     hand, isMyTurn, playable, hasTilesOnBoard, replaceWithBot,
-    awaySeats, standIn,
+    awaySeats, standIn, turnStart, turnLimitMs,
     selectTile, placeTile, passMove, cancelSelection,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
@@ -113,6 +113,18 @@ export default function Game() {
     // a full load, so the game screen starts cleanly on the new table
     window.location.assign('/game')
   }
+
+  // ── Turn clock display ────────────────────────────────────────────────────
+  const [clockNow, setClockNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (roomData?.status !== 'playing') return
+    const t = setInterval(() => setClockNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [roomData?.status])
+  const secondsLeft = (turnStart && turnLimitMs && roomData?.status === 'playing')
+    ? Math.max(0, Math.ceil((turnStart + turnLimitMs - clockNow) / 1000))
+    : null
+  const clockText = secondsLeft === null ? '' : `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`
 
   const knockQueue = useRef([])
   const playersForKnock = useRef(players)
@@ -215,6 +227,9 @@ export default function Game() {
               {!p.stand_in && (awaySeats || []).includes(p.seat) && <span className="tag-away">away</span>}
               {passingSeats.has(p.seat) && <span className="tag-pass">PASS</span>}
               <span className="tag-tiles">{Array.isArray(p.hand) ? p.hand.length : 0}</span>
+              {p.seat === roomData.current_turn && !p.is_ai && secondsLeft !== null && (
+                <span className={`tag-clock ${secondsLeft <= 15 ? 'urgent' : ''}`}>{clockText}</span>
+              )}
             </div>
           ))}
         </div>
@@ -273,6 +288,13 @@ export default function Game() {
 
       {/* Toast */}
       {toast && <div className="turn-toast">{toast}</div>}
+
+      {isMyTurn && secondsLeft !== null && (
+        <div className={`my-clock ${secondsLeft <= 15 ? 'urgent' : ''}`}>
+          Your turn · {clockText}
+          {secondsLeft <= 15 && <span> — play, or the game plays for you</span>}
+        </div>
+      )}
 
       {/* Knock animation */}
       {knockPlayer && (
