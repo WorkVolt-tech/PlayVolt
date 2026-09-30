@@ -292,14 +292,15 @@ export default function Game() {
         selectedTile={selectedTile}
         isMyTurn={isMyTurn}
         onDropZone={side => {
+          // You tapped a side: play the selected tile there. (This used to
+          // call selectTile again when the tile fitted both ends — which
+          // DESELECTED it instead of placing it.)
           if (!selectedTile) return
           const cL = canPlayOnSide(selectedTile.tile, 'left', boardData)
           const cR = canPlayOnSide(selectedTile.tile, 'right', boardData)
-          if (cL && cR && boardData.left_end !== boardData.right_end) {
-            selectTile(selectedTile.tile, selectedTile.idx)
-          } else {
-            placeTile(selectedTile.tile, selectedTile.idx, side)
-          }
+          const use = side === 'left' ? (cL ? 'left' : cR ? 'right' : null)
+                                      : (cR ? 'right' : cL ? 'left' : null)
+          if (use) placeTile(selectedTile.tile, selectedTile.idx, use)
         }}
         onDragPlace={(tile, idx, side) => {
           if (!isMyTurn) return
