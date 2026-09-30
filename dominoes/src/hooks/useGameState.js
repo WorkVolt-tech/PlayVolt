@@ -822,52 +822,71 @@ export function useGameState(myInfo, navigate) {
     await loadGameState()
   }, [myInfo, loadGameState])
 
-  const replaceWithBot = useCallback(async (seat) => {
-    if (myInfo.seat !== 0) return // only host can do this
-    const allBotNames = ['Ti-Djo', 'Ti-Cam', 'Ti-Jean', 'Mémère', 'Ti-Pierre', 'Bouki', 'Bourik']
-    const usedNames = players.map(p => p.nickname)
-    const available = allBotNames.filter(n => !usedNames.includes(n))
-    const botName = available.length > 0
-      ? available[Math.floor(Math.random() * available.length)]
-      : allBotNames[Math.floor(Math.random() * allBotNames.length)]
-    // Give bot a hand from remaining tiles or empty hand
+  // ── Who decides about a missing player's seat ─────────────────────────────
+  // Team games: their PARTNER. Every-man games: the HOST (seat 0). If that
+  // person isn't at the table either, the next player present decides — so
+  // there is always someone who can act.
+  const deciderSeat = useCallback((seat) => {
+    const ps = playersRef.current || []
+    const here = s2 => (presentSeats ? presentSeats.has(s2) : true)
+    const human = s2 => { const p = ps.find(x => x.seat === s2); return !!p && !p.is_ai }
+    if (roomData?.game_mode === 'asosye') {
+      const partner = (seat + 2) % 4
+      if (human(partner) && here(partner)) return partner
+    }
+    if (seat !== 0 && human(0) && here(0)) return 0
+    const others = ps.filter(p => !p.is_ai && p.seat !== seat && here(p.seat)).map(p => p.seat).sort((a, b) => a - b)
+    return others.length ? others[0] : null
+  }, [presentSeats, roomData?.game_mode])
+
+  // Replace a player who LEFT with a bot of the decider's choosing — for good.
+  // The seat takes the bot's name and stops belonging to the player's account.
+  const replaceWithBot = useCallback(async (seat, botName) => {
+    if (!myInfo || !botName) return
+    if (deciderSeat(seat) !== myInfo.seat) return
     await db.from('domino_players').update({
       nickname: botName,
       is_ai: true,
+      stand_in: false,
+      left_at: null,
+      user_id: null,
       is_connected: true,
     }).eq('room_id', myInfo.roomId).eq('seat', seat)
-  }, [myInfo])
+    scheduleReload()
+  }, [myInfo, deciderSeat])
 
   const leaveTable = useCallback(async () => {
     if (!confirm('Leave this table?')) return
-    if (myInfo.seat === 0) {
-      // Host leaves — end the game
+    const status = roomData?.status
+    const gameOn = status === 'playing' || status === 'round_end'
+    const othersHere = (playersRef.current || []).some(p => !p.is_ai && p.seat !== myInfo.seat)
+
+    if (gameOn && othersHere) {
+      // Leaving mid-game no longer ends it for everyone, and no longer hands
+      // the seat to a random bot. The seat is marked as left, a stand-in keeps
+      // play moving, and the partner (team games) or host chooses the bot
+      // that replaces you. Until they do, you can rejoin with the room code.
+      await db.from('domino_players').update({
+        is_ai: true,
+        stand_in: true,
+        left_at: new Date().toISOString(),
+        is_connected: false,
+      }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
+    } else if (myInfo.seat === 0 || !othersHere) {
+      // The last person at the table, or the host of a finished game: close it.
       await Promise.all([
         db.from('game_events').delete().eq('room_id', myInfo.roomId),
         db.from('board').delete().eq('room_id', myInfo.roomId),
         db.from('domino_players').delete().eq('room_id', myInfo.roomId),
       ])
       await db.from('domino_rooms').delete().eq('id', myInfo.roomId)
-    } else {
-      // Non-host leaves — replace with bot immediately
-      const allBotNames = ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
-      const usedNames = players.map(p => p.nickname)
-      const available = allBotNames.filter(n => !usedNames.includes(n))
-      const botName = available.length > 0
-        ? available[Math.floor(Math.random() * available.length)]
-        : allBotNames[Math.floor(Math.random() * allBotNames.length)]
-      await db.from('domino_players').update({
-        nickname: botName,
-        is_ai: true,
-        is_connected: true,
-      }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
     }
     // A tournament match, or a practice room opened from one, goes back to
     // the bracket rather than the lobby.
     const backTo = myInfo?.tournamentMatchId || myInfo?.fromTournament ? '/tournament' : '/'
     sessionStorage.removeItem('domino_player')
     navigate(backTo)
-  }, [myInfo, navigate])
+  }, [myInfo, navigate, roomData?.status])
 
   // ── Stand-ins ─────────────────────────────────────────────────────────────
   // A player who drops (phone died, lost signal) keeps their seat. A bot plays
@@ -897,12 +916,13 @@ export function useGameState(myInfo, navigate) {
     return () => clearTimeout(t)
   }, [roomData?.current_turn, roomData?.round, roomData?.status, amRunner, turnStart])
 
-  const standIn = useCallback(async (seat) => {
+  const standIn = useCallback(async (seat, { auto = false } = {}) => {
     if (!myInfo) return
+    if (!auto && deciderSeat(seat) !== myInfo.seat) return   // partner or host decides
     await db.from('domino_players')
       .update({ is_ai: true, stand_in: true })
       .eq('room_id', myInfo.roomId).eq('seat', seat).eq('is_ai', false)
-  }, [myInfo])
+  }, [myInfo, deciderSeat])
 
   // Back at the table: if a bot has been standing in for you, take your seat back.
   useEffect(() => {
@@ -910,7 +930,7 @@ export function useGameState(myInfo, navigate) {
     const mine = players.find(p => p.seat === myInfo.seat)
     if (mine?.stand_in) {
       db.from('domino_players')
-        .update({ is_ai: false, stand_in: false, is_connected: true })
+        .update({ is_ai: false, stand_in: false, left_at: null, is_connected: true })
         .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
         .then(() => scheduleReload())
     }
@@ -945,7 +965,7 @@ export function useGameState(myInfo, navigate) {
     if (!roomData || roomData.status !== 'playing' || !amRunner) return
     const turn = roomData.current_turn
     if (!awaySeats.includes(turn)) return
-    const t = setTimeout(() => standIn(turn), 60000)
+    const t = setTimeout(() => standIn(turn, { auto: true }), 60000)
     return () => clearTimeout(t)
   }, [roomData?.current_turn, roomData?.status, awaySeats, amRunner, standIn])
 
@@ -1116,7 +1136,7 @@ export function useGameState(myInfo, navigate) {
     me, hand, isMyTurn, playable, hasTilesOnBoard,
     selectTile, placeTile, passMove,
     startNextRound, leaveTable, setShowOverlay, replaceWithBot,
-    presentSeats, awaySeats, standIn,
+    presentSeats, awaySeats, standIn, deciderSeat,
     turnStart, turnLimitMs: TURN_LIMIT_MS,
     cancelSelection: () => { setSelectedTile(null); setShowPicker(false) },
   }
