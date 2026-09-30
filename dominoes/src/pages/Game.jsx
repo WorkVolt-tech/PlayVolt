@@ -32,6 +32,7 @@ export default function Game() {
     roomData, players, boardData, selectedTile, showPicker,
     showOverlay, toast, isProcessing,
     hand, isMyTurn, playable, hasTilesOnBoard, replaceWithBot,
+    awaySeats, standIn,
     selectTile, placeTile, passMove, cancelSelection,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
@@ -176,6 +177,26 @@ export default function Game() {
         </div>
       )}
 
+      {(awaySeats || []).length > 0 && roomData?.status === 'playing' && (
+        <div className="away-notice">
+          {(awaySeats || []).map(seat => {
+            const who = players.find(pl => pl.seat === seat)
+            if (!who || who.stand_in) return null
+            return (
+              <div key={seat} className="away-row">
+                <span><strong>{who.nickname}</strong> has dropped out — phone or connection.</span>
+                <button className="btn btn-primary" onClick={() => standIn(seat)}>
+                  Let a bot play for them
+                </button>
+              </div>
+            )
+          })}
+          <div className="away-hint">
+            Their seat stays theirs. When they reopen the game or rejoin with the room code, they take it straight back.
+          </div>
+        </div>
+      )}
+
       <div className="top-bar">
         <div className="top-bar-left">
           <span className="game-title">Dekabess!</span>
@@ -190,6 +211,8 @@ export default function Game() {
             ].join(' ')}>
               <div className="tag-dot" />
               <span>{p.nickname}{p.seat === myInfo.seat ? ' ★' : ''}</span>
+              {p.stand_in && <span className="tag-standin" title="A bot is playing until they're back">🤖 bot playing</span>}
+              {!p.stand_in && (awaySeats || []).includes(p.seat) && <span className="tag-away">away</span>}
               {passingSeats.has(p.seat) && <span className="tag-pass">PASS</span>}
               <span className="tag-tiles">{Array.isArray(p.hand) ? p.hand.length : 0}</span>
             </div>
