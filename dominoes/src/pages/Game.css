@@ -315,3 +315,28 @@
 }
 .tag-away    { color: var(--red); border: 1px solid rgba(201,76,76,0.5); }
 .tag-standin { color: var(--ivory-dim); border: 1px solid var(--border); }
+
+/* ── turn clock ──────────────────────────────────────────────────── */
+.tag-clock {
+  font-family: 'DM Mono', monospace; font-size: 0.5rem; margin-left: 4px;
+  color: var(--ivory-dim); letter-spacing: 0.04em;
+}
+.tag-clock.urgent { color: var(--red); font-weight: 600; }
+
+.my-clock {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--hand-h, 110px) + 8px);
+  z-index: 60;
+  background: rgba(26,24,20,0.92);
+  border: 1px solid var(--border); border-radius: 14px;
+  padding: 3px 12px;
+  font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--gold);
+  pointer-events: none;
+}
+.my-clock.urgent {
+  color: var(--red); border-color: rgba(201,76,76,0.6);
+  animation: clockPulse 1s ease-in-out infinite;
+}
+.my-clock span { color: var(--ivory-dim); }
+@keyframes clockPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
