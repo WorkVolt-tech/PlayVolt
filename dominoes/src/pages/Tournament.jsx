@@ -452,7 +452,14 @@ export default function Tournament() {
                   {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
                 </optgroup>
                 <optgroup label="Expert">
-                  {EXPERT_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
+                  {EXPERT_CIRCUIT.map(b => {
+                    const locked = !unlocked.includes(b)
+                    return (
+                      <option key={b} value={b} disabled={locked}>
+                        {locked ? `🔒 ${b} — beat chapter ${EXPERT_CIRCUIT.indexOf(b) + 10}` : b}
+                      </option>
+                    )
+                  })}
                 </optgroup>
               </select>
               {open.format === 'duo' && (
@@ -461,7 +468,14 @@ export default function Tournament() {
                     {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
                   </optgroup>
                   <optgroup label="Expert">
-                    {EXPERT_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
+                    {EXPERT_CIRCUIT.map(b => {
+                      const locked = !unlocked.includes(b)
+                      return (
+                        <option key={b} value={b} disabled={locked}>
+                          {locked ? `🔒 ${b} — beat chapter ${EXPERT_CIRCUIT.indexOf(b) + 10}` : b}
+                        </option>
+                      )
+                    })}
                   </optgroup>
                 </select>
               )}
