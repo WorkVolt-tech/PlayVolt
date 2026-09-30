@@ -13,8 +13,13 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
   const isMyTeamWin     = mode === 'asosye' &&
     ((myInfo.seat === 0 || myInfo.seat === 2) === (roundWinnerSeat === 0 || roundWinnerSeat === 2))
 
+  const isKnockout = isMatchOver && roomData.ended_by === 'knockout'
+
   let title, desc
-  if (isDekabess && isMatchOver) {
+  if (isKnockout) {
+    title = (isMe || isMyTeamWin) ? '💥 Streak broken!' : 'Knocked out'
+    desc  = `${roundWinner?.nickname ?? '?'} broke a streak of 3 — the other team is out of the tournament.`
+  } else if (isDekabess && isMatchOver) {
     title = `🎯 Dekabess — Vyèj${streak.count > 4 ? '+1' : ''}!`
     desc  = `${roundWinner?.nickname ?? '?'} wins the match with a Dekabess! 🏆`
   } else if (isDekabess) {
