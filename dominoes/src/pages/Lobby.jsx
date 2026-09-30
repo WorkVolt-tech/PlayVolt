@@ -11,6 +11,14 @@ import './Lobby.css'
 // ever seated when picked here — they are
 // deliberately absent from the random replacement-bot name lists, so an
 // all-seeing bot can never silently take a disconnected player's seat in PvP.
+import { CHAPTERS } from '../story/chapters'
+
+// Experts are earned in Story Mode: beat a bot's chapter and they're yours.
+// Ordinary bots are always available.
+const UNLOCKED_BY = Object.fromEntries(
+  CHAPTERS.filter(c => c.unlocks).map(c => [c.unlocks, c.id]))
+const isExpert = b => b.role === 'Expert'
+
 const BOT_ROSTER = [
   // Ordinary bots first — these play fair, they only see their own tiles.
   // Roughly easiest to hardest.
@@ -112,6 +120,7 @@ export default function Lobby() {
   const [selectedAI, setAI]         = useState('beginner')
   // Solo: which bot sits in each of the 3 AI seats (defaults = the original trio)
   const [botPicks, setBotPicks]     = useState(['Ti-Djo', 'Ti-Cam', 'Ti-Jean'])
+  const [unlockedBots, setUnlockedBots] = useState([])
   const [selectedPartner, setPartner] = useState(null)
   const [amHost, setAmHost]         = useState(false)
   const [queueCount, setQueueCount] = useState(0)
@@ -129,6 +138,32 @@ export default function Lobby() {
   useEffect(() => {
     db.auth.getUser().then(({ data }) => setMyUserId(data?.user?.id ?? null))
   }, [])
+
+  // Story progress decides which experts can be picked. Guests have none.
+  useEffect(() => {
+    if (!myUserId) { setUnlockedBots([]); return }
+    let off = false
+    db.rpc('ensure_story_progress').then(({ data }) => {
+      if (off) return
+      const row = Array.isArray(data) ? data[0] : data
+      setUnlockedBots(row?.unlocked_bots || [])
+    })
+    return () => { off = true }
+  }, [myUserId])
+
+  const canPickBot = name => {
+    const b = BOT_ROSTER.find(x => x.name === name)
+    return !b || !isExpert(b) || unlockedBots.includes(name)
+  }
+
+  // If a pick is no longer allowed (e.g. signed out), fall back to a regular.
+  useEffect(() => {
+    const fallback = ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
+    setBotPicks(prev => {
+      const next = prev.map((p, i) => (canPickBot(p) ? p : fallback[i] || 'Ti-Djo'))
+      return next.some((p, i) => p !== prev[i]) ? next : prev
+    })
+  }, [unlockedBots])
 
   useEffect(() => {
     const code = new URLSearchParams(location.search).get('join')
@@ -668,9 +703,16 @@ export default function Lobby() {
                             setBotPicks(prev => prev.map((p, j) => (j === i ? v : p)))
                           }}
                         >
-                          {BOT_ROSTER.map(b => (
-                            <option key={b.name} value={b.name}>{b.name} — {b.role}</option>
-                          ))}
+                          {BOT_ROSTER.map(b => {
+                            const locked = isExpert(b) && !unlockedBots.includes(b.name)
+                            return (
+                              <option key={b.name} value={b.name} disabled={locked}>
+                                {locked
+                                  ? `🔒 ${b.name} — beat Story chapter ${UNLOCKED_BY[b.name] ?? '?'}`
+                                  : `${b.name} — ${b.role}`}
+                              </option>
+                            )
+                          })}
                         </select>
                       </div>
                     ))}
