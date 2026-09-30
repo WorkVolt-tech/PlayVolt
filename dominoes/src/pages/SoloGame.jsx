@@ -9,6 +9,7 @@ import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
 import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
+import KnockAnimation from '../components/KnockAnimation'
 import './Game.css'
 
 // ── Solo vs AI, on the device ────────────────────────────────────────────────
@@ -27,7 +28,11 @@ import './Game.css'
 //   • the same seat winning again extends the streak; a Dekabess counts double
 //   • a streak of 4 is a Vyèj, and the match is over
 
-const BOT_DELAY = 900
+// Same pace as the live game: bots think for 1.2s, and a knock plays out in
+// full (1.5s) before anyone moves again — so you can see who passed, and on
+// what, and follow the board.
+const BOT_DELAY = 1200
+const POS = { 1: 'right', 2: 'top', 3: 'left', 0: 'bottom' }
 const baseName = n => String(n || '').replace(/\s+\d+$/, '')   // "Ti-Djo 2" -> "Ti-Djo"
 
 // Same as computeNewStreak in useGameState, for a game with no partners.
@@ -52,6 +57,9 @@ export default function SoloGame() {
   const [roundEnd, setRoundEnd] = useState(null)   // { winner, isDek, blocked, vyej }
   const [showDek, setShowDek] = useState(false)
   const botBusy = useRef(false)
+  const [knock, setKnock] = useState(null)             // { name, position } while it plays
+  const [passingSeats, setPassingSeats] = useState(new Set())
+  const seenLog = useRef(0)
   const recorded = useRef(new Set())
 
   const names = [myName, ...bots]
@@ -59,13 +67,15 @@ export default function SoloGame() {
 
   // ── bots play ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (st.status !== 'playing' || st.turn === 0 || botBusy.current) return
+    if (st.status !== 'playing' || st.turn === 0 || botBusy.current || knock) return
     botBusy.current = true
     const t = setTimeout(() => {
       setSt(prev => {
         if (prev.status !== 'playing' || prev.turn === 0) return prev
-        let next = Engine.settleTurn(prev)
-        if (next.status !== 'playing' || next.turn === 0) return next
+        // ONE action per turn. A bot that can't play knocks — once — and the
+        // knock plays out before the next seat moves.
+        if (!Engine.canPlay(prev)) return Engine.drawOrPass(prev)
+        const next = prev
         const seat = next.turn
         const pers = getPersonality(baseName(bots[seat - 1]))
         const moves = Engine.legalMoves(next)
@@ -86,15 +96,37 @@ export default function SoloGame() {
       botBusy.current = false
     }, BOT_DELAY)
     return () => { clearTimeout(t); botBusy.current = false }
-  }, [st])
+  }, [st, knock])
 
-  // you can't play and there's no pile: pass for you, as the live game does
+  // You can't play: you knock automatically — but you SEE it, the same knock
+  // the live game shows, and the game waits for it before moving on.
   useEffect(() => {
-    if (st.status !== 'playing' || st.turn !== 0) return
+    if (st.status !== 'playing' || st.turn !== 0 || knock) return
     if (Engine.canPlay(st)) return
-    const t = setTimeout(() => setSt(p => (p.turn === 0 ? Engine.drawOrPass(p) : p)), 700)
+    const t = setTimeout(() => setSt(p => (p.turn === 0 && !Engine.canPlay(p) ? Engine.drawOrPass(p) : p)), BOT_DELAY)
     return () => clearTimeout(t)
-  }, [st])
+  }, [st, knock])
+
+  // Watch the move log: every pass gets its knock, and a seat stops showing
+  // PASS the moment it plays a tile again.
+  useEffect(() => {
+    const log = st.log || []
+    if (log.length < seenLog.current) seenLog.current = 0      // new round
+    const fresh = log.slice(seenLog.current)
+    seenLog.current = log.length
+    if (!fresh.length) return
+    for (const e of fresh) {
+      if (e.action === 'pass') {
+        setPassingSeats(prev => new Set(prev).add(e.seat))
+        setKnock({ name: names[e.seat], position: POS[e.seat] })
+      } else if (e.action === 'play') {
+        setPassingSeats(prev => {
+          if (!prev.has(e.seat)) return prev
+          const next = new Set(prev); next.delete(e.seat); return next
+        })
+      }
+    }
+  }, [st.log])
 
   // ── a round ended ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -133,7 +165,10 @@ export default function SoloGame() {
     setRoundEnd(null)
     setShowDek(false)
     setSelected(null)
-    setSt(Engine.settleTurn(Engine.startGame({ seats: 4, starter })))
+    setKnock(null)
+    setPassingSeats(new Set())
+    seenLog.current = 0
+    setSt(Engine.startGame({ seats: 4, starter }))
   }, [roundEnd])
 
   const newMatch = useCallback(() => {
@@ -143,6 +178,9 @@ export default function SoloGame() {
     setShowDek(false)
     setSelected(null)
     recorded.current = new Set()
+    setKnock(null)
+    setPassingSeats(new Set())
+    seenLog.current = 0
     setSt(Engine.startGame({ seats: 4, forceDoubleSix: true }))
   }, [])
 
@@ -212,6 +250,7 @@ export default function SoloGame() {
               <div className="tag-dot" />
               <span>{p.nickname}{p.seat === 0 ? ' ★' : ''}</span>
               <span className="tag-tiles">{p.hand.length}</span>
+              {passingSeats.has(p.seat) && <span className="tag-pass">PASS</span>}
             </div>
           ))}
         </div>
@@ -247,6 +286,14 @@ export default function SoloGame() {
         onPass={() => setSt(p => (p.turn === 0 ? Engine.drawOrPass(p) : p))}
         hasTilesOnBoard={st.board.tiles.length > 0}
       />
+
+      {knock && (
+        <KnockAnimation
+          playerName={knock.name}
+          position={knock.position}
+          onDone={() => setKnock(null)}
+        />
+      )}
 
       {showDek && roundEnd && (
         <DekabessOverlay
