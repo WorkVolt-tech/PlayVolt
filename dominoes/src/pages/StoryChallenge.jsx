@@ -127,12 +127,9 @@ export default function StoryChallenge() {
   }, [posKey])
 
   // ── set up a round ─────────────────────────────────────────────────────────
-  // Who opens, as at any table:
-  //   • the first round of a challenge — whoever holds the 6-6, and they must
-  //     play it. In a pile game the 6-6 can be in the pile; then the highest
-  //     double opens (and if nobody has a double, it's a random seat — never
-  //     always you).
-  //   • every round after — the previous round's winner, with any tile.
+  // Who opens: the first round of a challenge follows the doubles rule (in
+  // the engine — 6-6, else the highest double, played; else you, any tile).
+  // Every round after, the previous round's winner opens with any tile.
   const deal = useCallback((opts = {}) => {
     if (!challenge) return
     if (challenge.partner === 'pick' && !partner) return   // wait for the pick
@@ -145,17 +142,7 @@ export default function StoryChallenge() {
           objective: challenge.objective || { kind: 'win' },
           ...(winnerOpens ? { starter: opts.starter } : { forceDoubleSix: true }),
         }
-    let fresh = Engine.startGame(cfg)
-    if (challenge.type !== 'puzzle' && !winnerOpens &&
-        !fresh.hands.some(h => h.some(t => t[0] === 6 && t[1] === 6))) {
-      let best = -1, seat = -1
-      fresh.hands.forEach((h, sIdx) => h.forEach(t => {
-        if (t[0] === t[1] && t[0] > best) { best = t[0]; seat = sIdx }
-      }))
-      if (seat < 0) seat = Math.floor(Math.random() * fresh.seats)
-      fresh = { ...fresh, turn: seat }
-    }
-    fresh = Engine.settleTurn(fresh)
+    const fresh = Engine.settleTurn(Engine.startGame(cfg))
     setSt({ ...fresh, dealId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
     setSelected(null)
   }, [challenge, partner])
@@ -371,6 +358,9 @@ export default function StoryChallenge() {
         else if (use === 'right' && !cR) use = cL ? 'left' : null
         if (!use) return prev            // not a legal placement — ignore it
       } else {
+        // the opening tile has to be one the rules allow (the required double)
+        const ok = Engine.legalMoves(prev, 0).some(m => m.tile[0] === tile[0] && m.tile[1] === tile[1])
+        if (!ok) return prev
         use = 'first'
       }
       const next = Engine.playTile(prev, tile, use)
