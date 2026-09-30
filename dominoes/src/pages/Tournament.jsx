@@ -566,7 +566,7 @@ export default function Tournament() {
             <div className="tp-round" key={r}>
               <div className="tp-round-label">{bracketLabel(r, rounds.length)}</div>
               {r === rounds[0] && (
-                <div className="tp-legend">rounds won · first to 4 takes the match</div>
+                <div className="tp-legend">won by Vyèj · 3 straight then a loss is out</div>
               )}
               {inRound.map(m => {
                 const ids = [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean)
@@ -581,7 +581,9 @@ export default function Tournament() {
                           <span className="tp-tie-name">
                             {sideName(id)}{id === mySide?.id ? ' (you)' : ''}
                             {won && over && m.status !== 'forfeit' && (
-                              <span className="tp-vyej" title="Took the match">Vyèj</span>
+                              <span className="tp-vyej" title="Took the match">
+                                {(m.streaks?.[id] ?? 0) >= 4 ? 'Vyèj' : 'won — streak broken'}
+                              </span>
                             )}
                             {(m.deks?.[id] ?? 0) > 0 && (
                               <span className="tp-dek" title="Rounds won with a Dekabess">
@@ -590,7 +592,7 @@ export default function Tournament() {
                             )}
                           </span>
                           <span className="tp-tie-score">
-                            {m.status === 'forfeit' ? (won ? 'W/O' : '—') : (m.wins?.[id] ?? 0)}
+                            {m.status === 'forfeit' ? (won ? 'W/O' : '—') : ''}
                           </span>
                         </div>
                       )
@@ -703,11 +705,9 @@ export default function Tournament() {
 
 // What still has to happen in a match that's under way.
 function matchNeeds(m, ids) {
-  const top = ids.map(id => m.wins?.[id] ?? 0).sort((a, b) => b - a)[0] || 0
   const onThree = ids.find(id => (m.streaks?.[id] ?? 0) >= 3)
-  if (onThree) return 'someone is on 3 straight — lose the next and they are out'
-  const left = Math.max(1, 4 - top)
-  return `in progress · ${left} more round${left === 1 ? '' : 's'} to take it`
+  if (onThree) return 'a team is on 3 — lose the next round and they are out'
+  return 'in progress · playing for the Vyèj'
 }
 
 // Quarter-final, semi-final, final — counted back from the last round.
