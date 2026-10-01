@@ -113,6 +113,8 @@
   flex: 1;
   min-height: 0;
   position: relative;
+  /* the table's rail, from the equipped table skin */
+  background: var(--table-rail, #2f190b);
 }
 
 /* ── Hand area ───────────────────────────────────────────────── */
