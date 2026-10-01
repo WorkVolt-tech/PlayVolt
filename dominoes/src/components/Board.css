@@ -1,8 +1,10 @@
 .board-area {
   position: absolute;
-  inset: 0;
-  background: var(--felt);
-  background-image: radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%);
+  /* the rail shows around the felt */
+  inset: 10px;
+  border-radius: 12px;
+  background: var(--table-felt, radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%));
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), inset 0 10px 30px rgba(0,0,0,0.55), inset 0 -6px 24px rgba(0,0,0,0.35);
   /* On a short screen the chain can be taller than the table: let it scroll
      up and down rather than run under the hand. Sideways never scrolls — the
      chain already wraps at the table's width. */
@@ -114,3 +116,8 @@
 /* tap-to-place: the side zones answer a tap as well as a drop */
 .domino-drop-target:hover { border-color: rgba(201,168,76,0.8); background: rgba(201,168,76,0.08); }
 .domino-drop-target:active { border-color: var(--gold); background: rgba(201,168,76,0.14); }
+
+/* a phone on its side has little height: a thinner rail */
+@media (orientation: landscape) and (max-height: 500px) {
+  .board-area { inset: 5px; border-radius: 9px; }
+}

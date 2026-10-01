@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react'
+import TileFace from './TileFace'
 import './DominoTile.css'
 
 export default function DominoTile({
@@ -72,18 +73,9 @@ export default function DominoTile({
       } : undefined}
       onDragEnd={draggable ? () => { if (onDragEnd) onDragEnd() } : undefined}
     >
-      <div className="pip-half">
-        <img className="pip-img" draggable={false}
-          src={`/tiles-white/${top}.png`} alt={String(top)}
-          style={{ pointerEvents: 'none', ...(!isVertical && top === 6 ? { transform: 'rotate(90deg)' } : {}) }}
-        />
-      </div>
-      <div className="pip-half">
-        <img className="pip-img" draggable={false}
-          src={`/tiles-white/${bottom}.png`} alt={String(bottom)}
-          style={{ pointerEvents: 'none', ...(!isVertical && bottom === 6 ? { transform: 'rotate(90deg)' } : {}) }}
-        />
-      </div>
+      {/* the face is drawn in code now (TileFace): skins, crisp pips at
+          any size. It only paints — dragging and tapping stay on this box. */}
+      <TileFace a={top} b={bottom} vertical={isVertical} />
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react'
+import TileFace from './TileFace'
 import { createPortal } from 'react-dom'
 
 const DragContext = createContext(null)
@@ -236,37 +237,8 @@ export function DragProvider({ children }) {
         margin: 0,
       }}
     >
-      <img
-        src={`/tiles-white/${dragging.tile[0]}.png`}
-        alt=""
-        draggable={false}
-        style={{
-          width: '70%',
-          pointerEvents: 'none',
-          userSelect: 'none',
-        }}
-      />
-
-      <div
-        style={{
-          width: '80%',
-          height: 1,
-          background:
-            'rgba(0,0,0,0.2)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      <img
-        src={`/tiles-white/${dragging.tile[1]}.png`}
-        alt=""
-        draggable={false}
-        style={{
-          width: '70%',
-          pointerEvents: 'none',
-          userSelect: 'none',
-        }}
-      />
+      {/* the same tile drawing as the hand and the board, in the equipped skin */}
+      <TileFace a={dragging.tile[0]} b={dragging.tile[1]} vertical />
     </div>
   ) : null
 

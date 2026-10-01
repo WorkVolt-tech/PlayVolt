@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { canPlayOnSide } from '../hooks/useGameState'
 import { DropZone, useDrag } from './DragDrop'
+import TileFace from './TileFace'
 import './Board.css'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -351,7 +352,7 @@ function BoardTile({ entry, pos, ghost = false, highlighted = false }) {
       top: pos.y - pos.ph / 2,
       width: pos.pw,
       height: pos.ph,
-      background: '#fffef8',
+      background: 'transparent',
       borderRadius: 5,
       border: ghost ? '1px dashed rgba(201,168,76,0.9)' : 'none',
       boxShadow: highlighted
@@ -367,42 +368,8 @@ function BoardTile({ entry, pos, ghost = false, highlighted = false }) {
       overflow: 'hidden',
       zIndex: 1,
     }}>
-      {/* Divider */}
-      <div style={{
-        position: 'absolute',
-        ...(isVert
-          ? { left: '10%', right: '10%', top: '50%', height: 1, transform: 'translateY(-50%)' }
-          : { top: '10%', bottom: '10%', left: '50%', width: 1, transform: 'translateX(-50%)' }
-        ),
-        background: 'rgba(26,24,20,0.25)',
-        pointerEvents: 'none',
-      }} />
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img
-          src={`/tiles-white/${first}.png`}
-          alt={String(first)}
-          style={{
-            width: '70%',
-            height: '70%',
-            objectFit: 'contain',
-            ...(!isVert && first === 6 ? { transform: 'rotate(90deg)' } : {}),
-          }}
-        />
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img
-          src={`/tiles-white/${second}.png`}
-          alt={String(second)}
-          style={{
-            width: '70%',
-            height: '70%',
-            objectFit: 'contain',
-            ...(!isVert && second === 6 ? { transform: 'rotate(90deg)' } : {}),
-          }}
-        />
-      </div>
+      {/* the face, in the equipped skin (drawn in code, not pictures) */}
+      <TileFace a={first} b={second} vertical={isVert} />
     </div>
   )
 }

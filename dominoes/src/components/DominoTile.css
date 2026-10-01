@@ -25,7 +25,7 @@
 
 /* Divider */
 .domino-tile.vertical::after {
-  content: '';
+  content: none;
   position: absolute;
   left: 10%; right: 10%;
   top: 50%;
@@ -34,7 +34,7 @@
   transform: translateY(-50%);
 }
 .domino-tile.horizontal::after {
-  content: '';
+  content: none;
   position: absolute;
   left: 50%;
   top: 10%; bottom: 10%;
