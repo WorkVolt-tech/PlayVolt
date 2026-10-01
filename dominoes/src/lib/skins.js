@@ -28,6 +28,27 @@ export const TILE_SKINS = {
     }, edge: '#05230f', pip: WHITE, ring: RING, divider: 'rgba(0,0,0,0.35)' },
   trinidad: { label: 'Trinidad & Tobago', face: () => 'linear-gradient(to top right, #CE1126 0%, #CE1126 36%, #ffffff 36%, #ffffff 40%, #000000 40%, #000000 60%, #ffffff 60%, #ffffff 64%, #CE1126 64%, #CE1126 100%)', edge: '#4a0610', pip: WHITE, ring: RING, divider: 'rgba(255,255,255,0.4)' },
   dominican:{ label: 'Dominican Rep.', face: () => 'linear-gradient(90deg, transparent 45%, #ffffff 45%, #ffffff 55%, transparent 55%), linear-gradient(0deg, transparent 46%, #ffffff 46%, #ffffff 54%, transparent 54%), conic-gradient(#CE1126 0deg 90deg, #002D62 90deg 180deg, #CE1126 180deg 270deg, #002D62 270deg 360deg)', edge: '#0d1b33', pip: WHITE, ring: RING, divider: 'rgba(0,0,0,0.25)' },
+  // ── colours ──
+  amethyst: { label: 'Amethyst', face: () => 'linear-gradient(160deg, #a77ae6 0%, #7444c0 55%, #4b2287 100%)', edge: '#2e1257', pip: '#f6efff', ring: 'none', divider: 'rgba(255,255,255,0.25)' },
+  lavender: { label: 'Lavender', face: () => 'linear-gradient(160deg, #f6f0ff 0%, #ddcdf8 55%, #c3aaee 100%)', edge: '#9a80c9', pip: '#3a1f6b', ring: 'none', divider: 'rgba(58,31,107,0.28)' },
+  rose:     { label: 'Rose', face: () => 'linear-gradient(160deg, #ffe3ee 0%, #f9b3cf 55%, #ee86b0 100%)', edge: '#c55d8a', pip: '#5a1030', ring: 'none', divider: 'rgba(90,16,48,0.28)' },
+  fuchsia:  { label: 'Fuchsia', face: () => 'linear-gradient(160deg, #ff6fb5 0%, #e0258c 55%, #a8106a 100%)', edge: '#5e0a3c', pip: '#ffffff', ring: 'none', divider: 'rgba(255,255,255,0.3)' },
+  ocean:    { label: 'Ocean', face: () => 'linear-gradient(160deg, #5cc0e8 0%, #2a86c0 55%, #155b8a 100%)', edge: '#0b3553', pip: '#ffffff', ring: 'none', divider: 'rgba(255,255,255,0.3)' },
+  sunset:   { label: 'Sunset', face: () => 'linear-gradient(180deg, #ffc35c 0%, #ff8a4c 50%, #ff4f7b 100%)', edge: '#8f2a3a', pip: '#2a0f05', ring: 'none', divider: 'rgba(42,15,5,0.3)' },
+  // ── fluorescent ──
+  neonGreen:  { label: 'Neon Green', face: () => 'linear-gradient(160deg, #7dff5c 0%, #39ff14 55%, #22d10a 100%)', edge: '#127a05', pip: '#0b0b0b', ring: 'none', divider: 'rgba(0,0,0,0.3)' },
+  neonPink:   { label: 'Neon Pink', face: () => 'linear-gradient(160deg, #ff7ae4 0%, #ff2fd0 55%, #d40fae 100%)', edge: '#6e0558', pip: '#0b0b0b', ring: 'none', divider: 'rgba(0,0,0,0.3)' },
+  neonOrange: { label: 'Neon Orange', face: () => 'linear-gradient(160deg, #ffb066 0%, #ff7a00 55%, #e05e00 100%)', edge: '#7a3300', pip: '#0b0b0b', ring: 'none', divider: 'rgba(0,0,0,0.3)' },
+  neonYellow: { label: 'Neon Yellow', face: () => 'linear-gradient(160deg, #fbff8a 0%, #f2ff1f 55%, #d6e600 100%)', edge: '#7a8200', pip: '#0b0b0b', ring: 'none', divider: 'rgba(0,0,0,0.3)' },
+  neonBlue:   { label: 'Electric Blue', face: () => 'linear-gradient(160deg, #7af3ff 0%, #00e5ff 55%, #00b3d6 100%)', edge: '#006070', pip: '#001a33', ring: 'none', divider: 'rgba(0,0,0,0.3)' },
+  glow:       { label: 'Glow', face: () => 'linear-gradient(160deg, #1d1d26 0%, #101016 60%, #07070a 100%)', edge: '#39ff14', pip: '#39ff14', ring: 'none', divider: 'rgba(57,255,20,0.35)' },
+  // ── logo themes ──
+  dekabess: { label: 'Dekabess', face: () => 'linear-gradient(160deg, #24211b 0%, #141310 60%, #0a0908 100%)', edge: '#c9a84c', pip: '#e8c96a', ring: 'none', divider: 'rgba(201,168,76,0.55)' },
+  playvolt: { label: 'PlayVolt', face: () => 'linear-gradient(160deg, #9c84ff 0%, #7c5cfc 55%, #4b2fc9 100%)', edge: '#22106e', pip: '#ffffff', ring: 'none', divider: 'rgba(255,255,255,0.3)' },
+  // ── flags ──
+  // Drawn so the flag reads correctly on a tile lying sideways — the way most
+  // tiles sit on the table — with the canton top-left.
+  usa:      { label: 'USA', face: () => 'linear-gradient(#3C3B6E, #3C3B6E) 100% 0 / 53.85% 40% no-repeat, repeating-linear-gradient(90deg, #B22234 0%, #B22234 7.69%, #ffffff 7.69%, #ffffff 15.38%)', edge: '#1c1b3a', pip: WHITE, ring: '0 0 0 1px rgba(0,0,0,0.6)', divider: 'rgba(0,0,0,0.25)' },
   france:   { label: 'France', face: () => 'linear-gradient(90deg, #0055A4 0%, #0055A4 33.3%, #ffffff 33.3%, #ffffff 66.6%, #EF4135 66.6%, #EF4135 100%)', edge: '#22304d', pip: WHITE, ring: '0 0 0 1px rgba(0,0,0,0.6)', divider: 'rgba(0,0,0,0.25)' },
 }
 
@@ -42,6 +63,13 @@ export const TABLE_SKINS = {
   burgundy: { label: 'Burgundy', felt: `${VIGNETTE}, ${GRAIN}, #5a1424`, rail: WOOD },
   slate:    { label: 'Slate', felt: `${VIGNETTE}, ${GRAIN}, #2c3236`, rail: 'linear-gradient(180deg, #2a2a2a 0%, #141414 100%)' },
   mahogany: { label: 'Mahogany', felt: `${VIGNETTE}, repeating-linear-gradient(90deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 2px, transparent 2px, transparent 11px), linear-gradient(180deg, #7a4423 0%, #5b3018 100%)`, rail: 'linear-gradient(180deg, #2b1a0c 0%, #150c05 100%)' },
+  purple:   { label: 'Purple', felt: `${VIGNETTE}, ${GRAIN}, #3b1d63`, rail: WOOD },
+  pink:     { label: 'Pink', felt: `${VIGNETTE}, ${GRAIN}, #8a3361`, rail: WOOD },
+  ocean:    { label: 'Ocean', felt: `${VIGNETTE}, ${GRAIN}, #0f4c5c`, rail: WOOD },
+  neon:     { label: 'Neon', felt: `${VIGNETTE}, linear-gradient(rgba(0,229,255,0.07) 1px, transparent 1px) 0 0 / 26px 26px, linear-gradient(90deg, rgba(0,229,255,0.07) 1px, transparent 1px) 0 0 / 26px 26px, #0b0b12`, rail: 'linear-gradient(180deg, #2bf0ff 0%, #00a3b8 100%)' },
+  dekabess: { label: 'Dekabess', felt: `${VIGNETTE}, linear-gradient(rgba(12,11,9,0.55), rgba(12,11,9,0.55)), url(/dekabess_logo.webp) center / 42% auto no-repeat, #151310`, rail: 'linear-gradient(180deg, #e3c56f 0%, #c9a84c 45%, #7a5f22 100%)' },
+  playvolt: { label: 'PlayVolt', felt: `${VIGNETTE}, ${GRAIN}, #2a1b5e`, rail: 'linear-gradient(180deg, #7c5cfc 0%, #4b2fc9 100%)' },
+  usa:      { label: 'USA', felt: `${VIGNETTE}, linear-gradient(#1f2350, #1f2350) 0 0 / 40% 53.85% no-repeat, repeating-linear-gradient(180deg, #6e1520 0%, #6e1520 7.69%, #8a847a 7.69%, #8a847a 15.38%)`, rail: WOOD },
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
   jamaica:  { label: 'Jamaica', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(to top right, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), linear-gradient(to top left, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), conic-gradient(#0d5a2a 0deg ${JA}deg, #111111 ${JA}deg ${180 - JA}deg, #0d5a2a ${180 - JA}deg ${180 + JA}deg, #111111 ${180 + JA}deg ${360 - JA}deg, #0d5a2a ${360 - JA}deg)`, rail: WOOD },
   quebec:   { label: 'Québec', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.55) 47%, rgba(255,255,255,0.55) 53%, transparent 53%), linear-gradient(0deg, transparent 45%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.55) 55%, transparent 55%), #12357a`, rail: WOOD },
@@ -63,6 +91,21 @@ export const TILE_UNLOCKS = [
   { id: 'trinidad',  need: 'Score 10 Dekabess',     test: s => s.dekabess >= 10 },
   { id: 'dominican', need: 'Win 3 tournaments',     test: s => s.tournaments >= 3 },
   { id: 'france',    need: 'Play 50 matches',       test: s => s.games >= 50 },
+  { id: 'lavender',   free: true },
+  { id: 'rose',       free: true },
+  { id: 'amethyst',   need: 'Win 3 matches',          test: s => s.vyej >= 3 },
+  { id: 'ocean',      need: 'Beat Story chapter 2',   test: ch(2) },
+  { id: 'sunset',     need: 'Score 3 Dekabess',       test: s => s.dekabess >= 3 },
+  { id: 'fuchsia',    need: 'Win 20 matches',         test: s => s.vyej >= 20 },
+  { id: 'neonGreen',  need: 'Play 25 matches',        test: s => s.games >= 25 },
+  { id: 'neonOrange', need: 'Score 5 Dekabess',       test: s => s.dekabess >= 5 },
+  { id: 'neonYellow', need: 'Beat Story chapter 9',   test: ch(9) },
+  { id: 'neonPink',   need: 'Play 75 matches',        test: s => s.games >= 75 },
+  { id: 'neonBlue',   need: 'Beat Story chapter 15',  test: ch(15) },
+  { id: 'glow',       need: 'Score 25 Dekabess',      test: s => s.dekabess >= 25 },
+  { id: 'usa',        need: 'Win 5 matches',          test: s => s.vyej >= 5 },
+  { id: 'playvolt',   need: 'Play 100 matches',       test: s => s.games >= 100 },
+  { id: 'dekabess',   need: 'Win 5 tournaments',      test: s => s.tournaments >= 5 },
 ]
 export const TABLE_UNLOCKS = [
   { id: 'green',    free: true },
@@ -73,6 +116,13 @@ export const TABLE_UNLOCKS = [
   { id: 'haiti',    need: 'Win a tournament',      test: s => s.tournaments >= 1 },
   { id: 'jamaica',  need: 'Win 25 matches',        test: s => s.vyej >= 25 },
   { id: 'quebec',   need: 'Win 10 matches',        test: s => s.vyej >= 10 },
+  { id: 'purple',   need: 'Win 3 matches',         test: s => s.vyej >= 3 },
+  { id: 'pink',     need: 'Play 10 matches',       test: s => s.games >= 10 },
+  { id: 'ocean',    need: 'Beat Story chapter 4',  test: ch(4) },
+  { id: 'usa',      need: 'Win 5 matches',         test: s => s.vyej >= 5 },
+  { id: 'neon',     need: 'Score 15 Dekabess',     test: s => s.dekabess >= 15 },
+  { id: 'playvolt', need: 'Play 100 matches',      test: s => s.games >= 100 },
+  { id: 'dekabess', need: 'Win 5 tournaments',     test: s => s.tournaments >= 5 },
 ]
 
 export function ownedSkins(stats) {
