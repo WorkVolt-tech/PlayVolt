@@ -3,7 +3,14 @@
   inset: 0;
   background: var(--felt);
   background-image: radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%);
-  overflow: hidden;
+  /* On a short screen the chain can be taller than the table: let it scroll
+     up and down rather than run under the hand. Sideways never scrolls — the
+     chain already wraps at the table's width. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background-attachment: local;
 }
 
 .board-area::before {
