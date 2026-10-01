@@ -165,9 +165,12 @@ function withinHorizontalBounds(candidate, dims, W, margin) {
 function computeSnakePositions(tiles, W, H) {
   if (!tiles || tiles.length === 0) return []
 
-  // Protect the layout from a transient 0px ResizeObserver measurement.
+  // Protect the layout from a transient 0px ResizeObserver measurement —
+  // but ONLY that. The height used to be floored at 260px, so on a phone held
+  // sideways (a table ~150px tall) the chain was centred as if there were
+  // 260px, which put it at the bottom edge, under the hand.
   const boardW = Math.max(W || 0, 280)
-  const boardH = Math.max(H || 0, 260)
+  const boardH = H > 40 ? H : 260
   const MARGIN = Math.max(22, Math.min(42, boardW * 0.055))
 
   // A vertical section should be a real run, not a single fake "corner" tile.
@@ -875,6 +878,14 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
 
   const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h) : []
 
+  // When the chain is taller than the table (a phone on its side), the table
+  // scrolls. This marker sits a margin below the lowest tile so you can scroll
+  // all the way to it.
+  const chainBottom = positions.length
+    ? Math.max(...positions.map(p => p.y + p.ph / 2)) + 28
+    : 0
+  const needsScroll = chainBottom > (dims.h || 0) + 1
+
   // Use the newest available drag source for previews. `dragging` is preferred,
   // then native dataTransfer recovery, then selectedTile for click placement.
   const activePlay =
@@ -986,8 +997,9 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     if (!areaRef.current || !data?.tile || !positions.length) return null
 
     const rect = areaRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    // the table can scroll on short screens: convert to table coordinates
+    const x = e.clientX - rect.left + (areaRef.current.scrollLeft || 0)
+    const y = e.clientY - rect.top + (areaRef.current.scrollTop || 0)
     const candidates = []
 
     const left = getDynamicPreview(data, 'left')
@@ -1088,6 +1100,11 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
             {isMyTurn ? 'Drag a tile here to start' : 'Waiting for first tile…'}
           </span>
         </div>
+      )}
+
+      {/* lets the table scroll down to just below the lowest tile */}
+      {needsScroll && (
+        <div aria-hidden="true" style={{ position: 'absolute', left: 0, top: chainBottom, width: 1, height: 1, pointerEvents: 'none' }} />
       )}
 
       {positions.map((pos, i) => (
