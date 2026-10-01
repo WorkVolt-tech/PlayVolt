@@ -11,6 +11,7 @@ import StoryChallenge from './pages/StoryChallenge'
 import Tournament from './pages/Tournament'
 import Practice from './pages/Practice'
 import SoloGame from './pages/SoloGame'
+import Skins from './pages/Skins'
 import './styles/global.css'
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/tournament" element={<Tournament />} />
         <Route path="/practice" element={<Practice />} />
         <Route path="/solo" element={<SoloGame />} />
+        <Route path="/skins" element={<Skins />} />
         <Route path="/tracker" element={<Tracker />} />
         <Route path="/wa-tab-la" element={<WaTabLa />} />
         <Route path="/auth" element={<Auth />} />
