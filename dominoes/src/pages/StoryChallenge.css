@@ -276,3 +276,16 @@
 .sc-series span { color: var(--ivory-dim); font-size: 0.6rem; }
 .sc-round-line { color: var(--ivory) !important; }
 .sc-round-line strong { color: var(--gold); }
+
+/* A phone on its side has very little height: keep the challenge line, but
+   squeeze it to one short row so the table gets the space. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .sc-brief {
+    padding: 0.2rem 0.75rem;
+    font-size: 0.55rem;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
