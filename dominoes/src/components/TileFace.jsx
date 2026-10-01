@@ -21,24 +21,29 @@ export default function TileFace({ a, b, vertical = true, skin }) {
   const layout = vertical ? UPRIGHT : SIDEWAYS
   const face = S.face(vertical ? 1 : 2, vertical ? 2 : 1)
 
+  // Each half of a domino is a square. Every pip is the SAME fraction of
+  // that square's width, and its height always equals its width — so all
+  // pips are identical, perfect circles, whatever size the tile is drawn at.
+  // (They used to be sized by the grid cell they sat in, with a height cap;
+  // when a cell wasn't exactly square that squashed some pips into ovals.)
+  const SPOT_POS = ['24%', '50%', '76%']
   const half = n => (
-    <div style={{
-      flex: 1,
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-      gridTemplateRows: 'repeat(3, minmax(0, 1fr))',
-      padding: '13%',
-      minWidth: 0, minHeight: 0,
-    }}>
-      {SPOTS.map(i => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0, minHeight: 0 }}>
-          {layout[n]?.includes(i) && (
-            <div style={{
-              width: '68%', aspectRatio: '1 / 1', maxHeight: '68%',
-              borderRadius: '50%', background: S.pip, boxShadow: S.ring,
-            }} />
-          )}
-        </div>
+    <div style={{ flex: 1, position: 'relative', minWidth: 0, minHeight: 0 }}>
+      {SPOTS.filter(i => layout[n]?.includes(i)).map(i => (
+        <div key={i} style={{
+          position: 'absolute',
+          left: SPOT_POS[i % 3],
+          top: SPOT_POS[Math.floor(i / 3)],
+          // width and padding-bottom are BOTH a share of the half's width,
+          // so height always equals width: a true circle, on every browser
+          width: '19%',
+          height: 0,
+          paddingBottom: '19%',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '50%',
+          background: S.pip,
+          boxShadow: S.ring,
+        }} />
       ))}
     </div>
   )
@@ -66,7 +71,8 @@ export default function TileFace({ a, b, vertical = true, skin }) {
       {/* brass pin */}
       <div style={{
         position: 'absolute', left: '50%', top: '50%',
-        width: vertical ? '13%' : '6.5%', aspectRatio: '1 / 1',
+        width: vertical ? '13%' : '6.5%', height: 0,
+        paddingBottom: vertical ? '13%' : '6.5%',
         transform: 'translate(-50%, -50%)', borderRadius: '50%',
         background: 'radial-gradient(circle at 35% 35%, #fff3c4 0%, #d8b25a 45%, #8a6a22 100%)',
         boxShadow: '0 1px 1px rgba(0,0,0,0.35)',
