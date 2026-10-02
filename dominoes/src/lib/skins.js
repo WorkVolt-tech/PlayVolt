@@ -4,6 +4,7 @@
 // out from your account's stats, so it follows you everywhere.
 
 import { useEffect, useState } from 'react'
+import { db } from './supabase'
 
 const INK   = '#1c1a16'
 const WHITE = '#ffffff'
@@ -149,8 +150,24 @@ export function setEquipped(kind, id) {
   const cur = getEquipped()
   const next = { ...cur, [kind]: id }
   try { localStorage.setItem(KEY, JSON.stringify(next)) } catch { /* ignore */ }
-  applyTableSkin(next.table)
+  applyTableSkin(roomSkins?.table || next.table)
   window.dispatchEvent(new CustomEvent(EVENT, { detail: next }))
+}
+
+// ── A multiplayer table's skins ─────────────────────────────────────────────
+// At a multiplayer table everyone sees the HOST's table and tile faces. The
+// game screen sets them here while you're seated and clears them when you
+// leave. It's app-wide on purpose: the tile following your finger while you
+// drag is drawn outside the game screen, and should match the board too.
+let roomSkins = null
+export function setRoomSkins(skins) {
+  const clean = skins && {
+    tile:  TILE_SKINS[skins.tile]   ? skins.tile  : null,
+    table: TABLE_SKINS[skins.table] ? skins.table : null,
+  }
+  roomSkins = clean && (clean.tile || clean.table) ? clean : null
+  applyTableSkin(roomSkins?.table || getEquipped().table)
+  window.dispatchEvent(new CustomEvent(EVENT, { detail: getEquipped() }))
 }
 
 // The table is painted through two CSS variables, so every screen that shows
@@ -165,12 +182,40 @@ export function applyTableSkin(id) {
 // Components that draw tiles use this, so equipping a skin repaints them.
 export function useEquippedSkins() {
   const [eq, setEq] = useState(getEquipped)
+  const [, bump] = useState(0)
   useEffect(() => {
-    const on = e => setEq(e.detail || getEquipped())
+    const on = e => { setEq(e.detail || getEquipped()); bump(n => n + 1) }
     window.addEventListener(EVENT, on)
     return () => window.removeEventListener(EVENT, on)
   }, [])
-  return eq
+  // at a multiplayer table, the host's skins win
+  return { tile: roomSkins?.tile || eq.tile, table: roomSkins?.table || eq.table }
+}
+
+// ── What this player owns (for "unlock" hints) ──────────────────────────────
+// Reads the account's stats once; guests own only the free skins.
+export function useOwnedSkins() {
+  const [owned, setOwned] = useState(() => ownedSkins(null))
+  useEffect(() => {
+    let off = false
+    ;(async () => {
+      const { data: auth } = await db.auth.getUser()
+      const uid = auth?.user?.id
+      if (!uid) return
+      const [{ data: prof }, { data: sp }] = await Promise.all([
+        db.from('profiles').select('*').eq('id', uid).maybeSingle(),
+        db.rpc('ensure_story_progress'),
+      ])
+      const row = Array.isArray(sp) ? sp[0] : sp
+      if (!off) setOwned(ownedSkins({
+        games: prof?.total_games ?? 0, vyej: prof?.total_vyej ?? 0,
+        dekabess: prof?.total_dekabess ?? 0, tournaments: prof?.total_tournaments_won ?? 0,
+        chapters: row?.completed_chapters || [],
+      }))
+    })()
+    return () => { off = true }
+  }, [])
+  return owned
 }
 
 // paint the equipped table as soon as the app loads
