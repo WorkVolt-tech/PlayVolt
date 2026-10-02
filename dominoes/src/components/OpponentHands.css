@@ -1,3 +1,10 @@
+/* Tile size grows a little on big screens. The hands sit just inside the
+   table's rail (the felt is inset by --rail). */
+.board-container { --opp-w: clamp(12px, 1.15vw, 19px); --rail: 10px; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .board-container { --opp-w: 10px; --rail: 5px; }
+}
+
 .opponent-area {
   position: absolute;
   display: flex;
@@ -9,7 +16,7 @@
 
 /* TOP — Ti-Cam */
 .opponent-area.opponent-top {
-  top: 8px;
+  top: calc(var(--rail, 10px) + 6px);
   left: 50%;
   transform: translateX(-50%);
   flex-direction: row;
@@ -20,20 +27,22 @@
 
 /* LEFT — Jean */
 .opponent-area.opponent-left {
-  left: 6px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: calc(var(--rail, 10px) + 6px);
+  top: calc(var(--rail, 10px) + 6px);
+  bottom: calc(var(--rail, 10px) + 6px);
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 /* RIGHT — Djo */
 .opponent-area.opponent-right {
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: calc(var(--rail, 10px) + 6px);
+  top: calc(var(--rail, 10px) + 6px);
+  bottom: calc(var(--rail, 10px) + 6px);
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 .opponent-name {
@@ -52,23 +61,23 @@
 
 .opponent-area.is-turn .opponent-name { color: var(--gold); }
 .opponent-area.is-turn .opponent-tile {
-  border-color: rgba(201,168,76,0.6);
-  background: rgba(201,168,76,0.12);
+  box-shadow: 0 0 0 1px rgba(232,201,106,0.85), 0 0 8px rgba(232,201,106,0.45);
 }
 
 .opponent-tiles { display: flex; gap: 2px; }
 .opponent-tiles-top   { flex-direction: row; }
 .opponent-tiles-left,
-.opponent-tiles-right { flex-direction: column; }
+.opponent-tiles-right {
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: center;
+  max-height: calc(100% - 3.2rem);   /* leave room for the name */
+}
 
 .opponent-tile {
-  background:
-    repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 2px, transparent 2px, transparent 5px),
-    linear-gradient(160deg, #3b362c 0%, #1f1c17 100%);
-  border: 1px solid #0d0c0a;
+  position: relative;
   border-radius: 3px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.45);
   flex-shrink: 0;
 }
-.opponent-tile.vertical   { width: 14px; height: 28px; }
-.opponent-tile.horizontal { width: 24px; height: 12px; }
+.opponent-tile.vertical { width: var(--opp-w, 14px); height: calc(var(--opp-w, 14px) * 2); }

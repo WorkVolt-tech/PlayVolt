@@ -1,4 +1,5 @@
 import './OpponentHands.css'
+import TileBack from './TileBack'
 
 export default function OpponentHands({ players, myInfo, roomData }) {
   const mySeat = myInfo?.seat ?? 0
@@ -26,7 +27,9 @@ export default function OpponentHands({ players, myInfo, roomData }) {
               <div className="opponent-name">{p.nickname}</div>
               <div className={`opponent-tiles opponent-tiles-${pos}`}>
                 {Array.from({ length: count }).map((_, i) => (
-                  <div key={i} className={`opponent-tile ${pos === 'top' ? 'horizontal' : 'vertical'}`} />
+                  // every opponent's tiles stand upright, as a hand is held,
+                  // showing the back of the equipped skin
+                  <div key={i} className="opponent-tile vertical"><TileBack /></div>
                 ))}
               </div>
             </div>

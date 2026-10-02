@@ -36,9 +36,10 @@ export default function TileFace({ a, b, vertical = true, skin }) {
       r={PIP_R}
       fill={S.pip}
       // flag tiles: white pips with a firm dark edge, so they still read
-      // where they land on a white stripe or cross
-      stroke={outline ? 'rgba(0,0,0,0.75)' : 'none'}
-      strokeWidth={outline ? 3 : 0}
+      // where they land on a white stripe or cross. A skin can set its own
+      // pip edge (pipStroke / pipStrokeW) to override this.
+      stroke={S.pipStroke ?? (outline ? 'rgba(0,0,0,0.75)' : 'none')}
+      strokeWidth={S.pipStrokeW ?? (outline ? 3 : 0)}
     />
   ))
 
