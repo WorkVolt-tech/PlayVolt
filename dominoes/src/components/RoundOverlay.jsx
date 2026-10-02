@@ -1,7 +1,9 @@
+import { useRef } from 'react'
 import TileFace from './TileFace'
 import './RoundOverlay.css'
 
 export default function RoundOverlay({ roomData, players, myInfo, onNextRound, onLeaveLobby, leaveLabel, canContinue = false, onPlayAgain }) {
+  const frozen = useRef(null)   // hooks before any early return (see the reveal below)
   if (!roomData) return null
   const isMatchOver = roomData.status === 'finished'
   const isDekabess  = roomData.pending_point
@@ -35,8 +37,30 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
   }
 
   const isBlocked = roomData.blocked === true || roomData.blocked === 'true'
+  // ── The reveal shows the hands AS THE ROUND ENDED, never anything later ──
+  // When the winner starts the next round, the new hands are written a moment
+  // before the table switches back to playing — and this screen is still open.
+  // Re-reading the hands live would show everyone the NEW deal face-up.
+  // So the hands are frozen the first time this screen shows a round.
+  if (!frozen.current || frozen.current.round !== roomData.round) {
+    const handOf = p => (Array.isArray(p.hand) ? p.hand.map(t => [...t]) : [])
+    const total = players.reduce((n, p) => n + handOf(p).length, 0)
+    frozen.current = {
+      round: roomData.round,
+      hands: Object.fromEntries(players.map(p => [p.seat, handOf(p)])),
+      // A finished round always has tiles on the table. If every tile is back
+      // in someone's hand, this is already a fresh deal (say, a refresh in
+      // that gap) — so the reveal is not shown at all.
+      ok: total < players.length * 7,
+    }
+  }
+  const showReveal = frozen.current.ok
+
   const withPips = [...players]
-    .map(p => ({ ...p, pips: (p.hand || []).reduce((s, t) => s + t[0] + t[1], 0) }))
+    .map(p => {
+      const hand = frozen.current.hands[p.seat] || []
+      return { ...p, hand, pips: hand.reduce((s, t) => s + t[0] + t[1], 0) }
+    })
   const results = isBlocked
     ? [...withPips].sort((a, b) => a.pips - b.pips)
     : withPips.sort((a, b) => a.seat - b.seat)
@@ -60,7 +84,7 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
         {/* The reveal: everyone's remaining tiles, face up, with pip totals —
             so you can see what each player was holding and why it went the
             way it did. */}
-        <div className="reveal">
+        {showReveal && <div className="reveal">
           <div className="reveal-head"><span>What everyone was holding</span><span>Pips</span></div>
           {results.map(r => {
             const won = r.seat === roundWinnerSeat
@@ -81,7 +105,7 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
               </div>
             )
           })}
-        </div>
+        </div>}
 
         <div className="modal-actions">
           {/* canContinue: nobody else can deal (solo), so you always can */}
