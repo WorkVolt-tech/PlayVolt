@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
 import { NORMAL_CIRCUIT, EXPERT_CIRCUIT } from '../story/chapters'
+import { getEquipped, setRoomSkins, useOwnedSkins, TILE_SKINS, TABLE_SKINS, TILE_UNLOCKS, TABLE_UNLOCKS } from '../lib/skins'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
 import { canPlayOnSide } from '../hooks/useGameState'
@@ -130,6 +131,40 @@ export default function Game() {
     return () => { off = true }
   }, [])
   const [pick, setPick] = useState({})     // seat -> chosen bot
+
+  // ── Skins at the table ────────────────────────────────────────────────────
+  // Everyone sees the HOST's table and tile faces; each player's hand shows
+  // the backs in THEIR OWN skin. Each device records its own player's skin
+  // when the game opens; the host's device (seat 0) records the table's.
+  useEffect(() => {
+    if (!myInfo?.roomId) return
+    const eq = getEquipped()
+    db.from('domino_players').update({ tile_skin: eq.tile })
+      .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat).then(() => {})
+    if (myInfo.seat === 0) {
+      db.from('domino_rooms').update({ tile_skin: eq.tile, table_skin: eq.table })
+        .eq('id', myInfo.roomId).then(() => {})
+    }
+  }, [myInfo?.roomId, myInfo?.seat])
+
+  // show the host's look while seated here; back to your own when you leave
+  useEffect(() => {
+    setRoomSkins({ tile: roomData?.tile_skin, table: roomData?.table_skin })
+  }, [roomData?.tile_skin, roomData?.table_skin])
+  useEffect(() => () => setRoomSkins(null), [])
+
+  // The incentive: if the host's table or tiles are ones you haven't earned,
+  // say what unlocks them.
+  const owned = useOwnedSkins()
+  const unlockHints = []
+  if (roomData?.table_skin && TABLE_SKINS[roomData.table_skin] && !owned.tables.has(roomData.table_skin)) {
+    const u = TABLE_UNLOCKS.find(x => x.id === roomData.table_skin)
+    if (u?.need) unlockHints.push(`${TABLE_SKINS[roomData.table_skin].label} table — ${u.need}`)
+  }
+  if (roomData?.tile_skin && TILE_SKINS[roomData.tile_skin] && !owned.tiles.has(roomData.tile_skin)) {
+    const u = TILE_UNLOCKS.find(x => x.id === roomData.tile_skin)
+    if (u?.need) unlockHints.push(`${TILE_SKINS[roomData.tile_skin].label} tiles — ${u.need}`)
+  }
 
   // ── Turn clock display ────────────────────────────────────────────────────
   const [clockNow, setClockNow] = useState(() => Date.now())
@@ -286,6 +321,11 @@ export default function Game() {
       </div>
 
       <div className="board-container">
+        {unlockHints.length > 0 && (
+          <div className="unlock-hint" title="The host's skins — earn them by playing">
+            {unlockHints.map(h => <div key={h}>🔒 {h}</div>)}
+          </div>
+        )}
         <OpponentHands
           players={players}
           myInfo={myInfo}
