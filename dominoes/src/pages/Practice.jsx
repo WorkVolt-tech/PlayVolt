@@ -6,6 +6,7 @@ import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
 import KnockAnimation from '../components/KnockAnimation'
+import TileBack from '../components/TileBack'
 import { canPlayOnSide } from '../hooks/useGameState'
 import './Game.css'
 import './StoryChallenge.css'
@@ -276,7 +277,7 @@ export default function Practice({ embedded = false, onExit }) {
               title={mustDraw ? 'Draw from the pile' : 'Draw pile'}
             >
               <span className="pile-mini" aria-hidden="true">
-                <span /><span /><span />
+                <span><TileBack /></span><span><TileBack /></span><span><TileBack /></span>
               </span>
               <span className="pile-count">{st.pile.length}</span>
               <span className="pile-label">{mustDraw ? 'tap to draw' : 'pile'}</span>
@@ -296,7 +297,7 @@ export default function Practice({ embedded = false, onExit }) {
                           setPileOpen(false)
                         }}
                         title="Take this one"
-                      />
+                      ><TileBack /></button>
                     ))}
                   </div>
                   <button className="pile-sheet-close" onClick={() => setPileOpen(false)}>Look at the board first</button>

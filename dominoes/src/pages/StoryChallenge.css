@@ -126,11 +126,9 @@
 /* three face-down tiles, fanned */
 .pile-mini { position: relative; width: 30px; height: 34px; display: block; }
 .pile-mini span {
-  position: absolute; top: 0; width: 18px; height: 30px; border-radius: 3px;
-  background:
-    repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 3px, transparent 3px 6px),
-    linear-gradient(160deg, #35322a, #1d1b16);
-  border: 1px solid var(--border);
+  position: absolute; top: 0; width: 15px; height: 30px; border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 .pile-mini span:nth-child(1) { left: 0; }
 .pile-mini span:nth-child(2) { left: 5px; top: 2px; }
@@ -164,10 +162,9 @@
   gap: 0.5rem; justify-items: center;
 }
 .pile-tile {
-  width: 36px; height: 60px; padding: 0; border-radius: 5px;
-  background:
-    repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 3px, transparent 3px 6px),
-    linear-gradient(160deg, #35322a, #1d1b16);
+  position: relative; overflow: hidden;
+  width: 32px; height: 64px; padding: 0; border-radius: 5px;
+  background: transparent;
   border: 1px solid rgba(201,168,76,0.5);
   box-shadow: 0 2px 6px rgba(0,0,0,0.5);
   cursor: pointer;
