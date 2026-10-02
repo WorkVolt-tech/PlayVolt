@@ -326,7 +326,7 @@ function computeSnakePositions(tiles, W, H) {
 }
 
 // ─── Single tile renderer ─────────────────────────────────────────────────────
-function BoardTile({ entry, pos, ghost = false, highlighted = false }) {
+function BoardTile({ entry, pos, ghost = false, highlighted = false, fresh = false }) {
   const { isDouble, flowDir, orientation } = pos
   const isVert = orientation ? orientation === 'vertical' : pos.isVert
 
@@ -346,7 +346,8 @@ function BoardTile({ entry, pos, ghost = false, highlighted = false }) {
   }
 
   return (
-    <div style={{
+    <div
+      className={fresh ? 'tile-fresh' : undefined} style={{
       position: 'absolute',
       left: pos.x - pos.pw / 2,
       top: pos.y - pos.ph / 2,
@@ -845,6 +846,26 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
 
   const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h) : []
 
+  // ── Which tile was just played ────────────────────────────────────────────
+  // Only when the chain grows by one: the new tile is at whichever end
+  // changed. A background re-read of the same board keeps the highlight; a
+  // new round clears it. (Purely visual — nothing here touches play.)
+  const lastSeen = useRef({ tiles: null, fresh: -1 })
+  if (lastSeen.current.tiles !== tiles) {
+    const prev = lastSeen.current.tiles
+    const sig = e => (e?.tile ? `${e.tile[0]}-${e.tile[1]}` : '')
+    let fresh = -1
+    if (Array.isArray(prev) && Array.isArray(tiles)) {
+      if (tiles.length === prev.length + 1) {
+        fresh = prev.length === 0 || sig(tiles[0]) !== sig(prev[0]) ? 0 : tiles.length - 1
+      } else if (tiles.length === prev.length) {
+        fresh = lastSeen.current.fresh
+      }
+    }
+    lastSeen.current = { tiles, fresh }
+  }
+  const freshIdx = lastSeen.current.fresh
+
   // When the chain is taller than the table (a phone on its side), the table
   // scrolls. This marker sits a margin below the lowest tile so you can scroll
   // all the way to it.
@@ -1075,7 +1096,14 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
       )}
 
       {positions.map((pos, i) => (
-        <BoardTile key={i} entry={tiles[i]} pos={pos} />
+        // The newest tile gets its own key, so its drop-in plays every time —
+        // even when two tiles in a row land at the same end.
+        <BoardTile
+          key={i === freshIdx ? `fresh-${tiles.length}-${tiles[i]?.tile?.join('')}` : i}
+          entry={tiles[i]}
+          pos={pos}
+          fresh={i === freshIdx}
+        />
       ))}
 
       {!hasTiles && firstPreview && (
