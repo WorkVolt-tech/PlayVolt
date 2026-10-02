@@ -31,16 +31,26 @@ const EMBLEMS = {
   ),
 }
 
-export default function TileBack({ skin }) {
+export default function TileBack({ skin, turn = 0 }) {
   const equipped = useEquippedSkins()
   const S = TILE_SKINS[skin || equipped.tile] || TILE_SKINS.classic
 
   const texture = 'repeating-linear-gradient(135deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 2px, transparent 2px, transparent 5px)'
   const shade = 'linear-gradient(160deg, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.28) 100%)'
 
+  // Sideways tile (turn = ±90): paint the upright back in a 1:2 box centred
+  // in the 2:1 tile, turned to lie along it.
+  const upright = !turn
   return (
-    <div aria-hidden="true" style={{
-      position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden', pointerEvents: 'none',
+    <div aria-hidden="true" style={upright
+      ? { position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden', pointerEvents: 'none' }
+      : { position: 'absolute', inset: 0, borderRadius: 'inherit', overflow: 'hidden', pointerEvents: 'none' }}>
+    <div style={{
+      ...(upright
+        ? { position: 'absolute', inset: 0, borderRadius: 'inherit' }
+        : { position: 'absolute', left: '25%', top: '-50%', width: '50%', height: '200%',
+            transform: `rotate(${turn}deg) scale(1.04)`, borderRadius: 3 }),
+      overflow: 'hidden', pointerEvents: 'none',
       background: S.flag
         // flag tiles: a white back, with the flag set in the middle
         ? 'repeating-linear-gradient(135deg, rgba(0,0,0,0.035) 0px, rgba(0,0,0,0.035) 2px, transparent 2px, transparent 5px), linear-gradient(160deg, #ffffff 0%, #f1efe9 60%, #e2ded4 100%)'
@@ -64,6 +74,7 @@ export default function TileBack({ skin }) {
           {S.emblem && EMBLEMS[S.emblem]}
         </div>
       )}
+    </div>
     </div>
   )
 }

@@ -27,9 +27,12 @@ export default function OpponentHands({ players, myInfo, roomData }) {
               <div className="opponent-name">{p.nickname}</div>
               <div className={`opponent-tiles opponent-tiles-${pos}`}>
                 {Array.from({ length: count }).map((_, i) => (
-                  // every opponent's tiles stand upright, as a hand is held,
-                  // showing the back of the equipped skin
-                  <div key={i} className="opponent-tile vertical"><TileBack /></div>
+                  // Across the table, tiles stand upright; to your left and
+                  // right they lie sideways, as you'd see those hands held.
+                  // Backs show the equipped skin, turned with the tile.
+                  pos === 'top'
+                    ? <div key={i} className="opponent-tile vertical"><TileBack /></div>
+                    : <div key={i} className="opponent-tile horizontal"><TileBack turn={pos === 'left' ? 90 : -90} /></div>
                 ))}
               </div>
             </div>

@@ -80,4 +80,5 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.45);
   flex-shrink: 0;
 }
-.opponent-tile.vertical { width: var(--opp-w, 14px); height: calc(var(--opp-w, 14px) * 2); }
+.opponent-tile.vertical   { width: var(--opp-w, 14px); height: calc(var(--opp-w, 14px) * 2); }
+.opponent-tile.horizontal { width: calc(var(--opp-w, 14px) * 2); height: var(--opp-w, 14px); }
