@@ -350,3 +350,23 @@
 }
 .away-replace .btn { padding: 0.42rem 0.75rem; font-size: 0.56rem; }
 .away-wait { font-size: 0.56rem; color: var(--ivory-dim); font-style: normal; flex-shrink: 0; }
+
+/* ── Round end: everyone's tiles revealed ───────────────────────── */
+.reveal { display: flex; flex-direction: column; gap: 6px; margin: 0.4rem 0 1.2rem; text-align: left; }
+.reveal-head {
+  display: flex; justify-content: space-between;
+  font-size: 0.5rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim);
+  padding: 0 0.4rem 0.3rem; border-bottom: 1px solid var(--border);
+}
+.reveal-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  min-height: 34px; padding: 5px 9px; border-radius: 7px;
+  background: #211f19; border: 1px solid #2e2a20;
+}
+.reveal-row.won { background: rgba(201,168,76,0.10); border-color: rgba(201,168,76,0.55); }
+.reveal-name { width: 6.2rem; flex-shrink: 0; font-size: 0.66rem; color: var(--ivory); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reveal-row.won .reveal-name, .reveal-row.won .reveal-pips { color: var(--gold-glow); }
+.reveal-tiles { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
+.reveal-tile { position: relative; width: 30px; height: 15px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.reveal-out { font-size: 0.6rem; color: var(--gold-glow); letter-spacing: 0.06em; }
+.reveal-pips { width: 2rem; text-align: right; font-size: 0.8rem; color: var(--ivory); }

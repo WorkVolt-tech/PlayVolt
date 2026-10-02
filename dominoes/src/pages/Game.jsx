@@ -286,7 +286,12 @@ export default function Game() {
       </div>
 
       <div className="board-container">
-        <OpponentHands players={players} myInfo={myInfo} roomData={roomData} />
+        <OpponentHands
+          players={players}
+          myInfo={myInfo}
+          roomData={roomData}
+          turnClock={roomData?.status === 'playing' && turnStart ? { start: turnStart, limit: turnLimitMs } : null}
+        />
         <Board
           boardData={boardData}
         selectedTile={selectedTile}
