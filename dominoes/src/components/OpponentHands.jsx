@@ -63,8 +63,9 @@ export default function OpponentHands({ players, myInfo, roomData, turnClock }) 
                   // right they lie sideways, as you'd see those hands held.
                   // Backs show the equipped skin, turned with the tile.
                   pos === 'top'
-                    ? <div key={i} className="opponent-tile vertical"><TileBack /></div>
-                    : <div key={i} className="opponent-tile horizontal"><TileBack turn={pos === 'left' ? 90 : -90} /></div>
+                    // each player's backs in THEIR OWN skin, when known
+                    ? <div key={i} className="opponent-tile vertical"><TileBack skin={p.tile_skin || undefined} /></div>
+                    : <div key={i} className="opponent-tile horizontal"><TileBack skin={p.tile_skin || undefined} turn={pos === 'left' ? 90 : -90} /></div>
                 ))}
               </div>
             </div>
