@@ -222,12 +222,14 @@ export function settleTurn(st) {
 }
 
 // ── Objectives ───────────────────────────────────────────────────────────────
-// Judged for seat 0 — the player.
+// Judged for the player's side. Solo challenges default to seat 0 only; partner
+// challenges can pass [0, 2] so either teammate winning counts for the team.
 
-export function evaluateObjective(st) {
+export function evaluateObjective(st, playerSeats = [0]) {
   if (st.status !== 'over') return { done: false }
   const o = st.objective
-  const won = st.winner === 0
+  const side = Array.isArray(playerSeats) && playerSeats.length ? playerSeats : [0]
+  const won = side.includes(st.winner)
   const withinMoves = !st.moveLimit || st.moves <= st.moveLimit
 
   let met = false
