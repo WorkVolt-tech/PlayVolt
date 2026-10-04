@@ -263,20 +263,28 @@ export default function StoryChallenge() {
   const nameAt = seat => (seat === 0 ? 'You' : (seatBot(seat) || 'Player'))
 
   // Who won a round, and how — said plainly, as a table would.
+  // In partner challenges, seats 0 and 2 are one team, so either teammate
+  // going out counts as a win for the player's side.
   const describeRound = useCallback((state) => {
     if (!state || state.status !== 'over') return null
     const w = state.winner
     if (w === -1) return { title: 'Dead end', how: 'Nothing left to play — try the puzzle again.', mine: false }
     const who = nameAt(w)
-    const title = w === 0 ? 'You win the round' : `${who} wins the round`
+    const playerSide = challenge?.partner ? [0, 2] : [0]
+    const teamWon = playerSide.includes(w)
+    const title = w === 0
+      ? 'You win the round'
+      : teamWon
+        ? `${who} wins the round for your team`
+        : `${who} wins the round`
     let how
     if (state.dekabess) how = `Dekabess — ${w === 0 ? 'you' : who} went out on a tile matching both ends.`
     else if (state.blocked) {
       const pips = state.hands.map((h, seat) => `${nameAt(seat)} ${pipCount(h)}`).join(' · ')
       how = `The table jammed — nobody could play. Fewest pips wins: ${pips}.`
     } else how = `${w === 0 ? 'You' : who} went out first.`
-    return { title, how, mine: w === 0 }
-  }, [seatBot])
+    return { title, how, mine: teamWon }
+  }, [seatBot, challenge])
 
   // A new deal: say who opens, and give it a moment before anyone moves.
   useEffect(() => {
@@ -293,7 +301,8 @@ export default function StoryChallenge() {
   useEffect(() => {
     if (!st || st.status !== 'over' || result) return
     const best = challenge?.rounds === 3
-    const outcome = { ...Engine.evaluateObjective(st), round: describeRound(st) }
+    const playerSide = challenge?.partner ? [0, 2] : [0]
+    const outcome = { ...Engine.evaluateObjective(st, playerSide), round: describeRound(st) }
     if (st.dekabess && st.winner >= 0) setShowDek(true)
     if (!best) { setResult(outcome); return }
 
