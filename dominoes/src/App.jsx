@@ -12,6 +12,7 @@ import Tournament from './pages/Tournament'
 import Practice from './pages/Practice'
 import SoloGame from './pages/SoloGame'
 import Skins from './pages/Skins'
+import Trophies from './pages/Trophies'
 import './styles/global.css'
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/practice" element={<Practice />} />
         <Route path="/solo" element={<SoloGame />} />
         <Route path="/skins" element={<Skins />} />
+        <Route path="/trophies" element={<Trophies />} />
         <Route path="/tracker" element={<Tracker />} />
         <Route path="/wa-tab-la" element={<WaTabLa />} />
         <Route path="/auth" element={<Auth />} />
