@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { db } from './supabase'
+import { TROPHIES } from './trophies'
 
 const INK   = '#1c1a16'
 const WHITE = '#ffffff'
@@ -46,6 +47,13 @@ export const TILE_SKINS = {
   // ── logo themes ──
   dekabess: { label: 'Dekabess', face: () => 'linear-gradient(160deg, #24211b 0%, #141310 60%, #0a0908 100%)', edge: '#c9a84c', pip: '#e8c96a', ring: 'none', divider: 'rgba(201,168,76,0.55)' },
   playvolt: { label: 'PlayVolt', face: () => 'linear-gradient(160deg, #9c84ff 0%, #7c5cfc 55%, #4b2fc9 100%)', edge: '#22106e', pip: '#ffffff', ring: 'none', divider: 'rgba(255,255,255,0.3)' },
+  // ── trophy rewards ──
+  kafe:     { label: 'Kafe', face: () => 'linear-gradient(160deg, #a77b55 0%, #7a5233 55%, #4e3220 100%)', edge: '#2e1c10', pip: '#f6ead8', ring: 'none', divider: 'rgba(246,234,216,0.25)' },
+  kanaval:  { label: 'Kanaval', face: () => 'radial-gradient(circle at 18% 22%, #ff4f7b 0 4%, transparent 4.6%), radial-gradient(circle at 78% 14%, #ffd23f 0 3.6%, transparent 4.2%), radial-gradient(circle at 34% 58%, #3fb7ff 0 3.4%, transparent 4%), radial-gradient(circle at 84% 52%, #3ddc84 0 3.6%, transparent 4.2%), radial-gradient(circle at 14% 88%, #b06cff 0 3.8%, transparent 4.4%), radial-gradient(circle at 66% 90%, #ff8c42 0 3.4%, transparent 4%), linear-gradient(160deg, #fffaf0 0%, #f6edd8 100%)', edge: '#cdbf98', pip: '#1c1a16', ring: 'none', divider: 'rgba(60,45,15,0.30)' },
+  pearl:    { label: 'Pearl', face: () => 'linear-gradient(135deg, #ffffff 0%, #f3eef8 28%, #e8f5f5 52%, #fbf1e6 76%, #ffffff 100%)', edge: '#c9c3d6', pip: '#2a2a35', ring: 'none', divider: 'rgba(42,42,53,0.25)' },
+  obsidian: { label: 'Obsidian', face: () => 'linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.12) 47%, transparent 56%), linear-gradient(160deg, #3a3a44 0%, #15151b 45%, #050507 100%)', edge: '#000000', pip: '#dfe2ee', ring: 'none', divider: 'rgba(255,255,255,0.18)' },
+  krisal:   { label: 'Krisal', face: () => 'linear-gradient(135deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.65) 9%, transparent 9%, transparent 52%, rgba(255,255,255,0.35) 52%, rgba(255,255,255,0.35) 57%, transparent 57%), linear-gradient(160deg, #eefaff 0%, #a9dcf5 55%, #6fbbe6 100%)', edge: '#3d86b0', pip: '#0b2a40', ring: 'none', divider: 'rgba(11,42,64,0.25)' },
+  phoenix:  { label: 'Phoenix', face: () => 'linear-gradient(180deg, #ffd166 0%, #ff8c42 38%, #e63946 72%, #7a0f2a 100%)', edge: '#4a0612', pip: '#ffffff', ring: RING, divider: 'rgba(0,0,0,0.25)', pipStroke: '#000000', pipStrokeW: 6 },
   // ── flags ──
   // Drawn so the flag reads correctly on a tile lying sideways — the way most
   // tiles sit on the table — with the canton top-left.
@@ -71,60 +79,32 @@ export const TABLE_SKINS = {
   dekabess: { label: 'Dekabess', felt: `${VIGNETTE}, linear-gradient(rgba(12,11,9,0.55), rgba(12,11,9,0.55)), url(/dekabess_logo.webp) center / 42% auto no-repeat, #151310`, rail: 'linear-gradient(180deg, #e3c56f 0%, #c9a84c 45%, #7a5f22 100%)' },
   playvolt: { label: 'PlayVolt', felt: `${VIGNETTE}, ${GRAIN}, #2a1b5e`, rail: 'linear-gradient(180deg, #7c5cfc 0%, #4b2fc9 100%)' },
   usa:      { label: 'USA', felt: `${VIGNETTE}, linear-gradient(#1f2350, #1f2350) 0 0 / 40% 53.85% no-repeat, repeating-linear-gradient(180deg, #6e1520 0%, #6e1520 7.69%, #8a847a 7.69%, #8a847a 15.38%)`, rail: WOOD },
+  krisal:   { label: 'Krisal', felt: `${VIGNETTE}, linear-gradient(125deg, transparent 30%, rgba(255,255,255,0.07) 40%, transparent 50%, transparent 62%, rgba(255,255,255,0.05) 70%, transparent 78%), ${GRAIN}, #1d5f7a`, rail: 'linear-gradient(180deg, #d9eef8 0%, #8fbfd8 50%, #4d86a6 100%)' },
+  kanaval:  { label: 'Kanaval', felt: `${VIGNETTE}, radial-gradient(circle, rgba(255,79,123,0.55) 0 2px, transparent 2.6px) 0 0 / 46px 46px, radial-gradient(circle, rgba(255,210,63,0.5) 0 2px, transparent 2.6px) 23px 15px / 46px 46px, radial-gradient(circle, rgba(63,183,255,0.5) 0 2px, transparent 2.6px) 11px 31px / 46px 46px, #4a2370`, rail: WOOD },
+  phoenix:  { label: 'Phoenix', felt: `radial-gradient(ellipse at 50% 108%, rgba(255,140,66,0.45) 0%, rgba(230,57,70,0.18) 35%, transparent 62%), ${VIGNETTE}, ${GRAIN}, #34090c`, rail: 'linear-gradient(180deg, #ff9d4d 0%, #c2410c 50%, #6b1405 100%)' },
+  lakou:    { label: 'Lakou', felt: `${VIGNETTE}, linear-gradient(rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(90deg, rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(180deg, #a85a34 0%, #8a4424 100%)`, rail: WOOD },
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
   jamaica:  { label: 'Jamaica', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(to top right, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), linear-gradient(to top left, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), conic-gradient(#0d5a2a 0deg ${JA}deg, #111111 ${JA}deg ${180 - JA}deg, #0d5a2a ${180 - JA}deg ${180 + JA}deg, #111111 ${180 + JA}deg ${360 - JA}deg, #0d5a2a ${360 - JA}deg)`, rail: WOOD },
   quebec:   { label: 'Québec', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.55) 47%, rgba(255,255,255,0.55) 53%, transparent 53%), linear-gradient(0deg, transparent 45%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.55) 55%, transparent 55%), #12357a`, rail: WOOD },
 }
 
 // ── What unlocks what ────────────────────────────────────────────────────────
-// s = { games, vyej, dekabess, tournaments, chapters: [completed chapter ids] }
-const ch = n => s => (s.chapters || []).includes(n)
-export const TILE_UNLOCKS = [
-  { id: 'classic',   free: true },
-  { id: 'ebony',     free: true },
-  { id: 'haiti',     free: true },
-  { id: 'jade',      need: 'Beat Story chapter 3',  test: ch(3) },
-  { id: 'ruby',      need: 'Win a Vyèj',            test: s => s.vyej >= 1 },
-  { id: 'gold',      need: 'Win a tournament',      test: s => s.tournaments >= 1 },
-  { id: 'marble',    need: 'Finish Story Mode',     test: ch(18) },
-  { id: 'quebec',    need: 'Win 10 matches',        test: s => s.vyej >= 10 },
-  { id: 'jamaica',   need: 'Win 15 matches',        test: s => s.vyej >= 15 },
-  { id: 'trinidad',  need: 'Score 10 Dekabess',     test: s => s.dekabess >= 10 },
-  { id: 'dominican', need: 'Win 3 tournaments',     test: s => s.tournaments >= 3 },
-  { id: 'france',    need: 'Play 50 matches',       test: s => s.games >= 50 },
-  { id: 'lavender',   free: true },
-  { id: 'rose',       free: true },
-  { id: 'amethyst',   need: 'Win 3 matches',          test: s => s.vyej >= 3 },
-  { id: 'ocean',      need: 'Beat Story chapter 2',   test: ch(2) },
-  { id: 'sunset',     need: 'Score 3 Dekabess',       test: s => s.dekabess >= 3 },
-  { id: 'fuchsia',    need: 'Win 20 matches',         test: s => s.vyej >= 20 },
-  { id: 'neonGreen',  need: 'Play 25 matches',        test: s => s.games >= 25 },
-  { id: 'neonOrange', need: 'Score 5 Dekabess',       test: s => s.dekabess >= 5 },
-  { id: 'neonYellow', need: 'Beat Story chapter 9',   test: ch(9) },
-  { id: 'neonPink',   need: 'Play 75 matches',        test: s => s.games >= 75 },
-  { id: 'neonBlue',   need: 'Beat Story chapter 15',  test: ch(15) },
-  { id: 'glow',       need: 'Score 25 Dekabess',      test: s => s.dekabess >= 25 },
-  { id: 'usa',        need: 'Win 5 matches',          test: s => s.vyej >= 5 },
-  { id: 'playvolt',   need: 'Play 100 matches',       test: s => s.games >= 100 },
-  { id: 'dekabess',   need: 'Win 5 tournaments',      test: s => s.tournaments >= 5 },
-]
-export const TABLE_UNLOCKS = [
-  { id: 'green',    free: true },
-  { id: 'midnight', free: true },
-  { id: 'burgundy', need: 'Win 5 matches',         test: s => s.vyej >= 5 },
-  { id: 'slate',    need: 'Beat Story chapter 6',  test: ch(6) },
-  { id: 'mahogany', need: 'Beat Story chapter 12', test: ch(12) },
-  { id: 'haiti',    need: 'Win a tournament',      test: s => s.tournaments >= 1 },
-  { id: 'jamaica',  need: 'Win 25 matches',        test: s => s.vyej >= 25 },
-  { id: 'quebec',   need: 'Win 10 matches',        test: s => s.vyej >= 10 },
-  { id: 'purple',   need: 'Win 3 matches',         test: s => s.vyej >= 3 },
-  { id: 'pink',     need: 'Play 10 matches',       test: s => s.games >= 10 },
-  { id: 'ocean',    need: 'Beat Story chapter 4',  test: ch(4) },
-  { id: 'usa',      need: 'Win 5 matches',         test: s => s.vyej >= 5 },
-  { id: 'neon',     need: 'Score 15 Dekabess',     test: s => s.dekabess >= 15 },
-  { id: 'playvolt', need: 'Play 100 matches',      test: s => s.games >= 100 },
-  { id: 'dekabess', need: 'Win 5 tournaments',     test: s => s.tournaments >= 5 },
-]
+// A few skins are free. Every other skin is a trophy's reward, and its unlock
+// rule is that trophy's — built from trophies.js, so the two never disagree.
+const FREE_TILES  = ['classic', 'ebony', 'haiti', 'lavender', 'rose']
+const FREE_TABLES = ['green', 'midnight']
+
+function unlocksFor(kind, free, ids) {
+  return ids.map(id => {
+    if (free.includes(id)) return { id, free: true }
+    const t = TROPHIES.find(tr => (tr.rewards?.[kind] || []).includes(id))
+    return t
+      ? { id, trophy: t.id, need: `${t.kreyol} trophy — ${t.desc}`, test: t.test }
+      : { id, need: 'Coming soon', test: () => false }
+  })
+}
+export const TILE_UNLOCKS  = unlocksFor('tiles',  FREE_TILES,  Object.keys(TILE_SKINS))
+export const TABLE_UNLOCKS = unlocksFor('tables', FREE_TABLES, Object.keys(TABLE_SKINS))
 
 export function ownedSkins(stats) {
   const s = stats || {}
@@ -192,27 +172,37 @@ export function useEquippedSkins() {
   return { tile: roomSkins?.tile || eq.tile, table: roomSkins?.table || eq.table }
 }
 
+// ── A player's stats, as trophies and skins read them ──────────────────────
+// Guests (no account) get all zeros.
+export async function loadPlayerStats() {
+  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0 }
+  const { data: auth } = await db.auth.getUser()
+  const uid = auth?.user?.id
+  if (!uid) return zero
+  const [{ data: prof }, { data: sp }] = await Promise.all([
+    db.from('profiles').select('*').eq('id', uid).maybeSingle(),
+    db.rpc('ensure_story_progress'),
+  ])
+  const row = Array.isArray(sp) ? sp[0] : sp
+  return {
+    games: prof?.total_games ?? 0,
+    vyej: prof?.total_vyej ?? 0,
+    dekabess: prof?.total_dekabess ?? 0,
+    tournaments: prof?.total_tournaments_won ?? 0,
+    chapters: row?.completed_chapters || [],
+    cleanRounds: prof?.total_clean_rounds ?? 0,
+    comebacks: prof?.total_comebacks ?? 0,
+    uid,
+  }
+}
+
 // ── What this player owns (for "unlock" hints) ──────────────────────────────
 // Reads the account's stats once; guests own only the free skins.
 export function useOwnedSkins() {
   const [owned, setOwned] = useState(() => ownedSkins(null))
   useEffect(() => {
     let off = false
-    ;(async () => {
-      const { data: auth } = await db.auth.getUser()
-      const uid = auth?.user?.id
-      if (!uid) return
-      const [{ data: prof }, { data: sp }] = await Promise.all([
-        db.from('profiles').select('*').eq('id', uid).maybeSingle(),
-        db.rpc('ensure_story_progress'),
-      ])
-      const row = Array.isArray(sp) ? sp[0] : sp
-      if (!off) setOwned(ownedSkins({
-        games: prof?.total_games ?? 0, vyej: prof?.total_vyej ?? 0,
-        dekabess: prof?.total_dekabess ?? 0, tournaments: prof?.total_tournaments_won ?? 0,
-        chapters: row?.completed_chapters || [],
-      }))
-    })()
+    loadPlayerStats().then(st => { if (!off) setOwned(ownedSkins(st)) })
     return () => { off = true }
   }, [])
   return owned
