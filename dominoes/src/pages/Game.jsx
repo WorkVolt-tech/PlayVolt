@@ -9,7 +9,7 @@ import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
-import KnockAnimation from '../components/KnockAnimation'
+import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import OpponentHands from '../components/OpponentHands'
 import './Game.css'
 
@@ -446,6 +446,7 @@ export default function Game() {
       {/* Knock animation */}
       {knockPlayer && (
         <KnockAnimation
+          key={knockKey(knockPlayer)}
           playerName={knockPlayer.name}
           position={knockPlayer.position}
           onDone={showNextKnock}

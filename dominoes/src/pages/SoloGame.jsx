@@ -9,7 +9,7 @@ import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
 import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
-import KnockAnimation from '../components/KnockAnimation'
+import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import './Game.css'
 
 // ── Solo vs AI, on the device ────────────────────────────────────────────────
@@ -333,6 +333,7 @@ export default function SoloGame() {
 
       {knock && (
         <KnockAnimation
+          key={knockKey(knock)}
           playerName={knock.name}
           position={knock.position}
           onDone={() => setKnock(null)}

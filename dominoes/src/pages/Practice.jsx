@@ -5,7 +5,7 @@ import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
-import KnockAnimation from '../components/KnockAnimation'
+import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import TileBack from '../components/TileBack'
 import { canPlayOnSide } from '../hooks/useGameState'
 import './Game.css'
@@ -327,6 +327,7 @@ export default function Practice({ embedded = false, onExit }) {
 
       {knock && (
         <KnockAnimation
+          key={knockKey(knock)}
           playerName={knock.name}
           position={knock.position}
           onDone={() => setKnock(knockQueue.current.shift() || null)}
