@@ -1,117 +1,83 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import './KnockAnimation.css'
 
-// position: 'bottom' | 'left' | 'top' | 'right'
-export default function KnockAnimation({ playerName, position = 'bottom', onDone }) {
-  const [phase, setPhase] = useState('idle')
+// ── The knock ────────────────────────────────────────────────────────────────
+// A hand comes in from the player's side, raps the table twice, and leaves.
+//
+// It's ONE CSS animation the browser runs by itself. (It used to be seven
+// timers each moving the hand to its next position; on a busy phone those
+// timers fire late and bunch up, so in-between positions were never drawn —
+// the hand would skip the actual knock.)
+//
+// Every knock must be its own element: render it with key={knockKey(knock)},
+// so two knocks in a row each start from the beginning.
 
+// load the hand picture up front, so the first knock isn't waiting on it
+if (typeof Image !== 'undefined') { const img = new Image(); img.src = '/handknock.webp' }
+
+// A stable, unique key per knock object (each knock is a new object).
+const ids = new WeakMap(); let next = 0
+export function knockKey(knock) {
+  if (!knock || typeof knock !== 'object') return 'none'
+  if (!ids.has(knock)) ids.set(knock, ++next)
+  return `knock-${ids.get(knock)}`
+}
+
+// position: 'bottom' | 'left' | 'top' | 'right'
+const ROT = {
+  bottom: 'rotate(0deg)',
+  left:   'rotate(90deg)',
+  top:    'rotate(180deg) scaleX(-1)',
+  right:  'rotate(-90deg) scaleX(-1)',
+}
+// rest, knock (toward the table) and exit offsets, in the hand's own frame
+const MOVES = {
+  bottom: ['translateY(-10px)', 'translateY(-40px)', 'translateY(60px)'],
+  left:   ['translateX(10px)',  'translateX(40px)',  'translateX(-60px)'],
+  top:    ['translateY(10px)',  'translateY(40px)',  'translateY(-60px)'],
+  right:  ['translateX(-10px)', 'translateX(-40px)', 'translateX(60px)'],
+}
+const PLACE = {
+  bottom: { bottom: 160, left: '50%', transform: 'translateX(-50%)' },
+  left:   { left: 40,   top: '50%',  transform: 'translateY(-50%)' },
+  top:    { top: 60,    left: '50%', transform: 'translateX(-50%)' },
+  right:  { right: 40,  top: '50%',  transform: 'translateY(-50%)' },
+}
+const DURATION = 1500
+
+export default function KnockAnimation({ playerName, position = 'bottom', onDone }) {
+  const done = useRef(false)
+  const finish = () => {
+    if (done.current) return
+    done.current = true
+    onDone?.()
+  }
+  // Safety net: if the browser never reports the animation's end (a hidden
+  // tab, reduced motion), the queue still moves on.
   useEffect(() => {
-    const timers = [
-      setTimeout(() => setPhase('in'),      50),
-      setTimeout(() => setPhase('knock1'),  200),
-      setTimeout(() => setPhase('up1'),     450),
-      setTimeout(() => setPhase('knock2'),  650),
-      setTimeout(() => setPhase('up2'),     900),
-      setTimeout(() => setPhase('out'),     1100),
-      setTimeout(() => onDone(),            1500),
-    ]
-    return () => timers.forEach(clearTimeout)
+    const t = setTimeout(finish, DURATION + 400)
+    return () => clearTimeout(t)
   }, [])
 
-  // Rotation and origin based on where the player sits
-  const rotations = {
-    bottom: 0,
-    left:   -90,
-    top:    180,
-    right:  90,
-  }
-
-  // Direction the hand moves to "knock" — toward the center
-  const knockTranslate = {
-    bottom: 'translateY(-40px)',
-    left:   'translateX(40px)',
-    top:    'translateY(40px)',
-    right:  'translateX(-40px)',
-  }
-  const restTranslate = {
-    bottom: 'translateY(-10px)',
-    left:   'translateX(10px)',
-    top:    'translateY(10px)',
-    right:  'translateX(-10px)',
-  }
-  const exitTranslate = {
-    bottom: 'translateY(60px)',
-    left:   'translateX(-60px)',
-    top:    'translateY(-60px)',
-    right:  'translateX(60px)',
-  }
-
-  // Each position needs specific transform so fist always faces board center
-  const transforms = {
-    bottom: 'rotate(0deg)',                    // fist up, no change
-    left:   'rotate(90deg)',                   // fist points right toward board
-    top:    'rotate(180deg) scaleX(-1)',       // fist points down toward board
-    right:  'rotate(-90deg) scaleX(-1)',      // fist points left toward board
-  }
-  const rot = transforms[position]
-
-  const handStyle = {
-    width: 90,
-    transformOrigin: 'center center',
-    filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.7))',
-    transition: 'transform 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.25s',
-    ...{
-      idle:   { transform: `${rot} ${exitTranslate[position]}`, opacity: 0 },
-      in:     { transform: `${rot} ${restTranslate[position]}`, opacity: 1 },
-      knock1: { transform: `${rot} ${knockTranslate[position]}`, opacity: 1 },
-      up1:    { transform: `${rot} ${restTranslate[position]}`, opacity: 1 },
-      knock2: { transform: `${rot} ${knockTranslate[position]}`, opacity: 1 },
-      up2:    { transform: `${rot} ${restTranslate[position]}`, opacity: 1 },
-      out:    { transform: `${rot} ${exitTranslate[position]}`, opacity: 0 },
-    }[phase],
-  }
-
-  // Position the container at the player's side
-  const containerStyle = {
-    position: 'fixed',
-    zIndex: 400,
-    pointerEvents: 'none',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 8,
-    ...{
-      bottom: { bottom: 160, left: '50%', transform: 'translateX(-50%)' },
-      left:   { left: 40,   top: '50%',  transform: 'translateY(-50%)' },
-      top:    { top: 60,    left: '50%', transform: 'translateX(-50%)' },
-      right:  { right: 40,  top: '50%',  transform: 'translateY(-50%)' },
-    }[position],
-  }
-
-  const labelStyle = {
-    fontFamily: 'DM Mono, monospace',
-    fontSize: '0.58rem',
-    letterSpacing: '0.15em',
-    textTransform: 'uppercase',
-    color: 'var(--ivory-dim)',
-    background: 'rgba(15,14,12,0.85)',
-    padding: '3px 10px',
-    borderRadius: 4,
-    border: '1px solid var(--border)',
-    whiteSpace: 'nowrap',
-    transition: 'opacity 0.25s',
-    opacity: phase === 'idle' || phase === 'out' ? 0 : 1,
+  const pos = ROT[position] ? position : 'bottom'
+  const [rest, knock, exit] = MOVES[pos]
+  const vars = {
+    '--knock-rot': ROT[pos],
+    '--knock-rest': rest,
+    '--knock-hit': knock,
+    '--knock-exit': exit,
+    '--knock-ms': `${DURATION}ms`,
   }
 
   return (
-    <div style={containerStyle}>
-      {(position === 'bottom' || position === 'top') && (
-        <div style={labelStyle}>{playerName} passes</div>
-      )}
-      <img src="/handknock.webp" alt="" draggable={false} style={handStyle} />
-      {(position === 'left' || position === 'right') && (
-        <div style={labelStyle}>{playerName} passes</div>
-      )}
+    <div className="knock-wrap" style={{ ...PLACE[pos], ...vars }}>
+      {(pos === 'bottom' || pos === 'top') && <div className="knock-name">{playerName} passes</div>}
+      <img
+        src="/handknock.webp" alt="" draggable={false}
+        className="knock-hand-img"
+        onAnimationEnd={finish}
+      />
+      {(pos === 'left' || pos === 'right') && <div className="knock-name">{playerName} passes</div>}
     </div>
   )
 }
