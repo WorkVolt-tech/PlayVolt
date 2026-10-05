@@ -151,11 +151,25 @@ export default function SoloGame() {
     setStreak(s2)
     setRoundEnd({ winner, isDek, blocked: !!st.blocked, vyej })
     if (isDek) setShowDek(true)
-    recordRound({ won: winner === 0, isDek: isDek && winner === 0, vyej: vyej && winner === 0, matchOver: vyej })
+
+    // Trophies. A clean round: you won it without knocking once. A comeback:
+    // you won the match after an opponent's streak had reached 3.
+    const clean = winner === 0 && !(st.log || []).some(e => e.action === 'pass' && e.seat === 0)
+    let down3 = false
+    try { down3 = localStorage.getItem('dk-solo-down3') === '1' } catch { /* ignore */ }
+    if (streak.seat !== null && streak.seat !== 0 && streak.count >= 3) down3 = true
+    if (s2.seat !== null && s2.seat !== 0 && s2.count >= 3) down3 = true
+    const comeback = vyej && winner === 0 && down3
+    try {
+      if (vyej) localStorage.removeItem('dk-solo-down3')          // match over either way
+      else if (down3) localStorage.setItem('dk-solo-down3', '1')
+    } catch { /* ignore */ }
+
+    recordRound({ won: winner === 0, isDek: isDek && winner === 0, vyej: vyej && winner === 0, matchOver: vyej, clean, comeback })
   }, [st.status])
 
   // One database call per round, and only for your own record.
-  async function recordRound({ won, isDek, vyej, matchOver }) {
+  async function recordRound({ won, isDek, vyej, matchOver, clean = false, comeback = false }) {
     const key = `${round}`
     if (recorded.current.has(key)) return
     recorded.current.add(key)
@@ -166,6 +180,8 @@ export default function SoloGame() {
       await db.rpc('record_round_stats', {
         p_results: [{ user_id: uid, won, vyej, dekabess: isDek, match_over: matchOver }],
       })
+      if (clean) await db.rpc('record_feat', { p_kind: 'clean_round' })
+      if (comeback) await db.rpc('record_feat', { p_kind: 'comeback' })
     } catch (e) {
       console.error('[solo] could not record the round (non-fatal):', e)
     }

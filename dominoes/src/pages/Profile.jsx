@@ -3,8 +3,34 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
 import './Profile.css'
+import { TROPHIES, earnedTrophies } from '../lib/trophies'
+import { loadPlayerStats } from '../lib/skins'
+import { Medal } from './Trophies'
 
 const AVATAR_COLORS = ['#c9a84c','#4caa6e','#4c8cca','#c94c4c','#9b59b6','#e67e22','#1abc9c','#e91e63']
+
+function ProfileTrophies({ onOpen }) {
+  const [earned, setEarned] = useState(null)
+  useEffect(() => { loadPlayerStats().then(s => setEarned(earnedTrophies(s))) }, [])
+  const list = TROPHIES.filter(t => earned?.has(t.id))
+  return (
+    <div className="profile-trophies">
+      <div className="profile-trophies-head">
+        <span>Trophies · {earned ? list.length : '…'} / {TROPHIES.length}</span>
+        <button onClick={onOpen}>See all</button>
+      </div>
+      {earned && (list.length
+        ? <div className="profile-badges">
+            {list.map(t => (
+              <div key={t.id} className="profile-badge" title={`“${t.meaning}” — ${t.desc}`}>
+                <Medal tier={t.tier} earned size={22} />{t.kreyol}
+              </div>
+            ))}
+          </div>
+        : <div className="profile-badges-empty">No trophies yet — play a match to earn your first.</div>)}
+    </div>
+  )
+}
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -127,11 +153,8 @@ export default function Profile() {
         <div className="profile-winrate-label">{winRate}% win rate</div>
       </div>
 
-      {/* Trophies placeholder */}
-      <div className="profile-section-title">Trophies</div>
-      <div className="profile-trophies-empty">
-        🏆 Trophies coming soon — keep playing!
-      </div>
+      {/* Trophies: earned ones, as badges of honour */}
+      <ProfileTrophies onOpen={() => navigate('/trophies')} />
     </div>
   )
 }

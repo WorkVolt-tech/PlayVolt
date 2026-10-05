@@ -166,6 +166,48 @@ export default function Game() {
     if (u?.need) unlockHints.push(`${TILE_SKINS[roomData.tile_skin].label} tiles — ${u.need}`)
   }
 
+  // ── Trophies: clean rounds and comebacks ──────────────────────────────────
+  // Each device records only its own player's feats, once each.
+  useEffect(() => {
+    if (!roomData || !myInfo?.roomId) return
+    const mySeat = myInfo.seat
+    const team = seat => (roomData.game_mode === 'asosye' ? seat % 2 : seat)
+    const read = k => { try { return JSON.parse(localStorage.getItem(k) || 'null') } catch { return null } }
+    const write = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)) } catch { /* ignore */ } }
+
+    // the other side reached a streak of 3: you're "down 0–3" this match
+    const s = roomData.streak
+    if (s && Number.isInteger(s.seat) && team(s.seat) !== team(mySeat) && s.count >= 3) {
+      write('dk-down3', { room: myInfo.roomId })
+    }
+
+    const st = roomData.status
+    if (st !== 'round_end' && st !== 'finished') return
+    const me = players.find(p => p.seat === mySeat)
+    if (!me || me.is_ai) return                     // a stand-in played it, not you
+    const round = roomData.round
+    const winner = roomData.current_turn
+    const done = read('dk-feats-done') || {}
+    const tag = `${myInfo.roomId}-${round}`
+
+    // a clean round: I won it, and never knocked during it
+    const knocked = read('dk-knocked')
+    if (winner === mySeat && !(knocked && knocked.room === myInfo.roomId && knocked.round === round) && done.clean !== tag) {
+      write('dk-feats-done', { ...read('dk-feats-done'), clean: tag })
+      db.rpc('record_feat', { p_kind: 'clean_round' }).then(() => {})
+    }
+
+    // a comeback: my side won the match after being down 0–3
+    if (st === 'finished') {
+      const down = read('dk-down3')
+      if (down && down.room === myInfo.roomId && team(winner) === team(mySeat) && done.comeback !== tag) {
+        write('dk-feats-done', { ...read('dk-feats-done'), comeback: tag })
+        db.rpc('record_feat', { p_kind: 'comeback' }).then(() => {})
+      }
+      write('dk-down3', null)                       // the match is over either way
+    }
+  }, [roomData?.status, roomData?.round, roomData?.streak?.count, roomData?.streak?.seat])
+
   // ── Turn clock display ────────────────────────────────────────────────────
   const [clockNow, setClockNow] = useState(() => Date.now())
   useEffect(() => {
@@ -187,6 +229,10 @@ export default function Game() {
     setKnockPlayer(next || null)
   }, [])
 
+  // the round in play, for the knock handler (which outlives renders)
+  const roundRef = useRef(roomData?.round)
+  roundRef.current = roomData?.round
+
   useEffect(() => {
     if (!myInfo?.roomId) return
     const ch = db.channel('knocks-' + myInfo.roomId)
@@ -196,6 +242,12 @@ export default function Game() {
           const e = payload.new
           if (!e || !Number.isInteger(e.player_seat)) return
           if (e.action === 'pass') {
+            // Trophies: remember that I knocked this round (a clean round is
+            // one I win without knocking — including a knock made for me
+            // when my turn ran out).
+            if (e.player_seat === myInfo.seat) {
+              try { localStorage.setItem('dk-knocked', JSON.stringify({ room: myInfo.roomId, round: roundRef.current })) } catch { /* ignore */ }
+            }
             setPassingSeats(prev => new Set(prev).add(e.player_seat))
             const p = playersForKnock.current.find(pl => pl.seat === e.player_seat)
             const mySeat = myInfo?.seat ?? 0

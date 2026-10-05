@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import TrophyNotice from '../components/TrophyNotice'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import { generateRoomCode, generateDominoSet, shuffle } from '../hooks/useGameState'
@@ -553,6 +554,7 @@ export default function Lobby() {
 
   return (
     <div className="lobby-page">
+      <TrophyNotice />
       <div className="lobby-bg" />
       <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
         {authUser ? (
@@ -769,6 +771,7 @@ export default function Lobby() {
         )}
       <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => navigate('/trophies')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🏆 Trophies</button>
           <button onClick={() => navigate('/skins')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🎨 Skins</button>
           <button onClick={() => navigate('/practice')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🎲 Practice</button>
           <button onClick={() => navigate('/tournament')} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🏆 Tournament</button>

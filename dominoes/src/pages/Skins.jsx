@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import {
   TILE_SKINS, TABLE_SKINS, TILE_UNLOCKS, TABLE_UNLOCKS,
-  ownedSkins, setEquipped, useEquippedSkins,
+  ownedSkins, setEquipped, useEquippedSkins, loadPlayerStats,
 } from '../lib/skins'
 import TileFace from '../components/TileFace'
 import './Skins.css'
@@ -28,28 +28,8 @@ export default function Skins() {
   const equipped = useEquippedSkins()
   const [stats, setStats] = useState(null)
 
-  useEffect(() => {
-    let off = false
-    ;(async () => {
-      const { data: auth } = await db.auth.getUser()
-      const uid = auth?.user?.id
-      if (!uid) { if (!off) setStats({ games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [] }); return }
-      const [{ data: prof }, { data: sp }] = await Promise.all([
-        db.from('profiles').select('*').eq('id', uid).maybeSingle(),
-        db.rpc('ensure_story_progress'),
-      ])
-      const row = Array.isArray(sp) ? sp[0] : sp
-      if (off) return
-      setStats({
-        games: prof?.total_games ?? 0,
-        vyej: prof?.total_vyej ?? 0,
-        dekabess: prof?.total_dekabess ?? 0,
-        tournaments: prof?.total_tournaments_won ?? 0,
-        chapters: row?.completed_chapters || [],
-      })
-    })()
-    return () => { off = true }
-  }, [])
+  // the same stats the trophies read (including clean rounds and comebacks)
+  useEffect(() => { loadPlayerStats().then(setStats) }, [])
 
   const owned = ownedSkins(stats)
 
