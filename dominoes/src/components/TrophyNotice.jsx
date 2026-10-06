@@ -49,12 +49,12 @@ export default function TrophyNotice() {
           if (!t) return null
           return (
             <div key={id} className="trophy-card earned">
-              <Medal tier={t.tier} earned />
+              <Medal trophyId={t.id} earned size={52} />
               <div className="trophy-text">
                 <div className="trophy-name">{t.kreyol}</div>
                 <div className="trophy-meaning">“{t.meaning}”</div>
                 <div className="trophy-desc">{t.desc}</div>
-                <div className="trophy-reward">Unlocked: {rewardText(t)}</div>
+                <div className="trophy-reward">Unlocked: {rewardText(t)} · its avatar</div>
               </div>
             </div>
           )

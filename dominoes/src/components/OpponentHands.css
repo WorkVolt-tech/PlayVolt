@@ -99,3 +99,5 @@
 }
 .opponent-tile.vertical   { width: var(--opp-w, 14px); height: calc(var(--opp-w, 14px) * 2); }
 .opponent-tile.horizontal { width: calc(var(--opp-w, 14px) * 2); height: var(--opp-w, 14px); }
+/* a picture (bot or trophy avatar) sits inside the plate's ring */
+.seat-ring.has-pic { padding: 3px; display: flex; align-items: center; justify-content: center; }

@@ -1,5 +1,6 @@
 import './OpponentHands.css'
 import TileBack from './TileBack'
+import { SeatAvatar, hasSeatAvatar } from '../lib/avatars'
 
 // Initials for a seat plate: "Ti-Djo" → "TD", "Maxo" → "MA".
 function initials(name = '') {
@@ -48,10 +49,15 @@ export default function OpponentHands({ players, myInfo, roomData, turnClock }) 
                     ring = '#e8c96a'
                   }
                 }
+                // A bot's own picture, or a player's trophy avatar; initials otherwise.
+                const small = typeof window !== 'undefined' && (window.innerHeight < 500 || window.innerWidth < 480)
+                const picSize = small ? 24 : 34
+                const pic = hasSeatAvatar(p) ? <SeatAvatar player={p} size={picSize} /> : null
                 return (
                   <div className="seat-plate">
-                    <div className="seat-ring" style={{ background: ring }}>
-                      <div className="seat-initials">{initials(p.nickname)}</div>
+                    <div className={`seat-ring ${pic ? 'has-pic' : ''}`}
+                      style={{ background: ring, ...(pic ? { width: picSize + 6, height: picSize + 6, minWidth: 0, minHeight: 0 } : {}) }}>
+                      {pic || <div className="seat-initials">{initials(p.nickname)}</div>}
                     </div>
                     <div className="opponent-name">{p.nickname}</div>
                   </div>
