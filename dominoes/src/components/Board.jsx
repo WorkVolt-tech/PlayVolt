@@ -340,7 +340,11 @@ function layoutSnake(tiles, W, H) {
 }
 
 // ─── Single tile renderer ─────────────────────────────────────────────────────
-function BoardTile({ entry, pos, ghost = false, highlighted = false, fresh = false }) {
+// Where a freshly played tile slides in from: the side of the table its
+// player sits on ('bottom' = you). Distances are in px, toward the table edge.
+const SLIDE_FROM = { bottom: [0, 260], top: [0, -260], left: [-300, 0], right: [300, 0] }
+
+function BoardTile({ entry, pos, ghost = false, highlighted = false, fresh = false, freshFrom = null }) {
   const { isDouble, flowDir, orientation } = pos
   const isVert = orientation ? orientation === 'vertical' : pos.isVert
 
@@ -361,7 +365,8 @@ function BoardTile({ entry, pos, ghost = false, highlighted = false, fresh = fal
 
   return (
     <div
-      className={fresh ? 'tile-fresh' : undefined} style={{
+      className={fresh ? (SLIDE_FROM[freshFrom] ? 'tile-fresh tile-slide' : 'tile-fresh') : undefined} style={{
+        ...(fresh && SLIDE_FROM[freshFrom] ? { '--slide-x': `${SLIDE_FROM[freshFrom][0]}px`, '--slide-y': `${SLIDE_FROM[freshFrom][1]}px` } : {}),
       position: 'absolute',
       left: pos.x - pos.pw / 2,
       top: pos.y - pos.ph / 2,
@@ -642,7 +647,7 @@ function mergeDragPayload(primary, fallback, selectedTile) {
 }
 
 // ─── Board component ──────────────────────────────────────────────────────────
-export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace }) {
+export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace, freshFrom = null }) {
   const { draggingRef, endDrag } = useDrag()
 
   // Tap-to-place: tapping a highlighted side places the SELECTED tile there.
@@ -1160,6 +1165,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
           entry={tiles[i]}
           pos={pos}
           fresh={i === freshIdx}
+          freshFrom={i === freshIdx ? freshFrom : null}
         />
       ))}
 
