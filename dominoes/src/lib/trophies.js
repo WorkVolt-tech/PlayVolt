@@ -1,6 +1,6 @@
 // ── Trophies ─────────────────────────────────────────────────────────────────
 // Every trophy: its Kreyòl name, what that name literally means, what earns
-// it (in English), its tier, and what it unlocks. Trophies are how skins are
+// it (in English), its tier (bronze, silver, gold, platinum), and what it unlocks. Trophies are how skins are
 // earned — skins.js builds each skin's unlock rule from this list — and the
 // earned ones are shown as badges of honour on your profile.
 //
@@ -33,27 +33,27 @@ export const TROPHIES = [
   { id: 'ansyen',    group: 'wins', tier: 'silver', kreyol: 'Ansyen',    meaning: 'Old hand',            desc: 'Win 10 matches', test: s => s.vyej >= 10, rewards: { tiles: ['quebec'], tables: ['quebec'] } },
   { id: 'chanpyon',  group: 'wins', tier: 'silver', kreyol: 'Chanpyon',  meaning: 'Champion',            desc: 'Win 15 matches', test: s => s.vyej >= 15, rewards: { tiles: ['jamaica'] } },
   { id: 'lejann',    group: 'wins', tier: 'gold',   kreyol: 'Lejann',    meaning: 'Legend',              desc: 'Win 20 matches', test: s => s.vyej >= 20, rewards: { tiles: ['fuchsia'] } },
-  { id: 'met-tab',   group: 'wins', tier: 'gold',   kreyol: 'Mèt Tab',   meaning: 'Master of the table', desc: 'Win 25 matches', test: s => s.vyej >= 25, rewards: { tables: ['jamaica'] } },
+  { id: 'met-tab',   group: 'wins', tier: 'platinum',   kreyol: 'Mèt Tab',   meaning: 'Master of the table', desc: 'Win 25 matches', test: s => s.vyej >= 25, rewards: { tables: ['jamaica'] } },
   // Matches played
   { id: 'chofe-chez',  group: 'played', tier: 'bronze', kreyol: 'Chofe Chèz',  meaning: 'Warming the chair',  desc: 'Play 10 matches',  test: s => s.games >= 10,  rewards: { tables: ['pink'] } },
   { id: 'figi-konnen', group: 'played', tier: 'bronze', kreyol: 'Figi Konnen', meaning: 'A known face',       desc: 'Play 25 matches',  test: s => s.games >= 25,  rewards: { tiles: ['neonGreen'] } },
   { id: 'pye-tab',     group: 'played', tier: 'silver', kreyol: 'Pye Tab',     meaning: 'Table leg',          desc: 'Play 50 matches',  test: s => s.games >= 50,  rewards: { tiles: ['france'] } },
   { id: 'moun-lakay',  group: 'played', tier: 'silver', kreyol: 'Moun Lakay',  meaning: 'One of the family',  desc: 'Play 75 matches',  test: s => s.games >= 75,  rewards: { tiles: ['neonPink'], tables: ['lakou'] } },
-  { id: 'san-match',   group: 'played', tier: 'gold',   kreyol: 'San Match',   meaning: 'A hundred matches',  desc: 'Play 100 matches', test: s => s.games >= 100, rewards: { tiles: ['playvolt'], tables: ['playvolt'] } },
+  { id: 'san-match',   group: 'played', tier: 'platinum',   kreyol: 'San Match',   meaning: 'A hundred matches',  desc: 'Play 100 matches', test: s => s.games >= 100, rewards: { tiles: ['playvolt'], tables: ['playvolt'] } },
   // Dekabess
   { id: 'twa-kou',        group: 'dek', tier: 'bronze', kreyol: 'Twa Kou',              meaning: 'Three blows',             desc: 'Score 3 Dekabess',  test: s => s.dekabess >= 3,  rewards: { tiles: ['sunset'] } },
   { id: 'tire',           group: 'dek', tier: 'silver', kreyol: 'Tirè',                 meaning: 'Shooter',                 desc: 'Score 5 Dekabess',  test: s => s.dekabess >= 5,  rewards: { tiles: ['neonOrange'] } },
   { id: 'met-dekabess',   group: 'dek', tier: 'silver', kreyol: 'Mèt Dekabess',         meaning: 'Master of the Dekabess',  desc: 'Score 10 Dekabess', test: s => s.dekabess >= 10, rewards: { tiles: ['trinidad'] } },
   { id: 'kanpe-tout-moun',group: 'dek', tier: 'gold',   kreyol: 'Kanpe Tout Moun',      meaning: 'Stops everyone',          desc: 'Score 15 Dekabess', test: s => s.dekabess >= 15, rewards: { tables: ['neon'] } },
-  { id: 'pesonn-pa-touche',group:'dek', tier: 'gold',   kreyol: 'Pèsonn Pa Ka Touche',  meaning: 'No one can touch you',    desc: 'Score 25 Dekabess', test: s => s.dekabess >= 25, rewards: { tiles: ['glow'] } },
+  { id: 'pesonn-pa-touche',group:'dek', tier: 'platinum',   kreyol: 'Pèsonn Pa Ka Touche',  meaning: 'No one can touch you',    desc: 'Score 25 Dekabess', test: s => s.dekabess >= 25, rewards: { tiles: ['glow'] } },
   // Clean rounds — won without knocking once
   { id: 'men-pwop',      group: 'clean', tier: 'bronze', kreyol: 'Men Pwòp',      meaning: 'Clean hands',     desc: 'Win a round without knocking',      test: s => (s.cleanRounds || 0) >= 1,  rewards: { tiles: ['pearl'] } },
   { id: 'pa-janm-frape', group: 'clean', tier: 'silver', kreyol: 'Pa Janm Frape', meaning: 'Never knocks',    desc: 'Win 10 rounds without knocking',    test: s => (s.cleanRounds || 0) >= 10, rewards: { tiles: ['obsidian'] } },
-  { id: 'san-frape',     group: 'clean', tier: 'gold',   kreyol: 'San Frape',     meaning: 'Without a knock', desc: 'Win 25 rounds without knocking',    test: s => (s.cleanRounds || 0) >= 25, rewards: { tiles: ['krisal'], tables: ['krisal'] } },
+  { id: 'san-frape',     group: 'clean', tier: 'platinum',   kreyol: 'San Frape',     meaning: 'Without a knock', desc: 'Win 25 rounds without knocking',    test: s => (s.cleanRounds || 0) >= 25, rewards: { tiles: ['krisal'], tables: ['krisal'] } },
   // Comebacks — won the match after the other side reached a streak of 3
   { id: 'remonte',       group: 'comeback', tier: 'silver', kreyol: 'Remonte',       meaning: 'Climbed back',        desc: 'Win a match after being down 0–3',  test: s => (s.comebacks || 0) >= 1, rewards: { tiles: ['phoenix'] } },
   { id: 'leve-kanpe',    group: 'comeback', tier: 'gold',   kreyol: 'Leve Kanpe',    meaning: 'Back on your feet',   desc: 'Come back from 0–3 three times',    test: s => (s.comebacks || 0) >= 3, rewards: { tables: ['kanaval'] } },
-  { id: 'pa-janm-mouri', group: 'comeback', tier: 'gold',   kreyol: 'Pa Janm Mouri', meaning: 'Never dies',          desc: 'Come back from 0–3 five times',     test: s => (s.comebacks || 0) >= 5, rewards: { tables: ['phoenix'] } },
+  { id: 'pa-janm-mouri', group: 'comeback', tier: 'platinum',   kreyol: 'Pa Janm Mouri', meaning: 'Never dies',          desc: 'Come back from 0–3 five times',     test: s => (s.comebacks || 0) >= 5, rewards: { tables: ['phoenix'] } },
   // Five doubles — dealt 5 or more doubles, and you played the round anyway
   // instead of calling a reshuffle (not in partner games)
   { id: 'pa-pe-doub',       group: 'doubles', tier: 'silver', kreyol: 'Pa Pè Doub',       meaning: 'Not afraid of doubles', desc: 'Play a round dealt 5 or more doubles, without reshuffling', test: s => (s.fiveDoubles || 0) >= 1,    rewards: { tiles: ['bone'] } },
@@ -61,7 +61,7 @@ export const TROPHIES = [
   // Tournaments
   { id: 'premye-koup', group: 'cups', tier: 'gold', kreyol: 'Premye Koup', meaning: 'First cup',   desc: 'Win a tournament',  test: s => s.tournaments >= 1, rewards: { tiles: ['gold'], tables: ['haiti'] } },
   { id: 'twa-koup',    group: 'cups', tier: 'gold', kreyol: 'Twa Koup',    meaning: 'Three cups',  desc: 'Win 3 tournaments', test: s => s.tournaments >= 3, rewards: { tiles: ['dominican'] } },
-  { id: 'dinasti',     group: 'cups', tier: 'gold', kreyol: 'Dinasti',     meaning: 'Dynasty',     desc: 'Win 5 tournaments', test: s => s.tournaments >= 5, rewards: { tiles: ['dekabess'], tables: ['dekabess'] } },
+  { id: 'dinasti',     group: 'cups', tier: 'platinum', kreyol: 'Dinasti',     meaning: 'Dynasty',     desc: 'Win 5 tournaments', test: s => s.tournaments >= 5, rewards: { tiles: ['dekabess'], tables: ['dekabess'] } },
   // Story Mode — each named after its chapter
   { id: 'ch2',  group: 'story', tier: 'bronze', kreyol: 'Sak La',       meaning: 'The sack',            desc: 'Beat Story chapter 2',  test: ch(2),  rewards: { tiles: ['ocean'] } },
   { id: 'ch3',  group: 'story', tier: 'bronze', kreyol: 'Konte Pwen',   meaning: 'Counting points',     desc: 'Beat Story chapter 3',  test: ch(3),  rewards: { tiles: ['jade'] } },
@@ -70,7 +70,7 @@ export const TROPHIES = [
   { id: 'ch9',  group: 'story', tier: 'silver', kreyol: 'Kalifikasyon', meaning: 'Qualifying',          desc: 'Beat Story chapter 9',  test: ch(9),  rewards: { tiles: ['neonYellow'] } },
   { id: 'ch12', group: 'story', tier: 'gold',   kreyol: 'Fèmen Tab',    meaning: 'Closing the table',   desc: 'Beat Story chapter 12', test: ch(12), rewards: { tables: ['mahogany'] } },
   { id: 'ch15', group: 'story', tier: 'gold',   kreyol: 'Konte',        meaning: 'Counting',            desc: 'Beat Story chapter 15', test: ch(15), rewards: { tiles: ['neonBlue'] } },
-  { id: 'istwa-fini', group: 'story', tier: 'gold', kreyol: 'Istwa Fini', meaning: 'The story is done', desc: 'Beat Story chapter 18', test: ch(18), rewards: { tiles: ['marble'] } },
+  { id: 'istwa-fini', group: 'story', tier: 'platinum', kreyol: 'Istwa Fini', meaning: 'The story is done', desc: 'Beat Story chapter 18', test: ch(18), rewards: { tiles: ['marble'] } },
 ]
 
 export function earnedTrophies(stats) {
