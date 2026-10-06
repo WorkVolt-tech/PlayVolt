@@ -133,6 +133,30 @@ export default function Lobby() {
 
   // Keep refs in sync so closures always see current values
   useEffect(() => { myPlayerIdRef.current = myPlayerId }, [myPlayerId])
+
+  // After a refresh: back into the waiting room you were in, if it's still
+  // there — or straight into the game, if it started meanwhile.
+  useEffect(() => {
+    const w = readWaiting()
+    if (!w?.roomId) return
+    ;(async () => {
+      const { data: room } = await db.from('domino_rooms').select('*').eq('id', w.roomId).maybeSingle()
+      const { data: seat } = w.playerId
+        ? await db.from('domino_players').select('id, seat, nickname').eq('id', w.playerId).maybeSingle()
+        : { data: null }
+      if (!room || !seat) { try { sessionStorage.removeItem('domino_waiting') } catch { /* ignore */ } return }
+      if (room.status === 'waiting') {
+        enterWaiting({ room, code: room.code, playerId: seat.id, seat: seat.seat, host: !!w.host })
+      } else if (room.status === 'playing' || room.status === 'round_end') {
+        sessionStorage.setItem('domino_player', JSON.stringify({
+          seat: seat.seat, nickname: seat.nickname, roomId: room.id, roomCode: room.code, gameMode: room.game_mode || 'chien',
+        }))
+        navigate('/game')
+      } else {
+        try { sessionStorage.removeItem('domino_waiting') } catch { /* ignore */ }
+      }
+    })()
+  }, [])
   useEffect(() => { mySeatRef.current = mySeat }, [mySeat])
   useEffect(() => { myRoomCodeRef.current = myRoomCode }, [myRoomCode])
 
@@ -340,13 +364,8 @@ export default function Lobby() {
       .insert({ room_id: room.id, seat: 0, nickname: nick, hand: [], is_connected: true, user_id: myUserId })
       .select().single()
 
-    setMyRoomId(room.id); setMyRoomCode(code)
-    setMyPlayerId(player?.id); myPlayerIdRef.current = player?.id
-    setMySeat(0); mySeatRef.current = 0; setAmHost(true)
-    setRoomMode(selectedMode)
-    setPlayers(player ? [player] : [])
-    subscribeToRoom(room.id, 'create')
-    setTab('waiting')
+    if (player) setPlayers([player])
+    enterWaiting({ room: { ...room, game_mode: selectedMode }, code, playerId: player?.id, seat: 0, host: true })
   }
 
   async function joinRoom(codeOverride) {
@@ -383,6 +402,18 @@ export default function Lobby() {
     const { data: room } = await db.from('domino_rooms').select('*').eq('code', code).eq('status', 'waiting').single()
     if (!room) { setMsg({ text: 'Room not found.', type: 'error' }); return }
 
+    // Already sitting at this table (you refreshed, or joined twice)? Take
+    // that seat back instead of adding a second one. Matched by account, or
+    // for guests by the seat this browser tab took.
+    const remembered = readWaiting()
+    const { data: seatsHere } = await db.from('domino_players').select('id, seat, user_id').eq('room_id', room.id)
+    const mineAlready = (seatsHere || []).find(r =>
+      (myUserId && r.user_id === myUserId) || (remembered && remembered.roomId === room.id && r.id === remembered.playerId))
+    if (mineAlready) {
+      enterWaiting({ room, code, playerId: mineAlready.id, seat: mineAlready.seat, host: false })
+      return
+    }
+
     const { data: existing } = await db.from('domino_players').select('seat').eq('room_id', room.id)
     const capacity = humanCapacity(room.game_mode)
     if ((existing || []).length >= capacity) {
@@ -414,13 +445,35 @@ export default function Lobby() {
       }); return
     }
 
+    enterWaiting({ room, code, playerId: player.id, seat: freeSeat, host: false })
+  }
+
+  // ── The waiting room survives a refresh ───────────────────────────────────
+  // The room you're waiting in is remembered for this browser tab, so a
+  // refresh puts you straight back in your seat. Forgotten when you leave
+  // the room or the game starts.
+  const WAITING_KEY = 'domino_waiting'
+  function readWaiting() {
+    try { return JSON.parse(sessionStorage.getItem(WAITING_KEY) || 'null') } catch { return null }
+  }
+  function enterWaiting({ room, code, playerId, seat, host }) {
+    try { sessionStorage.setItem(WAITING_KEY, JSON.stringify({ roomId: room.id, code, playerId, seat, host })) } catch { /* ignore */ }
     setMyRoomId(room.id); setMyRoomCode(code)
     setRoomMode(room.game_mode || 'chien')
-    setMyPlayerId(player.id); myPlayerIdRef.current = player.id
-    setMySeat(freeSeat); mySeatRef.current = freeSeat
-    await loadPlayers(room.id)
-    subscribeToRoom(room.id, 'join')
+    setMyPlayerId(playerId); myPlayerIdRef.current = playerId
+    setMySeat(seat); mySeatRef.current = seat
+    setAmHost(!!host)
+    loadPlayers(room.id)
+    subscribeToRoom(room.id, host ? 'create' : 'join')
     setTab('waiting')
+  }
+  async function leaveWaiting() {
+    const w = readWaiting()
+    try { sessionStorage.removeItem(WAITING_KEY) } catch { /* ignore */ }
+    if (w?.host) await db.from('domino_rooms').delete().eq('id', w.roomId)       // the host closes the room
+    else if (w?.playerId) await db.from('domino_players').delete().eq('id', w.playerId)
+    setMyRoomId(null); setMyRoomCode(''); setMyPlayerId(null); myPlayerIdRef.current = null
+    setAmHost(false); setPlayers([]); setTab('create')
   }
 
   async function startGame() {
@@ -647,6 +700,9 @@ export default function Lobby() {
         {/* Waiting room */}
         {tab === 'waiting' && (
           <div className="waiting-room">
+            <button className="copy-btn" style={{ alignSelf: 'flex-start' }} onClick={leaveWaiting}>
+              ← {amHost ? 'Close room' : 'Leave room'}
+            </button>
             {myRoomCode && (
               <div className="room-code-display">
                 <div className="room-code-label">Room Code</div>
