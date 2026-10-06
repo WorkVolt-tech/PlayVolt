@@ -163,14 +163,28 @@ function withinHorizontalBounds(candidate, dims, W, margin) {
 }
 
 // ─── Snake layout ─────────────────────────────────────────────────────────────
-function computeSnakePositions(tiles, W, H) {
+// ── Lanes for the players' hands ────────────────────────────────────────────
+// Opponents' hands sit at the table's edge. The chain must never run under
+// them, so the board lays the chain out inside the area that's left — like a
+// player's spot at a real table — and shifts it into place.
+// reserve = { left, right, top, bottom } in px, measured from the hands.
+const NO_RESERVE = { left: 0, right: 0, top: 0, bottom: 0 }
+function computeSnakePositions(tiles, W, H, reserve = NO_RESERVE) {
+  const r = reserve || NO_RESERVE
+  const w = Math.max(160, (W || 0) - r.left - r.right)
+  const h = Math.max(120, (H || 0) - r.top - r.bottom)
+  if (!r.left && !r.top) return layoutSnake(tiles, w, h)
+  return layoutSnake(tiles, w, h).map(p => ({ ...p, x: p.x + r.left, y: p.y + r.top }))
+}
+
+function layoutSnake(tiles, W, H) {
   if (!tiles || tiles.length === 0) return []
 
   // Protect the layout from a transient 0px ResizeObserver measurement —
   // but ONLY that. The height used to be floored at 260px, so on a phone held
   // sideways (a table ~150px tall) the chain was centred as if there were
   // 260px, which put it at the bottom edge, under the hand.
-  const boardW = Math.max(W || 0, 280)
+  const boardW = W > 40 ? W : 280      // (only against a transient 0px measurement)
   const boardH = H > 40 ? H : 260
   const MARGIN = Math.max(22, Math.min(42, boardW * 0.055))
 
@@ -385,7 +399,7 @@ function shiftedPosition(pos, dx, dy) {
 // domino, then translate that preview so the already-rendered endpoint stays
 // fixed. This lets the player drag directly onto the place where the domino
 // will land instead of aiming at a generic "Left" / "Right" button.
-function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardData) {
+function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardData, reserve = NO_RESERVE) {
   if (!candidateTile || !positions.length) return null
 
   // Calculate correct flip — same logic as confirmPlace
@@ -401,7 +415,7 @@ function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardDa
   const candidate = { tile: candidateTile, flipped }
 
   if (side === 'right') {
-    const simulated = computeSnakePositions([...tiles, candidate], W, H)
+    const simulated = computeSnakePositions([...tiles, candidate], W, H, reserve)
     if (simulated.length < 2) return null
 
     const simulatedAnchor = simulated[simulated.length - 2]
@@ -417,7 +431,7 @@ function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardDa
   }
 
   if (side === 'left') {
-    const simulated = computeSnakePositions([candidate, ...tiles], W, H)
+    const simulated = computeSnakePositions([candidate, ...tiles], W, H, reserve)
     if (simulated.length < 2) return null
 
     // simulated[1] is the original first tile. Pin it to its currently drawn
@@ -666,6 +680,49 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
   }, [])
   const areaRef = useRef(null)
   const [dims, setDims] = useState({ w: 800, h: 400 })
+
+  // Where the opponents' hands are, so the chain stays out of their lanes.
+  // Measured from the hands themselves (they're drawn beside the board), so
+  // it adapts: a two-player game only reserves the strip across the table.
+  // On a short table (a phone on its side) the top strip isn't reserved —
+  // height is too scarce there — only the sides.
+  const [reserve, setReserve] = useState(NO_RESERVE)
+  useEffect(() => {
+    const area = areaRef.current
+    const host = area?.parentElement
+    if (!area || !host) return
+    let raf = 0
+    const measure = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        const a = area.getBoundingClientRect()
+        const r = { left: 0, right: 0, top: 0, bottom: 0 }
+        const pad = 6
+        const box = sel => {
+          const el = host.querySelector(sel)
+          const b = el && el.getBoundingClientRect()
+          return b && b.width > 0 && b.height > 0 ? b : null
+        }
+        const L = box('.opponent-area.opponent-left')
+        const R = box('.opponent-area.opponent-right')
+        const T = box('.opponent-area.opponent-top')
+        if (L) r.left  = Math.round(Math.max(0, L.right - a.left) + pad)
+        if (R) r.right = Math.round(Math.max(0, a.right - R.left) + pad)
+        if (T && a.height >= 320) r.top = Math.round(Math.max(0, T.bottom - a.top) + pad)
+        setReserve(prev => (prev.left === r.left && prev.right === r.right && prev.top === r.top) ? prev : r)
+      })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(area)
+    ro.observe(host)
+    const watchHands = () => host.querySelectorAll('.opponent-area').forEach(el => ro.observe(el))
+    watchHands()
+    // hands appear, shrink as tiles are played, and change with the table
+    const mo = new MutationObserver(() => { watchHands(); measure() })
+    mo.observe(host, { childList: true, subtree: true })
+    return () => { ro.disconnect(); mo.disconnect(); cancelAnimationFrame(raf) }
+  }, [])
   const [dragOver, setDragOver] = useState(null)
 
   // Native HTML5 drag data recovered from dataTransfer. This is intentionally
@@ -844,7 +901,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     return () => document.removeEventListener('tile-drop-fallback', onFallback)
   }, [])
 
-  const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h) : []
+  const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h, reserve) : []
 
   // ── Which tile was just played ────────────────────────────────────────────
   // Only when the chain grows by one: the new tile is at whichever end
@@ -905,11 +962,11 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
   )
 
   const previewLeft = canLeft
-    ? computeDropPreview(tiles, positions, activeTile, 'left', dims.w, dims.h, boardData)
+    ? computeDropPreview(tiles, positions, activeTile, 'left', dims.w, dims.h, boardData, reserve)
     : null
 
   const previewRight = canRight
-    ? computeDropPreview(tiles, positions, activeTile, 'right', dims.w, dims.h, boardData)
+    ? computeDropPreview(tiles, positions, activeTile, 'right', dims.w, dims.h, boardData, reserve)
     : null
 
   const firstPreview = !hasTiles && draggedTile
@@ -918,8 +975,8 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
         const d = tileDims(isDouble, DIR.RIGHT)
 
         return {
-          x: dims.w / 2,
-          y: dims.h / 2,
+          x: reserve.left + (dims.w - reserve.left - reserve.right) / 2,
+          y: reserve.top + (dims.h - reserve.top - reserve.bottom) / 2,
           pw: d.w,
           ph: d.h,
           isVert: d.isVert,
