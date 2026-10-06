@@ -39,6 +39,32 @@ export default function Game() {
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
 
+
+  // ── Who played the newest tile (for the slide) ─────────────────────────────
+  // The new tile was in exactly one player's hand. The screen remembers who
+  // last held every tile, so it can say who played it whatever order the
+  // board, hand and turn updates arrive in.
+  const slideRef = useRef({ tiles: 0, first: '', last: '', from: null, holder: {} })
+  {
+    const sig = t => (Array.isArray(t) ? `${Math.min(t[0], t[1])}-${Math.max(t[0], t[1])}` : '')
+    const sr = slideRef.current
+    const now = boardData?.tiles || []
+    if (now.length !== sr.tiles) {
+      let from = null
+      if (now.length === sr.tiles + 1 && now.length > 1) {
+        const newTile = sig(now[0]?.tile) !== sr.first ? now[0]?.tile : now[now.length - 1]?.tile
+        const k = sig(newTile)
+        const seat = sr.holder[k]
+        if (seat != null && myInfo) from = ['bottom', 'right', 'top', 'left'][((seat - myInfo.seat) % 4 + 4) % 4]
+      }
+      sr.tiles = now.length; sr.first = sig(now[0]?.tile); sr.last = sig(now[now.length - 1]?.tile); sr.from = from
+    }
+    // remember who last held each tile — never forgotten when it leaves a hand
+    // (each tile is unique in a deal; a new deal simply overwrites)
+    for (const p of players || []) for (const t of p.hand || []) sr.holder[sig(t)] = p.seat
+  }
+  const slideFrom = slideRef.current.from
+
   // Show the Dekabess celebration exactly once per round.
   // It's keyed to the room and round, not to a flag that resets: a background
   // re-read of the room can arrive out of order and briefly say "no
@@ -403,6 +429,7 @@ export default function Game() {
           turnClock={roomData?.status === 'playing' && turnStart ? { start: turnStart, limit: turnLimitMs } : null}
         />
         <Board
+          freshFrom={slideFrom}
           boardData={boardData}
         selectedTile={selectedTile}
         isMyTurn={isMyTurn}

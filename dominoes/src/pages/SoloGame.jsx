@@ -88,6 +88,12 @@ export default function SoloGame() {
     : { seats: 4, starter: prev.turn }))           // a later round: the same winner still opens
   const playOn = () => setSt(prev => ({ ...prev, doublesDecided: true, fiveDoubles: true }))
 
+
+  // Who played the newest tile (for the slide): the game's own move log says.
+  const lastPlay = [...(st?.log || [])].reverse().find(e => e.action === 'play')
+  const slideFrom = lastPlay
+    ? ((st?.seats ?? 4) === 2 ? (lastPlay.seat === 0 ? 'bottom' : 'top') : ['bottom', 'right', 'top', 'left'][lastPlay.seat])
+    : null
   const isMyTurn = st.status === 'playing' && st.turn === 0 && !offerOpen
 
   // ── bots play ──────────────────────────────────────────────────────────────
@@ -319,6 +325,7 @@ export default function SoloGame() {
       <div className="board-container">
         <OpponentHands players={players} myInfo={me} roomData={roomLike} />
         <Board
+          freshFrom={slideFrom}
           boardData={st.board}
           selectedTile={selected}
           isMyTurn={isMyTurn}

@@ -241,6 +241,12 @@ export default function Practice({ embedded = false, onExit }) {
 
   const moves = st ? Engine.legalMoves(st, 0) : []
   const playable = moves.map(m => m.tile).filter((t, i, arr) => arr.findIndex(x => x[0] === t[0] && x[1] === t[1]) === i)
+
+  // Who played the newest tile (for the slide): the game's own move log says.
+  const lastPlay = [...(st?.log || [])].reverse().find(e => e.action === 'play')
+  const slideFrom = lastPlay
+    ? ((st?.seats ?? 4) === 2 ? (lastPlay.seat === 0 ? 'bottom' : 'top') : ['bottom', 'right', 'top', 'left'][lastPlay.seat])
+    : null
   const isMyTurn = !!st && st.status === 'playing' && st.turn === 0 && !offerOpen
   // you may only draw when you have nothing to play
   const mustDraw = isMyTurn && !!st?.usePile && st.pile.length > 0 && !Engine.canPlay(st)
@@ -324,6 +330,7 @@ export default function Practice({ embedded = false, onExit }) {
         )}
         <OpponentHands players={fakePlayers} myInfo={{ seat: 0 }} roomData={fakeRoom} />
         <Board
+          freshFrom={slideFrom}
           boardData={st?.board}
           selectedTile={selected}
           isMyTurn={isMyTurn}
