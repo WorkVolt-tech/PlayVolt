@@ -54,6 +54,8 @@ export const TILE_SKINS = {
   obsidian: { label: 'Obsidian', face: () => 'linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.12) 47%, transparent 56%), linear-gradient(160deg, #3a3a44 0%, #15151b 45%, #050507 100%)', edge: '#000000', pip: '#dfe2ee', ring: 'none', divider: 'rgba(255,255,255,0.18)' },
   krisal:   { label: 'Krisal', face: () => 'linear-gradient(135deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.65) 9%, transparent 9%, transparent 52%, rgba(255,255,255,0.35) 52%, rgba(255,255,255,0.35) 57%, transparent 57%), linear-gradient(160deg, #eefaff 0%, #a9dcf5 55%, #6fbbe6 100%)', edge: '#3d86b0', pip: '#0b2a40', ring: 'none', divider: 'rgba(11,42,64,0.25)' },
   phoenix:  { label: 'Phoenix', face: () => 'linear-gradient(180deg, #ffd166 0%, #ff8c42 38%, #e63946 72%, #7a0f2a 100%)', edge: '#4a0612', pip: '#ffffff', ring: RING, divider: 'rgba(0,0,0,0.25)', pipStroke: '#000000', pipStrokeW: 6 },
+  bone:     { label: 'Bone', face: () => 'radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 55%), linear-gradient(160deg, #efe4c8 0%, #dccba2 55%, #c4ad7e 100%)', edge: '#9c875c', pip: '#3a2c14', ring: 'none', divider: 'rgba(58,44,20,0.35)' },
+  royal:    { label: 'Royal', face: () => 'linear-gradient(160deg, #2a3f8f 0%, #182a66 55%, #0d1a45 100%)', edge: '#c9a84c', pip: '#e8c96a', ring: 'none', divider: 'rgba(232,201,106,0.45)' },
   // ── flags ──
   // Drawn so the flag reads correctly on a tile lying sideways — the way most
   // tiles sit on the table — with the canton top-left.
@@ -175,7 +177,7 @@ export function useEquippedSkins() {
 // ── A player's stats, as trophies and skins read them ──────────────────────
 // Guests (no account) get all zeros.
 export async function loadPlayerStats() {
-  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0 }
+  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0, fiveDoubles: 0, fiveDoublesWon: 0 }
   const { data: auth } = await db.auth.getUser()
   const uid = auth?.user?.id
   if (!uid) return zero
@@ -192,6 +194,8 @@ export async function loadPlayerStats() {
     chapters: row?.completed_chapters || [],
     cleanRounds: prof?.total_clean_rounds ?? 0,
     comebacks: prof?.total_comebacks ?? 0,
+    fiveDoubles: prof?.total_five_double_rounds ?? 0,
+    fiveDoublesWon: prof?.total_five_double_wins ?? 0,
     uid,
   }
 }

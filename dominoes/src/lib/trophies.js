@@ -5,7 +5,8 @@
 // earned ones are shown as badges of honour on your profile.
 //
 // s = the player's stats:
-//   { games, vyej, dekabess, tournaments, chapters: [ids], cleanRounds, comebacks }
+//   { games, vyej, dekabess, tournaments, chapters: [ids], cleanRounds, comebacks,
+//     fiveDoubles, fiveDoublesWon }
 
 const ch = n => s => (s.chapters || []).includes(n)
 
@@ -16,6 +17,7 @@ export const TROPHY_GROUPS = [
   { id: 'dek',     label: 'Dekabess' },
   { id: 'clean',   label: 'Clean rounds' },
   { id: 'comeback',label: 'Comebacks' },
+  { id: 'doubles', label: 'Five doubles' },
   { id: 'cups',    label: 'Tournaments' },
   { id: 'story',   label: 'Story Mode' },
 ]
@@ -52,6 +54,10 @@ export const TROPHIES = [
   { id: 'remonte',       group: 'comeback', tier: 'silver', kreyol: 'Remonte',       meaning: 'Climbed back',        desc: 'Win a match after being down 0–3',  test: s => (s.comebacks || 0) >= 1, rewards: { tiles: ['phoenix'] } },
   { id: 'leve-kanpe',    group: 'comeback', tier: 'gold',   kreyol: 'Leve Kanpe',    meaning: 'Back on your feet',   desc: 'Come back from 0–3 three times',    test: s => (s.comebacks || 0) >= 3, rewards: { tables: ['kanaval'] } },
   { id: 'pa-janm-mouri', group: 'comeback', tier: 'gold',   kreyol: 'Pa Janm Mouri', meaning: 'Never dies',          desc: 'Come back from 0–3 five times',     test: s => (s.comebacks || 0) >= 5, rewards: { tables: ['phoenix'] } },
+  // Five doubles — dealt 5 or more doubles, and you played the round anyway
+  // instead of calling a reshuffle (not in partner games)
+  { id: 'pa-pe-doub',       group: 'doubles', tier: 'silver', kreyol: 'Pa Pè Doub',       meaning: 'Not afraid of doubles', desc: 'Play a round dealt 5 or more doubles, without reshuffling', test: s => (s.fiveDoubles || 0) >= 1,    rewards: { tiles: ['bone'] } },
+  { id: 'doub-pa-bat-mwen', group: 'doubles', tier: 'gold',   kreyol: 'Doub Pa Bat Mwen', meaning: "Doubles can't beat me", desc: 'Win a round dealt 5 or more doubles',                       test: s => (s.fiveDoublesWon || 0) >= 1, rewards: { tiles: ['royal'] } },
   // Tournaments
   { id: 'premye-koup', group: 'cups', tier: 'gold', kreyol: 'Premye Koup', meaning: 'First cup',   desc: 'Win a tournament',  test: s => s.tournaments >= 1, rewards: { tiles: ['gold'], tables: ['haiti'] } },
   { id: 'twa-koup',    group: 'cups', tier: 'gold', kreyol: 'Twa Koup',    meaning: 'Three cups',  desc: 'Win 3 tournaments', test: s => s.tournaments >= 3, rewards: { tiles: ['dominican'] } },
