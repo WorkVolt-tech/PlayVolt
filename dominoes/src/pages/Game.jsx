@@ -39,20 +39,24 @@ export default function Game() {
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
 
-  // Show Dekabess celebration — only once per round
-  const dekabessShownRef = useRef(false)
+  // Show the Dekabess celebration exactly once per round.
+  // It's keyed to the room and round, not to a flag that resets: a background
+  // re-read of the room can arrive out of order and briefly say "no
+  // Dekabess", which used to reset the flag and replay the celebration.
+  // Remembered for this tab, so a refresh on the result screen doesn't
+  // replay it either.
   useEffect(() => {
-    if (!roomData || !showOverlay) return
-    if (roomData.pending_point && !dekabessShownRef.current) {
-      dekabessShownRef.current = true
-      const winner = players.find(p => p.seat === roomData.current_turn)
-      setDekabessPlayer(winner?.nickname || '?')
-      setShowDekabess(true)
-    }
-    if (!roomData.pending_point) {
-      dekabessShownRef.current = false
-    }
-  }, [showOverlay, roomData?.pending_point])
+    if (!roomData || !showOverlay || !roomData.pending_point) return
+    if (roomData.status !== 'round_end' && roomData.status !== 'finished') return
+    const key = `${myInfo?.roomId}:${roomData.round}`
+    let shown = null
+    try { shown = sessionStorage.getItem('dk-dekabess-shown') } catch { /* ignore */ }
+    if (shown === key) return
+    try { sessionStorage.setItem('dk-dekabess-shown', key) } catch { /* ignore */ }
+    const winner = players.find(p => p.seat === roomData.current_turn)
+    setDekabessPlayer(winner?.nickname || '?')
+    setShowDekabess(true)
+  }, [showOverlay, roomData?.pending_point, roomData?.status, roomData?.round])
 
   // Knocks come from the move log itself. Every play and every pass writes a
   // game_event saying exactly who did what, and those arrive in the order
@@ -131,6 +135,9 @@ export default function Game() {
     return () => { off = true }
   }, [])
   const [pick, setPick] = useState({})     // seat -> chosen bot
+
+  // the game has started: the lobby no longer needs to remember a waiting room
+  useEffect(() => { try { sessionStorage.removeItem('domino_waiting') } catch { /* ignore */ } }, [])
 
   // ── Skins at the table ────────────────────────────────────────────────────
   // Everyone sees the HOST's table and tile faces; each player's hand shows
