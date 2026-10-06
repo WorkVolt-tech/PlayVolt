@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { TROPHIES, TROPHY_GROUPS, earnedTrophies } from '../lib/trophies'
 import { TILE_SKINS, TABLE_SKINS, loadPlayerStats } from '../lib/skins'
 import './Trophies.css'
+import { TrophyAvatar } from '../lib/avatars'
 
 // ── Trophies: the cabinet ────────────────────────────────────────────────────
 // Every trophy, grouped. Each shows its Kreyòl name, what the name literally
@@ -16,12 +17,9 @@ export function rewardText(t) {
   return parts.length ? parts.join(' · ') : 'Badge of honour'
 }
 
-export function Medal({ tier, earned, size = 44 }) {
-  return (
-    <div className={`medal ${tier} ${earned ? 'earned' : ''}`} style={{ width: size, height: size }}>
-      <span style={{ fontSize: size * 0.48 }}>{earned ? '🏆' : '🔒'}</span>
-    </div>
-  )
+// A trophy's badge is now its avatar (greyed until earned).
+export function Medal({ trophyId, earned, size = 44 }) {
+  return <TrophyAvatar trophyId={trophyId} size={size} locked={!earned} />
 }
 
 export default function Trophies() {
@@ -36,7 +34,7 @@ export default function Trophies() {
         <div>
           <button className="trophies-back" onClick={() => navigate(-1)}>← Back</button>
           <h1>Trophies</h1>
-          <p>Earn them by playing. Each one unlocks something — and stays on your profile as a badge of honour.</p>
+          <p>Earn them by playing. Each one unlocks something — and its avatar, which you can wear on your profile and at the table.</p>
         </div>
         <div className="trophies-count"><strong>{earned.size}</strong> / {TROPHIES.length} earned</div>
       </div>
@@ -49,7 +47,7 @@ export default function Trophies() {
               const got = earned.has(t.id)
               return (
                 <div key={t.id} className={`trophy-card ${got ? 'earned' : ''}`}>
-                  <Medal tier={t.tier} earned={got} />
+                  <Medal trophyId={t.id} earned={got} size={52} />
                   <div className="trophy-text">
                     <div className="trophy-name">{t.kreyol}</div>
                     <div className="trophy-meaning">“{t.meaning}”</div>

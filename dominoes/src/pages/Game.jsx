@@ -141,6 +141,17 @@ export default function Game() {
     const eq = getEquipped()
     db.from('domino_players').update({ tile_skin: eq.tile })
       .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat).then(() => {})
+    // my trophy avatar travels with me, so the others see it on my seat plate
+    db.auth.getUser().then(({ data }) => {
+      const uid = data?.user?.id
+      if (!uid) return
+      db.from('profiles').select('avatar').eq('id', uid).maybeSingle().then(({ data: prof }) => {
+        if (prof?.avatar) {
+          db.from('domino_players').update({ avatar: prof.avatar })
+            .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat).then(() => {})
+        }
+      })
+    })
     if (myInfo.seat === 0) {
       db.from('domino_rooms').update({ tile_skin: eq.tile, table_skin: eq.table })
         .eq('id', myInfo.roomId).then(() => {})

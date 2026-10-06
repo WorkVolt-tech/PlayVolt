@@ -6,6 +6,7 @@ import './Profile.css'
 import { TROPHIES, earnedTrophies } from '../lib/trophies'
 import { loadPlayerStats } from '../lib/skins'
 import { Medal } from './Trophies'
+import { TrophyAvatar } from '../lib/avatars'
 
 const AVATAR_COLORS = ['#c9a84c','#4caa6e','#4c8cca','#c94c4c','#9b59b6','#e67e22','#1abc9c','#e91e63']
 
@@ -23,7 +24,7 @@ function ProfileTrophies({ onOpen }) {
         ? <div className="profile-badges">
             {list.map(t => (
               <div key={t.id} className="profile-badge" title={`“${t.meaning}” — ${t.desc}`}>
-                <Medal tier={t.tier} earned size={22} />{t.kreyol}
+                <Medal trophyId={t.id} earned size={26} />{t.kreyol}
               </div>
             ))}
           </div>
@@ -38,6 +39,16 @@ export default function Profile() {
   const [editing, setEditing] = useState(false)
   const [nickname, setNickname] = useState('')
   const [avatarColor, setAvatarColor] = useState('#c9a84c')
+  // Trophy avatars: the one you wear, and the ones you've earned
+  const [avatar, setAvatar] = useState(null)
+  const [earned, setEarned] = useState(new Set())
+  const [picking, setPicking] = useState(false)
+  useEffect(() => { loadPlayerStats().then(s => setEarned(earnedTrophies(s))) }, [])
+  async function chooseAvatar(id) {
+    setAvatar(id)
+    setPicking(false)
+    await db.from('profiles').update({ avatar: id, updated_at: new Date().toISOString() }).eq('id', user.id)
+  }
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -45,6 +56,7 @@ export default function Profile() {
     if (profile) {
       setNickname(profile.nickname || '')
       setAvatarColor(profile.avatar_color || '#c9a84c')
+      setAvatar(profile.avatar || null)
     }
   }, [profile])
 
@@ -102,9 +114,31 @@ export default function Profile() {
 
       {/* Avatar */}
       <div className="profile-avatar-section">
-        <div className="profile-avatar" style={{ background: avatarColor }}>
-          {(profile?.nickname || '?')[0].toUpperCase()}
-        </div>
+        <button className="profile-avatar-btn" onClick={() => setPicking(v => !v)} title="Choose your avatar">
+          {avatar && earned.has(avatar)
+            ? <TrophyAvatar trophyId={avatar} size={88} badge={false} />
+            : <div className="profile-avatar" style={{ background: avatarColor }}>{(profile?.nickname || '?')[0].toUpperCase()}</div>}
+          <span className="profile-avatar-edit">{picking ? 'Close' : 'Change avatar'}</span>
+        </button>
+        {picking && (
+          <div className="avatar-picker">
+            <div className="avatar-picker-head">Your avatars — earn more with trophies</div>
+            <div className="avatar-picker-grid">
+              <button className={`avatar-choice ${!avatar ? 'on' : ''}`} onClick={() => chooseAvatar(null)} title="Your initial">
+                <div className="profile-avatar small" style={{ background: avatarColor }}>{(profile?.nickname || '?')[0].toUpperCase()}</div>
+              </button>
+              {TROPHIES.map(t => {
+                const got = earned.has(t.id)
+                return (
+                  <button key={t.id} className={`avatar-choice ${avatar === t.id ? 'on' : ''}`} disabled={!got}
+                    onClick={() => chooseAvatar(t.id)} title={got ? `${t.kreyol} — “${t.meaning}”` : `Locked — ${t.kreyol}: ${t.desc}`}>
+                    <TrophyAvatar trophyId={t.id} size={50} locked={!got} />
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
         {editing ? (
           <div className="profile-color-picker">
             {AVATAR_COLORS.map(c => (

@@ -20,7 +20,7 @@
 .trophies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 0.75rem; }
 
 .trophy-card {
-  position: relative; display: flex; gap: 0.8rem; align-items: flex-start;
+  position: relative; display: flex; gap: 0.9rem; align-items: center;
   padding: 0.85rem 0.9rem; border-radius: 12px; background: var(--surface); border: 1px solid #2e2a20;
 }
 .trophy-card:not(.earned) .trophy-text { opacity: 0.6; }
@@ -46,7 +46,7 @@
   position: absolute; top: 9px; right: 10px; font-size: 0.48rem; letter-spacing: 0.18em; text-transform: uppercase;
   color: #6b6555;
 }
-.trophy-tier.gold { color: #c9a84c; } .trophy-tier.silver { color: #9aa3ad; } .trophy-tier.bronze { color: #c47a45; }
+.trophy-tier.gold { color: #c9a84c; } .trophy-tier.silver { color: #9aa3ad; } .trophy-tier.bronze { color: #c47a45; } .trophy-tier.platinum { color: #b7c9ff; }
 
 /* ── "Trophy earned" ── */
 .trophy-notice-bg {
@@ -76,3 +76,14 @@
 .profile-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .profile-badge { display: flex; align-items: center; gap: 6px; padding: 4px 9px 4px 4px; border-radius: 16px; background: var(--surface2); border: 1px solid var(--border); font-size: 0.62rem; color: var(--ivory); }
 .profile-badges-empty { font-size: 0.64rem; color: var(--ivory-dim); }
+
+/* ── Profile: wear a trophy avatar ── */
+.profile-avatar-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0 auto; }
+.profile-avatar-edit { font-family: 'DM Mono', monospace; font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.profile-avatar.small { width: 50px; height: 50px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.avatar-picker { width: 100%; margin: 0.8rem 0 0.4rem; padding: 0.8rem; box-sizing: border-box; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.avatar-picker-head { font-family: 'DM Mono', monospace; font-size: 0.56rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ivory-dim); margin-bottom: 0.7rem; }
+.avatar-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 10px; justify-items: center; }
+.avatar-choice { background: none; border: 2px solid transparent; border-radius: 50%; padding: 4px; cursor: pointer; }
+.avatar-choice:disabled { cursor: not-allowed; }
+.avatar-choice.on { border-color: var(--gold); }
