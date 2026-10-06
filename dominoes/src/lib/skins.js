@@ -59,7 +59,9 @@ export const TILE_SKINS = {
   // ── flags ──
   // Drawn so the flag reads correctly on a tile lying sideways — the way most
   // tiles sit on the table — with the canton top-left.
-  usa:      { label: 'USA', face: () => 'linear-gradient(#3C3B6E, #3C3B6E) 100% 0 / 53.85% 40% no-repeat, repeating-linear-gradient(90deg, #B22234 0%, #B22234 7.69%, #ffffff 7.69%, #ffffff 15.38%)', edge: '#1c1b3a', pip: WHITE, ring: '0 0 0 1px rgba(0,0,0,0.6)', divider: 'rgba(0,0,0,0.25)' , flag: true, emblem: 'usa', flagArt: 'linear-gradient(#3C3B6E, #3C3B6E) 0 0 / 40% 53.85% no-repeat, repeating-linear-gradient(180deg, #B22234 0%, #B22234 7.69%, #ffffff 7.69%, #ffffff 15.38%)', pipStroke: '#000000', pipStrokeW: 6 },
+  // Option B: one half navy, the other five wide soft stripes — calm behind
+  // the pips, and on its side it still reads as the flag
+  usa:      { label: 'USA', face: () => 'linear-gradient(180deg, #2c3a78 0%, #2c3a78 50%, transparent 50%), repeating-linear-gradient(90deg, #c4505c 0%, #c4505c 20%, #f4efe6 20%, #f4efe6 40%)', edge: '#1c1b3a', pip: WHITE, ring: '0 0 0 1px rgba(0,0,0,0.6)', divider: 'rgba(255,255,255,0.5)' , flag: true, emblem: 'usa', flagArt: 'linear-gradient(#3C3B6E, #3C3B6E) 0 0 / 40% 53.85% no-repeat, repeating-linear-gradient(180deg, #B22234 0%, #B22234 7.69%, #ffffff 7.69%, #ffffff 15.38%)', pipStroke: '#000000', pipStrokeW: 6 },
   france:   { label: 'France', face: () => 'linear-gradient(90deg, #0055A4 0%, #0055A4 33.3%, #ffffff 33.3%, #ffffff 66.6%, #EF4135 66.6%, #EF4135 100%)', edge: '#22304d', pip: WHITE, ring: '0 0 0 1px rgba(0,0,0,0.6)', divider: 'rgba(0,0,0,0.25)' , flag: true, flagArt: 'linear-gradient(90deg, #0055A4 0%, #0055A4 33.3%, #ffffff 33.3%, #ffffff 66.6%, #EF4135 66.6%, #EF4135 100%)', pipStroke: '#000000', pipStrokeW: 6 },
 }
 
