@@ -7,6 +7,8 @@ import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import TileBack from '../components/TileBack'
+import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
+import { db } from '../lib/supabase'
 import { canPlayOnSide } from '../hooks/useGameState'
 import './Game.css'
 import './StoryChallenge.css'
@@ -91,8 +93,17 @@ export default function Practice({ embedded = false, onExit }) {
   }, [setup, st, tally, passingSeats])
 
   // bots play
+
+  // ── Five doubles: reshuffle or play on ────────────────────────────────────
+  // Open before the round's first tile, while you hold 5+ doubles and haven't
+  // decided. Never with a partner — anything goes in partner games.
+  const myDoubles = countDoubles(st?.hands?.[0])
+  const offerOpen = !!st && true && st.status === 'playing' && !(st.board?.tiles?.length)
+    && !(st.log || []).length && myDoubles >= 5 && !st.doublesDecided
+  const playOn = () => setSt(prev => (prev ? { ...prev, doublesDecided: true, fiveDoubles: true } : prev))
+
   useEffect(() => {
-    if (!st || !setup || st.status !== 'playing' || st.turn === 0 || busyRef.current || knock) return
+    if (!st || !setup || st.status !== 'playing' || st.turn === 0 || busyRef.current || knock || offerOpen) return
     busyRef.current = true
     const drawing = !Engine.canPlay(st) && st.usePile && st.pile.length > 0
     const t = setTimeout(() => {
@@ -125,7 +136,7 @@ export default function Practice({ embedded = false, onExit }) {
 
   // You, with nothing to play and nothing to draw: you knock — and you SEE it.
   useEffect(() => {
-    if (!st || st.status !== 'playing' || st.turn !== 0 || knock) return
+    if (!st || st.status !== 'playing' || st.turn !== 0 || knock || offerOpen) return
     if (Engine.canPlay(st)) return
     if (st.usePile && st.pile.length > 0) return
     const t = setTimeout(() => setSt(p => (p && p.turn === 0 && !Engine.canPlay(p) ? Engine.drawOrPass(p) : p)), BOT_DELAY)
@@ -172,6 +183,11 @@ export default function Practice({ embedded = false, onExit }) {
       // a Dekabess counts as two, as everywhere else in the game
       const worth = st.dekabess ? 2 : 1
       setTally(t => (st.winner === 0 ? { ...t, won: t.won + worth } : { ...t, lost: t.lost + worth }))
+      // five-doubles trophies: you played the round instead of reshuffling
+      if (st.fiveDoubles) {
+        db.rpc('record_feat', { p_kind: 'five_doubles' }).then(() => {})
+        if (st.winner === 0) db.rpc('record_feat', { p_kind: 'five_doubles_won' }).then(() => {})
+      }
     }
     const t = setTimeout(() => deal(setup), 2000)
     return () => clearTimeout(t)
@@ -225,7 +241,7 @@ export default function Practice({ embedded = false, onExit }) {
 
   const moves = st ? Engine.legalMoves(st, 0) : []
   const playable = moves.map(m => m.tile).filter((t, i, arr) => arr.findIndex(x => x[0] === t[0] && x[1] === t[1]) === i)
-  const isMyTurn = !!st && st.status === 'playing' && st.turn === 0
+  const isMyTurn = !!st && st.status === 'playing' && st.turn === 0 && !offerOpen
   // you may only draw when you have nothing to play
   const mustDraw = isMyTurn && !!st?.usePile && st.pile.length > 0 && !Engine.canPlay(st)
 
@@ -324,6 +340,10 @@ export default function Practice({ embedded = false, onExit }) {
           }}
         />
       </div>
+
+      {offerOpen && setup && (
+        <ReshuffleOffer doubles={myDoubles} onReshuffle={() => deal(setup)} onContinue={playOn} />
+      )}
 
       {knock && (
         <KnockAnimation

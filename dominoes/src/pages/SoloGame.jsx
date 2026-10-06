@@ -10,6 +10,7 @@ import OpponentHands from '../components/OpponentHands'
 import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
+import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
 import './Game.css'
 
 // ── Solo vs AI, on the device ────────────────────────────────────────────────
@@ -76,11 +77,22 @@ export default function SoloGame() {
   const recorded = useRef(new Set(saved?.recorded || []))
 
   const names = [myName, ...bots]
-  const isMyTurn = st.status === 'playing' && st.turn === 0
+  // ── Five doubles: reshuffle or play on ────────────────────────────────────
+  // Open before the round's first tile, while you hold 5+ doubles and haven't
+  // decided. (Solo is every-man-for-himself, so it always applies.)
+  const myDoubles = countDoubles(st.hands?.[0])
+  const offerOpen = st.status === 'playing' && !(st.board?.tiles?.length) && !(st.log || []).length
+    && myDoubles >= 5 && !st.doublesDecided
+  const reshuffle = () => setSt(prev => Engine.startGame(prev.forceDoubleSix
+    ? { seats: 4, forceDoubleSix: true }          // a first round: the doubles rule picks the opener again
+    : { seats: 4, starter: prev.turn }))           // a later round: the same winner still opens
+  const playOn = () => setSt(prev => ({ ...prev, doublesDecided: true, fiveDoubles: true }))
+
+  const isMyTurn = st.status === 'playing' && st.turn === 0 && !offerOpen
 
   // ── bots play ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (st.status !== 'playing' || st.turn === 0 || botBusy.current || knock) return
+    if (st.status !== 'playing' || st.turn === 0 || botBusy.current || knock || offerOpen) return
     botBusy.current = true
     const t = setTimeout(() => {
       setSt(prev => {
@@ -114,7 +126,7 @@ export default function SoloGame() {
   // You can't play: you knock automatically — but you SEE it, the same knock
   // the live game shows, and the game waits for it before moving on.
   useEffect(() => {
-    if (st.status !== 'playing' || st.turn !== 0 || knock) return
+    if (st.status !== 'playing' || st.turn !== 0 || knock || offerOpen) return
     if (Engine.canPlay(st)) return
     const t = setTimeout(() => setSt(p => (p.turn === 0 && !Engine.canPlay(p) ? Engine.drawOrPass(p) : p)), BOT_DELAY)
     return () => clearTimeout(t)
@@ -165,11 +177,12 @@ export default function SoloGame() {
       else if (down3) localStorage.setItem('dk-solo-down3', '1')
     } catch { /* ignore */ }
 
-    recordRound({ won: winner === 0, isDek: isDek && winner === 0, vyej: vyej && winner === 0, matchOver: vyej, clean, comeback })
+    recordRound({ won: winner === 0, isDek: isDek && winner === 0, vyej: vyej && winner === 0, matchOver: vyej, clean, comeback,
+      fiveDoubles: !!st.fiveDoubles, fiveDoublesWon: !!st.fiveDoubles && winner === 0 })
   }, [st.status])
 
   // One database call per round, and only for your own record.
-  async function recordRound({ won, isDek, vyej, matchOver, clean = false, comeback = false }) {
+  async function recordRound({ won, isDek, vyej, matchOver, clean = false, comeback = false, fiveDoubles = false, fiveDoublesWon = false }) {
     const key = `${round}`
     if (recorded.current.has(key)) return
     recorded.current.add(key)
@@ -182,6 +195,8 @@ export default function SoloGame() {
       })
       if (clean) await db.rpc('record_feat', { p_kind: 'clean_round' })
       if (comeback) await db.rpc('record_feat', { p_kind: 'comeback' })
+      if (fiveDoubles) await db.rpc('record_feat', { p_kind: 'five_doubles' })
+      if (fiveDoublesWon) await db.rpc('record_feat', { p_kind: 'five_doubles_won' })
     } catch (e) {
       console.error('[solo] could not record the round (non-fatal):', e)
     }
@@ -330,6 +345,8 @@ export default function SoloGame() {
         onPass={() => setSt(p => (p.turn === 0 ? Engine.drawOrPass(p) : p))}
         hasTilesOnBoard={st.board.tiles.length > 0}
       />
+
+      {offerOpen && <ReshuffleOffer doubles={myDoubles} onReshuffle={reshuffle} onContinue={playOn} />}
 
       {knock && (
         <KnockAnimation

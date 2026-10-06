@@ -10,6 +10,7 @@ import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import TileBack from '../components/TileBack'
+import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
 import DekabessOverlay from '../components/DekabessOverlay'
 import { canPlayOnSide, pipCount } from '../hooks/useGameState'
 import '../pages/Game.css'
@@ -173,8 +174,17 @@ export default function StoryChallenge() {
   }, [challenge, partner])
 
   // ── bots take their turns ──────────────────────────────────────────────────
+
+  // ── Five doubles: reshuffle or play on ────────────────────────────────────
+  // Open before the round's first tile, while you hold 5+ doubles and haven't
+  // decided. Never with a partner — anything goes in partner games.
+  const myDoubles = countDoubles(st?.hands?.[0])
+  const offerOpen = !!st && challenge?.type !== 'puzzle' && !challenge?.partner && st.status === 'playing' && !(st.board?.tiles?.length)
+    && !(st.log || []).length && myDoubles >= 5 && !st.doublesDecided
+  const playOn = () => setSt(prev => (prev ? { ...prev, doublesDecided: true, fiveDoubles: true } : prev))
+
   useEffect(() => {
-    if (!st || st.status !== 'playing' || st.turn === 0 || busyRef.current || knock || opener) return
+    if (!st || st.status !== 'playing' || st.turn === 0 || busyRef.current || knock || opener || offerOpen) return
     busyRef.current = true
     const drawing = !Engine.canPlay(st) && st.usePile && st.pile.length > 0
     const timer = setTimeout(() => {
@@ -218,7 +228,7 @@ export default function StoryChallenge() {
   // In a puzzle there's nobody else to hand the turn to, so a dead end ends
   // the attempt and you can try again.
   useEffect(() => {
-    if (!st || st.status !== 'playing' || st.turn !== 0 || knock) return
+    if (!st || st.status !== 'playing' || st.turn !== 0 || knock || offerOpen) return
     if (Engine.canPlay(st)) return
     if (st.usePile && st.pile.length > 0) return
     const t = setTimeout(() => setSt(p => {
@@ -307,6 +317,11 @@ export default function StoryChallenge() {
     if (!already) {
       if (st.dealId) counted.current.add(st.dealId)
       setWins(w); setLosses(l)
+      // five-doubles trophies: you played the round instead of reshuffling
+      if (st.fiveDoubles) {
+        db.rpc('record_feat', { p_kind: 'five_doubles' }).then(() => {})
+        if (st.winner === 0) db.rpc('record_feat', { p_kind: 'five_doubles_won' }).then(() => {})
+      }
     }
     if (w >= 2 || l >= 2) setResult({ ...outcome, met: w >= 2, stars: w >= 2 ? (l === 0 ? 3 : 2) : 0 })
     else setRoundPanel({ ...outcome.round, wins: w, losses: l, winner: st.winner })
@@ -451,7 +466,7 @@ export default function StoryChallenge() {
 
   const playable = st ? Engine.legalMoves(st, 0).map(m => m.tile) : []
   const uniquePlayable = playable.filter((t, i) => playable.findIndex(x => x[0]===t[0] && x[1]===t[1]) === i)
-  const isMyTurn = !!st && st.status === 'playing' && st.turn === 0
+  const isMyTurn = !!st && st.status === 'playing' && st.turn === 0 && !offerOpen
   // you may only draw when you have nothing to play
   const mustDraw = isMyTurn && !!st?.usePile && st.pile.length > 0 && !Engine.canPlay(st)
 
@@ -574,6 +589,14 @@ export default function StoryChallenge() {
           }}
         />
       </div>
+
+      {offerOpen && (
+        <ReshuffleOffer
+          doubles={myDoubles}
+          onReshuffle={() => (st.forceDoubleSix ? deal() : deal({ starter: st.turn }))}
+          onContinue={playOn}
+        />
+      )}
 
       {knock && (
         <KnockAnimation
