@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import TrophyNotice from '../components/TrophyNotice'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
-import { generateRoomCode, generateDominoSet, shuffle, dealHands } from '../hooks/useGameState'
+import { generateRoomCode, generateDominoSet, shuffle, dealHands, dealTable } from '../hooks/useGameState'
 import './Lobby.css'
 
 // ── Solo opponents ───────────────────────────────────────────────────────────
@@ -605,7 +605,8 @@ export default function Lobby() {
       if (me) { setMySeat(me.seat); mySeatRef.current = me.seat }
     }
 
-    const hands = dealHands(seatCount)
+    const variant = seatCount < 4 ? dealVariant : 'all'
+    const { hands, pile } = dealTable(seatCount, variant)
     for (let i = 0; i < hands.length; i++)
       await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myRoomId).eq('seat', i)
 
@@ -613,8 +614,14 @@ export default function Lobby() {
     await db.from('board').delete().eq('room_id', myRoomId)
     await db.from('board').insert({ room_id: myRoomId, tiles: [], left_end: null, right_end: null })
 
-    let startingSeat = 0
-    for (let i = 0; i < hands.length; i++) if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break }
+    // The opener: whoever holds the 6-6. In a pile game it may be in the pile:
+    // then whoever holds the highest double opens with it; with no doubles
+    // dealt at all, the first seat opens with any tile.
+    let startingSeat = 0, openingTile = null
+    for (let d = 6; d >= 0 && !openingTile; d--) {
+      const holder = hands.findIndex(h => h.some(t => t[0] === d && t[1] === d))
+      if (holder >= 0) { startingSeat = holder; openingTile = [d, d] }
+    }
 
     await db.from('domino_rooms').update({
       status: 'playing',
@@ -629,7 +636,9 @@ export default function Lobby() {
       round: 1,
       match_winner: null,
       seat_count: seatCount,
-      deal_variant: 'all',
+      deal_variant: variant,
+      pile,
+      opening_tile: openingTile,
     }).eq('id', myRoomId)
   }
 
@@ -662,6 +671,8 @@ export default function Lobby() {
   // a player (and play like the bots you already know). A table with a regular
   // bot doesn't count toward trophies; experts do.
   const [botToAdd, setBotToAdd] = useState('Ti-Djo')
+  // 2 or 3 players: deal every tile (9 / 14 each), or 7 each with a draw pile
+  const [dealVariant, setDealVariant] = useState('all')
   // (canPickBot, above, says whether the host may pick a bot)
   async function addBotSeat() {
     if (!amHost || !myRoomId || !canPickBot(botToAdd)) return
@@ -904,6 +915,17 @@ export default function Lobby() {
                     ))}
                   </div>
                 )}
+                {amHost && selectedMode === 'chien' && (players.length === 2 || players.length === 3) && (
+                  <div className="deal-choice">
+                    <div className="deal-choice-label">With {players.length} players</div>
+                    <button className={`partner-btn ${dealVariant === 'all' ? 'selected' : ''}`} onClick={() => setDealVariant('all')}>
+                      {players.length === 3 ? '9 tiles each (0-0 out)' : '14 tiles each'}
+                    </button>
+                    <button className={`partner-btn ${dealVariant === 'pile' ? 'selected' : ''}`} onClick={() => setDealVariant('pile')}>
+                      7 each + draw pile
+                    </button>
+                  </div>
+                )}
                 <button
                   className="btn btn-primary"
                   disabled={!canStart}
@@ -911,7 +933,8 @@ export default function Lobby() {
                   style={{ marginTop: '1rem' }}
                 >
                   {canStart
-                    ? (selectedMode === 'chien' && players.length === 3 ? 'Start with 3 players — 9 tiles each'
+                    ? (selectedMode === 'chien' && players.length < 4 && dealVariant === 'pile' ? `Start with ${players.length} players — 7 each + draw pile`
+                      : selectedMode === 'chien' && players.length === 3 ? 'Start with 3 players — 9 tiles each'
                       : selectedMode === 'chien' && players.length === 2 ? 'Start with 2 players — 14 tiles each'
                       : 'Start Game!')
                     : selectedMode === 'duo'

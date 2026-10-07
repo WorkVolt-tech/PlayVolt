@@ -189,3 +189,6 @@ input[type="text"]::placeholder { color: #4a4538; }
 }
 
 .code-actions { display: flex; gap: 0.5rem; justify-content: center; margin-top: 0.6rem; flex-wrap: wrap; }
+/* 2 or 3 players: how to deal */
+.deal-choice { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 0.6rem; }
+.deal-choice-label { width: 100%; font-size: 0.56rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ivory-dim); }

@@ -37,7 +37,7 @@ export default function Game() {
     showOverlay, toast, isProcessing,
     hand, isMyTurn, playable, hasTilesOnBoard, replaceWithBot,
     awaySeats, standIn, turnStart, turnLimitMs, deciderSeat,
-    selectTile, placeTile, passMove, cancelSelection,
+    selectTile, placeTile, passMove, cancelSelection, pileCount, drawTile,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
 
@@ -482,6 +482,8 @@ export default function Game() {
         onSelect={selectTile}
         onPass={passMove}
         hasTilesOnBoard={hasTilesOnBoard}
+        pileCount={pileCount}
+        onDraw={drawTile}
       />
 
       {/* Toast */}
@@ -515,6 +517,7 @@ export default function Game() {
       {/* Round/Match overlay */}
       {showOverlay && !showDekabess && !boardDek && roomData && (
         <RoundOverlay
+          boardTiles={boardData?.tiles?.length ?? null}
           roomData={roomData}
           players={players}
           myInfo={myInfo}
