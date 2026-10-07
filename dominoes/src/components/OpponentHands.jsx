@@ -14,9 +14,13 @@ function initials(name = '') {
 export default function OpponentHands({ players, myInfo, roomData, turnClock }) {
   const mySeat = myInfo?.seat ?? 0
 
-  // Position relative to MY seat (counter-clockwise: 1=right, 2=top, 3=left)
+  // Position relative to MY seat, following the turn order (counter-clockwise).
+  //   4 players: right, across, left.   3 players: right, left.   2 players: across.
+  const n = Math.max(2, Math.min(4, players.length || 4))
   function getPosition(theirSeat) {
-    const diff = ((theirSeat - mySeat) + 4) % 4
+    const diff = ((theirSeat - mySeat) % n + n) % n
+    if (n === 2) return diff === 1 ? 'top' : null
+    if (n === 3) return diff === 1 ? 'right' : diff === 2 ? 'left' : null
     if (diff === 1) return 'right'
     if (diff === 2) return 'top'
     if (diff === 3) return 'left'

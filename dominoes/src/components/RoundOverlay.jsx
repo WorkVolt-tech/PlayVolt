@@ -51,7 +51,9 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
       // A finished round always has tiles on the table. If every tile is back
       // in someone's hand, this is already a fresh deal (say, a refresh in
       // that gap) — so the reveal is not shown at all.
-      ok: total < players.length * 7,
+      // a fresh deal has every dealt tile back in hand: 7 each at 4 players,
+      // 9 each at 3 (0-0 set aside), 14 each at 2
+      ok: total < ({ 2: 28, 3: 27, 4: 28 })[players.length] ,
     }
   }
   const showReveal = frozen.current.ok
