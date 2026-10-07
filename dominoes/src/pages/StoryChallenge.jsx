@@ -467,6 +467,20 @@ export default function StoryChallenge() {
     )
   }
 
+
+  // Partner challenges: change partner between rounds, or before trying again.
+  // The new partner sits down for the next deal.
+  const partnerSwap = challenge?.partner === 'pick' && unlocked.length > 1 ? (
+    <div className="sc-partner-swap">
+      <div className="sc-partner-swap-label">Partner for the next round</div>
+      <div className="sc-picks">
+        {unlocked.map(b => (
+          <button key={b} className={`sc-btn ${b === partner ? '' : 'ghost'}`} onClick={() => setPartner(b)}>{b}</button>
+        ))}
+      </div>
+    </div>
+  ) : null
+
   const playable = st ? Engine.legalMoves(st, 0).map(m => m.tile) : []
   const uniquePlayable = playable.filter((t, i) => playable.findIndex(x => x[0]===t[0] && x[1]===t[1]) === i)
 
@@ -646,6 +660,7 @@ export default function StoryChallenge() {
                 : <>Rounds won <strong>{roundPanel.wins}</strong> · lost <strong>{roundPanel.losses}</strong></>}
               <span> · best of three</span>
             </div>
+            {partnerSwap}
             <div className="sc-actions">
               <button className="sc-btn" onClick={() => { const starter = roundPanel.winner; setRoundPanel(null); deal({ starter }) }}>Next round</button>
               <button className="sc-btn ghost" onClick={() => navigate('/story')}>Leave</button>
@@ -674,6 +689,7 @@ export default function StoryChallenge() {
                         : 'Objective not met.'))}
             </p>
             {result.met && <div className="sc-stars">{'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}</div>}
+            {!result.met && partnerSwap}
             <div className="sc-actions">
               <button className="sc-btn" disabled={saving} onClick={finishChallenge}>
                 {result.met
