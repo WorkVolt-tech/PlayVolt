@@ -169,12 +169,37 @@ function withinHorizontalBounds(candidate, dims, W, margin) {
 // player's spot at a real table — and shifts it into place.
 // reserve = { left, right, top, bottom } in px, measured from the hands.
 const NO_RESERVE = { left: 0, right: 0, top: 0, bottom: 0 }
-function computeSnakePositions(tiles, W, H, reserve = NO_RESERVE) {
+// scale < 1 shrinks the tiles so a long chain fits the table: the chain is
+// laid out exactly as usual on a proportionally larger imaginary table,
+// then the whole layout is scaled down — every turn and gap stays the same.
+function computeSnakePositions(tiles, W, H, reserve = NO_RESERVE, scale = 1) {
   const r = reserve || NO_RESERVE
   const w = Math.max(160, (W || 0) - r.left - r.right)
   const h = Math.max(120, (H || 0) - r.top - r.bottom)
-  if (!r.left && !r.top) return layoutSnake(tiles, w, h)
-  return layoutSnake(tiles, w, h).map(p => ({ ...p, x: p.x + r.left, y: p.y + r.top }))
+  if (scale === 1) {
+    if (!r.left && !r.top) return layoutSnake(tiles, w, h)
+    return layoutSnake(tiles, w, h).map(p => ({ ...p, x: p.x + r.left, y: p.y + r.top }))
+  }
+  return layoutSnake(tiles, w / scale, h / scale).map(p => ({
+    ...p, x: p.x * scale + r.left, y: p.y * scale + r.top, pw: p.pw * scale, ph: p.ph * scale,
+  }))
+}
+
+// The largest tile size (from full size down) at which the whole chain fits
+// the table without scrolling. Steps down gently; the floor keeps tiles
+// recognisable. Only if even the floor can't fit does the table scroll.
+const FIT_STEPS = [1, 0.92, 0.85, 0.78, 0.72, 0.66, 0.6, 0.55, 0.5, 0.46, 0.42, 0.38, 0.35]
+function fitScale(tiles, W, H, reserve) {
+  if (!tiles?.length) return 1
+  // the same room below the chain that the scroll rule asks for (28px), so
+  // "fits" here always means "no scrolling" there
+  const pad = 6, below = 28
+  for (const sc of FIT_STEPS) {
+    const ps = computeSnakePositions(tiles, W, H, reserve, sc)
+    const fits = ps.every(p => p.y - p.ph / 2 >= pad && p.y + p.ph / 2 + below <= H && p.x - p.pw / 2 >= pad && p.x + p.pw / 2 <= W - pad)
+    if (fits) return sc
+  }
+  return FIT_STEPS[FIT_STEPS.length - 1]
 }
 
 function layoutSnake(tiles, W, H) {
@@ -404,7 +429,7 @@ function shiftedPosition(pos, dx, dy) {
 // domino, then translate that preview so the already-rendered endpoint stays
 // fixed. This lets the player drag directly onto the place where the domino
 // will land instead of aiming at a generic "Left" / "Right" button.
-function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardData, reserve = NO_RESERVE) {
+function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardData, reserve = NO_RESERVE, scale = 1) {
   if (!candidateTile || !positions.length) return null
 
   // Calculate correct flip — same logic as confirmPlace
@@ -420,7 +445,7 @@ function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardDa
   const candidate = { tile: candidateTile, flipped }
 
   if (side === 'right') {
-    const simulated = computeSnakePositions([...tiles, candidate], W, H, reserve)
+    const simulated = computeSnakePositions([...tiles, candidate], W, H, reserve, scale)
     if (simulated.length < 2) return null
 
     const simulatedAnchor = simulated[simulated.length - 2]
@@ -436,7 +461,7 @@ function computeDropPreview(tiles, positions, candidateTile, side, W, H, boardDa
   }
 
   if (side === 'left') {
-    const simulated = computeSnakePositions([candidate, ...tiles], W, H, reserve)
+    const simulated = computeSnakePositions([candidate, ...tiles], W, H, reserve, scale)
     if (simulated.length < 2) return null
 
     // simulated[1] is the original first tile. Pin it to its currently drawn
@@ -906,7 +931,9 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     return () => document.removeEventListener('tile-drop-fallback', onFallback)
   }, [])
 
-  const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h, reserve) : []
+  // tiles shrink only as much as the chain needs to fit the table
+  const fit = hasTiles ? fitScale(tiles, dims.w, dims.h, reserve) : 1
+  const positions = hasTiles ? computeSnakePositions(tiles, dims.w, dims.h, reserve, fit) : []
 
   // ── Which tile was just played ────────────────────────────────────────────
   // Only when the chain grows by one: the new tile is at whichever end
@@ -967,11 +994,11 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
   )
 
   const previewLeft = canLeft
-    ? computeDropPreview(tiles, positions, activeTile, 'left', dims.w, dims.h, boardData, reserve)
+    ? computeDropPreview(tiles, positions, activeTile, 'left', dims.w, dims.h, boardData, reserve, fit)
     : null
 
   const previewRight = canRight
-    ? computeDropPreview(tiles, positions, activeTile, 'right', dims.w, dims.h, boardData, reserve)
+    ? computeDropPreview(tiles, positions, activeTile, 'right', dims.w, dims.h, boardData, reserve, fit)
     : null
 
   const firstPreview = !hasTiles && draggedTile
