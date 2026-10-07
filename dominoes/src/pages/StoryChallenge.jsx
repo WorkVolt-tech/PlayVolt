@@ -73,6 +73,7 @@ export default function StoryChallenge() {
   const [opener, setOpener] = useState(null)           // "Round 2 · Ti-Sak opens", briefly
   const [roundPanel, setRoundPanel] = useState(null)   // a finished round, mid-series
   const [showDek, setShowDek] = useState(false)        // the Dekabess animation
+  const [boardDek, setBoardDek] = useState(null)       // the board's Dekabess, while it plays
   const [passingSeats, setPassingSeats] = useState(new Set())
   const knockQueue = useRef([])
   // start from the end of a restored log, so a refresh doesn't replay knocks
@@ -305,7 +306,7 @@ export default function StoryChallenge() {
     if (!st || st.status !== 'over' || result) return
     const best = challenge?.rounds === 3
     const outcome = { ...Engine.evaluateObjective(st), round: describeRound(st) }
-    if (st.dekabess && st.winner >= 0) setShowDek(true)
+    if (st.dekabess && st.winner >= 0) setBoardDek(`story-${st.dealId || Date.now()}`)   // board first, then the celebration
     if (!best) { setResult(outcome); return }
 
     // A round already counted (you refreshed right after it) isn't counted again
@@ -578,6 +579,8 @@ export default function StoryChallenge() {
           <OpponentHands players={fakePlayers} myInfo={fakeMe} roomData={fakeRoom} />
         )}
         <Board
+          dekabessKey={boardDek}
+          onDekabessDone={() => { setBoardDek(null); setShowDek(true) }}
           freshFrom={slideFrom}
           boardData={st?.board}
           selectedTile={selected}
@@ -632,7 +635,7 @@ export default function StoryChallenge() {
         <DekabessOverlay playerName={nameAt(st.winner)} onDone={() => setShowDek(false)} />
       )}
 
-      {roundPanel && !result && !showDek && (
+      {roundPanel && !result && !showDek && !boardDek && (
         <div className="sc-overlay">
           <div className="sc-card">
             <h2>{roundPanel.title}</h2>
@@ -651,7 +654,7 @@ export default function StoryChallenge() {
         </div>
       )}
 
-      {result && !showDek && (
+      {result && !showDek && !boardDek && (
         <div className="sc-overlay">
           <div className="sc-card">
             <h2>{result.met ? 'Challenge complete' : 'Not this time'}</h2>

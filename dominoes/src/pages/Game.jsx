@@ -28,6 +28,7 @@ export default function Game() {
 
   const [passingSeats, setPassingSeats] = useState(new Set())
   const [showDekabess, setShowDekabess] = useState(false)
+  const [boardDek, setBoardDek] = useState(null)     // the board's Dekabess, while it plays
   const [dekabessPlayer, setDekabessPlayer] = useState('')
   const [knockPlayer, setKnockPlayer] = useState(null)
 
@@ -82,7 +83,8 @@ export default function Game() {
     try { sessionStorage.setItem('dk-dekabess-shown', key) } catch { /* ignore */ }
     const winner = players.find(p => p.seat === roomData.current_turn)
     setDekabessPlayer(winner?.nickname || '?')
-    setShowDekabess(true)
+    // the board plays its part first (travel, slam); then the celebration
+    setBoardDek(key)
   }, [showOverlay, roomData?.pending_point, roomData?.status, roomData?.round])
 
   // Knocks come from the move log itself. Every play and every pass writes a
@@ -431,6 +433,8 @@ export default function Game() {
           turnClock={roomData?.status === 'playing' && turnStart ? { start: turnStart, limit: turnLimitMs } : null}
         />
         <Board
+          dekabessKey={boardDek}
+          onDekabessDone={() => { setBoardDek(null); setShowDekabess(true) }}
           freshFrom={slideFrom}
           boardData={boardData}
         selectedTile={selectedTile}
@@ -509,7 +513,7 @@ export default function Game() {
       )}
 
       {/* Round/Match overlay */}
-      {showOverlay && !showDekabess && roomData && (
+      {showOverlay && !showDekabess && !boardDek && roomData && (
         <RoundOverlay
           roomData={roomData}
           players={players}

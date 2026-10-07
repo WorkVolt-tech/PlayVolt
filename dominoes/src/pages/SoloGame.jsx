@@ -68,6 +68,7 @@ export default function SoloGame() {
   const [selected, setSelected] = useState(null)
   const [roundEnd, setRoundEnd] = useState(saved?.roundEnd || null)   // { winner, isDek, blocked, vyej }
   const [showDek, setShowDek] = useState(false)
+  const [boardDek, setBoardDek] = useState(null)     // the board's Dekabess, while it plays
   const botBusy = useRef(false)
   const [knock, setKnock] = useState(null)             // { name, position } while it plays
   const [passingSeats, setPassingSeats] = useState(() => new Set(saved?.passing || []))
@@ -169,7 +170,7 @@ export default function SoloGame() {
     const vyej = s2.count >= 4
     setStreak(s2)
     setRoundEnd({ winner, isDek, blocked: !!st.blocked, vyej })
-    if (isDek) setShowDek(true)
+    if (isDek) setBoardDek(`solo-${Date.now()}`)     // the board plays its part, then the celebration
 
     // Trophies. A clean round: you won it without knocking once. A comeback:
     // you won the match after an opponent's streak had reached 3.
@@ -328,6 +329,8 @@ export default function SoloGame() {
       <div className="board-container">
         <OpponentHands players={players} myInfo={me} roomData={roomLike} />
         <Board
+          dekabessKey={boardDek}
+          onDekabessDone={() => { setBoardDek(null); setShowDek(true) }}
           freshFrom={slideFrom}
           boardData={st.board}
           selectedTile={selected}
@@ -374,7 +377,7 @@ export default function SoloGame() {
         />
       )}
 
-      {roundEnd && !showDek && (
+      {roundEnd && !showDek && !boardDek && (
         <RoundOverlay
           roomData={roomLike}
           players={players}
