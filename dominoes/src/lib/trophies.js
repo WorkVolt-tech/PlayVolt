@@ -73,6 +73,18 @@ export const TROPHIES = [
   { id: 'istwa-fini', group: 'story', tier: 'platinum', kreyol: 'Istwa Fini', meaning: 'The story is done', desc: 'Beat Story chapter 18', test: ch(18), rewards: { tiles: ['marble'] } },
 ]
 
+// ── Which games count toward trophies ────────────────────────────────────────
+// Only games against humans and EXPERT bots. A regular bot anywhere at the
+// table means the game doesn't count (Story Mode's chapter trophies are
+// separate). A bot standing in for a player who dropped counts as that human.
+export const EXPERT_BOT_NAMES = ['Ti-Jòj', 'Ti-Tid', 'Ti-Roro', 'Ti-Chasè', 'Ti-Frè', 'Ti-Chaj', 'Ti-Pyèj', 'Ti-Wa']
+export function tableCountsForTrophies(players) {
+  return (players || []).every(p => !p.is_ai || p.stand_in || EXPERT_BOT_NAMES.includes(p.nickname))
+}
+export function botsCountForTrophies(botNames) {
+  return (botNames || []).every(n => EXPERT_BOT_NAMES.includes(n))
+}
+
 export function earnedTrophies(stats) {
   const s = stats || {}
   return new Set(TROPHIES.filter(t => t.test(s)).map(t => t.id))

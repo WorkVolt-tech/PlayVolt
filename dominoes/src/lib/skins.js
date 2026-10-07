@@ -189,10 +189,12 @@ export async function loadPlayerStats() {
   ])
   const row = Array.isArray(sp) ? sp[0] : sp
   return {
-    games: prof?.total_games ?? 0,
-    vyej: prof?.total_vyej ?? 0,
-    dekabess: prof?.total_dekabess ?? 0,
-    tournaments: prof?.total_tournaments_won ?? 0,
+    // trophies read the trophy counters (only games vs humans and experts);
+    // before the database update they fall back to the totals
+    games: prof?.trophy_games ?? prof?.total_games ?? 0,
+    vyej: prof?.trophy_vyej ?? prof?.total_vyej ?? 0,
+    dekabess: prof?.trophy_dekabess ?? prof?.total_dekabess ?? 0,
+    tournaments: prof?.trophy_tournaments_won ?? prof?.total_tournaments_won ?? 0,
     chapters: row?.completed_chapters || [],
     cleanRounds: prof?.total_clean_rounds ?? 0,
     comebacks: prof?.total_comebacks ?? 0,
