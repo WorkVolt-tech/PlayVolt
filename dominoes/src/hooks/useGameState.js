@@ -23,6 +23,18 @@ export function generateDominoSet() {
   return tiles
 }
 
+// ── Dealing for 2, 3 or 4 players (every tile dealt) ──
+//   4 players: 7 each.  3 players: the 0-0 is set aside, 9 each.  2 players: 14 each.
+export function dealHands(n = 4) {
+  let tiles = shuffle(generateDominoSet())
+  if (n === 3) {
+    tiles = tiles.filter(t => !(t[0] === 0 && t[1] === 0))
+    return [0, 1, 2].map(i => tiles.slice(i * 9, i * 9 + 9))
+  }
+  if (n === 2) return [0, 1].map(i => tiles.slice(i * 14, i * 14 + 14))
+  return [0, 1, 2, 3].map(i => tiles.slice(i * 7, i * 7 + 7))
+}
+
 export function shuffle(arr) {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -110,6 +122,9 @@ export function useGameState(myInfo, navigate) {
     return here.length ? here[0] : 0
   })()
   const amRunner = !!myInfo && runnerSeat === myInfo.seat
+  // how many seats are in play at this table (2, 3 or 4)
+  const seatCountRef = useRef(4)
+  seatCountRef.current = roomData?.seat_count || 4
   const amRunnerRef = useRef(amRunner)
   amRunnerRef.current = amRunner
 
@@ -510,9 +525,8 @@ export function useGameState(myInfo, navigate) {
             const { data: latestRoom } = await db.from('domino_rooms').select('current_turn, round, status').eq('id', myInfo.roomId).single()
             if (latestRoom?.status !== 'round_end') return
             const nextRound = (latestRoom.round ?? 1) + 1
-            const tiles = shuffle(generateDominoSet())
-            const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)]
-            for (let i = 0; i < 4; i++)
+            const hands = dealHands(seatCountRef.current)
+            for (let i = 0; i < hands.length; i++)
               await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
             await db.from('board').delete().eq('room_id', myInfo.roomId)
             await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
@@ -572,13 +586,13 @@ export function useGameState(myInfo, navigate) {
     }
     // Check if all 4 players passed consecutively — only valid if board has tiles
     if (boardRef.current?.tiles?.length > 0) {
-      const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
-      if (events?.length === 4 && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
+      const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(seatCountRef.current)
+      if (events?.length === seatCountRef.current && events.every(e => e.action === 'pass')) { await endRound(null, false); return }
     }
     // Read actual current_turn from DB to advance correctly
     const { data: latestRoom } = await db.from('domino_rooms').select('current_turn').eq('id', myInfo.roomId).single()
     const fromSeat = latestRoom?.current_turn ?? myInfo.seat
-    const nextSeat = (fromSeat + 1) % 4
+    const nextSeat = (fromSeat + 1) % seatCountRef.current
     await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
   }, [myInfo, endRound])
 
@@ -809,9 +823,8 @@ export function useGameState(myInfo, navigate) {
       return
     }
 
-    const tiles = shuffle(generateDominoSet())
-    const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)]
-    for (let i = 0; i < 4; i++)
+    const hands = dealHands(seatCountRef.current)
+    for (let i = 0; i < hands.length; i++)
       await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
     await db.from('board').delete().eq('room_id', myInfo.roomId)
     await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
@@ -1033,10 +1046,10 @@ export function useGameState(myInfo, navigate) {
           // Original path (play_move not installed) — unchanged.
           await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'pass', tile: null })
           if (board?.tiles?.length > 0) {
-            const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(4)
-            if (events?.length === 4 && events.every(e => e.action === 'pass')) { botRunningRef.current = false; await endRound(null, false); return }
+            const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(seatCountRef.current)
+            if (events?.length === seatCountRef.current && events.every(e => e.action === 'pass')) { botRunningRef.current = false; await endRound(null, false); return }
           }
-          await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
+          await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % seatCountRef.current }).eq('id', myInfo.roomId)
           botRunningRef.current = false
           return
         }
@@ -1123,7 +1136,7 @@ export function useGameState(myInfo, navigate) {
         await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', currentPlayer.seat)
         await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'place', tile })
         if (newHand.length === 0) { botRunningRef.current = false; await endRound(currentPlayer.seat, checkDekabess(tile, board)); return }
-        await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % 4 }).eq('id', myInfo.roomId)
+        await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % seatCountRef.current }).eq('id', myInfo.roomId)
         botRunningRef.current = false
         return
       }
