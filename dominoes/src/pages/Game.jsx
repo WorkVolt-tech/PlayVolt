@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
 import { NORMAL_CIRCUIT, EXPERT_CIRCUIT } from '../story/chapters'
 import { tableCountsForTrophies } from '../lib/trophies'
+import ReshuffleOffer from '../components/ReshuffleOffer'
 import { getEquipped, setRoomSkins, useOwnedSkins, TILE_SKINS, TABLE_SKINS, TILE_UNLOCKS, TABLE_UNLOCKS } from '../lib/skins'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
@@ -38,6 +39,7 @@ export default function Game() {
     hand, isMyTurn, playable, hasTilesOnBoard, replaceWithBot,
     awaySeats, standIn, turnStart, turnLimitMs, deciderSeat,
     selectTile, placeTile, passMove, cancelSelection, pileCount, drawTile,
+    reshuffleOffer, callReshuffle, keepDeal,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
 
@@ -243,6 +245,14 @@ export default function Game() {
     if (qualifies && winner === mySeat && !(knocked && knocked.room === myInfo.roomId && knocked.round === round) && done.clean !== tag) {
       write('dk-feats-done', { ...read('dk-feats-done'), clean: tag })
       db.rpc('record_feat', { p_kind: 'clean_round' }).then(() => {})
+    }
+
+    // five doubles: I played a round dealt 5+ doubles instead of reshuffling
+    const fd = read('dk-5d')
+    if (qualifies && fd && fd.room === myInfo.roomId && fd.round === round && done.five !== tag) {
+      write('dk-feats-done', { ...read('dk-feats-done'), five: tag })
+      db.rpc('record_feat', { p_kind: 'five_doubles' }).then(() => {})
+      if (winner === mySeat) db.rpc('record_feat', { p_kind: 'five_doubles_won' }).then(() => {})
     }
 
     // a comeback: my side won the match after being down 0–3
@@ -497,6 +507,11 @@ export default function Game() {
       )}
 
       {/* Knock animation */}
+      {/* five doubles: the holder decides; everyone else waits */}
+      {reshuffleOffer && (reshuffleOffer.mine
+        ? <ReshuffleOffer key={reshuffleOffer.key} doubles={reshuffleOffer.doubles} onReshuffle={callReshuffle} onContinue={keepDeal} />
+        : <ReshuffleOffer key={reshuffleOffer.key} waitingFor={reshuffleOffer.holder} />)}
+
       {knockPlayer && (
         <KnockAnimation
           key={knockKey(knockPlayer)}
