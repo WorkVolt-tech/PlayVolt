@@ -69,3 +69,5 @@
 @media (prefers-reduced-motion: reduce) {
   .hand-deal { animation: none; }
 }
+/* Draw (pile games): same place as Pass, in gold so it reads as a move */
+.btn-pass.btn-draw:not(:disabled) { border-color: var(--gold); color: var(--gold); }

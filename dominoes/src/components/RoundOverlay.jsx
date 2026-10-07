@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import TileFace from './TileFace'
 import './RoundOverlay.css'
 
-export default function RoundOverlay({ roomData, players, myInfo, onNextRound, onLeaveLobby, leaveLabel, canContinue = false, onPlayAgain }) {
+export default function RoundOverlay({ boardTiles = null, roomData, players, myInfo, onNextRound, onLeaveLobby, leaveLabel, canContinue = false, onPlayAgain }) {
   const frozen = useRef(null)   // hooks before any early return (see the reveal below)
   if (!roomData) return null
   const isMatchOver = roomData.status === 'finished'
@@ -53,7 +53,10 @@ export default function RoundOverlay({ roomData, players, myInfo, onNextRound, o
       // that gap) — so the reveal is not shown at all.
       // a fresh deal has every dealt tile back in hand: 7 each at 4 players,
       // 9 each at 3 (0-0 set aside), 14 each at 2
-      ok: total < ({ 2: 28, 3: 27, 4: 28 })[players.length] ,
+      // a fresh deal has every dealt tile back in hand. When the board is
+      // known that's simply "the board is empty" (players can draw, so hand
+      // sizes vary); otherwise fall back to the tiles dealt per table size.
+      ok: boardTiles != null ? boardTiles > 0 : total < ({ 2: 28, 3: 27, 4: 28 })[players.length],
     }
   }
   const showReveal = frozen.current.ok

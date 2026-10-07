@@ -6,7 +6,10 @@ import './PlayerHand.css'
 export default function PlayerHand({
   hand, isMyTurn, playableTiles, selectedIdx,
   onSelect, onPass, hasTilesOnBoard,
+  pileCount = 0, onDraw = null,
 }) {
+  // With tiles in the pile you draw instead of knocking.
+  const mustDraw = pileCount > 0 && !!onDraw
   const canPass = isMyTurn && playableTiles.length === 0 && hasTilesOnBoard
 
   // ── The deal ──────────────────────────────────────────────────────────────
@@ -48,7 +51,9 @@ export default function PlayerHand({
         })}
       </div>
       <div className="action-bar">
-        <button className="btn-pass" disabled={!canPass} onClick={onPass}>Pass</button>
+        {mustDraw
+          ? <button className="btn-pass btn-draw" disabled={!canPass} onClick={onDraw}>Draw ({pileCount})</button>
+          : <button className="btn-pass" disabled={!canPass} onClick={onPass}>Pass</button>}
       </div>
     </div>
   )
