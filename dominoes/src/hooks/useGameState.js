@@ -142,6 +142,31 @@ export function useGameState(myInfo, navigate) {
   // how many seats are in play at this table (2, 3 or 4)
   const seatCountRef = useRef(4)
   seatCountRef.current = roomData?.seat_count || 4
+  // ── Five doubles: reshuffle or play on (not in partner games) ─────────────
+  // Open while the round has no tiles, a human holds 5+ doubles, nobody has
+  // decided for this deal, and it's within 10 seconds of this screen first
+  // seeing the deal. While it's open nobody plays and bots wait.
+  const dealKey = roomData ? `${roomData.round || 1}:${roomData.deal_no || 0}` : ''
+  const countDbl = h => (h || []).filter(t => Array.isArray(t) && t[0] === t[1]).length
+  const offerHolders = (roomData?.status === 'playing' && !(boardData?.tiles?.length)
+      && !['asosye', 'duo'].includes(roomData?.game_mode) && roomData?.deal_decided !== dealKey)
+    ? (players || []).filter(p => !p.is_ai && countDbl(p.hand) >= 5) : []
+  const offerSeen = useRef({ key: '', at: 0 })
+  const offerKey = `${myInfo?.roomId}:${dealKey}`
+  if (offerHolders.length && offerSeen.current.key !== offerKey) offerSeen.current = { key: offerKey, at: Date.now() }
+  const [, setOfferTick] = useState(0)
+  useEffect(() => {
+    if (!offerHolders.length) return
+    const left = offerSeen.current.at + 10000 - Date.now()
+    if (left <= 0) return
+    const t = setTimeout(() => setOfferTick(x => x + 1), left + 60)   // re-check when the 10 s are up
+    return () => clearTimeout(t)
+  }, [offerHolders.length, offerKey])
+  const offerOpen = offerHolders.length > 0 && Date.now() < offerSeen.current.at + 10000
+  const offerOpenRef = useRef(false)
+  offerOpenRef.current = offerOpen
+  const offerMine = offerOpen && offerHolders.some(p => p.seat === myInfo?.seat)
+
   const dealVariantRef = useRef('all')
   dealVariantRef.current = roomData?.deal_variant || 'all'
   const pileRef = useRef(0)
@@ -389,7 +414,7 @@ export function useGameState(myInfo, navigate) {
 
   useEffect(() => {
     if (!roomData) return
-    const isMyTurn = roomData.current_turn === myInfo.seat && roomData.status === 'playing'
+    const isMyTurn = roomData.current_turn === myInfo.seat && roomData.status === 'playing' && !offerOpenRef.current
     const active = players.find(p => p.seat === roomData.current_turn)
     if (isMyTurn) showToastMsg('Your turn!')
     else if (active) showToastMsg(`${active.nickname}'s turn`)
@@ -404,7 +429,7 @@ export function useGameState(myInfo, navigate) {
 
   const me          = players.find(p => p.seat === myInfo?.seat)
   const hand        = me?.hand || []
-  const isMyTurn    = roomData?.current_turn === myInfo?.seat && roomData?.status === 'playing' && !syncing
+  const isMyTurn    = roomData?.current_turn === myInfo?.seat && roomData?.status === 'playing' && !syncing && !offerOpen
   const playable    = getPlayableTiles(hand, boardData, roomData)
   const hasTilesOnBoard = !!boardData?.tiles?.length
 
@@ -782,6 +807,17 @@ export function useGameState(myInfo, navigate) {
     // board. The player drags it to the table, or taps a drop zone.
   }, [isMyTurn, selectedTile])
 
+  // Five doubles: call the reshuffle, or play on (and count it toward trophies)
+  const callReshuffle = useCallback(async () => {
+    if (!myInfo) return
+    await db.rpc('reshuffle_round', { p_room_id: myInfo.roomId, p_seat: myInfo.seat })
+  }, [myInfo])
+  const keepDeal = useCallback(async () => {
+    if (!myInfo) return
+    try { localStorage.setItem('dk-5d', JSON.stringify({ room: myInfo.roomId, round: roomData?.round || 1 })) } catch { /* ignore */ }
+    await db.rpc('keep_deal', { p_room_id: myInfo.roomId })
+  }, [myInfo, roomData?.round])
+
   // Draw from the pile (pile games): your turn, nothing playable, tiles left.
   const drawTile = useCallback(async () => {
     if (processingRef.current || !myInfo) return
@@ -1075,6 +1111,8 @@ export function useGameState(myInfo, navigate) {
         return 'error'
       }
 
+      if (offerOpenRef.current) { botRunningRef.current = false; return }   // a reshuffle may be called
+
       // With a pile: draw instead of knocking. The draw shrinks the pile, which
       // re-runs this turn — play the drawn tile, or draw again.
       if (botPlayable.length === 0 && pileRef.current > 0) {
@@ -1193,7 +1231,7 @@ export function useGameState(myInfo, navigate) {
       loadGameState()
     }, 1200)
     return () => { clearTimeout(timer); clearTimeout(safetyTimer); botRunningRef.current = false }
-  }, [roomData?.current_turn, roomData?.status, syncing, amRunner, timedOutSeat, roomData?.pile?.length])
+  }, [roomData?.current_turn, roomData?.status, syncing, amRunner, timedOutSeat, roomData?.pile?.length, offerOpen])
 
   return {
     roomData, players, boardData, selectedTile, showPicker,
@@ -1204,6 +1242,10 @@ export function useGameState(myInfo, navigate) {
     presentSeats, awaySeats, standIn, deciderSeat,
     turnStart, turnLimitMs: TURN_LIMIT_MS,
     pileCount: Array.isArray(roomData?.pile) ? roomData.pile.length : 0, drawTile,
+    reshuffleOffer: offerOpen
+      ? { mine: offerMine, doubles: countDbl((players || []).find(p => p.seat === myInfo?.seat)?.hand), holder: offerHolders[0]?.nickname || '', key: offerKey }
+      : null,
+    callReshuffle, keepDeal,
     cancelSelection: () => { setSelectedTile(null); setShowPicker(false) },
   }
 }
