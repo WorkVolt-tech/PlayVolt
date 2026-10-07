@@ -500,13 +500,17 @@ export default function Lobby() {
     const w = readWaiting()
     if (channelRef.current) { db.removeChannel(channelRef.current); channelRef.current = null }
     if (w?.roomId && w?.playerId) {
-      const { data: others } = await db.from('domino_players').select('id, seat')
+      const { data: others } = await db.from('domino_players').select('id, seat, is_ai')
         .eq('room_id', w.roomId).neq('id', w.playerId).order('seat')
+      // only a human can take over the room — bots can't run a waiting room
+      const humans = (others || []).filter(o => !o.is_ai)
       await db.from('domino_players').delete().eq('id', w.playerId)
-      if (!others?.length) {
-        await db.from('domino_rooms').delete().eq('id', w.roomId)
+      if (!humans.length) {
+        await db.from('domino_rooms').delete().eq('id', w.roomId)      // only bots left: close it
       } else if (w.host) {
-        await db.from('domino_players').update({ seat: 0 }).eq('id', others[0].id)
+        // the host's seat (0) may be needed by the new host: if a bot sits
+        // there it can't, since the host's own seat was 0 and is now free
+        await db.from('domino_players').update({ seat: 0 }).eq('id', humans[0].id)
       }
     }
     resetToLobby(null)
@@ -635,6 +639,28 @@ export default function Lobby() {
     })
   }
 
+  // ── Chien Manjé Chien: the host can fill empty seats with bots ────────────
+  // Any regular bot, or an expert the host has unlocked. Bots take a seat like
+  // a player (and play like the bots you already know). A table with a regular
+  // bot doesn't count toward trophies; experts do.
+  const [botToAdd, setBotToAdd] = useState('Ti-Djo')
+  // (canPickBot, above, says whether the host may pick a bot)
+  async function addBotSeat() {
+    if (!amHost || !myRoomId || !canPickBot(botToAdd)) return
+    const current = await loadPlayers(myRoomId)
+    const free = [0, 1, 2, 3].find(seat => !current.some(p => p.seat === seat))
+    if (free === undefined) return
+    await db.from('domino_players').insert({
+      room_id: myRoomId, seat: free, nickname: botToAdd, hand: [], is_connected: true, is_ai: true,
+    })
+    loadPlayers(myRoomId)
+  }
+  async function removeBotSeat(id) {
+    if (!amHost) return
+    await db.from('domino_players').delete().eq('id', id).eq('is_ai', true)
+    loadPlayers(myRoomId)
+  }
+
   // duo = 2 humans (partners) + 2 AI
   const canStart =
     selectedMode === 'solo' ? true :
@@ -760,6 +786,10 @@ export default function Lobby() {
                 <div key={p.seat} className={`player-row ${p.id === myPlayerId ? 'is-me' : ''}`}>
                   <span className="player-row-name">{p.nickname}</span>
                   {p.id === myPlayerId && <span className="player-row-you">(you)</span>}
+                  {p.is_ai && <span className="player-row-you">(bot)</span>}
+                  {p.is_ai && amHost && (
+                    <button className="partner-btn" onClick={() => removeBotSeat(p.id)}>Remove</button>
+                  )}
                   {amHost && selectedMode === 'asosye' && p.id !== myPlayerId && (
                     <button
                       className={`partner-btn ${selectedPartner === p.id ? 'is-partner' : ''}`}
@@ -775,8 +805,25 @@ export default function Lobby() {
                   <span className="player-row-name">
                     {roomMode === 'duo' ? 'Waiting for your partner…' : 'Waiting…'}
                   </span>
+                  {/* the host can fill this seat with a bot (Chien Manjé Chien) */}
+                  {i === 0 && amHost && (roomMode === 'chien' || selectedMode === 'chien') && (
+                    <span style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
+                      <select className="bot-select" value={botToAdd} onChange={e => setBotToAdd(e.target.value)}>
+                        {BOT_ROSTER.map(b => {
+                          const locked = isExpert(b) && !unlockedBots.includes(b.name)
+                          return <option key={b.name} value={b.name} disabled={locked}>{b.name}{isExpert(b) ? ' ★' : ''}{locked ? ' (locked)' : ''}</option>
+                        })}
+                      </select>
+                      <button className="partner-btn" onClick={addBotSeat} disabled={!canPickBot(botToAdd)}>Add bot</button>
+                    </span>
+                  )}
                 </div>
               ))}
+              {amHost && (roomMode === 'chien' || selectedMode === 'chien') && players.some(p => p.is_ai && !['Ti-Jòj', 'Ti-Tid', 'Ti-Roro', 'Ti-Chasè', 'Ti-Frè', 'Ti-Chaj', 'Ti-Pyèj', 'Ti-Wa'].includes(p.nickname)) && (
+                <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', margin: '2px 2px 0' }}>
+                  A table with a regular bot doesn't count toward trophies — expert bots (★) do.
+                </div>
+              )}
             </div>
 
             {/* Mode selector (host only) */}
