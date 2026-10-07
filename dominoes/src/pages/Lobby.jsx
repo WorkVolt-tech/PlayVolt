@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import TrophyNotice from '../components/TrophyNotice'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
-import { generateRoomCode, generateDominoSet, shuffle } from '../hooks/useGameState'
+import { generateRoomCode, generateDominoSet, shuffle, dealHands } from '../hooks/useGameState'
 import './Lobby.css'
 
 // ── Solo opponents ───────────────────────────────────────────────────────────
@@ -584,13 +584,29 @@ export default function Lobby() {
         }
       }
       allPlayers = await loadPlayers(myRoomId)
-    } else if (selectedMode !== 'duo' && allPlayers.length < 4) {
-      alert('Need 4 players to start!'); return
+    } else if (selectedMode === 'chien' ? allPlayers.length < 2 : (selectedMode !== 'duo' && allPlayers.length < 4)) {
+      alert(selectedMode === 'chien' ? 'Need at least 2 players to start!' : 'Need 4 players to start!'); return
     }
 
-    const tiles = shuffle(generateDominoSet())
-    const hands = [tiles.slice(0,7), tiles.slice(7,14), tiles.slice(14,21), tiles.slice(21,28)]
-    for (let i = 0; i < 4; i++)
+    // Chien Manjé Chien can start with 2 or 3 players. Seats are closed up to
+    // 0, 1, (2) so turns run in order, and the deal fits the table:
+    //   3 players: 9 tiles each, the 0-0 set aside.  2 players: 14 each.
+    const seatCount = selectedMode === 'chien' ? Math.min(4, allPlayers.length) : 4
+    if (seatCount < 4) {
+      const ordered = [...allPlayers].sort((a, b) => a.seat - b.seat)
+      for (let i = 0; i < ordered.length; i++) {
+        if (ordered[i].seat !== i) await db.from('domino_players').update({ seat: 10 + i }).eq('id', ordered[i].id)
+      }
+      for (let i = 0; i < ordered.length; i++) {
+        if (ordered[i].seat !== i) await db.from('domino_players').update({ seat: i }).eq('id', ordered[i].id)
+      }
+      allPlayers = await loadPlayers(myRoomId)
+      const me = allPlayers.find(p => p.id === myPlayerIdRef.current)
+      if (me) { setMySeat(me.seat); mySeatRef.current = me.seat }
+    }
+
+    const hands = dealHands(seatCount)
+    for (let i = 0; i < hands.length; i++)
       await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myRoomId).eq('seat', i)
 
     await db.from('game_events').delete().eq('room_id', myRoomId)
@@ -598,7 +614,7 @@ export default function Lobby() {
     await db.from('board').insert({ room_id: myRoomId, tiles: [], left_end: null, right_end: null })
 
     let startingSeat = 0
-    for (let i = 0; i < 4; i++) if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break }
+    for (let i = 0; i < hands.length; i++) if (hands[i].some(t => t[0] === 6 && t[1] === 6)) { startingSeat = i; break }
 
     await db.from('domino_rooms').update({
       status: 'playing',
@@ -612,6 +628,8 @@ export default function Lobby() {
       pending_point: false,
       round: 1,
       match_winner: null,
+      seat_count: seatCount,
+      deal_variant: 'all',
     }).eq('id', myRoomId)
   }
 
@@ -665,6 +683,7 @@ export default function Lobby() {
   const canStart =
     selectedMode === 'solo' ? true :
     selectedMode === 'duo'  ? players.length === 2 :
+    selectedMode === 'chien' ? players.length >= 2 :
     players.length >= 4
 
   return (
@@ -892,7 +911,9 @@ export default function Lobby() {
                   style={{ marginTop: '1rem' }}
                 >
                   {canStart
-                    ? 'Start Game!'
+                    ? (selectedMode === 'chien' && players.length === 3 ? 'Start with 3 players — 9 tiles each'
+                      : selectedMode === 'chien' && players.length === 2 ? 'Start with 2 players — 14 tiles each'
+                      : 'Start Game!')
                     : selectedMode === 'duo'
                       ? `Start Game (${players.length}/2 Players)`
                       : `Start Game (${players.length}/4 Players)`}
