@@ -286,3 +286,8 @@
     text-overflow: ellipsis;
   }
 }
+/* change partner between rounds / before trying again */
+.sc-partner-swap { margin: 0.9rem 0 0.2rem; }
+.sc-partner-swap-label { font-size: 0.56rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ivory-dim); margin-bottom: 0.45rem; }
+.sc-partner-swap .sc-picks { justify-content: center; }
+.sc-partner-swap .sc-btn { padding: 0.35rem 0.75rem; font-size: 0.6rem; }
