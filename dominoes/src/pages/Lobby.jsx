@@ -314,7 +314,30 @@ export default function Lobby() {
   async function loadPlayers(roomId) {
     const { data } = await db.from('domino_players').select('*').eq('room_id', roomId).order('seat')
     setPlayers(data || [])
+    // in a waiting room: am I still here, and have I become the host?
+    const me = myPlayerIdRef.current
+    if (me && roomId === readWaiting()?.roomId) {
+      const mine = (data || []).find(r => r.id === me)
+      if (!mine) {
+        resetToLobby('You’re no longer in that room.')
+      } else if (mine.seat === 0 && !readWaiting()?.host) {
+        // the host left and handed the room to me
+        try { sessionStorage.setItem('domino_waiting', JSON.stringify({ ...readWaiting(), seat: 0, host: true })) } catch { /* ignore */ }
+        setMySeat(0); mySeatRef.current = 0
+        setAmHost(true)
+        setMsg({ text: 'The host left — you’re the host now.', type: 'success' })
+      }
+    }
     return data || []
+  }
+
+  // Back to the lobby, cleanly: stop listening to the room and forget it.
+  function resetToLobby(message) {
+    if (channelRef.current) { db.removeChannel(channelRef.current); channelRef.current = null }
+    try { sessionStorage.removeItem('domino_waiting') } catch { /* ignore */ }
+    setMyRoomId(null); setMyRoomCode(''); setMyPlayerId(null); myPlayerIdRef.current = null
+    setAmHost(false); setPlayers([]); setTab('create')
+    if (message) setMsg({ text: message, type: 'error' })
   }
 
   function subscribeToRoom(roomId, panel) {
@@ -322,6 +345,9 @@ export default function Lobby() {
     channelRef.current = db.channel('lobby-' + roomId + '-' + Date.now())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players', filter: `room_id=eq.${roomId}` },
         () => loadPlayers(roomId))
+      // the room was closed: nobody is left sitting in it
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
+        () => resetToLobby('The room was closed.'))
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
         async (payload) => {
           if (payload.new.game_mode) setRoomMode(payload.new.game_mode)
@@ -467,13 +493,23 @@ export default function Lobby() {
     subscribeToRoom(room.id, host ? 'create' : 'join')
     setTab('waiting')
   }
+  // Leaving the waiting room. The room carries on without you: if you were
+  // the host, the next player becomes host (they're moved into seat 0, the
+  // host's seat). Only if nobody else is left does the room close.
   async function leaveWaiting() {
     const w = readWaiting()
-    try { sessionStorage.removeItem(WAITING_KEY) } catch { /* ignore */ }
-    if (w?.host) await db.from('domino_rooms').delete().eq('id', w.roomId)       // the host closes the room
-    else if (w?.playerId) await db.from('domino_players').delete().eq('id', w.playerId)
-    setMyRoomId(null); setMyRoomCode(''); setMyPlayerId(null); myPlayerIdRef.current = null
-    setAmHost(false); setPlayers([]); setTab('create')
+    if (channelRef.current) { db.removeChannel(channelRef.current); channelRef.current = null }
+    if (w?.roomId && w?.playerId) {
+      const { data: others } = await db.from('domino_players').select('id, seat')
+        .eq('room_id', w.roomId).neq('id', w.playerId).order('seat')
+      await db.from('domino_players').delete().eq('id', w.playerId)
+      if (!others?.length) {
+        await db.from('domino_rooms').delete().eq('id', w.roomId)
+      } else if (w.host) {
+        await db.from('domino_players').update({ seat: 0 }).eq('id', others[0].id)
+      }
+    }
+    resetToLobby(null)
   }
 
   async function startGame() {
@@ -701,7 +737,7 @@ export default function Lobby() {
         {tab === 'waiting' && (
           <div className="waiting-room">
             <button className="copy-btn" style={{ alignSelf: 'flex-start' }} onClick={leaveWaiting}>
-              ← {amHost ? 'Close room' : 'Leave room'}
+              ← Leave room
             </button>
             {myRoomCode && (
               <div className="room-code-display">
