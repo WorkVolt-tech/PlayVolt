@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
 import { NORMAL_CIRCUIT, EXPERT_CIRCUIT } from '../story/chapters'
+import { tableCountsForTrophies } from '../lib/trophies'
 import { getEquipped, setRoomSkins, useOwnedSkins, TILE_SKINS, TABLE_SKINS, TILE_UNLOCKS, TABLE_UNLOCKS } from '../lib/skins'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
@@ -236,7 +237,8 @@ export default function Game() {
 
     // a clean round: I won it, and never knocked during it
     const knocked = read('dk-knocked')
-    if (winner === mySeat && !(knocked && knocked.room === myInfo.roomId && knocked.round === round) && done.clean !== tag) {
+    const qualifies = tableCountsForTrophies(players)      // humans and expert bots only
+    if (qualifies && winner === mySeat && !(knocked && knocked.room === myInfo.roomId && knocked.round === round) && done.clean !== tag) {
       write('dk-feats-done', { ...read('dk-feats-done'), clean: tag })
       db.rpc('record_feat', { p_kind: 'clean_round' }).then(() => {})
     }
@@ -244,7 +246,7 @@ export default function Game() {
     // a comeback: my side won the match after being down 0–3
     if (st === 'finished') {
       const down = read('dk-down3')
-      if (down && down.room === myInfo.roomId && team(winner) === team(mySeat) && done.comeback !== tag) {
+      if (qualifies && down && down.room === myInfo.roomId && team(winner) === team(mySeat) && done.comeback !== tag) {
         write('dk-feats-done', { ...read('dk-feats-done'), comeback: tag })
         db.rpc('record_feat', { p_kind: 'comeback' }).then(() => {})
       }

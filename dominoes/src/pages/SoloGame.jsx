@@ -11,6 +11,7 @@ import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
+import { botsCountForTrophies } from '../lib/trophies'
 import './Game.css'
 
 // ── Solo vs AI, on the device ────────────────────────────────────────────────
@@ -197,8 +198,10 @@ export default function SoloGame() {
       const uid = data?.user?.id
       if (!uid) return                               // guests aren't recorded
       await db.rpc('record_round_stats', {
-        p_results: [{ user_id: uid, won, vyej, dekabess: isDek, match_over: matchOver }],
+        p_results: [{ user_id: uid, won, vyej, dekabess: isDek, match_over: matchOver, trophy: botsCountForTrophies(bots) }],
       })
+      // the feats are trophies only: they count against expert bots only
+      if (!botsCountForTrophies(bots)) return
       if (clean) await db.rpc('record_feat', { p_kind: 'clean_round' })
       if (comeback) await db.rpc('record_feat', { p_kind: 'comeback' })
       if (fiveDoubles) await db.rpc('record_feat', { p_kind: 'five_doubles' })

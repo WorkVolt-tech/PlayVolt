@@ -11,6 +11,7 @@ import OpponentHands from '../components/OpponentHands'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import TileBack from '../components/TileBack'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
+import { botsCountForTrophies } from '../lib/trophies'
 import DekabessOverlay from '../components/DekabessOverlay'
 import { canPlayOnSide, pipCount } from '../hooks/useGameState'
 import '../pages/Game.css'
@@ -318,7 +319,8 @@ export default function StoryChallenge() {
       if (st.dealId) counted.current.add(st.dealId)
       setWins(w); setLosses(l)
       // five-doubles trophies: you played the round instead of reshuffling
-      if (st.fiveDoubles) {
+      const opponents = Array.from({ length: (st.seats ?? 4) - 1 }, (_, i) => seatBot(i + 1))
+      if (st.fiveDoubles && botsCountForTrophies(opponents)) {
         db.rpc('record_feat', { p_kind: 'five_doubles' }).then(() => {})
         if (st.winner === 0) db.rpc('record_feat', { p_kind: 'five_doubles_won' }).then(() => {})
       }

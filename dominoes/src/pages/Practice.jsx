@@ -8,6 +8,7 @@ import OpponentHands from '../components/OpponentHands'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import TileBack from '../components/TileBack'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
+import { botsCountForTrophies } from '../lib/trophies'
 import { db } from '../lib/supabase'
 import { canPlayOnSide } from '../hooks/useGameState'
 import './Game.css'
@@ -184,7 +185,7 @@ export default function Practice({ embedded = false, onExit }) {
       const worth = st.dekabess ? 2 : 1
       setTally(t => (st.winner === 0 ? { ...t, won: t.won + worth } : { ...t, lost: t.lost + worth }))
       // five-doubles trophies: you played the round instead of reshuffling
-      if (st.fiveDoubles) {
+      if (st.fiveDoubles && botsCountForTrophies(setup?.opponents)) {
         db.rpc('record_feat', { p_kind: 'five_doubles' }).then(() => {})
         if (st.winner === 0) db.rpc('record_feat', { p_kind: 'five_doubles_won' }).then(() => {})
       }
