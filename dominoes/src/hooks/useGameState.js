@@ -25,6 +25,17 @@ export function generateDominoSet() {
 
 // ── Dealing for 2, 3 or 4 players (every tile dealt) ──
 //   4 players: 7 each.  3 players: the 0-0 is set aside, 9 each.  2 players: 14 each.
+// ── The pile variant (2 or 3 players): 7 tiles each, the rest face down in a
+//    pile — a player who can't play draws instead of knocking.
+export function dealTable(n = 4, variant = 'all') {
+  if (variant === 'pile' && n < 4) {
+    const tiles = shuffle(generateDominoSet())
+    const hands = Array.from({ length: n }, (_, i) => tiles.slice(i * 7, i * 7 + 7))
+    return { hands, pile: tiles.slice(n * 7) }
+  }
+  return { hands: dealHands(n), pile: [] }
+}
+
 export function dealHands(n = 4) {
   let tiles = shuffle(generateDominoSet())
   if (n === 3) {
@@ -49,8 +60,14 @@ export function pipCount(hand) {
 }
 
 export function getPlayableTiles(hand, boardData, roomData) {
-  // Round 1, first tile: must play 6-6
+  // Round 1, first tile: must play 6-6 — or, with a pile, the double the room
+  // names (the 6-6 may be in the pile; then the highest double opens)
   if (!boardData?.tiles?.length) {
+    if (Array.isArray(roomData?.opening_tile)) {
+      const [a, b] = roomData.opening_tile
+      const req = hand.filter(t => (t[0] === a && t[1] === b) || (t[0] === b && t[1] === a))
+      if (req.length) return req
+    }
     if (roomData?.round === 1) {
       const doubleSix = hand.filter(t => t[0] === 6 && t[1] === 6)
       return doubleSix.length ? doubleSix : hand
@@ -125,6 +142,10 @@ export function useGameState(myInfo, navigate) {
   // how many seats are in play at this table (2, 3 or 4)
   const seatCountRef = useRef(4)
   seatCountRef.current = roomData?.seat_count || 4
+  const dealVariantRef = useRef('all')
+  dealVariantRef.current = roomData?.deal_variant || 'all'
+  const pileRef = useRef(0)
+  pileRef.current = Array.isArray(roomData?.pile) ? roomData.pile.length : 0
   const amRunnerRef = useRef(amRunner)
   amRunnerRef.current = amRunner
 
@@ -525,7 +546,7 @@ export function useGameState(myInfo, navigate) {
             const { data: latestRoom } = await db.from('domino_rooms').select('current_turn, round, status').eq('id', myInfo.roomId).single()
             if (latestRoom?.status !== 'round_end') return
             const nextRound = (latestRoom.round ?? 1) + 1
-            const hands = dealHands(seatCountRef.current)
+            const { hands, pile } = dealTable(seatCountRef.current, dealVariantRef.current)
             for (let i = 0; i < hands.length; i++)
               await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
             await db.from('board').delete().eq('room_id', myInfo.roomId)
@@ -536,6 +557,8 @@ export function useGameState(myInfo, navigate) {
               status: 'playing',
               current_turn: resolvedSeat,
               round: nextRound,
+              pile,                    // (empty unless this is a pile game)
+              opening_tile: null,      // a winner opens with any tile
             }).eq('id', myInfo.roomId)
           }, autoStartDelay)
         }
@@ -759,10 +782,24 @@ export function useGameState(myInfo, navigate) {
     // board. The player drags it to the table, or taps a drop zone.
   }, [isMyTurn, selectedTile])
 
+  // Draw from the pile (pile games): your turn, nothing playable, tiles left.
+  const drawTile = useCallback(async () => {
+    if (processingRef.current || !myInfo) return
+    processingRef.current = true
+    setProcessing(true)
+    try {
+      await db.rpc('draw_tile', { p_room_id: myInfo.roomId, p_seat: myInfo.seat })
+    } finally {
+      processingRef.current = false
+      setProcessing(false)
+    }
+  }, [myInfo])
+
   const passMove = useCallback(async () => {
     // Double-tap guard — the same one placeTile has always had. passMove
     // never had it, so two quick taps fired two passes.
     if (processingRef.current) return
+    if (pileRef.current > 0) return          // with tiles in the pile you draw, not knock
     processingRef.current = true
     setProcessing(true)
     try {
@@ -823,7 +860,7 @@ export function useGameState(myInfo, navigate) {
       return
     }
 
-    const hands = dealHands(seatCountRef.current)
+    const { hands, pile } = dealTable(seatCountRef.current, dealVariantRef.current)
     for (let i = 0; i < hands.length; i++)
       await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
     await db.from('board').delete().eq('room_id', myInfo.roomId)
@@ -833,6 +870,8 @@ export function useGameState(myInfo, navigate) {
       status: 'playing',
       current_turn: winnerSeat,
       round: nextRound,
+      pile,
+      opening_tile: null,
       pending_point: false,
       blocked: false,
       stats_recorded: false,
@@ -1036,6 +1075,14 @@ export function useGameState(myInfo, navigate) {
         return 'error'
       }
 
+      // With a pile: draw instead of knocking. The draw shrinks the pile, which
+      // re-runs this turn — play the drawn tile, or draw again.
+      if (botPlayable.length === 0 && pileRef.current > 0) {
+        await db.rpc('draw_tile', { p_room_id: myInfo.roomId, p_seat: currentPlayer.seat })
+        botRunningRef.current = false
+        return
+      }
+
       if (botPlayable.length === 0) {
         const res = await commitBot({
           action: 'pass', tile: null, board: null, hand: null,
@@ -1146,7 +1193,7 @@ export function useGameState(myInfo, navigate) {
       loadGameState()
     }, 1200)
     return () => { clearTimeout(timer); clearTimeout(safetyTimer); botRunningRef.current = false }
-  }, [roomData?.current_turn, roomData?.status, syncing, amRunner, timedOutSeat])
+  }, [roomData?.current_turn, roomData?.status, syncing, amRunner, timedOutSeat, roomData?.pile?.length])
 
   return {
     roomData, players, boardData, selectedTile, showPicker,
@@ -1156,6 +1203,7 @@ export function useGameState(myInfo, navigate) {
     startNextRound, leaveTable, setShowOverlay, replaceWithBot,
     presentSeats, awaySeats, standIn, deciderSeat,
     turnStart, turnLimitMs: TURN_LIMIT_MS,
+    pileCount: Array.isArray(roomData?.pile) ? roomData.pile.length : 0, drawTile,
     cancelSelection: () => { setSelectedTile(null); setShowPicker(false) },
   }
 }
