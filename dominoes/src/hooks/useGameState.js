@@ -460,6 +460,10 @@ export function useGameState(myInfo, navigate) {
         if (room.practice) throw new Error('practice room — not recorded')
         const teamOf = sq => (sq === 0 || sq === 2) ? 'A' : 'B'
         const winTeam = teamOf(resolvedSeat)
+        // trophies only count against humans and expert bots (a stand-in
+        // for a dropped player counts as that human)
+        const EXPERTS = ['Ti-Jòj', 'Ti-Tid', 'Ti-Roro', 'Ti-Chasè', 'Ti-Frè', 'Ti-Chaj', 'Ti-Pyèj', 'Ti-Wa']
+        const trophy = (playersRef.current || []).every(p => !p.is_ai || p.stand_in || EXPERTS.includes(p.nickname))
         const results = (playersRef.current || [])
           .filter(p => p.user_id && !p.is_ai)
           .map(p => {
@@ -472,6 +476,7 @@ export function useGameState(myInfo, navigate) {
               vyej: won && isVyej,
               dekabess: won && isDek,
               match_over: isVyej,      // "Games" counts matches, not rounds
+              trophy,
             }
           })
         if (results.length) {
