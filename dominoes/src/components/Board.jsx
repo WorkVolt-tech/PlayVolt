@@ -369,7 +369,7 @@ function layoutSnake(tiles, W, H) {
 // player sits on ('bottom' = you). Distances are in px, toward the table edge.
 const SLIDE_FROM = { bottom: [0, 260], top: [0, -260], left: [-300, 0], right: [300, 0] }
 
-function BoardTile({ entry, pos, ghost = false, highlighted = false, fresh = false, freshFrom = null }) {
+function BoardTile({ entry, pos, ghost = false, highlighted = false, fresh = false, freshFrom = null, travel = null, jolt = null, hidden = false }) {
   const { isDouble, flowDir, orientation } = pos
   const isVert = orientation ? orientation === 'vertical' : pos.isVert
 
@@ -390,8 +390,11 @@ function BoardTile({ entry, pos, ghost = false, highlighted = false, fresh = fal
 
   return (
     <div
-      className={fresh ? (SLIDE_FROM[freshFrom] ? 'tile-fresh tile-slide' : 'tile-fresh') : undefined} style={{
-        ...(fresh && SLIDE_FROM[freshFrom] ? { '--slide-x': `${SLIDE_FROM[freshFrom][0]}px`, '--slide-y': `${SLIDE_FROM[freshFrom][1]}px` } : {}),
+      className={travel ? 'dek-travel' : jolt ? 'tile-jolt' : fresh ? (SLIDE_FROM[freshFrom] ? 'tile-fresh tile-slide' : 'tile-fresh') : undefined} style={{
+        ...(fresh && !travel && !jolt && SLIDE_FROM[freshFrom] ? { '--slide-x': `${SLIDE_FROM[freshFrom][0]}px`, '--slide-y': `${SLIDE_FROM[freshFrom][1]}px` } : {}),
+        ...(travel ? { '--tx': `${travel.dx}px`, '--ty': `${travel.dy}px`, zIndex: 60 } : {}),
+        ...(jolt ? { '--jx': `${jolt.x}px`, '--jy': `${jolt.y}px`, '--jr': `${jolt.r}deg` } : {}),
+        ...(hidden ? { opacity: 0 } : {}),
       position: 'absolute',
       left: pos.x - pos.pw / 2,
       top: pos.y - pos.ph / 2,
@@ -672,7 +675,15 @@ function mergeDragPayload(primary, fallback, selectedTile) {
 }
 
 // ─── Board component ──────────────────────────────────────────────────────────
-export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace, freshFrom = null }) {
+// ── The Dekabess on the table ────────────────────────────────────────────────
+// When dekabessKey changes, the board plays its part before the celebration:
+// the winning tile travels to the other end of the chain and back, then the
+// hand slams the table twice and every tile jumps — then settles back exactly
+// where it was. onDekabessDone is called when it's over.
+const DEK_TRAVEL_MS = 950
+const DEK_SLAM_MS = 1300
+
+export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace, freshFrom = null, dekabessKey = null, onDekabessDone = null }) {
   const { draggingRef, endDrag } = useDrag()
 
   // Tap-to-place: tapping a highlighted side places the SELECTED tile there.
@@ -955,6 +966,29 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
   }
   const freshIdx = lastSeen.current.fresh
 
+  // ── Dekabess sequence ──
+  const [dekPhase, setDekPhase] = useState(null)       // null | 'travel' | 'slam'
+  const dekDone = useRef(onDekabessDone)
+  dekDone.current = onDekabessDone
+  useEffect(() => {
+    if (!dekabessKey) return
+    const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce || !(boardData?.tiles?.length > 1)) { dekDone.current?.(); return }
+    setDekPhase('travel')
+    const t1 = setTimeout(() => setDekPhase('slam'), DEK_TRAVEL_MS)
+    const t2 = setTimeout(() => { setDekPhase(null); dekDone.current?.() }, DEK_TRAVEL_MS + DEK_SLAM_MS)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [dekabessKey])
+  // the winning tile is the one just played (or, after a refresh, an end)
+  const dekIdx = tiles?.length ? (freshIdx >= 0 ? freshIdx : tiles.length - 1) : -1
+  const dekOther = dekIdx === 0 ? (tiles?.length || 1) - 1 : 0
+  // each tile jumps its own way (fixed per tile, so it looks natural)
+  const joltFor = i => {
+    const a = Math.sin(i * 12.9898 + 4.1) * 43758.5453, b = Math.sin(i * 78.233 + 1.7) * 12345.6789
+    const fa = a - Math.floor(a), fb = b - Math.floor(b)
+    return { x: Math.round((fa - 0.5) * 10), y: -Math.round(6 + fb * 9), r: Math.round((fb - 0.5) * 14) }
+  }
+
   // When the chain is taller than the table (a phone on its side), the table
   // scrolls. This marker sits a margin below the lowest tile so you can scroll
   // all the way to it.
@@ -962,6 +996,9 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     ? Math.max(...positions.map(p => p.y + p.ph / 2)) + 28
     : 0
   const needsScroll = chainBottom > (dims.h || 0) + 1
+  const dekCenter = positions.length
+    ? { x: positions.reduce((t, p) => t + p.x, 0) / positions.length, y: positions.reduce((t, p) => t + p.y, 0) / positions.length }
+    : { x: dims.w / 2, y: dims.h / 2 }
 
   // Use the newest available drag source for previews. `dragging` is preferred,
   // then native dataTransfer recovery, then selectedTile for click placement.
@@ -1193,8 +1230,27 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
           pos={pos}
           fresh={i === freshIdx}
           freshFrom={i === freshIdx ? freshFrom : null}
+          jolt={dekPhase === 'slam' ? joltFor(i) : null}
+          hidden={dekPhase === 'travel' && i === dekIdx}
         />
       ))}
+
+      {/* Dekabess: the winning tile's trip to the other end and back */}
+      {dekPhase === 'travel' && dekIdx >= 0 && positions[dekIdx] && positions[dekOther] && (
+        <BoardTile
+          key={`dek-travel-${dekabessKey}`}
+          entry={tiles[dekIdx]}
+          pos={positions[dekIdx]}
+          travel={{ dx: positions[dekOther].x - positions[dekIdx].x, dy: positions[dekOther].y - positions[dekIdx].y }}
+        />
+      )}
+
+      {/* Dekabess: the hand slamming the table twice */}
+      {dekPhase === 'slam' && (
+        <div className="dek-slam-wrap" style={{ left: dekCenter.x, top: dekCenter.y }} aria-hidden="true">
+          <img className="dek-slam" src="/handslam.webp" alt="" draggable={false} />
+        </div>
+      )}
 
       {!hasTiles && firstPreview && (
         <>
