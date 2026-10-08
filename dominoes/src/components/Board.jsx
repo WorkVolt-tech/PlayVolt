@@ -390,9 +390,9 @@ function BoardTile({ entry, pos, ghost = false, highlighted = false, fresh = fal
 
   return (
     <div
-      className={travel ? 'dek-travel' : jolt ? 'tile-jolt' : fresh ? (SLIDE_FROM[freshFrom] ? 'tile-fresh tile-slide' : 'tile-fresh') : undefined} style={{
+      className={travel ? (travel.legacy ? 'dek-travel legacy' : 'dek-travel') : jolt ? 'tile-jolt' : fresh ? (SLIDE_FROM[freshFrom] ? 'tile-fresh tile-slide' : 'tile-fresh') : undefined} style={{
         ...(fresh && !travel && !jolt && SLIDE_FROM[freshFrom] ? { '--slide-x': `${SLIDE_FROM[freshFrom][0]}px`, '--slide-y': `${SLIDE_FROM[freshFrom][1]}px` } : {}),
-        ...(travel ? { '--tx': `${travel.dx}px`, '--ty': `${travel.dy}px`, zIndex: 60 } : {}),
+        ...(travel ? { '--tx': `${travel.dx}px`, '--ty': `${travel.dy}px`, '--tr': `${travel.rot || 0}deg`, zIndex: 60 } : {}),
         ...(jolt ? { '--jx': `${jolt.x}px`, '--jy': `${jolt.y}px`, '--jr': `${jolt.r}deg` } : {}),
         // visibility, not opacity: the tile's own drop-in/slide animation sets
         // opacity and would override it, leaving the original showing
@@ -1036,6 +1036,49 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     canPlayOnSide(activeTile, 'right', boardData)
   )
 
+  // ── The Dekabess trip: where the winning tile would be placed at the far
+  // end, and how far it turns to get there (so the matching number touches)
+  const dekTrip = (() => {
+    if (dekIdx < 0 || !positions[dekIdx] || !positions[dekOther] || tiles.length < 2) return null
+    const home = positions[dekIdx]
+    const toward = dekIdx === 0 ? 'right' : 'left'
+    let dest = computeDropPreview(tiles, positions, tiles[dekIdx].tile, toward, dims.w, dims.h, boardData, reserve, fit)
+    let destEntry = dest ? { tile: tiles[dekIdx].tile, flipped: dest.flipped ?? false } : null
+    // The true spot can fall off the table when the far end is near an edge (in a
+    // real game the chain would re-centre after that play). Then the tile turns
+    // the corner, as the chain does at an edge: standing on end against the far
+    // tile's outer edge — below it if there's room, else above — with the
+    // matching number touching.
+    const off = p => p.x - p.pw / 2 < 2 || p.x + p.pw / 2 > dims.w - 2 || p.y - p.ph / 2 < 2 || p.y + p.ph / 2 > dims.h - 2
+    if (dest && off(dest)) {
+      const far = positions[dekOther]
+      const t = tiles[dekIdx].tile
+      const k = dekOther === 0 ? boardData?.left_end : boardData?.right_end       // the number it matches there
+      const m = t[0] === k ? t[1] : t[0]
+      const tw = TW * fit, th = TH * fit
+      const x = dekOther === 0 ? far.x - far.pw / 2 + tw / 2 : far.x + far.pw / 2 - tw / 2
+      const below = far.y + far.ph / 2 + GAP + th <= dims.h - 4
+      const y = below ? far.y + far.ph / 2 + GAP + th / 2 : far.y - far.ph / 2 - GAP - th / 2
+      dest = { x, y, pw: tw, ph: th, orientation: 'vertical', flowDir: DIR.DOWN, isDouble: t[0] === t[1] }
+      // drawn top-to-bottom: the matching number on the side touching the far tile
+      destEntry = { tile: below ? [k, m] : [m, k], flipped: false }
+    }
+    if (!dest) {          // no real spot to show: fly to the far end as before
+      const far = positions[dekOther]
+      return { entry: tiles[dekIdx], pos: home, dx: 0, dy: 0, rot: 0, legacy: { dx: far.x - home.x, dy: far.y - home.y } }
+    }
+    // the open number faces away from its neighbour at home, and toward the
+    // far end's tile at the destination — the turn is the angle between those
+    const angle = (dx, dy) => (Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 0 : 180) : (dy >= 0 ? 90 : 270))
+    const nb = positions[dekIdx === 0 ? 1 : tiles.length - 2]
+    const far = positions[dekOther]
+    let rot = angle(far.x - dest.x, far.y - dest.y) - angle(home.x - nb.x, home.y - nb.y)
+    rot = ((rot % 360) + 540) % 360 - 180                       // the short way round
+    const t = tiles[dekIdx].tile
+    if (t[0] === t[1] && Math.abs(rot) === 180) rot = 0          // a double looks the same either way
+    return { entry: destEntry, pos: dest, dx: home.x - dest.x, dy: home.y - dest.y, rot: -rot }
+  })()
+
   const previewLeft = canLeft
     ? computeDropPreview(tiles, positions, activeTile, 'left', dims.w, dims.h, boardData, reserve, fit)
     : null
@@ -1241,13 +1284,16 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
         />
       ))}
 
-      {/* Dekabess: the winning tile's trip to the other end and back */}
-      {dekPhase === 'travel' && dekIdx >= 0 && positions[dekIdx] && positions[dekOther] && (
+      {/* Dekabess: the winning tile's trip to the other end and back. It's
+          drawn where it WOULD be placed at the far end — turned so its
+          matching number touches that end — and animated out of its own
+          spot, turning on the way, then back home. */}
+      {dekPhase === 'travel' && dekTrip && (
         <BoardTile
           key={`dek-travel-${dekabessKey}`}
-          entry={tiles[dekIdx]}
-          pos={positions[dekIdx]}
-          travel={{ dx: positions[dekOther].x - positions[dekIdx].x, dy: positions[dekOther].y - positions[dekIdx].y }}
+          entry={dekTrip.entry}
+          pos={dekTrip.pos}
+          travel={dekTrip.legacy ? { dx: dekTrip.legacy.dx, dy: dekTrip.legacy.dy, rot: 0, legacy: true } : { dx: dekTrip.dx, dy: dekTrip.dy, rot: dekTrip.rot }}
         />
       )}
 
