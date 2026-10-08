@@ -38,6 +38,14 @@ const POS = { 1: 'right', 2: 'top', 3: 'left', 0: 'bottom' }
 const baseName = n => String(n || '').replace(/\s+\d+$/, '')   // "Ti-Djo 2" -> "Ti-Djo"
 
 // Same as computeNewStreak in useGameState, for a game with no partners.
+// Asosyé (offline): you and your partner (seats 0 and 2) are one team, the
+// two opponents (1 and 3) the other. The streak belongs to the team.
+function nextTeamStreak(streak, winner, isDek) {
+  const team = winner % 2
+  if (streak.team === team && streak.seat !== null) return { seat: winner, team, count: streak.count + (isDek ? 2 : 1) }
+  return { seat: winner, team, count: isDek ? 2 : 1 }
+}
+
 function nextStreak(streak, winner, isDek) {
   if (streak.seat === winner) return { ...streak, count: streak.count + (isDek ? 2 : 1) }
   return { seat: winner, team: winner, count: isDek ? 2 : 1 }
@@ -61,6 +69,8 @@ export default function SoloGame() {
              : saved?.bots?.length === 3 ? saved.bots
              : ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
   const myName = setup?.nickname || saved?.nickname || 'You'
+  // 'asosye' = you + an AI partner (across, seat 2) vs 2 AI; otherwise every man for himself
+  const teams = (setup?.mode || saved?.mode) === 'asosye'
 
   const [round, setRound] = useState(saved?.round ?? 1)
   const [st, setSt] = useState(() => saved?.st || Engine.startGame({ seats: 4, forceDoubleSix: true }))
@@ -83,7 +93,7 @@ export default function SoloGame() {
   // Open before the round's first tile, while you hold 5+ doubles and haven't
   // decided. (Solo is every-man-for-himself, so it always applies.)
   const myDoubles = countDoubles(st.hands?.[0])
-  const offerOpen = st.status === 'playing' && !(st.board?.tiles?.length) && !(st.log || []).length
+  const offerOpen = !teams && st.status === 'playing' && !(st.board?.tiles?.length) && !(st.log || []).length
     && myDoubles >= 5 && !st.doublesDecided
   const reshuffle = () => setSt(prev => Engine.startGame(prev.forceDoubleSix
     ? { seats: 4, forceDoubleSix: true }          // a first round: the doubles rule picks the opener again
@@ -115,7 +125,7 @@ export default function SoloGame() {
         if (!moves.length) return Engine.drawOrPass(next)
         const ctx = {
           seat,
-          mode: 'chien',
+          mode: teams ? 'asosye' : 'chien',         // with partners, seats 0 & 2 vs 1 & 3
           tileCountsBySeat: next.hands.map(h => h.length),
           opponentTileCounts: next.hands.map((h, i) => (i === seat ? null : h.length)).filter(x => x !== null),
         }
@@ -166,7 +176,8 @@ export default function SoloGame() {
     if (st.status !== 'over' || roundEnd) return
     const winner = st.winner
     const isDek = !!st.dekabess
-    const s2 = nextStreak(streak, winner, isDek)
+    const s2 = teams ? nextTeamStreak(streak, winner, isDek) : nextStreak(streak, winner, isDek)
+    const mineWin = teams ? winner % 2 === 0 : winner === 0          // my team won the round
     const vyej = s2.count >= 4
     setStreak(s2)
     setRoundEnd({ winner, isDek, blocked: !!st.blocked, vyej })
@@ -177,15 +188,16 @@ export default function SoloGame() {
     const clean = winner === 0 && !(st.log || []).some(e => e.action === 'pass' && e.seat === 0)
     let down3 = false
     try { down3 = localStorage.getItem('dk-solo-down3') === '1' } catch { /* ignore */ }
-    if (streak.seat !== null && streak.seat !== 0 && streak.count >= 3) down3 = true
-    if (s2.seat !== null && s2.seat !== 0 && s2.count >= 3) down3 = true
-    const comeback = vyej && winner === 0 && down3
+    const theirs = x => x.seat !== null && (teams ? x.team === 1 : x.seat !== 0)
+    if (theirs(streak) && streak.count >= 3) down3 = true
+    if (theirs(s2) && s2.count >= 3) down3 = true
+    const comeback = vyej && mineWin && down3
     try {
       if (vyej) localStorage.removeItem('dk-solo-down3')          // match over either way
       else if (down3) localStorage.setItem('dk-solo-down3', '1')
     } catch { /* ignore */ }
 
-    recordRound({ won: winner === 0, isDek: isDek && winner === 0, vyej: vyej && winner === 0, matchOver: vyej, clean, comeback,
+    recordRound({ won: mineWin, isDek: isDek && mineWin, vyej: vyej && mineWin, matchOver: vyej, clean, comeback,
       fiveDoubles: !!st.fiveDoubles, fiveDoublesWon: !!st.fiveDoubles && winner === 0 })
   }, [st.status])
 
@@ -228,7 +240,7 @@ export default function SoloGame() {
   useEffect(() => {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
-        bots, nickname: myName,
+        bots, nickname: myName, mode: teams ? 'asosye' : 'solo',
         round, st, streak, roundEnd,
         passing: [...passingSeats],
         recorded: [...recorded.current],
@@ -294,7 +306,7 @@ export default function SoloGame() {
     streak,
     pending_point: !!roundEnd?.isDek,
     blocked: !!roundEnd?.blocked,
-    game_mode: 'chien',
+    game_mode: teams ? 'asosye' : 'chien',
     round,
   }
   const me = { seat: 0, nickname: myName }
