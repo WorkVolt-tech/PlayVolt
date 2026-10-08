@@ -394,7 +394,9 @@ function BoardTile({ entry, pos, ghost = false, highlighted = false, fresh = fal
         ...(fresh && !travel && !jolt && SLIDE_FROM[freshFrom] ? { '--slide-x': `${SLIDE_FROM[freshFrom][0]}px`, '--slide-y': `${SLIDE_FROM[freshFrom][1]}px` } : {}),
         ...(travel ? { '--tx': `${travel.dx}px`, '--ty': `${travel.dy}px`, zIndex: 60 } : {}),
         ...(jolt ? { '--jx': `${jolt.x}px`, '--jy': `${jolt.y}px`, '--jr': `${jolt.r}deg` } : {}),
-        ...(hidden ? { opacity: 0 } : {}),
+        // visibility, not opacity: the tile's own drop-in/slide animation sets
+        // opacity and would override it, leaving the original showing
+        ...(hidden ? { visibility: 'hidden' } : {}),
       position: 'absolute',
       left: pos.x - pos.pw / 2,
       top: pos.y - pos.ph / 2,
@@ -680,7 +682,7 @@ function mergeDragPayload(primary, fallback, selectedTile) {
 // the winning tile travels to the other end of the chain and back, then the
 // hand slams the table twice and every tile jumps — then settles back exactly
 // where it was. onDekabessDone is called when it's over.
-const DEK_TRAVEL_MS = 950
+const DEK_TRAVEL_MS = 1800      // slow enough to follow the tile to the far end and back
 const DEK_SLAM_MS = 1300
 
 // The hand comes in from the Dekabess player's side of the table, turned
