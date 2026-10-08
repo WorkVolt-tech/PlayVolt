@@ -164,17 +164,18 @@
    3. everything settles exactly where it was (only translate/rotate/scale
       move — a tile's position is never changed) */
 .dek-travel {
-  animation: dekTravel 950ms cubic-bezier(0.45, 0, 0.35, 1) both;
+  animation: dekTravel 1800ms cubic-bezier(0.45, 0, 0.35, 1) both;   /* = DEK_TRAVEL_MS */
   box-shadow: 0 0 0 2px #e8c96a, 0 0 24px 6px rgba(232,201,106,0.85), 0 10px 22px rgba(0,0,0,0.6);
 }
 @keyframes dekTravel {
   0%   { translate: 0 0;                 scale: 1; }
-  14%  { translate: 0 -8px;              scale: 1.18; }
-  48%  { translate: var(--tx) var(--ty); scale: 1.18; }
-  56%  { translate: var(--tx) var(--ty); scale: 1.18; }
-  88%  { translate: 0 -8px;              scale: 1.18; }
-  100% { translate: 0 0;                 scale: 1; }
+  12%  { translate: 0 -8px;              scale: 1.18; }   /* lifts off */
+  42%  { translate: var(--tx) var(--ty); scale: 1.18; }   /* reaches the far end */
+  58%  { translate: var(--tx) var(--ty); scale: 1.18; }   /* holds there a moment */
+  88%  { translate: 0 -8px;              scale: 1.18; }   /* back home */
+  100% { translate: 0 0;                 scale: 1; }      /* settles */
 }
+
 .dek-slam-wrap { position: absolute; width: 0; height: 0; z-index: 70; pointer-events: none; }
 /* The arm is turned so "down" points from the Dekabess player's side toward
    the table; the hand then travels in along it and slams twice. */
