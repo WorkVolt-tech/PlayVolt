@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import TileFace from './TileFace'
+import HandsReveal from './HandsReveal'
 import './RoundOverlay.css'
 
 export default function RoundOverlay({ boardTiles = null, roomData, players, myInfo, onNextRound, onLeaveLobby, leaveLabel, canContinue = false, onPlayAgain }) {
@@ -89,28 +90,12 @@ export default function RoundOverlay({ boardTiles = null, roomData, players, myI
         {/* The reveal: everyone's remaining tiles, face up, with pip totals —
             so you can see what each player was holding and why it went the
             way it did. */}
-        {showReveal && <div className="reveal">
-          <div className="reveal-head"><span>What everyone was holding</span><span>Pips</span></div>
-          {results.map(r => {
-            const won = r.seat === roundWinnerSeat
-            const tiles = Array.isArray(r.hand) ? r.hand : []
-            return (
-              <div key={r.seat} className={`reveal-row ${won ? 'won' : ''}`}>
-                <div className="reveal-name">
-                  {r.nickname}{r.seat === myInfo.seat ? ' (you)' : ''}{won ? ' 👑' : ''}
-                </div>
-                <div className="reveal-tiles">
-                  {tiles.length === 0
-                    ? <span className="reveal-out">Went out</span>
-                    : tiles.map((t, i) => (
-                        <div key={i} className="reveal-tile"><TileFace a={t[0]} b={t[1]} vertical={false} /></div>
-                      ))}
-                </div>
-                <div className="reveal-pips">{r.pips}</div>
-              </div>
-            )
-          })}
-        </div>}
+        {showReveal && (
+          <HandsReveal
+            winnerSeat={roundWinnerSeat}
+            rows={results.map(r => ({ seat: r.seat, hand: r.hand, name: `${r.nickname}${r.seat === myInfo.seat ? ' (you)' : ''}` }))}
+          />
+        )}
 
         <div className="modal-actions">
           {/* canContinue: nobody else can deal (solo), so you always can */}
