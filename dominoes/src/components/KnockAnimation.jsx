@@ -40,7 +40,7 @@ const MOVES = {
 const PLACE = {
   bottom: { bottom: 160, left: '50%', transform: 'translateX(-50%)' },
   left:   { left: 40,   top: '50%',  transform: 'translateY(-50%)' },
-  top:    { top: 60,    left: '50%', transform: 'translateX(-50%)' },
+  top:    { top: 'calc(60px + env(safe-area-inset-top, 0px))', left: '50%', transform: 'translateX(-50%)' },
   right:  { right: 40,  top: '50%',  transform: 'translateY(-50%)' },
 }
 const DURATION = 1500
