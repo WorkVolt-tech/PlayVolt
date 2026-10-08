@@ -167,35 +167,28 @@
   animation: dekTravel 1800ms cubic-bezier(0.45, 0, 0.35, 1) both;   /* = DEK_TRAVEL_MS */
   box-shadow: 0 0 0 2px #e8c96a, 0 0 24px 6px rgba(232,201,106,0.85), 0 10px 22px rgba(0,0,0,0.6);
 }
+/* The copy is drawn AT the far-end spot; --tx/--ty/--tr put it back over
+   its own spot, looking exactly like it. It flies out, turning so the
+   matching number meets the far end, rests there, and flies home. */
 @keyframes dekTravel {
+  0%   { translate: var(--tx) var(--ty);                rotate: var(--tr); scale: 1; }
+  12%  { translate: var(--tx) calc(var(--ty) - 8px);    rotate: var(--tr); scale: 1.15; }   /* lifts off */
+  42%  { translate: 0 0;                                 rotate: 0deg;      scale: 1.08; }   /* placed at the far end */
+  58%  { translate: 0 0;                                 rotate: 0deg;      scale: 1.08; }   /* holds there */
+  88%  { translate: var(--tx) calc(var(--ty) - 8px);    rotate: var(--tr); scale: 1.15; }   /* back home */
+  100% { translate: var(--tx) var(--ty);                rotate: var(--tr); scale: 1; }
+}
+/* fallback when there's no real far-end spot: the old straight flight */
+.dek-travel.legacy { animation-name: dekTravelLegacy; }
+@keyframes dekTravelLegacy {
   0%   { translate: 0 0;                 scale: 1; }
-  12%  { translate: 0 -8px;              scale: 1.18; }   /* lifts off */
-  42%  { translate: var(--tx) var(--ty); scale: 1.18; }   /* reaches the far end */
-  58%  { translate: var(--tx) var(--ty); scale: 1.18; }   /* holds there a moment */
-  88%  { translate: 0 -8px;              scale: 1.18; }   /* back home */
-  100% { translate: 0 0;                 scale: 1; }      /* settles */
+  12%  { translate: 0 -8px;              scale: 1.18; }
+  42%  { translate: var(--tx) var(--ty); scale: 1.18; }
+  58%  { translate: var(--tx) var(--ty); scale: 1.18; }
+  88%  { translate: 0 -8px;              scale: 1.18; }
+  100% { translate: 0 0;                 scale: 1; }
 }
 
-.dek-slam-wrap { position: absolute; width: 0; height: 0; z-index: 70; pointer-events: none; }
-/* The arm is turned so "down" points from the Dekabess player's side toward
-   the table; the hand then travels in along it and slams twice. */
-.dek-slam-arm { position: absolute; left: 0; top: 0; width: 0; height: 0; }
-.dek-slam {
-  position: absolute; width: 120px; left: -60px; top: -60px;
-  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.75));
-  animation: dekSlam 1300ms linear both;
-}
-/* in the arm's frame the player is "below": the hand comes up from there,
-   hovers, and strikes (shrinking as it hits the table) on the jolts' beats */
-@keyframes dekSlam {
-  0%   { opacity: 0; translate: 0 300px; scale: 1.15; animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
-  16%  { opacity: 1; translate: 0 34px;  scale: 1.15; animation-timing-function: cubic-bezier(0.6, 0, 1, 0.6); }
-  30%  { opacity: 1; translate: 0 0;     scale: 0.92; animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
-  42%  { opacity: 1; translate: 0 26px;  scale: 1.12; animation-timing-function: cubic-bezier(0.6, 0, 1, 0.6); }
-  58%  { opacity: 1; translate: 0 0;     scale: 0.9; }
-  76%  { opacity: 1; translate: 0 16px;  scale: 1; }
-  100% { opacity: 0; translate: 0 300px; scale: 1.1; }
-}
 .tile-jolt { animation: tileJolt 1300ms linear both; }
 @keyframes tileJolt {
   0%, 29% { translate: 0 0; rotate: 0deg; }
