@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import { generateRoomCode, generateDominoSet, shuffle, dealHands, dealTable } from '../hooks/useGameState'
 import './Lobby.css'
+import { SeatAvatar, hasSeatAvatar } from '../lib/avatars'
 
 // ── Solo opponents ───────────────────────────────────────────────────────────
 // A bot's personality comes from its name (see getPersonality in botAI.js).
@@ -483,6 +484,17 @@ export default function Lobby() {
     try { return JSON.parse(sessionStorage.getItem(WAITING_KEY) || 'null') } catch { return null }
   }
   function enterWaiting({ room, code, playerId, seat, host }) {
+    // your trophy avatar goes on your seat as soon as you sit down, so the
+    // others see it in the waiting room (the game also re-applies it)
+    if (playerId) {
+      db.auth.getUser().then(({ data }) => {
+        const uid = data?.user?.id
+        if (!uid) return
+        db.from('profiles').select('avatar').eq('id', uid).maybeSingle().then(({ data: prof }) => {
+          if (prof?.avatar) db.from('domino_players').update({ avatar: prof.avatar }).eq('id', playerId).then(() => {})
+        })
+      })
+    }
     try { sessionStorage.setItem(WAITING_KEY, JSON.stringify({ roomId: room.id, code, playerId, seat, host })) } catch { /* ignore */ }
     setMyRoomId(room.id); setMyRoomCode(code)
     setRoomMode(room.game_mode || 'chien')
@@ -821,6 +833,9 @@ export default function Lobby() {
             <div className="players-list">
               {players.map(p => (
                 <div key={p.seat} className={`player-row ${p.id === myPlayerId ? 'is-me' : ''}`}>
+                  {hasSeatAvatar(p)
+                    ? <SeatAvatar player={p} size={28} />
+                    : <span className="player-row-initial">{(p.nickname || '?')[0].toUpperCase()}</span>}
                   <span className="player-row-name">{p.nickname}</span>
                   {p.id === myPlayerId && <span className="player-row-you">(you)</span>}
                   {p.is_ai && <span className="player-row-you">(bot)</span>}

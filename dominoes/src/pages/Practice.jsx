@@ -8,6 +8,7 @@ import OpponentHands from '../components/OpponentHands'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import TileBack from '../components/TileBack'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
+import DekabessOverlay from '../components/DekabessOverlay'
 import { botsCountForTrophies } from '../lib/trophies'
 import { db } from '../lib/supabase'
 import { canPlayOnSide } from '../hooks/useGameState'
@@ -175,11 +176,16 @@ export default function Practice({ embedded = false, onExit }) {
     }
   }, [st?.log])
 
+  // the Dekabess: the board's part, then the celebration, then the next deal
+  const [boardDek, setBoardDek] = useState(null)
+  const [showDek, setShowDek] = useState(false)
+
   // round over — count it and deal again
   useEffect(() => {
     if (!st || st.status !== 'over' || !setup) return
     // a round already counted (you refreshed right after it) isn't counted again
-    if (!st.dealId || !counted.current.has(st.dealId)) {
+    const fresh = !st.dealId || !counted.current.has(st.dealId)
+    if (fresh) {
       if (st.dealId) counted.current.add(st.dealId)
       // a Dekabess counts as two, as everywhere else in the game
       const worth = st.dekabess ? 2 : 1
@@ -190,6 +196,9 @@ export default function Practice({ embedded = false, onExit }) {
         if (st.winner === 0) db.rpc('record_feat', { p_kind: 'five_doubles_won' }).then(() => {})
       }
     }
+    // A Dekabess plays out first — the board's part, then the celebration —
+    // and the next deal follows it (see the celebration's onDone).
+    if (fresh && st.dekabess && st.winner >= 0) { setBoardDek(`practice-${st.dealId || Date.now()}`); return }
     const t = setTimeout(() => deal(setup), 2000)
     return () => clearTimeout(t)
   }, [st?.status])
@@ -331,6 +340,9 @@ export default function Practice({ embedded = false, onExit }) {
         )}
         <OpponentHands players={fakePlayers} myInfo={{ seat: 0 }} roomData={fakeRoom} />
         <Board
+          dekabessKey={boardDek}
+          dekabessFrom={st?.winner >= 0 ? ((st?.seats ?? 4) === 2 ? (st.winner === 0 ? 'bottom' : 'top') : ['bottom', 'right', 'top', 'left'][st.winner]) : 'top'}
+          onDekabessDone={() => { setBoardDek(null); setShowDek(true) }}
           freshFrom={slideFrom}
           boardData={st?.board}
           selectedTile={selected}
@@ -348,6 +360,13 @@ export default function Practice({ embedded = false, onExit }) {
           }}
         />
       </div>
+
+      {showDek && st?.winner >= 0 && (
+        <DekabessOverlay
+          playerName={st.winner === 0 ? 'You' : (seatNames[st.winner] || 'Player')}
+          onDone={() => { setShowDek(false); if (setup) deal(setup) }}
+        />
+      )}
 
       {offerOpen && setup && (
         <ReshuffleOffer doubles={myDoubles} onReshuffle={() => deal(setup)} onContinue={playOn} />
