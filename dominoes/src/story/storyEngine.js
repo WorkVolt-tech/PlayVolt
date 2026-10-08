@@ -163,7 +163,26 @@ export function playTile(st, tile, side) {
   if (hands[seat].length === 0) {
     return { ...next, status: 'over', winner: seat, dekabess: wasDekabess, blocked: false }
   }
-  return next
+  // Blocked the moment it happens: nobody can play either end (and the pile,
+  // if any, is empty) — no need to wait for everyone to knock.
+  return blockedNow(next) ? endBlocked(next) : next
+}
+
+function blockedNow(st) {
+  if (st.usePile && st.pile.length) return false
+  for (let s = 0; s < st.seats; s++) if (canPlay(st, s)) return false
+  return true
+}
+
+// A jammed round: lowest pips wins, ties to the lowest seat — exactly as
+// endRound resolves it.
+function endBlocked(st) {
+  let best = 0, bestPips = Infinity
+  for (let s = 0; s < st.seats; s++) {
+    const p = pipCount(st.hands[s])
+    if (p < bestPips) { bestPips = p; best = s }
+  }
+  return { ...st, status: 'over', winner: best, blocked: true, dekabess: false }
 }
 
 // Take a specific tile from the pile. Players pick which one they want —
@@ -200,16 +219,9 @@ export function drawOrPass(st) {
     log: [...st.log, { seat, action: 'pass' }],
   }
 
-  // Everyone passed in a row = the round is jammed. Lowest pips wins,
-  // ties to the lowest seat — exactly as endRound resolves it.
-  if (passes >= st.seats) {
-    let best = 0, bestPips = Infinity
-    for (let s = 0; s < st.seats; s++) {
-      const p = pipCount(st.hands[s])
-      if (p < bestPips) { bestPips = p; best = s }
-    }
-    return { ...next, status: 'over', winner: best, blocked: true, dekabess: false }
-  }
+  // Everyone passed in a row = the round is jammed (a backstop — a blocked
+  // table is normally recognised the moment the blocking tile goes down).
+  if (passes >= st.seats) return endBlocked(next)
   return next
 }
 
@@ -222,14 +234,12 @@ export function settleTurn(st) {
 }
 
 // ── Objectives ───────────────────────────────────────────────────────────────
-// Judged for the player's side. Solo challenges default to seat 0 only; partner
-// challenges can pass [0, 2] so either teammate winning counts for the team.
+// Judged for seat 0 — the player.
 
-export function evaluateObjective(st, playerSeats = [0]) {
+export function evaluateObjective(st) {
   if (st.status !== 'over') return { done: false }
   const o = st.objective
-  const side = Array.isArray(playerSeats) && playerSeats.length ? playerSeats : [0]
-  const won = side.includes(st.winner)
+  const won = st.winner === 0
   const withinMoves = !st.moveLimit || st.moves <= st.moveLimit
 
   let met = false
