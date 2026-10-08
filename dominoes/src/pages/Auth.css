@@ -136,3 +136,13 @@
   transition: color 0.2s;
 }
 .auth-btn-ghost:hover { color: var(--ivory); }
+
+/* Installed as an app, the page is drawn under the phone's status bar (time,
+   battery), the camera when held sideways, and the home bar. Leave room for
+   them — these are 0 in a browser and on phones without a notch. */
+.auth-page {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+}

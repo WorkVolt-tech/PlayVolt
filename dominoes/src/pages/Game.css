@@ -217,7 +217,7 @@
 
 .turn-toast {
   position: fixed;
-  top: 54px;
+  top: calc(54px + env(safe-area-inset-top, 0px));   /* just below the top bar */
   left: 50%;
   transform: translateX(-50%);
   background: var(--surface);
@@ -382,3 +382,18 @@
   color: var(--ivory-dim);
 }
 @media (orientation: landscape) and (max-height: 500px) { .unlock-hint { display: none; } }
+
+
+/* Installed as an app, the screen is drawn under the phone's status bar (time,
+   battery) and, sideways, the camera. The top bar grows by exactly that much
+   and keeps its contents below it — so Leave can always be reached. (0 in a
+   browser and on phones without a notch: nothing changes there.) */
+.top-bar {
+  height: calc(44px + env(safe-area-inset-top, 0px));
+  min-height: calc(44px + env(safe-area-inset-top, 0px));
+  max-height: calc(44px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+}

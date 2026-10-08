@@ -192,3 +192,13 @@ input[type="text"]::placeholder { color: #4a4538; }
 /* 2 or 3 players: how to deal */
 .deal-choice { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 0.6rem; }
 .deal-choice-label { width: 100%; font-size: 0.56rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ivory-dim); }
+
+/* Installed as an app, the page is drawn under the phone's status bar (time,
+   battery), the camera when held sideways, and the home bar. Leave room for
+   them — these are 0 in a browser and on phones without a notch. */
+.lobby-page {
+  padding-top: calc(2rem + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+}

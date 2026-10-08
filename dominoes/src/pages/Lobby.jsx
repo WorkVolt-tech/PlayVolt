@@ -707,7 +707,8 @@ export default function Lobby() {
     <div className="lobby-page">
       <TrophyNotice />
       <div className="lobby-bg" />
-      <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
+      {/* clear of the phone's status bar (time, battery) and camera when installed as an app */}
+      <div style={{ position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', right: 'calc(12px + env(safe-area-inset-right, 0px))', zIndex: 10 }}>
         {authUser ? (
           <button onClick={() => navigate('/profile')} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--gold)', borderRadius: 20, padding: '6px 14px', fontFamily: 'DM Mono, monospace', fontSize: '0.6rem', letterSpacing: '0.1em', cursor: 'pointer' }}>
             👤 Profile
