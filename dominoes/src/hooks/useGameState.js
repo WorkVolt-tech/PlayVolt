@@ -549,10 +549,11 @@ export function useGameState(myInfo, navigate) {
         console.error('[stats] table-wide record threw (non-fatal):', e)
       }
 
-      await Promise.all([
-        db.from('game_events').delete().eq('room_id', myInfo.roomId),
-        db.from('board').delete().eq('room_id', myInfo.roomId),
-      ])
+      // The board stays as it ended: everyone sees the final chain behind the
+      // results, and the Dekabess plays on it. (Deleting it here raced the
+      // round-end update — on some screens the table went blank first and the
+      // Dekabess animation had nothing to play on.) The next deal clears it.
+      await db.from('game_events').delete().eq('room_id', myInfo.roomId)
       // Profile stats are NOT written here. endRound runs on exactly one
       // client (the player whose hand emptied, or the host when a bot wins),
       // so writing stats here only ever recorded that one player — everyone
