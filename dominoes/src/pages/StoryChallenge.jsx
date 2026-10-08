@@ -13,6 +13,7 @@ import TileBack from '../components/TileBack'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
 import { botsCountForTrophies } from '../lib/trophies'
 import DekabessOverlay from '../components/DekabessOverlay'
+import HandsReveal from '../components/HandsReveal'
 import { canPlayOnSide, pipCount } from '../hooks/useGameState'
 import '../pages/Game.css'
 import './StoryChallenge.css'
@@ -481,6 +482,15 @@ export default function StoryChallenge() {
     </div>
   ) : null
 
+  // the round's end: everyone's tiles face up (not in puzzles, whose other
+  // seats stay hidden)
+  const storyReveal = st?.status === 'over' && challenge?.type !== 'puzzle' && st.winner >= 0 ? (
+    <HandsReveal
+      winnerSeat={st.winner}
+      rows={st.hands.map((h, seat) => ({ seat, hand: h, name: nameAt(seat) }))}
+    />
+  ) : null
+
   const playable = st ? Engine.legalMoves(st, 0).map(m => m.tile) : []
   const uniquePlayable = playable.filter((t, i) => playable.findIndex(x => x[0]===t[0] && x[1]===t[1]) === i)
 
@@ -655,6 +665,7 @@ export default function StoryChallenge() {
           <div className="sc-card">
             <h2>{roundPanel.title}</h2>
             <p>{roundPanel.how}</p>
+            {storyReveal}
             <div className="sc-series">
               {(st?.seats ?? 4) === 2
                 ? <>You <strong>{roundPanel.wins}</strong> — <strong>{roundPanel.losses}</strong> {nameAt(1)}</>
@@ -677,6 +688,7 @@ export default function StoryChallenge() {
             {result.round && challenge?.type !== 'puzzle' && (
               <p className="sc-round-line"><strong>{result.round.title}.</strong> {result.round.how}</p>
             )}
+            {storyReveal}
             <p>
               {result.met
                 ? (challenge?.type === 'puzzle'

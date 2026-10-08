@@ -9,6 +9,7 @@ import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import TileBack from '../components/TileBack'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
 import DekabessOverlay from '../components/DekabessOverlay'
+import HandsReveal from '../components/HandsReveal'
 import { botsCountForTrophies } from '../lib/trophies'
 import { db } from '../lib/supabase'
 import { canPlayOnSide } from '../hooks/useGameState'
@@ -196,11 +197,9 @@ export default function Practice({ embedded = false, onExit }) {
         if (st.winner === 0) db.rpc('record_feat', { p_kind: 'five_doubles_won' }).then(() => {})
       }
     }
-    // A Dekabess plays out first — the board's part, then the celebration —
-    // and the next deal follows it (see the celebration's onDone).
-    if (fresh && st.dekabess && st.winner >= 0) { setBoardDek(`practice-${st.dealId || Date.now()}`); return }
-    const t = setTimeout(() => deal(setup), 2000)
-    return () => clearTimeout(t)
+    // A Dekabess plays out first — the board's part, then the celebration.
+    // Then the results card shows everyone's tiles; you deal again from it.
+    if (fresh && st.dekabess && st.winner >= 0) setBoardDek(`practice-${st.dealId || Date.now()}`)
   }, [st?.status])
 
   // Place a tile, checking the side against the board first — the same guard
@@ -364,8 +363,24 @@ export default function Practice({ embedded = false, onExit }) {
       {showDek && st?.winner >= 0 && (
         <DekabessOverlay
           playerName={st.winner === 0 ? 'You' : (seatNames[st.winner] || 'Player')}
-          onDone={() => { setShowDek(false); if (setup) deal(setup) }}
+          onDone={() => setShowDek(false)}
         />
+      )}
+
+      {st?.status === 'over' && setup && st.winner >= 0 && !boardDek && !showDek && (
+        <div className="sc-overlay">
+          <div className="sc-card">
+            <h2>{st.winner === 0 ? 'You win the round' : `${seatNames[st.winner] || 'Player'} wins the round`}</h2>
+            <p>{st.dekabess ? 'Dekabess — it counts double.' : st.blocked ? 'The table jammed — lowest pips wins.' : 'Went out.'}</p>
+            <HandsReveal
+              winnerSeat={st.winner}
+              rows={st.hands.map((h, seat) => ({ seat, hand: h, name: seat === 0 ? 'You' : (seatNames[seat] || 'Player') }))}
+            />
+            <div className="sc-actions">
+              <button className="sc-btn" onClick={() => deal(setup)}>Next deal</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {offerOpen && setup && (
