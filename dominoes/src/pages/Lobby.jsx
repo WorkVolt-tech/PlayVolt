@@ -58,7 +58,7 @@ function resolveBotNames(picks) {
 // player joining by code can be turned away before taking a seat.
 function humanCapacity(mode) {
   if (mode === 'solo') return 1   // you vs 3 AI
-  if (mode === 'duo')  return 2   // you + 1 friend vs 2 AI
+  if (mode === 'duo')  return 1   // you + an AI partner vs 2 AI (offline)
   return 4
 }
 
@@ -521,10 +521,14 @@ export default function Lobby() {
 
     // Solo vs AI runs on the device — no database game at all. The room the
     // lobby made while you chose a mode isn't needed, so it's removed.
-    if (selectedMode === 'solo') {
+    if (selectedMode === 'solo' || selectedMode === 'duo') {
       localStorage.removeItem('solo_game')        // a NEW game, not a resume
+      const picks = resolveBotNames(botPicks.slice(0, 3))
       sessionStorage.setItem('solo_setup', JSON.stringify({
-        bots: resolveBotNames(botPicks.slice(0, 3)),
+        // Asosyé (offline): your partner sits across from you (seat 2),
+        // the two opponents at seats 1 and 3
+        bots: selectedMode === 'duo' ? [picks[1], picks[0], picks[2]] : picks,
+        mode: selectedMode === 'duo' ? 'asosye' : 'solo',
         nickname: nickname || 'You',
       }))
       const roomId = myRoomId
@@ -695,7 +699,7 @@ export default function Lobby() {
   // duo = 2 humans (partners) + 2 AI
   const canStart =
     selectedMode === 'solo' ? true :
-    selectedMode === 'duo'  ? players.length === 2 :
+    selectedMode === 'duo'  ? true :
     selectedMode === 'chien' ? players.length >= 2 :
     players.length >= 4
 
@@ -871,8 +875,8 @@ export default function Lobby() {
                   {[
                     { id: 'chien', icon: '🐶', name: 'Chien Manjé Chien', desc: 'Every man for himself · 4 players' },
                     { id: 'asosye', icon: '🤝', name: 'Asosyé', desc: 'Partners · Teams of 2' },
-                    { id: 'solo', icon: '🤖', name: 'Solo vs AI', desc: 'You vs 3 AI opponents' },
-                    { id: 'duo', icon: '👥', name: 'Asosyé vs AI', desc: 'You + 1 friend vs 2 AI · teams of 2' },
+                    { id: 'solo', icon: '🤖', name: 'Solo vs AI (offline)', desc: 'You vs 3 AI · plays on your device' },
+                    { id: 'duo', icon: '👥', name: 'Asosyé vs AI (offline)', desc: 'You + an AI partner vs 2 AI · plays on your device' },
                   ].map(m => (
                     <button
                       key={m.id}
@@ -887,18 +891,17 @@ export default function Lobby() {
                     </button>
                   ))}
                 </div>
-                {selectedMode === 'duo' && players.length > 2 && (
+                {(selectedMode === 'duo' || selectedMode === 'solo') && players.length > 1 && (
                   <div className="bot-hint">
-                    Asosyé vs AI is 2 players — {players.length - 2} extra player
-                    {players.length - 2 > 1 ? 's' : ''} must leave, or pick another mode.
+                    This mode plays offline, just you and the AI. To play with the friends here, pick Asosyé or Chien Manjé Chien and add bots.
                   </div>
                 )}
                 {(selectedMode === 'solo' || selectedMode === 'duo') && (
                   <div className="bot-picker">
-                    <div className="mode-label bot-picker-label">Opponents</div>
-                    {botPicks.slice(0, selectedMode === 'duo' ? 2 : 3).map((pick, i) => (
+                    <div className="mode-label bot-picker-label">{selectedMode === 'duo' ? 'Your partner & opponents' : 'Opponents'}</div>
+                    {botPicks.slice(0, 3).map((pick, i) => (
                       <div key={i} className="bot-row">
-                        <span className="bot-seat">Bot {i + 1}</span>
+                        <span className="bot-seat">{selectedMode === 'duo' ? ['Partner', 'Opponent 1', 'Opponent 2'][i] : `Bot ${i + 1}`}</span>
                         <select
                           className="bot-select"
                           value={pick}
