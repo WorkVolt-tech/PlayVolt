@@ -683,7 +683,11 @@ function mergeDragPayload(primary, fallback, selectedTile) {
 const DEK_TRAVEL_MS = 950
 const DEK_SLAM_MS = 1300
 
-export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace, freshFrom = null, dekabessKey = null, onDekabessDone = null }) {
+// The hand comes in from the Dekabess player's side of the table, turned
+// toward the table like the knock: 'bottom' = you.
+const SLAM_TURN = { bottom: '0deg', left: '90deg', top: '180deg', right: '-90deg' }
+
+export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace, freshFrom = null, dekabessKey = null, onDekabessDone = null, dekabessFrom = 'top' }) {
   const { draggingRef, endDrag } = useDrag()
 
   // Tap-to-place: tapping a highlighted side places the SELECTED tile there.
@@ -1248,7 +1252,9 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
       {/* Dekabess: the hand slamming the table twice */}
       {dekPhase === 'slam' && (
         <div className="dek-slam-wrap" style={{ left: dekCenter.x, top: dekCenter.y }} aria-hidden="true">
-          <img className="dek-slam" src="/handslam.webp" alt="" draggable={false} />
+          <div className="dek-slam-arm" style={{ rotate: SLAM_TURN[dekabessFrom] || SLAM_TURN.top }}>
+            <img className="dek-slam" src="/handslam.webp" alt="" draggable={false} />
+          </div>
         </div>
       )}
 
