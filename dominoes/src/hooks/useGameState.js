@@ -322,24 +322,42 @@ export function useGameState(myInfo, navigate) {
   // holds, so before this device acts (your turn, or a bot's turn on the
   // host) it re-reads the table once. Only the device about to act does this,
   // so it's one read per move instead of one per player.
+  // It restarts only when the turn itself changes or this device's job
+  // changes (it now acts / no longer acts) — not whenever the choice of bot
+  // runner is recalculated, which happens every time anyone's connection
+  // flickers; each restart used to throw the read away and start over while
+  // the player's hand stayed locked.
+  // A stalled request on a weak connection can't hold the turn either: each
+  // attempt gets 2.5 s, then it tries again (4 tries); if none gets through,
+  // play is released anyway (the server still rejects a move made out of turn).
+  const seatAtTurnNow = players.find(p => p.seat === roomData?.current_turn)
+  const iActNow = !!roomData && roomData.status === 'playing' && !!myInfo
+    && (roomData.current_turn === myInfo.seat || (amRunner && !!seatAtTurnNow?.is_ai))
+  const syncKey = `${roomData?.round}:${roomData?.current_turn}:${roomData?.status}`
   useEffect(() => {
-    if (!roomData || roomData.status !== 'playing' || !myInfo) return
-    const turn = roomData.current_turn
-    const seatAtTurn = players.find(p => p.seat === turn)
-    const iAct = turn === myInfo.seat || (amRunnerRef.current && !!seatAtTurn?.is_ai)
-    if (!iAct) return
+    if (!iActNow) { syncingRef.current = false; setSyncing(false); return }
     let cancelled = false
     syncingRef.current = true
     setSyncing(true)
     const began = performance.now()
-    loadGameState().finally(() => {
+    ;(async () => {
+      for (let attempt = 0; attempt < 4 && !cancelled; attempt++) {
+        const ok = await Promise.race([
+          loadGameState().then(() => true, () => false),
+          new Promise(r => setTimeout(() => r(false), 2500)),
+        ])
+        if (ok) break
+        tlog(`sync attempt ${attempt + 1} stalled — trying again`)
+      }
       if (cancelled) return
       syncingRef.current = false
       setSyncing(false)
+      // your own clock starts when you can actually play, not when the turn arrived
+      if (roomData?.current_turn === myInfo?.seat) setTurnStart(Date.now())
       tlog(`synced before acting: ${(performance.now() - began).toFixed(0)}ms`)
-    })
+    })()
     return () => { cancelled = true }
-  }, [roomData?.current_turn, roomData?.status, roomData?.round, runnerSeat])
+  }, [syncKey, iActNow])
 
   useEffect(() => {
     if (!myInfo) { navigate('/'); return }
@@ -1000,7 +1018,10 @@ export function useGameState(myInfo, navigate) {
   useEffect(() => {
     if (!roomData || roomData.status !== 'playing' || !amRunner) return
     const seat = roomData.current_turn
-    const wait = Math.max(0, turnStart + TURN_LIMIT_MS - Date.now())
+    // Another player's clock gets 10 s of grace: this device can't see when
+    // their screen was ready to play (theirs starts counting only then).
+    const grace = seat === myInfo?.seat ? 0 : 10000
+    const wait = Math.max(0, turnStart + TURN_LIMIT_MS + grace - Date.now())
     const t = setTimeout(() => {
       const p = (playersRef.current || []).find(x => x.seat === seat)
       if (!p || p.is_ai) return          // bots never run out of time
