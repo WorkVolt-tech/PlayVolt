@@ -666,7 +666,8 @@ export default function Lobby() {
     })
   }
 
-  // ── Chien Manjé Chien: the host can fill empty seats with bots ────────────
+  // ── Chien Manjé Chien and Asosyé: the host can fill empty seats with bots ──
+  // (In Asosyé a bot can be picked as your partner, like any player.)
   // Any regular bot, or an expert the host has unlocked. Bots take a seat like
   // a player (and play like the bots you already know). A table with a regular
   // bot doesn't count toward trophies; experts do.
@@ -686,6 +687,7 @@ export default function Lobby() {
   }
   async function removeBotSeat(id) {
     if (!amHost) return
+    if (selectedPartner === id) setPartner(null)      // that was your partner
     await db.from('domino_players').delete().eq('id', id).eq('is_ai', true)
     loadPlayers(myRoomId)
   }
@@ -836,7 +838,7 @@ export default function Lobby() {
                     {roomMode === 'duo' ? 'Waiting for your partner…' : 'Waiting…'}
                   </span>
                   {/* the host can fill this seat with a bot (Chien Manjé Chien) */}
-                  {i === 0 && amHost && (roomMode === 'chien' || selectedMode === 'chien') && (
+                  {i === 0 && amHost && (['chien', 'asosye'].includes(roomMode) || ['chien', 'asosye'].includes(selectedMode)) && (
                     <span style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
                       <select className="bot-select" value={botToAdd} onChange={e => setBotToAdd(e.target.value)}>
                         {BOT_ROSTER.map(b => {
@@ -849,9 +851,14 @@ export default function Lobby() {
                   )}
                 </div>
               ))}
-              {amHost && (roomMode === 'chien' || selectedMode === 'chien') && players.some(p => p.is_ai && !['Ti-Jòj', 'Ti-Tid', 'Ti-Roro', 'Ti-Chasè', 'Ti-Frè', 'Ti-Chaj', 'Ti-Pyèj', 'Ti-Wa'].includes(p.nickname)) && (
+              {amHost && (['chien', 'asosye'].includes(roomMode) || ['chien', 'asosye'].includes(selectedMode)) && players.some(p => p.is_ai && !['Ti-Jòj', 'Ti-Tid', 'Ti-Roro', 'Ti-Chasè', 'Ti-Frè', 'Ti-Chaj', 'Ti-Pyèj', 'Ti-Wa'].includes(p.nickname)) && (
                 <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', margin: '2px 2px 0' }}>
                   A table with a regular bot doesn't count toward trophies — expert bots (★) do.
+                </div>
+              )}
+              {amHost && selectedMode === 'asosye' && players.some(p => p.is_ai) && (
+                <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', margin: '2px 2px 0' }}>
+                  Tap Pick Partner on a bot to team up with it.
                 </div>
               )}
             </div>
