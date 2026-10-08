@@ -15,6 +15,17 @@ import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import OpponentHands from '../components/OpponentHands'
 import './Game.css'
 
+// Where a seat sits on my screen — the same placement as the opponents' hands:
+// 2 players: across.  3 players: right, left.  4 players: right, across, left.
+function sideOf(seat, mySeat, n) {
+  const k = Math.max(2, Math.min(4, n || 4))
+  const diff = ((seat - mySeat) % k + k) % k
+  if (diff === 0) return 'bottom'
+  if (k === 2) return 'top'
+  if (k === 3) return diff === 1 ? 'right' : 'left'
+  return ['bottom', 'right', 'top', 'left'][diff]
+}
+
 export default function Game() {
   // A tournament match, or a practice room started from one: the way out is
   // back to the bracket, not the lobby.
@@ -444,6 +455,7 @@ export default function Game() {
         />
         <Board
           dekabessKey={boardDek}
+          dekabessFrom={roomData ? sideOf(roomData.current_turn, myInfo?.seat ?? 0, roomData.seat_count || players.length) : 'top'}
           onDekabessDone={() => { setBoardDek(null); setShowDekabess(true) }}
           freshFrom={slideFrom}
           boardData={boardData}

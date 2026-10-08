@@ -594,6 +594,7 @@ export default function StoryChallenge() {
         )}
         <Board
           dekabessKey={boardDek}
+          dekabessFrom={st?.winner >= 0 ? ((st?.seats ?? 4) === 2 ? (st.winner === 0 ? 'bottom' : 'top') : ['bottom', 'right', 'top', 'left'][st.winner]) : 'top'}
           onDekabessDone={() => { setBoardDek(null); setShowDek(true) }}
           freshFrom={slideFrom}
           boardData={st?.board}

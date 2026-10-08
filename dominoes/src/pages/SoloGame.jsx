@@ -330,6 +330,7 @@ export default function SoloGame() {
         <OpponentHands players={players} myInfo={me} roomData={roomLike} />
         <Board
           dekabessKey={boardDek}
+          dekabessFrom={['bottom', 'right', 'top', 'left'][roundEnd?.winner ?? 2] || 'top'}
           onDekabessDone={() => { setBoardDek(null); setShowDek(true) }}
           freshFrom={slideFrom}
           boardData={st.board}
