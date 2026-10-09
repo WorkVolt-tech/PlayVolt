@@ -6,7 +6,7 @@
 // rotation the database uses to award them (challenge_table).
 import { weekStartUTC } from './skins'
 
-export const CHALLENGE_TABLES = ['sapphire', 'burgundy', 'teal', 'amethyst', 'emerald']
+export const CHALLENGE_TABLES = ['sapphire', 'burgundydeco', 'teal', 'amethyst', 'emerald']
 const FORMATS = ['trio', 'duel', 'team', 'solo']          // week 0 (from 2026-01-05) is a 3-player week
 
 // expert line-ups that complement each other, per format

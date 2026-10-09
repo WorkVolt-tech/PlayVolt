@@ -98,7 +98,7 @@ export const TABLE_SKINS = {
   // ── Challenge Mode prize tables (your artwork): won by beating the week's challenge ──
   emerald:  { label: 'Emerald Crown', challenge: true, thumb: '/tables/emerald-thumb.webp', felt: "url('/tables/emerald.webp') center / cover no-repeat, #0c0d0b", rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
   sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-thumb.webp', felt: "url('/tables/sapphire.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
-  burgundy: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundy-thumb.webp', felt: "url('/tables/burgundy.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
+  burgundydeco: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundy-thumb.webp', felt: "url('/tables/burgundy.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
   teal:     { label: 'Teal Deco', challenge: true, thumb: '/tables/teal-thumb.webp', felt: "url('/tables/teal.webp') center / cover no-repeat, #0c0d0d", rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
   amethyst: { label: 'Amethyst Deco', challenge: true, thumb: '/tables/amethyst-thumb.webp', felt: "url('/tables/amethyst.webp') center / cover no-repeat, #0c0b0d", rail: 'linear-gradient(180deg, #2e1f48 0%, #120c1e 100%)' },
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
@@ -131,7 +131,7 @@ export function wtlPrize(weekStart = weekStartUTC()) {
 function unlocksFor(kind, free, ids) {
   return ids.map(id => {
     if (free.includes(id)) return { id, free: true }
-    if (kind === 'tables' && ['emerald', 'sapphire', 'burgundy', 'teal', 'amethyst'].includes(id)) {
+    if (kind === 'tables' && ['emerald', 'sapphire', 'burgundydeco', 'teal', 'amethyst'].includes(id)) {
       return { id, challenge: true, need: 'Challenge Mode prize — beat the challenge the week it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
     }
     if (kind === 'tables' && WTL_TABLES.includes(id)) {
@@ -256,3 +256,30 @@ export function useOwnedSkins() {
 
 // paint the equipped table as soon as the app loads
 if (typeof window !== 'undefined') applyTableSkin(getEquipped().table)
+
+// ── Themed groups for the Skins page ─────────────────────────────────────────
+// Matching skins sit together. A skin not listed in any group still shows,
+// under "More", so nothing can go missing from the page.
+export const TILE_GROUPS = [
+  { label: 'Classics', ids: ['classic', 'ebony', 'pearl', 'bone', 'marble', 'obsidian'] },
+  { label: 'Gems & Metals', ids: ['jade', 'ruby', 'gold', 'amethyst', 'royal', 'krisal'] },
+  { label: 'Colours', ids: ['lavender', 'rose', 'fuchsia', 'ocean', 'sunset'] },
+  { label: 'Neon', ids: ['neonGreen', 'neonPink', 'neonOrange', 'neonYellow', 'neonBlue', 'glow'] },
+  { label: 'Flags', ids: ['haiti', 'quebec', 'jamaica', 'trinidad', 'dominican', 'usa', 'france'] },
+  { label: 'Culture & Dekabess', ids: ['kafe', 'kanaval', 'phoenix', 'dekabess', 'playvolt'] },
+]
+export const TABLE_GROUPS = [
+  { label: 'Classic Felts', ids: ['green', 'midnight', 'burgundy', 'slate', 'mahogany', 'purple', 'pink', 'ocean'] },
+  { label: 'Flags', ids: ['haiti', 'jamaica', 'quebec', 'usa'] },
+  { label: 'Culture & Neon', ids: ['neon', 'krisal', 'kanaval', 'phoenix', 'lakou', 'dekabess', 'playvolt'] },
+  { label: 'Wa Tab La Prizes', ids: ['tiger', 'viking', 'marron', 'jazz', 'negmaron'] },
+  { label: 'Challenge Prizes', ids: ['emerald', 'sapphire', 'burgundydeco', 'teal', 'amethyst'] },
+]
+export function groupCards(cards, groups) {
+  const byId = new Map(cards.map(c => [c.id, c]))
+  const out = groups.map(g => ({ label: g.label, cards: g.ids.map(id => byId.get(id)).filter(Boolean) })).filter(g => g.cards.length)
+  const listed = new Set(groups.flatMap(g => g.ids))
+  const rest = cards.filter(c => !listed.has(c.id))
+  if (rest.length) out.push({ label: 'More', cards: rest })
+  return out
+}
