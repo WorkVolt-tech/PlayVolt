@@ -178,6 +178,16 @@ export default function Game() {
   }, [])
   const [pick, setPick] = useState({})     // seat -> chosen bot
 
+  // How many people are watching (spectators announce themselves on their own
+  // channel; this table only listens — it never counts as a spectator)
+  const [watchers, setWatchers] = useState(0)
+  useEffect(() => {
+    if (!myInfo?.roomId) return
+    const ch = db.channel(`watch-${myInfo.roomId}`)
+    ch.on('presence', { event: 'sync' }, () => setWatchers(Object.keys(ch.presenceState()).length)).subscribe()
+    return () => { db.removeChannel(ch) }
+  }, [myInfo?.roomId])
+
   // the game has started: the lobby no longer needs to remember a waiting room
   useEffect(() => { try { sessionStorage.removeItem('domino_waiting') } catch { /* ignore */ } }, [])
 
@@ -417,6 +427,7 @@ export default function Game() {
         <div className="top-bar-left">
           <span className="game-title">Dekabess!</span>
           <span className="room-code-badge">{myInfo.roomCode || '——'}</span>
+          {watchers > 0 && <span className="room-code-badge" title="People watching this game">👁 {watchers}</span>}
         </div>
         <div className="player-tags">
           {players.map(p => (
