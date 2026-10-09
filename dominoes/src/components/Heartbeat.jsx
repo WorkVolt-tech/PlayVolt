@@ -8,7 +8,7 @@ import { db } from '../lib/supabase'
 // they start or stop playing. Friends then see them as online / in a game.
 // Draws nothing; guests send nothing.
 
-const playing = path => path === '/game' || path === '/solo' || path === '/practice' || /^\/story\/[^/]+/.test(path)
+const playing = path => path === '/game' || path === '/solo' || path === '/practice' || path === '/challenge/play' || /^\/story\/[^/]+/.test(path)
 
 export default function Heartbeat() {
   const { pathname } = useLocation()
