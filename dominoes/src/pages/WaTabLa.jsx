@@ -12,6 +12,23 @@ function getWeekStart() {
   return monday.toISOString().split('T')[0]
 }
 
+// One row per player: a signed-in player's wins from every device are added
+// together (guests, with no account, count per device). The name shown is the
+// one from the device with the most wins.
+export function mergeByAccount(rows) {
+  const by = new Map()
+  for (const r of rows || []) {
+    const key = r.user_id ? `u:${r.user_id}` : `d:${r.player_id}`
+    const cur = by.get(key)
+    if (!cur) by.set(key, { ...r, best: r.wins })
+    else {
+      if (r.wins > cur.best) { cur.player_nickname = r.player_nickname; cur.best = r.wins }
+      cur.wins += r.wins
+    }
+  }
+  return [...by.values()].sort((a, b) => b.wins - a.wins).slice(0, 20)
+}
+
 function getTimeUntilSunday() {
   const now = new Date()
   const nextSunday = new Date()
@@ -37,11 +54,11 @@ export default function WaTabLa() {
     try { await db.rpc('settle_wa_tab_la') } catch { /* ignore */ }
     const week = getWeekStart()
     const [s, t] = await Promise.all([
-      db.from('wa_tab_la').select('*').eq('mode', 'solo').eq('week_start', week).order('wins', { ascending: false }).limit(20),
-      db.from('wa_tab_la').select('*').eq('mode', 'teams').eq('week_start', week).order('wins', { ascending: false }).limit(20),
+      db.from('wa_tab_la').select('*').eq('mode', 'solo').eq('week_start', week).order('wins', { ascending: false }).limit(200),
+      db.from('wa_tab_la').select('*').eq('mode', 'teams').eq('week_start', week).order('wins', { ascending: false }).limit(200),
     ])
-    setSolo(s.data || [])
-    setTeams(t.data || [])
+    setSolo(mergeByAccount(s.data))
+    setTeams(mergeByAccount(t.data))
     setLoading(false)
   }, [])
 
