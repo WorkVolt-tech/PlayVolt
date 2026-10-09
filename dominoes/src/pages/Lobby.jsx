@@ -1057,6 +1057,7 @@ export default function Lobby() {
         )}
       <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => navigate('/challenge')} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>⚔️ Challenge</button>
           <button onClick={() => navigate('/friends')} style={{ position: 'relative', background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>
             👥 Friends
             {friendRequests > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 18, height: 18, borderRadius: 9, background: '#c94c4c', color: '#fff', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{friendRequests}</span>}

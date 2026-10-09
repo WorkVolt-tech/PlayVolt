@@ -11,6 +11,8 @@ import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
+import { TABLE_SKINS } from '../lib/skins'
+import './StoryChallenge.css'      // the result card's styles
 import { botsCountForTrophies } from '../lib/trophies'
 import './Game.css'
 
@@ -35,6 +37,14 @@ import './Game.css'
 // what, and follow the board.
 const BOT_DELAY = 1200
 const POS = { 1: 'right', 2: 'top', 3: 'left', 0: 'bottom' }
+// where a seat sits on screen for 2, 3 or 4 players (as the opponents' hands do)
+function sideOf(seat, mySeat, n) {
+  const k = Math.max(2, Math.min(4, n || 4)), diff = ((seat - mySeat) % k + k) % k
+  if (diff === 0) return 'bottom'
+  if (k === 2) return 'top'
+  if (k === 3) return diff === 1 ? 'right' : 'left'
+  return ['bottom', 'right', 'top', 'left'][diff]
+}
 const baseName = n => String(n || '').replace(/\s+\d+$/, '')   // "Ti-Djo 2" -> "Ti-Djo"
 
 // Same as computeNewStreak in useGameState, for a game with no partners.
@@ -51,29 +61,39 @@ function nextStreak(streak, winner, isDek) {
   return { seat: winner, team: winner, count: isDek ? 2 : 1 }
 }
 
-export default function SoloGame() {
+export default function SoloGame({ challengeMode = false }) {
   const navigate = useNavigate()
 
   // The game is saved on the device as you play, so a refresh — or closing
   // the app and coming back — picks up exactly where you were. The lobby
   // clears this when you start a NEW solo game.
-  const SAVE_KEY = 'solo_game'
+  // Challenge Mode runs on this same screen, with its own save and setup
+  const SAVE_KEY = challengeMode ? 'challenge_game' : 'solo_game'
+  const SETUP_KEY = challengeMode ? 'challenge_setup' : 'solo_setup'
   const saved = (() => {
     try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') } catch { return null }
   })()
 
   const setup = (() => {
-    try { return JSON.parse(sessionStorage.getItem('solo_setup') || 'null') } catch { return null }
+    try { return JSON.parse(sessionStorage.getItem(SETUP_KEY) || 'null') } catch { return null }
   })()
-  const bots = setup?.bots?.length === 3 ? setup.bots
-             : saved?.bots?.length === 3 ? saved.bots
-             : ['Ti-Djo', 'Ti-Cam', 'Ti-Jean']
+  // how many at the table (Challenge Mode: 2, 3 or 4), and whether there's a pile
+  const seats = setup?.seats || saved?.seats || 4
+  const pileOn = !!(setup?.pile ?? saved?.pile)
+  const challenge = setup?.challenge || saved?.challenge || null
+  const bots = setup?.bots?.length === seats - 1 ? setup.bots
+             : saved?.bots?.length === seats - 1 ? saved.bots
+             : ['Ti-Djo', 'Ti-Cam', 'Ti-Jean'].slice(0, seats - 1)
   const myName = setup?.nickname || saved?.nickname || 'You'
   // 'asosye' = you + an AI partner (across, seat 2) vs 2 AI; otherwise every man for himself
-  const teams = (setup?.mode || saved?.mode) === 'asosye'
+  const teams = seats === 4 && (setup?.mode || saved?.mode) === 'asosye'
+  // every deal follows the table: size, pile, and (Challenge Mode, no pile) every tile dealt
+  const dealCfg = extra => ({ seats, pile: pileOn, dealAll: challengeMode && !pileOn && seats < 4, ...extra })
 
   const [round, setRound] = useState(saved?.round ?? 1)
-  const [st, setSt] = useState(() => saved?.st || Engine.startGame({ seats: 4, forceDoubleSix: true }))
+  const challengeDone = useRef(false)
+  const [challengeResult, setChallengeResult] = useState(null)
+  const [st, setSt] = useState(() => saved?.st || Engine.startGame(dealCfg({ forceDoubleSix: true })))
   const [streak, setStreak] = useState(saved?.streak || { seat: null, team: null, count: 0 })
   const [selected, setSelected] = useState(null)
   const [roundEnd, setRoundEnd] = useState(saved?.roundEnd || null)   // { winner, isDek, blocked, vyej }
@@ -96,15 +116,15 @@ export default function SoloGame() {
   const offerOpen = !teams && st.status === 'playing' && !(st.board?.tiles?.length) && !(st.log || []).length
     && myDoubles >= 5 && !st.doublesDecided
   const reshuffle = () => setSt(prev => Engine.startGame(prev.forceDoubleSix
-    ? { seats: 4, forceDoubleSix: true }          // a first round: the doubles rule picks the opener again
-    : { seats: 4, starter: prev.turn }))           // a later round: the same winner still opens
+    ? dealCfg({ forceDoubleSix: true })          // a first round: the doubles rule picks the opener again
+    : dealCfg({ starter: prev.turn })))           // a later round: the same winner still opens
   const playOn = () => setSt(prev => ({ ...prev, doublesDecided: true, fiveDoubles: true }))
 
 
   // Who played the newest tile (for the slide): the game's own move log says.
   const lastPlay = [...(st?.log || [])].reverse().find(e => e.action === 'play')
   const slideFrom = lastPlay
-    ? ((st?.seats ?? 4) === 2 ? (lastPlay.seat === 0 ? 'bottom' : 'top') : ['bottom', 'right', 'top', 'left'][lastPlay.seat])
+    ? sideOf(lastPlay.seat, 0, st?.seats ?? seats)
     : null
   const isMyTurn = st.status === 'playing' && st.turn === 0 && !offerOpen
 
@@ -161,7 +181,7 @@ export default function SoloGame() {
     for (const e of fresh) {
       if (e.action === 'pass') {
         setPassingSeats(prev => new Set(prev).add(e.seat))
-        setKnock({ name: names[e.seat], position: POS[e.seat] })
+        setKnock({ name: names[e.seat], position: sideOf(e.seat, 0, seats) })
       } else if (e.action === 'play') {
         setPassingSeats(prev => {
           if (!prev.has(e.seat)) return prev
@@ -197,6 +217,17 @@ export default function SoloGame() {
       else if (down3) localStorage.setItem('dk-solo-down3', '1')
     } catch { /* ignore */ }
 
+    // Challenge Mode: the match is over — report it (a win unlocks the table)
+    if (challengeMode && vyej && !challengeDone.current) {
+      challengeDone.current = true
+      ;(async () => {
+        const { data: prize } = await db.rpc('challenge_finish', { p_won: mineWin })
+        const { data: status } = await db.rpc('challenge_status')
+        const row = Array.isArray(status) ? status[0] : status
+        setChallengeResult({ won: mineWin, prize: prize || null, left: row?.tries_left ?? 0 })
+        localStorage.removeItem(SAVE_KEY)          // this try is finished
+      })()
+    }
     recordRound({ won: mineWin, isDek: isDek && mineWin, vyej: vyej && mineWin, matchOver: vyej, clean, comeback,
       fiveDoubles: !!st.fiveDoubles, fiveDoublesWon: !!st.fiveDoubles && winner === 0 })
   }, [st.status])
@@ -234,13 +265,13 @@ export default function SoloGame() {
     setKnock(null)
     setPassingSeats(new Set())
     seenLog.current = 0
-    setSt(Engine.startGame({ seats: 4, starter }))
+    setSt(Engine.startGame(dealCfg({ starter })))
   }, [roundEnd])
 
   useEffect(() => {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
-        bots, nickname: myName, mode: teams ? 'asosye' : 'solo',
+        bots, nickname: myName, mode: teams ? 'asosye' : 'solo', seats, pile: pileOn, challenge,
         round, st, streak, roundEnd,
         passing: [...passingSeats],
         recorded: [...recorded.current],
@@ -258,13 +289,13 @@ export default function SoloGame() {
     setKnock(null)
     setPassingSeats(new Set())
     seenLog.current = 0
-    setSt(Engine.startGame({ seats: 4, forceDoubleSix: true }))
+    setSt(Engine.startGame(dealCfg({ forceDoubleSix: true })))
   }, [])
 
   const leave = () => {
-    sessionStorage.removeItem('solo_setup')
+    sessionStorage.removeItem(SETUP_KEY)
     localStorage.removeItem(SAVE_KEY)
-    navigate('/')
+    navigate(challengeMode ? '/challenge' : '/')
   }
 
   // ── placing tiles: same rules and tap behaviour as the live game ───────────
@@ -342,7 +373,7 @@ export default function SoloGame() {
         <OpponentHands players={players} myInfo={me} roomData={roomLike} />
         <Board
           dekabessKey={boardDek}
-          dekabessFrom={['bottom', 'right', 'top', 'left'][roundEnd?.winner ?? 2] || 'top'}
+          dekabessFrom={sideOf(roundEnd?.winner ?? 2, 0, seats)}
           onDekabessDone={() => { setBoardDek(null); setShowDek(true) }}
           freshFrom={slideFrom}
           boardData={st.board}
@@ -390,7 +421,28 @@ export default function SoloGame() {
         />
       )}
 
-      {roundEnd && !showDek && !boardDek && (
+      {challengeMode && challengeResult && !showDek && !boardDek && (
+        <div className="sc-overlay">
+          <div className="sc-card challenge-result">
+            <h2>{challengeResult.won ? 'Challenge beaten!' : 'Not this time'}</h2>
+            {challengeResult.won && challengeResult.prize && TABLE_SKINS[challengeResult.prize] ? (
+              <>
+                <p>You unlocked the <strong>{TABLE_SKINS[challengeResult.prize].label}</strong> table — it’s yours for good.</p>
+                <img src={TABLE_SKINS[challengeResult.prize].thumb} alt="" style={{ width: '100%', maxWidth: 260, borderRadius: 10, border: '1px solid var(--gold)' }} />
+              </>
+            ) : challengeResult.won ? (
+              <p>You beat this week’s challenge.</p>
+            ) : (
+              <p>{challengeResult.left > 0 ? `You have ${challengeResult.left} ${challengeResult.left === 1 ? 'try' : 'tries'} left this week.` : 'That was your last try this week — a new challenge starts on Monday.'}</p>
+            )}
+            <div className="sc-actions">
+              <button className="sc-btn" onClick={leave}>Back to Challenge</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {roundEnd && !showDek && !boardDek && !(challengeMode && roundEnd.vyej) && (
         <RoundOverlay
           roomData={roomLike}
           players={players}
