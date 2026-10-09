@@ -16,12 +16,14 @@ import Trophies from './pages/Trophies'
 import Watch from './pages/Watch'
 import Friends from './pages/Friends'
 import Heartbeat from './components/Heartbeat'
+import ChallengeBanner from './components/ChallengeBanner'
 import './styles/global.css'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Heartbeat />
+      <ChallengeBanner />
       <DragProvider>
       <Routes>
         <Route path="/" element={<Lobby />} />
