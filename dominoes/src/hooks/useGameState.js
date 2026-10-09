@@ -485,12 +485,17 @@ export function useGameState(myInfo, navigate) {
         const weekStr = weekStart.toISOString().split('T')[0]
         const leaderMode = room.game_mode === 'asosye' ? 'teams' : 'solo'
         const nickname = players.find(p => p.seat === myInfo.seat)?.nickname || 'Player'
-        const { error: wtlErr } = await db.rpc('increment_wa_tab_la', {
+        // wa_tab_la_win also records your account, so the week's prize table
+        // can be awarded to you; the older call is kept as a fallback
+        let { error: wtlErr } = await db.rpc('wa_tab_la_win', {
+          p_player_id: playerId, p_nickname: nickname, p_mode: leaderMode, p_week_start: weekStr,
+        })
+        if (wtlErr) ({ error: wtlErr } = await db.rpc('increment_wa_tab_la', {
           p_player_id: playerId,
           p_nickname: nickname,
           p_mode: leaderMode,
           p_week_start: weekStr,
-        })
+        }))
         if (wtlErr) {
           await db.from('wa_tab_la').upsert({
             player_id: playerId,
