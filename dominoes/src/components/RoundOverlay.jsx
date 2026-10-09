@@ -1,10 +1,15 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { db } from '../lib/supabase'
 import TileFace from './TileFace'
 import HandsReveal from './HandsReveal'
 import './RoundOverlay.css'
 
 export default function RoundOverlay({ boardTiles = null, roomData, players, myInfo, onNextRound, onLeaveLobby, leaveLabel, canContinue = false, onPlayAgain }) {
   const frozen = useRef(null)   // hooks before any early return (see the reveal below)
+  // "Add friend" for the other people at the table (signed-in players only)
+  const [meId, setMeId] = useState(null)
+  const [asked, setAsked] = useState({})
+  useEffect(() => { db.auth.getUser().then(({ data }) => setMeId(data?.user?.id || null)) }, [])
   if (!roomData) return null
   const isMatchOver = roomData.status === 'finished'
   const isDekabess  = roomData.pending_point
@@ -90,6 +95,20 @@ export default function RoundOverlay({ boardTiles = null, roomData, players, myI
         {/* The reveal: everyone's remaining tiles, face up, with pip totals —
             so you can see what each player was holding and why it went the
             way it did. */}
+        {meId && (players || []).some(p => p.user_id && p.user_id !== meId && !p.is_ai) && (
+          <div className="ro-friends">
+            {(players || []).filter(p => p.user_id && p.user_id !== meId && !p.is_ai).map(p => (
+              <button key={p.user_id} className="ro-friend-btn" disabled={!!asked[p.user_id]}
+                onClick={async () => {
+                  setAsked(a => ({ ...a, [p.user_id]: '…' }))
+                  const { data } = await db.rpc('friend_request_to', { p_user: p.user_id })
+                  setAsked(a => ({ ...a, [p.user_id]: data === 'already friends' ? 'Friends ✓' : data === 'now friends' ? 'Friends ✓' : 'Request sent' }))
+                }}>
+                {asked[p.user_id] ? `${p.nickname}: ${asked[p.user_id]}` : `+ Add ${p.nickname} as a friend`}
+              </button>
+            ))}
+          </div>
+        )}
         {showReveal && (
           <HandsReveal
             winnerSeat={roundWinnerSeat}

@@ -96,3 +96,12 @@
   color: var(--ivory-dim);
   letter-spacing: 0.1em;
 }
+
+/* add the other players at the table as friends */
+.ro-friends { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 0.4rem 0 0.8rem; }
+.ro-friend-btn {
+  height: 30px; padding: 0 12px; border-radius: 15px; cursor: pointer;
+  border: 1px solid rgba(201,168,76,0.5); background: rgba(201,168,76,0.08); color: var(--gold, #c9a84c);
+  font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.06em;
+}
+.ro-friend-btn:disabled { cursor: default; opacity: 0.75; color: var(--ivory-dim, #a09880); border-color: var(--border, #3a3528); }
