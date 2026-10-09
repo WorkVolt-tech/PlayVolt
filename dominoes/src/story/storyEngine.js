@@ -45,8 +45,17 @@ export function startGame(cfg = {}) {
   } else {
     const deck = shuffle(generateDominoSet())
     hands = []
-    for (let s = 0; s < seats; s++) hands.push(deck.slice(s * 7, s * 7 + 7))
-    pile = usePile ? deck.slice(seats * 7) : []
+    if (cfg.dealAll && !usePile && seats < 4) {
+      // every tile dealt (Challenge Mode): 3 players get 9 each with the 0-0
+      // set aside, 2 players get 14 each — as in multiplayer
+      const tiles = seats === 3 ? deck.filter(t => !(t[0] === 0 && t[1] === 0)) : deck
+      const each = seats === 3 ? 9 : 14
+      for (let s = 0; s < seats; s++) hands.push(tiles.slice(s * each, s * each + each))
+      pile = []
+    } else {
+      for (let s = 0; s < seats; s++) hands.push(deck.slice(s * 7, s * 7 + 7))
+      pile = usePile ? deck.slice(seats * 7) : []
+    }
     board = { tiles: [], left_end: null, right_end: null }
     if (Number.isInteger(cfg.starter)) {
       // Later rounds: the previous round's winner opens, free choice of tile
