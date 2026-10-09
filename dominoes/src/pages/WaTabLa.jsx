@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
+import { TABLE_SKINS, wtlPrize, weekStartUTC } from '../lib/skins'
 import './WaTabLa.css'
 
 function getWeekStart() {
@@ -32,6 +33,8 @@ export default function WaTabLa() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    // award any finished weeks' prize tables before showing this week
+    try { await db.rpc('settle_wa_tab_la') } catch { /* ignore */ }
     const week = getWeekStart()
     const [s, t] = await Promise.all([
       db.from('wa_tab_la').select('*').eq('mode', 'solo').eq('week_start', week).order('wins', { ascending: false }).limit(20),
@@ -122,10 +125,23 @@ export default function WaTabLa() {
         ))}
       </div>
 
-      {/* Prize note */}
-      <div className="wtl-prize-note">
-        🏆 Weekly King unlocks an exclusive skin — stay tuned!
-      </div>
+      {/* This week's prize: an exclusive table, on a rotation */}
+      {(() => {
+        const now = wtlPrize()
+        const next = wtlPrize(new Date(weekStartUTC().getTime() + 7 * 86400000))
+        return (
+          <div className="wtl-prize">
+            <div className="wtl-prize-label">This week's prize</div>
+            <img className="wtl-prize-img" src={TABLE_SKINS[now].thumb} alt="" />
+            <div className="wtl-prize-name">{TABLE_SKINS[now].label} table</div>
+            <p className="wtl-prize-how">
+              Finish the week as #1 — on the solo or the teams board — and this table is yours for good.
+              Ties for #1 all win it. You need to be signed in to receive it.
+            </p>
+            <div className="wtl-prize-next">Next week: {TABLE_SKINS[next].label}</div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

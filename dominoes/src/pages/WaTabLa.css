@@ -183,3 +183,14 @@
   padding-left: calc(1rem + env(safe-area-inset-left, 0px));
   padding-right: calc(1rem + env(safe-area-inset-right, 0px));
 }
+
+/* this week's prize table */
+.wtl-prize {
+  margin: 1.2rem auto 0; max-width: 420px; padding: 1rem; text-align: center; box-sizing: border-box;
+  background: var(--surface, #1a1814); border: 1px solid var(--gold, #c9a84c); border-radius: 14px;
+}
+.wtl-prize-label { font-size: 0.56rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim, #a09880); }
+.wtl-prize-img { width: 100%; border-radius: 8px; margin: 0.6rem 0 0.4rem; border: 1px solid rgba(201,168,76,0.5); }
+.wtl-prize-name { font-family: 'Playfair Display', Georgia, serif; font-size: 1.15rem; color: var(--gold-glow, #e8c96a); }
+.wtl-prize-how { font-size: 0.66rem; line-height: 1.6; color: var(--ivory-dim, #a09880); margin: 0.5rem 0; }
+.wtl-prize-next { font-size: 0.6rem; letter-spacing: 0.1em; color: var(--ivory-dim, #a09880); opacity: 0.8; }
