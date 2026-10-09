@@ -189,6 +189,23 @@
   100% { translate: 0 0;                 scale: 1; }
 }
 
+/* The hand-slam (restored: an earlier edit removed these by mistake) */
+.dek-slam-wrap { position: absolute; width: 0; height: 0; z-index: 70; pointer-events: none; }
+.dek-slam-arm { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.dek-slam {
+  position: absolute; width: 120px; left: -60px; top: -60px;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.75));
+  animation: dekSlam 1300ms linear both;
+}
+@keyframes dekSlam {
+  0%   { opacity: 0; translate: 0 300px; scale: 1.15; animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
+  16%  { opacity: 1; translate: 0 34px;  scale: 1.15; animation-timing-function: cubic-bezier(0.6, 0, 1, 0.6); }
+  30%  { opacity: 1; translate: 0 0;     scale: 0.92; animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1); }
+  42%  { opacity: 1; translate: 0 26px;  scale: 1.12; animation-timing-function: cubic-bezier(0.6, 0, 1, 0.6); }
+  58%  { opacity: 1; translate: 0 0;     scale: 0.9; }
+  76%  { opacity: 1; translate: 0 16px;  scale: 1; }
+  100% { opacity: 0; translate: 0 300px; scale: 1.1; }
+}
 .tile-jolt { animation: tileJolt 1300ms linear both; }
 @keyframes tileJolt {
   0%, 29% { translate: 0 0; rotate: 0deg; }
