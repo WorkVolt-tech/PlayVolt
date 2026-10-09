@@ -88,9 +88,13 @@ export const TABLE_SKINS = {
   phoenix:  { label: 'Phoenix', felt: `radial-gradient(ellipse at 50% 108%, rgba(255,140,66,0.45) 0%, rgba(230,57,70,0.18) 35%, transparent 62%), ${VIGNETTE}, ${GRAIN}, #34090c`, rail: 'linear-gradient(180deg, #ff9d4d 0%, #c2410c 50%, #6b1405 100%)' },
   lakou:    { label: 'Lakou', felt: `${VIGNETTE}, linear-gradient(rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(90deg, rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(180deg, #a85a34 0%, #8a4424 100%)`, rail: WOOD },
   // ── Wa Tab La prize tables (your artwork): won by being #1 the week each is offered ──
-  marron:   { label: 'Maroon Freedom Warriors', wtl: true, thumb: '/tables/marron-thumb.webp', felt: "url('/tables/marron.webp') center / cover no-repeat, #15110c", rail: 'linear-gradient(180deg, #3a2a16 0%, #1a120a 100%)' },
-  viking:   { label: 'Viking', wtl: true, thumb: '/tables/viking-thumb.webp', felt: "url('/tables/viking.webp') center / cover no-repeat, #1a140f", rail: 'linear-gradient(180deg, #2e3640 0%, #12161b 100%)' },
-  tiger:    { label: 'Tiger Jungle', wtl: true, thumb: '/tables/tiger-thumb.webp', felt: "url('/tables/tiger.webp') center / cover no-repeat, #0f0d0b", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
+  // (tiger / viking / marron keep their ids, so earlier winners get the new art)
+  tiger:    { label: 'Tiger Jungle', wtl: true, thumb: '/tables/tiger-v2-thumb.webp', felt: "url('/tables/tiger-v2.webp') center / cover no-repeat, #0f0d0b", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
+  viking:   { label: 'Norse', wtl: true, thumb: '/tables/norse-thumb.webp', felt: "url('/tables/norse.webp') center / cover no-repeat, #121417", rail: 'linear-gradient(180deg, #2e3640 0%, #12161b 100%)' },
+  marron:   { label: 'Maroon Resistance', wtl: true, thumb: '/tables/maroon-v2-thumb.webp', felt: "url('/tables/maroon-v2.webp') center / cover no-repeat, #15110c", rail: 'linear-gradient(180deg, #3a2a16 0%, #1a120a 100%)' },
+  jazz:     { label: 'Art Deco Jazz', wtl: true, thumb: '/tables/jazz-thumb.webp', felt: "url('/tables/jazz.webp') center / cover no-repeat, #3a0a12", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
+  // the figure sits where the chain goes, so the centre is gently dimmed to keep tiles readable
+  negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-thumb.webp', felt: "radial-gradient(ellipse 46% 42% at 50% 50%, rgba(8,7,6,0.72) 0%, rgba(8,7,6,0.6) 60%, transparent 100%), url('/tables/negmaron.webp') center / cover no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
   jamaica:  { label: 'Jamaica', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(to top right, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), linear-gradient(to top left, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), conic-gradient(#0d5a2a 0deg ${JA}deg, #111111 ${JA}deg ${180 - JA}deg, #0d5a2a ${180 - JA}deg ${180 + JA}deg, #111111 ${180 + JA}deg ${360 - JA}deg, #0d5a2a ${360 - JA}deg)`, rail: WOOD },
   quebec:   { label: 'Québec', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.55) 47%, rgba(255,255,255,0.55) 53%, transparent 53%), linear-gradient(0deg, transparent 45%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.55) 55%, transparent 55%), #12357a`, rail: WOOD },
@@ -105,7 +109,7 @@ const FREE_TABLES = ['green', 'midnight']
 // ── Wa Tab La prize tables ──
 // One is the prize each week, on a fixed rotation counted from Monday
 // 2026-01-05 — the same rotation the database uses (wa_tab_la_prize).
-export const WTL_TABLES = ['marron', 'viking', 'tiger']
+export const WTL_TABLES = ['tiger', 'viking', 'marron', 'jazz', 'negmaron']   // the rotation, in order
 export function weekStartUTC(d = new Date()) {
   const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
   const day = x.getUTCDay() || 7                 // Monday = 1 … Sunday = 7
@@ -114,7 +118,8 @@ export function weekStartUTC(d = new Date()) {
 }
 export function wtlPrize(weekStart = weekStartUTC()) {
   const weeks = Math.round((weekStart - Date.UTC(2026, 0, 5)) / (7 * 86400000))
-  return WTL_TABLES[((weeks % 3) + 3) % 3]
+  const n = WTL_TABLES.length
+  return WTL_TABLES[((weeks % n) + n) % n]
 }
 
 function unlocksFor(kind, free, ids) {
