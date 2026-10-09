@@ -87,6 +87,10 @@ export const TABLE_SKINS = {
   kanaval:  { label: 'Kanaval', felt: `${VIGNETTE}, radial-gradient(circle, rgba(255,79,123,0.55) 0 2px, transparent 2.6px) 0 0 / 46px 46px, radial-gradient(circle, rgba(255,210,63,0.5) 0 2px, transparent 2.6px) 23px 15px / 46px 46px, radial-gradient(circle, rgba(63,183,255,0.5) 0 2px, transparent 2.6px) 11px 31px / 46px 46px, #4a2370`, rail: WOOD },
   phoenix:  { label: 'Phoenix', felt: `radial-gradient(ellipse at 50% 108%, rgba(255,140,66,0.45) 0%, rgba(230,57,70,0.18) 35%, transparent 62%), ${VIGNETTE}, ${GRAIN}, #34090c`, rail: 'linear-gradient(180deg, #ff9d4d 0%, #c2410c 50%, #6b1405 100%)' },
   lakou:    { label: 'Lakou', felt: `${VIGNETTE}, linear-gradient(rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(90deg, rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(180deg, #a85a34 0%, #8a4424 100%)`, rail: WOOD },
+  // ── Wa Tab La prize tables (your artwork): won by being #1 the week each is offered ──
+  marron:   { label: 'Maroon Freedom Warriors', wtl: true, thumb: '/tables/marron-thumb.webp', felt: "url('/tables/marron.webp') center / cover no-repeat, #15110c", rail: 'linear-gradient(180deg, #3a2a16 0%, #1a120a 100%)' },
+  viking:   { label: 'Viking', wtl: true, thumb: '/tables/viking-thumb.webp', felt: "url('/tables/viking.webp') center / cover no-repeat, #1a140f", rail: 'linear-gradient(180deg, #2e3640 0%, #12161b 100%)' },
+  tiger:    { label: 'Tiger Jungle', wtl: true, thumb: '/tables/tiger-thumb.webp', felt: "url('/tables/tiger.webp') center / cover no-repeat, #0f0d0b", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
   jamaica:  { label: 'Jamaica', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(to top right, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), linear-gradient(to top left, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), conic-gradient(#0d5a2a 0deg ${JA}deg, #111111 ${JA}deg ${180 - JA}deg, #0d5a2a ${180 - JA}deg ${180 + JA}deg, #111111 ${180 + JA}deg ${360 - JA}deg, #0d5a2a ${360 - JA}deg)`, rail: WOOD },
   quebec:   { label: 'Québec', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.55) 47%, rgba(255,255,255,0.55) 53%, transparent 53%), linear-gradient(0deg, transparent 45%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.55) 55%, transparent 55%), #12357a`, rail: WOOD },
@@ -98,9 +102,27 @@ export const TABLE_SKINS = {
 const FREE_TILES  = ['classic', 'ebony', 'haiti', 'lavender', 'rose']
 const FREE_TABLES = ['green', 'midnight']
 
+// ── Wa Tab La prize tables ──
+// One is the prize each week, on a fixed rotation counted from Monday
+// 2026-01-05 — the same rotation the database uses (wa_tab_la_prize).
+export const WTL_TABLES = ['marron', 'viking', 'tiger']
+export function weekStartUTC(d = new Date()) {
+  const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+  const day = x.getUTCDay() || 7                 // Monday = 1 … Sunday = 7
+  x.setUTCDate(x.getUTCDate() - (day - 1))
+  return x
+}
+export function wtlPrize(weekStart = weekStartUTC()) {
+  const weeks = Math.round((weekStart - Date.UTC(2026, 0, 5)) / (7 * 86400000))
+  return WTL_TABLES[((weeks % 3) + 3) % 3]
+}
+
 function unlocksFor(kind, free, ids) {
   return ids.map(id => {
     if (free.includes(id)) return { id, free: true }
+    if (kind === 'tables' && WTL_TABLES.includes(id)) {
+      return { id, wtl: true, need: 'Wa Tab La prize — be #1 the week it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
+    }
     const t = TROPHIES.find(tr => (tr.rewards?.[kind] || []).includes(id))
     return t
       ? { id, trophy: t.id, need: `${t.kreyol} trophy — ${t.desc}`, test: t.test }
@@ -179,13 +201,14 @@ export function useEquippedSkins() {
 // ── A player's stats, as trophies and skins read them ──────────────────────
 // Guests (no account) get all zeros.
 export async function loadPlayerStats() {
-  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0, fiveDoubles: 0, fiveDoublesWon: 0 }
+  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0, fiveDoubles: 0, fiveDoublesWon: 0, tableUnlocks: [] }
   const { data: auth } = await db.auth.getUser()
   const uid = auth?.user?.id
   if (!uid) return zero
-  const [{ data: prof }, { data: sp }] = await Promise.all([
+  const [{ data: prof }, { data: sp }, { data: won }] = await Promise.all([
     db.from('profiles').select('*').eq('id', uid).maybeSingle(),
     db.rpc('ensure_story_progress'),
+    db.from('table_unlocks').select('skin').eq('user_id', uid),
   ])
   const row = Array.isArray(sp) ? sp[0] : sp
   return {
@@ -200,6 +223,7 @@ export async function loadPlayerStats() {
     comebacks: prof?.total_comebacks ?? 0,
     fiveDoubles: prof?.total_five_double_rounds ?? 0,
     fiveDoublesWon: prof?.total_five_double_wins ?? 0,
+    tableUnlocks: (won || []).map(r => r.skin),
     uid,
   }
 }
