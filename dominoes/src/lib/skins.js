@@ -95,6 +95,12 @@ export const TABLE_SKINS = {
   jazz:     { label: 'Art Deco Jazz', wtl: true, thumb: '/tables/jazz-thumb.webp', felt: "url('/tables/jazz.webp') center / cover no-repeat, #3a0a12", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
   // the figure sits where the chain goes, so the centre is gently dimmed to keep tiles readable
   negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-thumb.webp', felt: "radial-gradient(ellipse 46% 42% at 50% 50%, rgba(8,7,6,0.72) 0%, rgba(8,7,6,0.6) 60%, transparent 100%), url('/tables/negmaron.webp') center / cover no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
+  // ── Challenge Mode prize tables (your artwork): won by beating the week's challenge ──
+  emerald:  { label: 'Emerald Crown', challenge: true, thumb: '/tables/emerald-thumb.webp', felt: "url('/tables/emerald.webp') center / cover no-repeat, #0c0d0b", rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
+  sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-thumb.webp', felt: "url('/tables/sapphire.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
+  burgundy: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundy-thumb.webp', felt: "url('/tables/burgundy.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
+  teal:     { label: 'Teal Deco', challenge: true, thumb: '/tables/teal-thumb.webp', felt: "url('/tables/teal.webp') center / cover no-repeat, #0c0d0d", rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
+  amethyst: { label: 'Amethyst Deco', challenge: true, thumb: '/tables/amethyst-thumb.webp', felt: "url('/tables/amethyst.webp') center / cover no-repeat, #0c0b0d", rail: 'linear-gradient(180deg, #2e1f48 0%, #120c1e 100%)' },
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
   jamaica:  { label: 'Jamaica', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(to top right, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), linear-gradient(to top left, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), conic-gradient(#0d5a2a 0deg ${JA}deg, #111111 ${JA}deg ${180 - JA}deg, #0d5a2a ${180 - JA}deg ${180 + JA}deg, #111111 ${180 + JA}deg ${360 - JA}deg, #0d5a2a ${360 - JA}deg)`, rail: WOOD },
   quebec:   { label: 'Québec', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.55) 47%, rgba(255,255,255,0.55) 53%, transparent 53%), linear-gradient(0deg, transparent 45%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.55) 55%, transparent 55%), #12357a`, rail: WOOD },
@@ -125,6 +131,9 @@ export function wtlPrize(weekStart = weekStartUTC()) {
 function unlocksFor(kind, free, ids) {
   return ids.map(id => {
     if (free.includes(id)) return { id, free: true }
+    if (kind === 'tables' && ['emerald', 'sapphire', 'burgundy', 'teal', 'amethyst'].includes(id)) {
+      return { id, challenge: true, need: 'Challenge Mode prize — beat the challenge the week it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
+    }
     if (kind === 'tables' && WTL_TABLES.includes(id)) {
       return { id, wtl: true, need: 'Wa Tab La prize — be #1 the week it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
     }
