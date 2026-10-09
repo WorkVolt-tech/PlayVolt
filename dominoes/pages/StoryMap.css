@@ -105,3 +105,11 @@
 .story-chapter-theme{ font-size: 0.58rem; color: var(--ivory-dim); line-height: 1.4; }
 .story-stars        { font-size: 0.6rem; color: var(--gold); margin-top: auto; }
 .story-soon         { font-size: 0.55rem; color: var(--ivory-dim); margin-top: auto; opacity: 0.8; }
+
+/* Installed as an app, the page is drawn under the phone's status bar and,
+   sideways, the camera — keep the Back button and title clear of them. */
+.story-page {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+}
