@@ -400,7 +400,9 @@ export default function Lobby() {
   }
 
   async function createRoom(modeArg) {
-    const mode = modeArg || selectedMode
+    // only a real mode name counts (a click event must never become the mode)
+    const fromChallenge = typeof modeArg === 'string' && ['chien', 'asosye', 'solo', 'duo'].includes(modeArg)
+    const mode = fromChallenge ? modeArg : selectedMode
     const nick = getNickname(); if (!nick) return
     const code = generateRoomCode()
     const { data: room, error } = await db.from('domino_rooms')
@@ -412,7 +414,7 @@ export default function Lobby() {
       .select().single()
 
     if (player) setPlayers([player])
-    if (modeArg) setMode(modeArg)
+    if (fromChallenge) setMode(modeArg)
     enterWaiting({ room: { ...room, game_mode: mode }, code, playerId: player?.id, seat: 0, host: true })
     return { room, code }
   }
@@ -832,7 +834,7 @@ export default function Lobby() {
         {/* Create */}
         {tab === 'create' && (
           <div className="panel">
-            <button className="btn btn-primary" onClick={createRoom}>Create New Room</button>
+            <button className="btn btn-primary" onClick={() => createRoom()}>Create New Room</button>
           </div>
         )}
 
