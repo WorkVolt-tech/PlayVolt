@@ -46,6 +46,7 @@ export default function Friends() {
   const [msg, setMsg] = useState(null)
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [challenging, setChallenging] = useState(null)   // a friend's user_id while picking a mode
 
   const load = useCallback(async () => {
     const [{ data }, { data: c }] = await Promise.all([db.rpc('my_friends'), db.rpc('my_friend_code')])
@@ -155,10 +156,20 @@ export default function Friends() {
             <span className="fr-name">{r.nickname}
               <small className={statusOf(r).live ? (statusOf(r).game ? 'fr-game' : 'fr-online') : ''}>{statusOf(r).text}</small>
             </span>
+            {statusOf(r).live && !statusOf(r).game && (
+              <button className="fr-btn small" onClick={() => setChallenging(challenging === r.user_id ? null : r.user_id)}>Challenge</button>
+            )}
             <button className="fr-btn ghost small" disabled={busy}
               onClick={() => act('friend_remove', { p_user: r.user_id }, `Remove ${r.nickname} from your friends?`)}>Remove</button>
             <button className="fr-btn ghost small danger" disabled={busy}
               onClick={() => act('friend_block', { p_user: r.user_id }, `Block ${r.nickname}? They won’t be able to send you requests or challenges.`)}>Block</button>
+            {challenging === r.user_id && (
+              <div className="fr-challenge">
+                <span>Challenge {r.nickname} to:</span>
+                <button className="fr-btn small" onClick={() => navigate(`/?challenge=${r.user_id}&mode=chien`)}>Chien Manjé Chien</button>
+                <button className="fr-btn small" onClick={() => navigate(`/?challenge=${r.user_id}&mode=asosye`)}>Asosyé</button>
+              </div>
+            )}
           </div>
         ))}
       </div>

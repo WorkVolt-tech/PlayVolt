@@ -213,3 +213,8 @@ input[type="text"]::placeholder { color: #4a4538; }
 }
 .player-row { justify-content: flex-start; }
 .player-row .player-row-name { margin-right: auto; }   /* name beside its picture; labels at the end */
+
+/* waiting room: invite online friends */
+.invite-friends { margin-top: 0.7rem; padding: 0.6rem 0.7rem; border: 1px solid var(--border, #3a3528); border-radius: 10px; }
+.invite-friends-label { font-size: 0.56rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ivory-dim, #a09880); margin-bottom: 0.4rem; }
+.invite-friend { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; font-size: 0.75rem; }

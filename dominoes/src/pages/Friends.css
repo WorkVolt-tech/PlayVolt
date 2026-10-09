@@ -29,3 +29,5 @@
 .fr-blocked summary { cursor: pointer; font-size: 0.66rem; color: var(--ivory-dim, #a09880); }
 .fr-name small.fr-online { color: #7fd39a; }
 .fr-name small.fr-game { color: var(--gold-glow, #e8c96a); }
+.fr-person { flex-wrap: wrap; }
+.fr-challenge { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 0 2px 50px; font-size: 0.62rem; color: var(--ivory-dim, #a09880); }

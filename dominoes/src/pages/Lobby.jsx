@@ -5,6 +5,7 @@ import { db } from '../lib/supabase'
 import { generateRoomCode, generateDominoSet, shuffle, dealHands, dealTable } from '../hooks/useGameState'
 import './Lobby.css'
 import { SeatAvatar, hasSeatAvatar } from '../lib/avatars'
+import { statusOf } from './Friends'
 
 // ── Solo opponents ───────────────────────────────────────────────────────────
 // A bot's personality comes from its name (see getPersonality in botAI.js).
@@ -192,8 +193,26 @@ export default function Lobby() {
   }, [unlockedBots])
 
   useEffect(() => {
-    const code = new URLSearchParams(location.search).get('join')
-    if (code) { setTab('join'); setJoinCode(code.toUpperCase()) }
+    const q = new URLSearchParams(location.search)
+    const code = q.get('join')
+    if (code) {
+      setTab('join'); setJoinCode(code.toUpperCase())
+      // accepting a friend's challenge joins their room straight away
+      if (q.get('auto')) setTimeout(() => joinRoom(code.toUpperCase()), 0)
+    }
+    // challenging a friend from the Friends page: open a room, then invite them
+    const friend = q.get('challenge')
+    if (friend) {
+      const mode = q.get('mode') === 'asosye' ? 'asosye' : 'chien'
+      setTimeout(async () => {
+        const made = await createRoom(mode)
+        if (made?.room) {
+          await db.rpc('challenge_friend', { p_friend: friend, p_room: made.room.id, p_code: made.code, p_mode: mode })
+          setMsg({ text: 'Challenge sent — they’ll get a banner to join you.', type: 'success' })
+        }
+      }, 0)
+    }
+    if (code || friend) window.history.replaceState(null, '', '/')
     loadQueueCount()
   }, [])
 
@@ -380,11 +399,12 @@ export default function Lobby() {
     await db.from('domino_rooms').update({ game_mode: mode }).eq('id', myRoomId)
   }
 
-  async function createRoom() {
+  async function createRoom(modeArg) {
+    const mode = modeArg || selectedMode
     const nick = getNickname(); if (!nick) return
     const code = generateRoomCode()
     const { data: room, error } = await db.from('domino_rooms')
-      .insert({ code, status: 'waiting', current_turn: 0, game_mode: selectedMode }).select().single()
+      .insert({ code, status: 'waiting', current_turn: 0, game_mode: mode }).select().single()
     if (error) { setMsg({ text: 'Error: ' + error.message, type: 'error' }); return }
 
     const { data: player } = await db.from('domino_players')
@@ -392,7 +412,9 @@ export default function Lobby() {
       .select().single()
 
     if (player) setPlayers([player])
-    enterWaiting({ room: { ...room, game_mode: selectedMode }, code, playerId: player?.id, seat: 0, host: true })
+    if (modeArg) setMode(modeArg)
+    enterWaiting({ room: { ...room, game_mode: mode }, code, playerId: player?.id, seat: 0, host: true })
+    return { room, code }
   }
 
   async function joinRoom(codeOverride) {
@@ -695,6 +717,40 @@ export default function Lobby() {
       db.rpc('my_friends').then(({ data: rows }) => setFriendRequests((rows || []).filter(r => r.kind === 'incoming').length))
     })
   }, [])
+  // ── Inviting friends from the waiting room (host) ──
+  const [friendsHere, setFriendsHere] = useState([])
+  const [invited, setInvited] = useState({})
+  useEffect(() => {
+    if (tab !== 'waiting' || !amHost) return
+    let off = false
+    const load = () => db.rpc('my_friends').then(({ data }) => { if (!off) setFriendsHere((data || []).filter(r => r.kind === 'friend')) })
+    load()
+    const t = setInterval(load, 30000)
+    return () => { off = true; clearInterval(t) }
+  }, [tab, amHost])
+  // hear when a friend declines your challenge
+  useEffect(() => {
+    let ch = null
+    db.auth.getUser().then(({ data }) => {
+      const uid = data?.user?.id
+      if (!uid) return
+      ch = db.channel(`challenge-replies-${uid}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'friend_challenges', filter: `from_user=eq.${uid}` }, async ({ new: c }) => {
+          if (c?.status !== 'declined') return
+          const { data: rows } = await db.rpc('my_friends')
+          const who = (rows || []).find(r => r.user_id === c.to_user)?.nickname || 'Your friend'
+          setMsg({ text: `${who} declined your challenge.`, type: 'error' })
+        })
+        .subscribe()
+    })
+    return () => { if (ch) db.removeChannel(ch) }
+  }, [])
+  async function inviteFriend(f) {
+    setInvited(v => ({ ...v, [f.user_id]: '…' }))
+    await db.rpc('challenge_friend', { p_friend: f.user_id, p_room: myRoomId, p_code: myRoomCode, p_mode: roomMode || selectedMode })
+    setInvited(v => ({ ...v, [f.user_id]: 'Invited ✓' }))
+  }
+
   const [botToAdd, setBotToAdd] = useState('Ti-Djo')
   // 2 or 3 players: deal every tile (9 / 14 each), or 7 each with a draw pile
   const [dealVariant, setDealVariant] = useState('all')
@@ -882,6 +938,19 @@ export default function Lobby() {
               {amHost && (['chien', 'asosye'].includes(roomMode) || ['chien', 'asosye'].includes(selectedMode)) && players.some(p => p.is_ai && !['Ti-Jòj', 'Ti-Tid', 'Ti-Roro', 'Ti-Chasè', 'Ti-Frè', 'Ti-Chaj', 'Ti-Pyèj', 'Ti-Wa'].includes(p.nickname)) && (
                 <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', margin: '2px 2px 0' }}>
                   A table with a regular bot doesn't count toward trophies — expert bots (★) do.
+                </div>
+              )}
+              {amHost && friendsHere.some(f => statusOf(f).live && !statusOf(f).game) && players.length < 4 && (
+                <div className="invite-friends">
+                  <div className="invite-friends-label">Invite a friend</div>
+                  {friendsHere.filter(f => statusOf(f).live && !statusOf(f).game).map(f => (
+                    <div key={f.user_id} className="invite-friend">
+                      <span>🟢 {f.nickname}</span>
+                      <button className="partner-btn" disabled={!!invited[f.user_id]} onClick={() => inviteFriend(f)}>
+                        {invited[f.user_id] || 'Invite'}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
               {amHost && selectedMode === 'asosye' && players.some(p => p.is_ai) && (
