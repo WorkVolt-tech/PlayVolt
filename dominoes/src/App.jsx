@@ -15,11 +15,13 @@ import Skins from './pages/Skins'
 import Trophies from './pages/Trophies'
 import Watch from './pages/Watch'
 import Friends from './pages/Friends'
+import Heartbeat from './components/Heartbeat'
 import './styles/global.css'
 
 export default function App() {
   return (
     <BrowserRouter>
+      <Heartbeat />
       <DragProvider>
       <Routes>
         <Route path="/" element={<Lobby />} />
