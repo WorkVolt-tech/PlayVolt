@@ -29,6 +29,8 @@ export default function Tournament() {
   const [botB, setBotB] = useState('Ti-Cam')
   const [aiPartner, setAiPartner] = useState('Ti-Djo')
   const [copied, setCopied] = useState(null)
+  const [tab, setTab] = useState('overview')        // overview | bracket | teams
+  useEffect(() => { setTab('overview') }, [open?.id])
 
   // Copy, with a fallback for browsers that refuse the clipboard API.
   async function copy(text, what) {
@@ -308,6 +310,26 @@ export default function Tournament() {
     ? sides.find(x => !x.eliminated)
     : null
 
+  // ── where the tournament stands, and what you should do now ────────────────
+  // stage: 0 teams forming · 1 bracket drawn · 2 playing · 3 champion
+  const stage = !open ? 0 : open.status === 'finished' ? 3 : open.status === 'running' ? 2 : 0
+  const toBracket = ['See the bracket', () => setTab('bracket')]
+  const todo = !open || open.status === 'finished' || (myNextMatch && open.status === 'running') ? null
+    : iAmOut ? { title: 'You’re out of this one', text: 'The bracket plays on — you can watch the remaining matches.', action: toBracket }
+    : open.status === 'registration' && !mySide ? { title: 'Join the tournament', text: open.format === 'duo'
+        ? 'Create a team and share its code with your partner, or join a team with the code you were given.'
+        : 'Enter below to take your place.' }
+    : open.status === 'registration' && open.created_by === user?.id ? { title: 'Start when everyone has joined',
+        text: `${sides.length} ${open.format === 'duo' ? 'team' : 'player'}${sides.length === 1 ? ' has' : 's have'} entered. Starting draws the bracket — nobody can join after that.`,
+        action: ['Start the tournament', () => call('start_tournament', { p_tournament: open.id }, async () => {
+          await loadOne(open.id); setOpen({ ...open, status: 'running' })
+        })] }
+    : open.status === 'registration' ? { title: 'Waiting for the organiser to start',
+        text: open.format === 'duo' ? 'Share your team code with your partner if they haven’t joined yet. The bracket is drawn when the tournament starts.'
+          : 'You’re in. The bracket is drawn when the tournament starts.' }
+    : mySide ? { title: 'Waiting for your next match', text: 'Your next opponents are decided when the current matches finish. Watch them in the bracket.', action: toBracket }
+    : { title: 'This tournament is under way', text: 'Watch the matches in the bracket.', action: toBracket }
+
   // ── guests ────────────────────────────────────────────────────────────────
   if (!isLoading && !user) {
     return (
@@ -333,125 +355,174 @@ export default function Tournament() {
           <button className="tp-refresh" onClick={() => loadOne(open.id)} title="Refresh now">⟳</button>
         </div>
 
-        {open.created_by === user?.id && (
-          <div className="tp-organiser">
-            <button className="tp-btn small danger" disabled={busy} onClick={async () => {
-              if (!window.confirm(`Delete "${open.name}"? Everyone in it loses their place, and any match in progress ends.`)) return
-              const ok = await call('delete_tournament', { p_tournament: open.id })
-              if (ok !== null) { setOpen(null); loadList() }
-            }}>
-              Delete tournament
-            </button>
-          </div>
-        )}
         {msg && <div className={`tp-msg ${msg.type}`}>{msg.text}</div>}
-
-        {open.status === 'finished' && champion && (
-          <div className="tp-champion">
-            <div className="tp-champion-label">Champion</div>
-            <div className="tp-champion-name">{champion.name}{champion.is_bot ? ' (bots)' : ''}</div>
-            <div className="tp-champion-who">
-              {members.filter(m => m.side_id === champion.id).map(m => m.nickname).join(' & ') || 'expert pair'}
+        {/* where the tournament stands, then the three tabs */}
+        <div className="tp-steps">
+          {['Teams', 'Bracket', 'Playing', 'Champion'].map((label, i) => (
+            <div key={label} className={`tp-step ${i < stage ? 'done' : ''} ${i === stage ? 'cur' : ''}`}>
+              <div className="tp-step-bar" />{label}
             </div>
-            {champion.id === mySide?.id && <div className="tp-champion-you">That's you.</div>}
+          ))}
+        </div>
+        <div className="tp-tabs">
+          {[['overview', 'Overview'], ['bracket', 'Bracket'], ['teams', `Teams (${sides.length})`]].map(([id, label]) => (
+            <button key={id} className={`tp-tab ${tab === id ? 'on' : ''}`} onClick={() => setTab(id)}>{label}</button>
+          ))}
+        </div>
+
+        {tab === 'overview' && todo && (
+          <div className="tp-todo">
+            <div className="tp-todo-label">What to do now</div>
+            <div className="tp-todo-title">{todo.title}</div>
+            <p>{todo.text}</p>
+            {todo.action && <button className="tp-btn" onClick={todo.action[1]}>{todo.action[0]}</button>}
           </div>
         )}
 
-        {iAmOut && open.status !== 'finished' && (
-          <div className="tp-out">
-            <strong>You're out of this one.</strong>
-            <span>The bracket plays on below — the remaining matches finish themselves.</span>
-          </div>
-        )}
-
-        {myNextMatch && open.status === 'running' && (
-          <div className="tp-live">
-            <div>
-              <strong>{liveMatch ? 'Your match is live' : 'Your next match is ready'}</strong>
-              <span>
-                Round {myNextMatch.round} —{' '}
-                {liveMatch
-                  ? 'the table is open and waiting for you.'
-                  : 'your opponents have been drawn. Open the table when you are.'}
-              </span>
-            </div>
-            <button className="tp-btn" disabled={busy} onClick={() => playMatch(myNextMatch)}>
-              {liveMatch ? 'Join now' : 'Open the table'}
-            </button>
-          </div>
-        )}
-
-        {open.status === 'registration' && !mySide && (
-          <div className="tp-panel">
-            <div className="tp-label">Register</div>
-            {open.format === 'duo' ? (
-              <>
-                <div className="tp-row">
-                  <input className="tp-input" placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} maxLength={20} />
-                  <button className="tp-btn" disabled={busy || !teamName.trim()}
-                    onClick={() => call('create_side', { p_tournament: open.id, p_name: teamName.trim(), p_nickname: nickname }, () => loadOne(open.id))}>
-                    Create team
-                  </button>
+        {tab === 'overview' && (
+          <>
+            {open.status === 'finished' && champion && (
+              <div className="tp-champion">
+                <div className="tp-champion-label">Champion</div>
+                <div className="tp-champion-name">{champion.name}{champion.is_bot ? ' (bots)' : ''}</div>
+                <div className="tp-champion-who">
+                  {members.filter(m => m.side_id === champion.id).map(m => m.nickname).join(' & ') || 'expert pair'}
                 </div>
-                <div className="tp-or">or join your partner’s team</div>
-                <div className="tp-row">
-                  <input className="tp-input" placeholder="Team code" value={joinCode}
-                    onChange={e => setJoinCode(e.target.value.toUpperCase())} maxLength={6} />
-                  <button className="tp-btn" disabled={busy || joinCode.length !== 6}
-                    onClick={() => call('join_side', { p_code: joinCode, p_nickname: nickname }, () => loadOne(open.id))}>
-                    Join
-                  </button>
+                {champion.id === mySide?.id && <div className="tp-champion-you">That's you.</div>}
+              </div>
+            )}
+    
+    
+            {myNextMatch && open.status === 'running' && (
+              <div className="tp-live">
+                <div>
+                  <strong>{liveMatch ? 'Your match is live' : 'Your next match is ready'}</strong>
+                  <span>
+                    Round {myNextMatch.round} —{' '}
+                    {liveMatch
+                      ? 'the table is open and waiting for you.'
+                      : 'your opponents have been drawn. Open the table when you are.'}
+                  </span>
                 </div>
-              </>
-            ) : (
-              <div className="tp-row">
-                <button className="tp-btn" disabled={busy}
-                  onClick={() => call('create_side', { p_tournament: open.id, p_name: nickname, p_nickname: nickname }, () => loadOne(open.id))}>
-                  Enter the cup
+                <button className="tp-btn" disabled={busy} onClick={() => playMatch(myNextMatch)}>
+                  {liveMatch ? 'Join now' : 'Open the table'}
                 </button>
               </div>
             )}
-          </div>
-        )}
-
-        {mySide && (
-          <div className="tp-panel">
-            <div className="tp-label">Your {open.format === 'duo' ? 'team' : 'entry'}</div>
-            <div className="tp-team">
-              <strong>{mySide.name}</strong>
-              {mySide.code && <span className="tp-code">{mySide.code}</span>}
-            </div>
-            {mySide.code && (
-              <div className="tp-share">
-                <button className="tp-btn small" onClick={() => copy(mySide.code, 'code')}>
-                  {copied === 'code' ? 'Copied' : 'Copy code'}
-                </button>
-                <button className="tp-btn small" onClick={() =>
-                  copy(`${window.location.origin}/tournament?join=${mySide.code}`, 'link')}>
-                  {copied === 'link' ? 'Copied' : 'Copy invite link'}
-                </button>
+    
+            {open.status === 'registration' && !mySide && (
+              <div className="tp-panel">
+                <div className="tp-label">Register</div>
+                {open.format === 'duo' ? (
+                  <>
+                    <div className="tp-row">
+                      <input className="tp-input" placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} maxLength={20} />
+                      <button className="tp-btn" disabled={busy || !teamName.trim()}
+                        onClick={() => call('create_side', { p_tournament: open.id, p_name: teamName.trim(), p_nickname: nickname }, () => loadOne(open.id))}>
+                        Create team
+                      </button>
+                    </div>
+                    <div className="tp-or">or join your partner’s team</div>
+                    <div className="tp-row">
+                      <input className="tp-input" placeholder="Team code" value={joinCode}
+                        onChange={e => setJoinCode(e.target.value.toUpperCase())} maxLength={6} />
+                      <button className="tp-btn" disabled={busy || joinCode.length !== 6}
+                        onClick={() => call('join_side', { p_code: joinCode, p_nickname: nickname }, () => loadOne(open.id))}>
+                        Join
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="tp-row">
+                    <button className="tp-btn" disabled={busy}
+                      onClick={() => call('create_side', { p_tournament: open.id, p_name: nickname, p_nickname: nickname }, () => loadOne(open.id))}>
+                      Enter the cup
+                    </button>
+                  </div>
+                )}
               </div>
             )}
-            <div className="tp-members">
-              {myMembers.map(m => (
-                <span key={m.id} className={`tp-chip ${m.bot_name ? 'bot' : ''}`}>
-                  {m.nickname}{m.bot_name ? ' (AI partner)' : ''}
-                  {m.bot_name && open.status === 'registration' && (
-                    <button className="tp-remove" title="Remove your AI partner"
-                      onClick={() => call('remove_ai_partner', { p_side: mySide.id }, () => loadOne(open.id))}>×</button>
-                  )}
-                </span>
-              ))}
-              {open.format === 'duo' && myMembers.length < 2 && <span className="tp-chip empty">waiting for partner…</span>}
-            </div>
-
-            {open.format === 'duo' && myMembers.length < 2 && open.status === 'registration' && (
-              <>
-                <div className="tp-hint">
-                  Share the code with a friend — or play with an AI partner instead.
+    
+            {mySide && (
+              <div className="tp-panel">
+                <div className="tp-label">Your {open.format === 'duo' ? 'team' : 'entry'}</div>
+                <div className="tp-team">
+                  <strong>{mySide.name}</strong>
+                  {mySide.code && <span className="tp-code">{mySide.code}</span>}
                 </div>
-                <div className="tp-row" style={{ marginTop: '0.5rem' }}>
-                  <select className="tp-select" value={aiPartner} onChange={e => setAiPartner(e.target.value)}>
+                {mySide.code && (
+                  <div className="tp-share">
+                    <button className="tp-btn small" onClick={() => copy(mySide.code, 'code')}>
+                      {copied === 'code' ? 'Copied' : 'Copy code'}
+                    </button>
+                    <button className="tp-btn small" onClick={() =>
+                      copy(`${window.location.origin}/tournament?join=${mySide.code}`, 'link')}>
+                      {copied === 'link' ? 'Copied' : 'Copy invite link'}
+                    </button>
+                  </div>
+                )}
+                <div className="tp-members">
+                  {myMembers.map(m => (
+                    <span key={m.id} className={`tp-chip ${m.bot_name ? 'bot' : ''}`}>
+                      {m.nickname}{m.bot_name ? ' (AI partner)' : ''}
+                      {m.bot_name && open.status === 'registration' && (
+                        <button className="tp-remove" title="Remove your AI partner"
+                          onClick={() => call('remove_ai_partner', { p_side: mySide.id }, () => loadOne(open.id))}>×</button>
+                      )}
+                    </span>
+                  ))}
+                  {open.format === 'duo' && myMembers.length < 2 && <span className="tp-chip empty">waiting for partner…</span>}
+                </div>
+    
+                {open.format === 'duo' && myMembers.length < 2 && open.status === 'registration' && (
+                  <>
+                    <div className="tp-hint">
+                      Share the code with a friend — or play with an AI partner instead.
+                    </div>
+                    <div className="tp-row" style={{ marginTop: '0.5rem' }}>
+                      <select className="tp-select" value={aiPartner} onChange={e => setAiPartner(e.target.value)}>
+                        <optgroup label="Ordinary">
+                          {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
+                        </optgroup>
+                        <optgroup label="Expert">
+                          {EXPERT_CIRCUIT.map(b => {
+                            const locked = !unlocked.includes(b)
+                            return (
+                              <option key={b} value={b} disabled={locked}>
+                                {locked ? `🔒 ${b} — beat chapter ${EXPERT_CIRCUIT.indexOf(b) + 10}` : b}
+                              </option>
+                            )
+                          })}
+                        </optgroup>
+                      </select>
+                      <button className="tp-btn" disabled={busy}
+                        onClick={() => call('fill_missing_partner', { p_side: mySide.id, p_bot: aiPartner }, () => loadOne(open.id))}>
+                        Add AI partner
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+    
+          </>
+        )}
+        {tab === 'overview' && (
+          <>
+        <details className="tp-how" open={open.status === 'registration'}>
+          <summary>How it works</summary>
+          <p>
+            {open.format === 'duo' ? 'Teams of two play knockout matches.' : 'Players meet four at a table in knockout matches.'}{' '}
+            The first to a Vyèj takes the match and moves on; the others are out. The last one standing is champion.
+            If your match is ready, it shows at the top of this page — and you can watch the others from the Bracket tab.
+          </p>
+        </details>
+            {open.created_by === user?.id && <div className="tp-organiser-head">Organiser</div>}
+            {open.status === 'registration' && open.created_by === user?.id && (
+              <div className="tp-panel">
+                <div className="tp-label">Add an AI {open.format === 'duo' ? 'team' : 'player'}</div>
+                <div className="tp-row">
+                  <select className="tp-select" value={botA} onChange={e => setBotA(e.target.value)}>
                     <optgroup label="Ordinary">
                       {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
                     </optgroup>
@@ -466,95 +537,80 @@ export default function Tournament() {
                       })}
                     </optgroup>
                   </select>
+                  {open.format === 'duo' && (
+                    <select className="tp-select" value={botB} onChange={e => setBotB(e.target.value)}>
+                      <optgroup label="Ordinary">
+                        {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
+                      </optgroup>
+                      <optgroup label="Expert">
+                        {EXPERT_CIRCUIT.map(b => {
+                          const locked = !unlocked.includes(b)
+                          return (
+                            <option key={b} value={b} disabled={locked}>
+                              {locked ? `🔒 ${b} — beat chapter ${EXPERT_CIRCUIT.indexOf(b) + 10}` : b}
+                            </option>
+                          )
+                        })}
+                      </optgroup>
+                    </select>
+                  )}
                   <button className="tp-btn" disabled={busy}
-                    onClick={() => call('fill_missing_partner', { p_side: mySide.id, p_bot: aiPartner }, () => loadOne(open.id))}>
-                    Add AI partner
+                    onClick={() => call('add_bot_side', {
+                      p_tournament: open.id,
+                      p_bot_a: botA,
+                      p_bot_b: open.format === 'duo' ? botB : null,
+                    }, () => loadOne(open.id))}>
+                    Add
                   </button>
                 </div>
-              </>
+                <div className="tp-hint">
+                  They play like they do everywhere else.
+                  Their matches against each other are decided on form, so the bracket
+                  keeps moving even when you're knocked out.
+                </div>
+              </div>
+            )}
+            {open.created_by === user?.id && (
+              <div className="tp-organiser">
+                <button className="tp-btn small danger" disabled={busy} onClick={async () => {
+                  if (!window.confirm(`Delete "${open.name}"? Everyone in it loses their place, and any match in progress ends.`)) return
+                  const ok = await call('delete_tournament', { p_tournament: open.id })
+                  if (ok !== null) { setOpen(null); loadList() }
+                }}>
+                  Delete tournament
+                </button>
+              </div>
+            )}
+          </>
+        )}
+        {tab === 'teams' && (
+          <div className="tp-panel">
+            <div className="tp-label">Entries ({sides.length})</div>
+            <div className="tp-sides">
+              {sides.map(s => (
+                <div key={s.id} className={`tp-side ${s.eliminated ? 'out' : ''} ${s.is_bot ? 'bot' : ''}`}>
+                  <span>{s.name}{s.is_bot ? ' · AI' : ''}</span>
+                  <span className="tp-side-members">
+                    {members.filter(m => m.side_id === s.id).map(m => m.nickname).join(' & ') || (s.is_bot ? 'AI' : '—')}
+                    {s.is_bot && open.status === 'registration' && open.created_by === user?.id && (
+                      <button className="tp-remove" title="Remove"
+                        onClick={() => call('remove_bot_side', { p_side: s.id }, () => loadOne(open.id))}>×</button>
+                    )}
+                  </span>
+                </div>
+              ))}
+              {!sides.length && <div className="tp-empty">Nobody has entered yet.</div>}
+            </div>
+            {canStart && (
+              <button className="tp-btn wide" disabled={busy}
+                onClick={() => call('start_tournament', { p_tournament: open.id }, async () => {
+                  await loadOne(open.id); setOpen({ ...open, status: 'running' })
+                })}>
+                Start the tournament
+              </button>
             )}
           </div>
         )}
-
-        {open.status === 'registration' && open.created_by === user?.id && (
-          <div className="tp-panel">
-            <div className="tp-label">Add an AI {open.format === 'duo' ? 'team' : 'player'}</div>
-            <div className="tp-row">
-              <select className="tp-select" value={botA} onChange={e => setBotA(e.target.value)}>
-                <optgroup label="Ordinary">
-                  {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
-                </optgroup>
-                <optgroup label="Expert">
-                  {EXPERT_CIRCUIT.map(b => {
-                    const locked = !unlocked.includes(b)
-                    return (
-                      <option key={b} value={b} disabled={locked}>
-                        {locked ? `🔒 ${b} — beat chapter ${EXPERT_CIRCUIT.indexOf(b) + 10}` : b}
-                      </option>
-                    )
-                  })}
-                </optgroup>
-              </select>
-              {open.format === 'duo' && (
-                <select className="tp-select" value={botB} onChange={e => setBotB(e.target.value)}>
-                  <optgroup label="Ordinary">
-                    {NORMAL_CIRCUIT.map(b => <option key={b} value={b}>{b}</option>)}
-                  </optgroup>
-                  <optgroup label="Expert">
-                    {EXPERT_CIRCUIT.map(b => {
-                      const locked = !unlocked.includes(b)
-                      return (
-                        <option key={b} value={b} disabled={locked}>
-                          {locked ? `🔒 ${b} — beat chapter ${EXPERT_CIRCUIT.indexOf(b) + 10}` : b}
-                        </option>
-                      )
-                    })}
-                  </optgroup>
-                </select>
-              )}
-              <button className="tp-btn" disabled={busy}
-                onClick={() => call('add_bot_side', {
-                  p_tournament: open.id,
-                  p_bot_a: botA,
-                  p_bot_b: open.format === 'duo' ? botB : null,
-                }, () => loadOne(open.id))}>
-                Add
-              </button>
-            </div>
-            <div className="tp-hint">
-              They play like they do everywhere else.
-              Their matches against each other are decided on form, so the bracket
-              keeps moving even when you're knocked out.
-            </div>
-          </div>
-        )}
-
-        <div className="tp-panel">
-          <div className="tp-label">Entries ({sides.length})</div>
-          <div className="tp-sides">
-            {sides.map(s => (
-              <div key={s.id} className={`tp-side ${s.eliminated ? 'out' : ''} ${s.is_bot ? 'bot' : ''}`}>
-                <span>{s.name}{s.is_bot ? ' · AI' : ''}</span>
-                <span className="tp-side-members">
-                  {members.filter(m => m.side_id === s.id).map(m => m.nickname).join(' & ') || (s.is_bot ? 'AI' : '—')}
-                  {s.is_bot && open.status === 'registration' && open.created_by === user?.id && (
-                    <button className="tp-remove" title="Remove"
-                      onClick={() => call('remove_bot_side', { p_side: s.id }, () => loadOne(open.id))}>×</button>
-                  )}
-                </span>
-              </div>
-            ))}
-            {!sides.length && <div className="tp-empty">Nobody has entered yet.</div>}
-          </div>
-          {canStart && (
-            <button className="tp-btn wide" disabled={busy}
-              onClick={() => call('start_tournament', { p_tournament: open.id }, async () => {
-                await loadOne(open.id); setOpen({ ...open, status: 'running' })
-              })}>
-              Start the tournament
-            </button>
-          )}
-        </div>
 
         {practising && (
         <div className="tp-practice">
@@ -591,110 +647,118 @@ export default function Tournament() {
         </div>
       )}
 
-      <div className="tp-bracket">
-        {roundShape.map(({ round: r, ties }) => {
-          const inRound = matches.filter(m => m.round === r)
-          const blanks = Math.max(0, ties - inRound.length)
-          return (
-            <div className="tp-round" key={r}>
-              <div className="tp-round-label">{bracketLabel(r, rounds.length)}</div>
-              {r === rounds[0] && (
-                <div className="tp-legend">won by Vyèj · 3 straight then a loss is out</div>
-              )}
-              {inRound.map(m => {
-                const ids = [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean)
-                const mine = ids.includes(mySide?.id)
-                const over = m.status === 'done' || m.status === 'forfeit'
-                return (
-                  <div key={m.id} className={`tp-tie ${mine ? 'mine' : ''} ${over ? 'over' : ''}`}>
-                    {ids.map(id => {
-                      const won = m.winner_side === id
-                      return (
-                        <div key={id} className={`tp-tie-side ${won ? 'won' : over ? 'lost' : ''}`}>
-                          <span className="tp-tie-name">
-                            {sideName(id)}{id === mySide?.id ? ' (you)' : ''}
-                            {won && over && m.status !== 'forfeit' && (
-                              <span className="tp-vyej" title="Took the match">
-                                {(m.streaks?.[id] ?? 0) >= 4 ? 'Vyèj' : 'won — streak broken'}
-                              </span>
-                            )}
-                            {(m.deks?.[id] ?? 0) > 0 && (
-                              <span className="tp-dek" title="Rounds won with a Dekabess">
-                                {m.deks[id]}× Dekabess
-                              </span>
-                            )}
-                          </span>
-                          <span className="tp-tie-score">
-                            {m.status === 'forfeit' ? (won ? 'W/O' : '—') : ''}
-                          </span>
-                        </div>
-                      )
-                    })}
-                    <div className="tp-tie-state">
-                      {m.status === 'done' ? 'final'
-                        : m.status === 'forfeit' ? 'walkover — opponents never showed'
-                        : m.status === 'playing' ? matchNeeds(m, ids)
-                        : 'waiting for both sides'}
-                    </div>
-                    {mine && !over && (
-                      <div className="tp-match-actions">
-                        <Countdown until={m.no_show_at} />
-                        <button className="tp-btn small gold" disabled={busy} onClick={() => playMatch(m)}>
-                          {Object.values(m.wins || {}).reduce((x, y) => x + y, 0) === 0
-                            ? 'Play'
-                            : m.room_id ? 'Back to the table' : 'Play next round'}
-                        </button>
-                        {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length < 2 && (
-                          <button className="tp-btn small" onClick={() => setPicking(mySide.id)}>Partner didn’t show</button>
-                        )}
-                        {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length === 2 && (
-                          <button className="tp-btn small" disabled={busy} onClick={practiseWithPartner}>Practice with partner</button>
-                        )}
-                        <button className="tp-btn small" onClick={() => setPractising(true)}>Practice alone</button>
-                        {/* Only when the opponents never turned up at all. Once the
-                            table has been opened, the match is played, not awarded. */}
-                        {!m.room_id && m.no_show_at && new Date(m.no_show_at) < new Date() && (
-                          <button className="tp-btn small" disabled={busy} onClick={() => claimForfeit(m)}>Claim the walkover</button>
-                        )}
+      {tab === 'bracket' && (
+        <div className="tp-bracket">
+          {roundShape.map(({ round: r, ties }) => {
+            const inRound = matches.filter(m => m.round === r)
+            const blanks = Math.max(0, ties - inRound.length)
+            return (
+              <div className="tp-round" key={r}>
+                <div className="tp-round-label">{bracketLabel(r, rounds.length)}</div>
+                {r === rounds[0] && (
+                  <div className="tp-legend">won by Vyèj · 3 straight then a loss is out</div>
+                )}
+                {inRound.map(m => {
+                  const ids = [m.side_a, m.side_b, m.side_c, m.side_d].filter(Boolean)
+                  const mine = ids.includes(mySide?.id)
+                  const over = m.status === 'done' || m.status === 'forfeit'
+                  return (
+                    <div key={m.id} className={`tp-tie ${mine ? 'mine' : ''} ${over ? 'over' : ''}`}>
+                      {ids.map(id => {
+                        const won = m.winner_side === id
+                        return (
+                          <div key={id} className={`tp-tie-side ${won ? 'won' : over ? 'lost' : ''}`}>
+                            <span className="tp-tie-name">
+                              {sideName(id)}{id === mySide?.id ? ' (you)' : ''}
+                              {won && over && m.status !== 'forfeit' && (
+                                <span className="tp-vyej" title="Took the match">
+                                  {(m.streaks?.[id] ?? 0) >= 4 ? 'Vyèj' : 'won — streak broken'}
+                                </span>
+                              )}
+                              {(m.deks?.[id] ?? 0) > 0 && (
+                                <span className="tp-dek" title="Rounds won with a Dekabess">
+                                  {m.deks[id]}× Dekabess
+                                </span>
+                              )}
+                            </span>
+                            <span className="tp-tie-score">
+                              {m.status === 'forfeit' ? (won ? 'W/O' : '—') : ''}
+                            </span>
+                          </div>
+                        )
+                      })}
+                      <div className="tp-tie-state">
+                        {m.status === 'done' ? 'final'
+                          : m.status === 'forfeit' ? 'walkover — opponents never showed'
+                          : m.status === 'playing' ? matchNeeds(m, ids)
+                          : 'waiting for both sides'}
                       </div>
-                    )}
+                      {/* anyone can watch a match that's being played (backs only) */}
+                      {!mine && !over && m.room_id && (
+                        <div className="tp-match-actions">
+                          <button className="tp-btn small" onClick={() => navigate(`/watch/${m.room_id}`)}>👁 Watch</button>
+                        </div>
+                      )}
+                      {mine && !over && (
+                        <div className="tp-match-actions">
+                          <Countdown until={m.no_show_at} />
+                          <button className="tp-btn small gold" disabled={busy} onClick={() => playMatch(m)}>
+                            {Object.values(m.wins || {}).reduce((x, y) => x + y, 0) === 0
+                              ? 'Play'
+                              : m.room_id ? 'Back to the table' : 'Play next round'}
+                          </button>
+                          {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length < 2 && (
+                            <button className="tp-btn small" onClick={() => setPicking(mySide.id)}>Partner didn’t show</button>
+                          )}
+                          {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length === 2 && (
+                            <button className="tp-btn small" disabled={busy} onClick={practiseWithPartner}>Practice with partner</button>
+                          )}
+                          <button className="tp-btn small" onClick={() => setPractising(true)}>Practice alone</button>
+                          {/* Only when the opponents never turned up at all. Once the
+                              table has been opened, the match is played, not awarded. */}
+                          {!m.room_id && m.no_show_at && new Date(m.no_show_at) < new Date() && (
+                            <button className="tp-btn small" disabled={busy} onClick={() => claimForfeit(m)}>Claim the walkover</button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                {Array.from({ length: blanks }).map((_, i) => (
+                  <div className="tp-tie pending" key={`blank-${r}-${i}`}>
+                    <div className="tp-tie-side"><span className="tp-tie-name">—</span></div>
+                    <div className="tp-tie-side"><span className="tp-tie-name">—</span></div>
+                    <div className="tp-tie-state">
+                      {r === 1 ? 'not drawn yet' : `winners of ${bracketLabel(r - 1, rounds.length)}`}
+                    </div>
                   </div>
-                )
-              })}
-              {Array.from({ length: blanks }).map((_, i) => (
-                <div className="tp-tie pending" key={`blank-${r}-${i}`}>
-                  <div className="tp-tie-side"><span className="tp-tie-name">—</span></div>
-                  <div className="tp-tie-side"><span className="tp-tie-name">—</span></div>
-                  <div className="tp-tie-state">
-                    {r === 1 ? 'not drawn yet' : `winners of ${bracketLabel(r - 1, rounds.length)}`}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        })}
-
-        <div className="tp-round">
-          <div className="tp-round-label">Winner</div>
-          <div className={`tp-tie ${champion ? 'over champ' : 'pending'}`}>
-            <div className={`tp-tie-side ${champion ? 'won' : ''}`}>
-              <span className="tp-tie-name">{champion ? `🏆 ${champion.name}` : '—'}</span>
-            </div>
-            {!champion && <div className="tp-tie-state">still to be decided</div>}
-          </div>
-        </div>
-
-        {false && champion && (
+                ))}
+              </div>
+            )
+          })}
+  
           <div className="tp-round">
             <div className="tp-round-label">Winner</div>
-            <div className="tp-tie over champ">
-              <div className="tp-tie-side won">
-                <span className="tp-tie-name">🏆 {champion.name}</span>
+            <div className={`tp-tie ${champion ? 'over champ' : 'pending'}`}>
+              <div className={`tp-tie-side ${champion ? 'won' : ''}`}>
+                <span className="tp-tie-name">{champion ? `🏆 ${champion.name}` : '—'}</span>
               </div>
+              {!champion && <div className="tp-tie-state">still to be decided</div>}
             </div>
           </div>
-        )}
-      </div>
+  
+          {false && champion && (
+            <div className="tp-round">
+              <div className="tp-round-label">Winner</div>
+              <div className="tp-tie over champ">
+                <div className="tp-tie-side won">
+                  <span className="tp-tie-name">🏆 {champion.name}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       </div>
     )
   }
