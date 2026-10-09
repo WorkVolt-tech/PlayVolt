@@ -1,0 +1,27 @@
+.reshuffle-offer {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--hand-h, 110px) + 14px);
+  z-index: 420;
+  width: min(460px, calc(100vw - 16px)); box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 0.6rem; align-items: center;
+  padding: 0.8rem 1rem; border-radius: 12px;
+  background: rgba(26,24,20,0.97); border: 1px solid var(--gold, #c9a84c);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  font-family: 'DM Mono', ui-monospace, monospace; color: var(--ivory, #f0ead8);
+  animation: reshuffleIn 300ms ease both;
+}
+.reshuffle-offer.waiting { border-color: var(--border, #3a3528); }
+@keyframes reshuffleIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.reshuffle-text { font-size: 0.7rem; text-align: center; line-height: 1.5; }
+.reshuffle-text strong { color: var(--gold-glow, #e8c96a); font-weight: 500; }
+.reshuffle-count {
+  display: inline-block; margin-left: 0.5rem; min-width: 2.4em;
+  padding: 1px 7px; border-radius: 10px; background: #242118; color: var(--gold-glow, #e8c96a);
+}
+.reshuffle-actions { display: flex; gap: 0.6rem; }
+.reshuffle-btn {
+  height: 38px; padding: 0 1.3rem; border-radius: 4px; cursor: pointer;
+  border: 1px solid var(--border, #3a3528); background: transparent; color: var(--ivory, #f0ead8);
+  font-family: inherit; font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.reshuffle-btn.primary { background: var(--gold, #c9a84c); border-color: var(--gold, #c9a84c); color: #0f0e0c; }

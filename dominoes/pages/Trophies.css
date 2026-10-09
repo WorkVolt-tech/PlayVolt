@@ -1,0 +1,89 @@
+/* ── Trophies ───────────────────────────────────────────────────── */
+.trophies-page {
+  min-height: 100dvh; box-sizing: border-box; max-width: 1100px; margin: 0 auto;
+  padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1.25rem calc(2.5rem + env(safe-area-inset-bottom, 0px));
+  background: var(--bg); color: var(--ivory); font-family: 'DM Mono', ui-monospace, monospace;
+}
+.trophies-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+.trophies-head h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 2.3rem; color: var(--gold); margin: 0.6rem 0 0.2rem; }
+.trophies-head p { margin: 0; font-size: 0.72rem; color: var(--ivory-dim); max-width: 34rem; line-height: 1.6; }
+.trophies-back {
+  height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--gold); font-family: inherit; font-size: 0.66rem; letter-spacing: 0.08em; cursor: pointer;
+}
+.trophies-count { font-size: 0.72rem; color: var(--ivory-dim); }
+.trophies-count strong { color: var(--gold-glow); font-size: 1.2rem; font-weight: 500; }
+.trophies-section {
+  font-size: 0.62rem; font-weight: 400; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--ivory-dim); padding-bottom: 0.5rem; margin: 1.5rem 0 0.8rem; border-bottom: 1px solid var(--border);
+}
+.trophies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 0.75rem; }
+
+.trophy-card {
+  position: relative; display: flex; gap: 0.9rem; align-items: center;
+  padding: 0.85rem 0.9rem; border-radius: 12px; background: var(--surface); border: 1px solid #2e2a20;
+}
+.trophy-card:not(.earned) .trophy-text { opacity: 0.6; }
+.trophy-card.earned { border-color: rgba(201,168,76,0.45); }
+
+.medal {
+  flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: #2a2720; box-shadow: inset 0 0 0 2px #3a3528; filter: grayscale(1); opacity: 0.55;
+}
+.medal.earned { filter: none; opacity: 1; }
+.medal.bronze.earned { background: radial-gradient(circle at 35% 30%, #f0b27a, #a0522d 70%); box-shadow: 0 0 0 2px #6b3a1a, 0 3px 10px rgba(160,82,45,0.45); }
+.medal.silver.earned { background: radial-gradient(circle at 35% 30%, #ffffff, #9aa3ad 70%); box-shadow: 0 0 0 2px #5d656e, 0 3px 10px rgba(154,163,173,0.45); }
+.medal.gold.earned   { background: radial-gradient(circle at 35% 30%, #fff1b8, #c9a84c 70%); box-shadow: 0 0 0 2px #7a5f22, 0 3px 12px rgba(201,168,76,0.55); }
+
+.trophy-text { min-width: 0; flex: 1; }
+.trophy-name { font-family: 'Playfair Display', Georgia, serif; font-size: 1.02rem; font-weight: 700; color: var(--ivory); }
+.trophy-card.earned .trophy-name { color: var(--gold-glow); }
+.trophy-meaning { font-size: 0.66rem; color: var(--ivory); font-style: italic; margin: 1px 0 4px; }
+.trophy-desc { font-size: 0.66rem; color: var(--ivory-dim); }
+.trophy-reward { font-size: 0.6rem; color: #8d8676; margin-top: 5px; letter-spacing: 0.02em; }
+.trophy-card.earned .trophy-reward { color: #7fd39a; }
+.trophy-tier {
+  position: absolute; top: 9px; right: 10px; font-size: 0.48rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: #6b6555;
+}
+.trophy-tier.gold { color: #c9a84c; } .trophy-tier.silver { color: #9aa3ad; } .trophy-tier.bronze { color: #c47a45; } .trophy-tier.platinum { color: #b7c9ff; }
+
+/* ── "Trophy earned" ── */
+.trophy-notice-bg {
+  position: fixed; inset: 0; z-index: 600; background: rgba(10,9,8,0.82);
+  display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(3px);
+}
+.trophy-notice {
+  width: min(420px, 100%); max-height: 86dvh; overflow-y: auto; box-sizing: border-box;
+  background: var(--surface); border: 1px solid var(--border); border-top: 2px solid var(--gold);
+  border-radius: 14px; padding: 1.6rem 1.3rem 1.3rem; text-align: center;
+  font-family: 'DM Mono', ui-monospace, monospace; color: var(--ivory);
+  animation: trophyIn 420ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+@keyframes trophyIn { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: none; } }
+.trophy-notice h2 { font-family: 'Playfair Display', Georgia, serif; color: var(--gold); margin: 0 0 1rem; font-size: 1.6rem; }
+.trophy-notice .trophy-card { text-align: left; margin-bottom: 0.6rem; }
+.trophy-notice-ok {
+  margin-top: 0.6rem; height: 42px; padding: 0 2rem; border-radius: 4px; border: none; cursor: pointer;
+  background: var(--gold); color: var(--bg); font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase;
+}
+
+/* ── Profile badges ── */
+.profile-trophies { margin-top: 1.4rem; text-align: left; }
+.profile-trophies-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.6rem; }
+.profile-trophies-head span { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim); }
+.profile-trophies-head button { background: none; border: none; color: var(--gold); font-family: 'DM Mono', monospace; font-size: 0.64rem; cursor: pointer; text-decoration: underline; }
+.profile-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.profile-badge { display: flex; align-items: center; gap: 6px; padding: 4px 9px 4px 4px; border-radius: 16px; background: var(--surface2); border: 1px solid var(--border); font-size: 0.62rem; color: var(--ivory); }
+.profile-badges-empty { font-size: 0.64rem; color: var(--ivory-dim); }
+
+/* ── Profile: wear a trophy avatar ── */
+.profile-avatar-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0 auto; }
+.profile-avatar-edit { font-family: 'DM Mono', monospace; font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.profile-avatar.small { width: 50px; height: 50px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.avatar-picker { width: 100%; margin: 0.8rem 0 0.4rem; padding: 0.8rem; box-sizing: border-box; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.avatar-picker-head { font-family: 'DM Mono', monospace; font-size: 0.56rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ivory-dim); margin-bottom: 0.7rem; }
+.avatar-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 10px; justify-items: center; }
+.avatar-choice { background: none; border: 2px solid transparent; border-radius: 50%; padding: 4px; cursor: pointer; }
+.avatar-choice:disabled { cursor: not-allowed; }
+.avatar-choice.on { border-color: var(--gold); }

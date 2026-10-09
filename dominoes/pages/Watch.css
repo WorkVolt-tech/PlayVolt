@@ -1,0 +1,37 @@
+/* ── Watching a game ───────────────────────────────────────────── */
+.watch-badge {
+  font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.12em;
+  padding: 3px 9px; border-radius: 12px; color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.5); background: rgba(201,168,76,0.08);
+}
+.watch-bottom {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface, #1a1814); border-top: 1px solid var(--border, #3a3528);
+}
+.watch-bottom-plate {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ivory-dim, #a09880);
+}
+.watch-bottom-plate.on-turn { color: var(--gold-glow, #e8c96a); }
+.watch-bottom-hand { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+.watch-back { position: relative; width: 22px; height: 44px; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+.watch-round {
+  position: absolute; left: 50%; top: 14px; translate: -50% 0; z-index: 80;
+  padding: 8px 16px; border-radius: 10px; max-width: calc(100% - 24px); text-align: center;
+  font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--ivory, #f0ead8);
+  background: rgba(26,24,20,0.94); border: 1px solid var(--gold, #c9a84c);
+}
+.watch-round strong { color: var(--gold-glow, #e8c96a); font-weight: 500; }
+.watch-message {
+  min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.8rem;
+  padding: 1.5rem; text-align: center; background: var(--bg, #0f0e0c); color: var(--ivory, #f0ead8);
+  font-family: 'DM Mono', monospace;
+}
+.watch-message h2 { font-family: 'Playfair Display', Georgia, serif; color: var(--gold, #c9a84c); margin: 0; }
+.watch-message p { color: var(--ivory-dim, #a09880); font-size: 0.75rem; margin: 0; }
+.watch-message button {
+  height: 40px; padding: 0 1.6rem; border-radius: 4px; border: none; cursor: pointer;
+  background: var(--gold, #c9a84c); color: #0f0e0c; font-family: inherit; font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase;
+}

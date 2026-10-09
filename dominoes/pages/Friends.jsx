@@ -1,0 +1,190 @@
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { db } from '../lib/supabase'
+import { useAuth } from '../lib/useAuth'
+import { TrophyAvatar } from '../lib/avatars'
+import './Friends.css'
+
+// ── Friends ──────────────────────────────────────────────────────────────────
+// Add friends by nickname or with your friend link, answer requests, and
+// manage your list. Friends need accounts; everything goes through the
+// server's friend functions, so each player only ever sees their own.
+
+const MESSAGES = {
+  'sent': 'Request sent.',
+  'already sent': 'You’ve already sent them a request.',
+  'already friends': 'You’re already friends.',
+  'now friends': 'They’d already asked you — you’re now friends!',
+  'no such player': 'No player with that name.',
+  'that\'s you': 'That’s you!',
+  'sign in first': 'Sign in to add friends.',
+}
+
+// A friend's status from their last check-in: online / in a game if they
+// checked in within the last 2½ minutes, otherwise when they were last seen.
+export function statusOf(r, now = Date.now()) {
+  if (!r.last_seen) return { live: false, text: 'Not seen yet' }
+  const secs = (now - new Date(r.last_seen).getTime()) / 1000
+  if (secs < 150) return r.activity === 'game' ? { live: true, game: true, text: '🎲 In a game' } : { live: true, text: '🟢 Online' }
+  const mins = Math.floor(secs / 60), hours = Math.floor(mins / 60), days = Math.floor(hours / 24)
+  const ago = days > 0 ? `${days} day${days > 1 ? 's' : ''}` : hours > 0 ? `${hours} hour${hours > 1 ? 's' : ''}` : `${mins} minute${mins > 1 ? 's' : ''}`
+  return { live: false, text: `Last seen ${ago} ago` }
+}
+
+function Face({ p, size = 40 }) {
+  return p.avatar
+    ? <TrophyAvatar trophyId={p.avatar} size={size} badge={false} />
+    : <div className="fr-initial" style={{ width: size, height: size }}>{(p.nickname || '?')[0].toUpperCase()}</div>
+}
+
+export default function Friends() {
+  const navigate = useNavigate()
+  const { user, isLoading } = useAuth()
+  const [rows, setRows] = useState([])
+  const [code, setCode] = useState('')
+  const [name, setName] = useState('')
+  const [msg, setMsg] = useState(null)
+  const [copied, setCopied] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [challenging, setChallenging] = useState(null)   // a friend's user_id while picking a mode
+
+  const load = useCallback(async () => {
+    const [{ data }, { data: c }] = await Promise.all([db.rpc('my_friends'), db.rpc('my_friend_code')])
+    setRows(data || [])
+    setCode(c || '')
+  }, [])
+
+  // a friend link (/friends?add=CODE) sends the request in one tap
+  useEffect(() => {
+    if (!user) return
+    const add = new URLSearchParams(window.location.search).get('add')
+    ;(async () => {
+      if (add) {
+        const { data } = await db.rpc('friend_request_by_code', { p_code: add })
+        setMsg({ ok: data === 'sent' || data === 'now friends', text: MESSAGES[data] || data })
+        window.history.replaceState(null, '', '/friends')
+      }
+      load()
+    })()
+  }, [user, load])
+  // keep statuses fresh while the page is open
+  useEffect(() => {
+    if (!user) return
+    const t = setInterval(load, 30000)
+    return () => clearInterval(t)
+  }, [user, load])
+
+  async function act(fn, args, confirmText) {
+    if (confirmText && !window.confirm(confirmText)) return
+    setBusy(true)
+    const { data } = await db.rpc(fn, args)
+    if (typeof data === 'string') setMsg({ ok: data === 'sent' || data === 'now friends', text: MESSAGES[data] || data })
+    await load()
+    setBusy(false)
+  }
+
+  if (!isLoading && !user) {
+    return (
+      <div className="fr-page">
+        <button className="fr-back" onClick={() => navigate('/')}>← Back</button>
+        <h1 className="fr-title">Friends</h1>
+        <div className="fr-card"><p>Friends need an account, so you can find each other again.</p>
+          <button className="fr-btn" onClick={() => navigate('/auth')}>Sign in</button></div>
+      </div>
+    )
+  }
+
+  const friends = rows.filter(r => r.kind === 'friend').sort((a, b) =>
+    (statusOf(b).live - statusOf(a).live) || (new Date(b.last_seen || 0) - new Date(a.last_seen || 0)))
+  const incoming = rows.filter(r => r.kind === 'incoming')
+  const outgoing = rows.filter(r => r.kind === 'outgoing')
+  const blocked = rows.filter(r => r.kind === 'blocked')
+  const link = code ? `${window.location.origin}/friends?add=${code}` : ''
+
+  return (
+    <div className="fr-page">
+      <button className="fr-back" onClick={() => navigate('/')}>← Back</button>
+      <h1 className="fr-title">Friends</h1>
+
+      {msg && <div className={`fr-msg ${msg.ok ? 'ok' : ''}`}>{msg.text}</div>}
+
+      <div className="fr-card">
+        <div className="fr-label">Add a friend</div>
+        <div className="fr-row">
+          <input className="fr-input" placeholder="Their nickname" value={name} maxLength={24}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && name.trim()) { act('friend_request_by_nickname', { p_nickname: name }); setName('') } }} />
+          <button className="fr-btn" disabled={busy || !name.trim()}
+            onClick={() => { act('friend_request_by_nickname', { p_nickname: name }); setName('') }}>Send</button>
+        </div>
+        {link && (
+          <div className="fr-link">
+            <span>Or share your friend link — opening it sends you a request:</span>
+            <button className="fr-btn ghost" onClick={async () => {
+              try { await navigator.clipboard.writeText(link) } catch { /* ignore */ }
+              setCopied(true); setTimeout(() => setCopied(false), 1800)
+            }}>{copied ? 'Copied!' : 'Copy my friend link'}</button>
+          </div>
+        )}
+      </div>
+
+      {(incoming.length > 0 || outgoing.length > 0) && (
+        <div className="fr-card">
+          <div className="fr-label">Requests</div>
+          {incoming.map(r => (
+            <div key={r.id} className="fr-person">
+              <Face p={r} /><span className="fr-name">{r.nickname}<small>wants to be friends</small></span>
+              <button className="fr-btn" disabled={busy} onClick={() => act('friend_respond', { p_id: r.id, p_accept: true })}>Accept</button>
+              <button className="fr-btn ghost" disabled={busy} onClick={() => act('friend_respond', { p_id: r.id, p_accept: false })}>Decline</button>
+            </div>
+          ))}
+          {outgoing.map(r => (
+            <div key={r.id} className="fr-person">
+              <Face p={r} /><span className="fr-name">{r.nickname}<small>waiting for them to accept</small></span>
+              <button className="fr-btn ghost" disabled={busy} onClick={() => act('friend_remove', { p_user: r.user_id })}>Cancel</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="fr-card">
+        <div className="fr-label">Your friends ({friends.length})</div>
+        {!friends.length && <p className="fr-empty">No friends yet — add someone by nickname, or share your link.</p>}
+        {friends.map(r => (
+          <div key={r.id} className="fr-person">
+            <Face p={r} />
+            <span className="fr-name">{r.nickname}
+              <small className={statusOf(r).live ? (statusOf(r).game ? 'fr-game' : 'fr-online') : ''}>{statusOf(r).text}</small>
+            </span>
+            {statusOf(r).live && !statusOf(r).game && (
+              <button className="fr-btn small" onClick={() => setChallenging(challenging === r.user_id ? null : r.user_id)}>Challenge</button>
+            )}
+            <button className="fr-btn ghost small" disabled={busy}
+              onClick={() => act('friend_remove', { p_user: r.user_id }, `Remove ${r.nickname} from your friends?`)}>Remove</button>
+            <button className="fr-btn ghost small danger" disabled={busy}
+              onClick={() => act('friend_block', { p_user: r.user_id }, `Block ${r.nickname}? They won’t be able to send you requests or challenges.`)}>Block</button>
+            {challenging === r.user_id && (
+              <div className="fr-challenge">
+                <span>Challenge {r.nickname} to:</span>
+                <button className="fr-btn small" onClick={() => navigate(`/?challenge=${r.user_id}&mode=chien`)}>Chien Manjé Chien</button>
+                <button className="fr-btn small" onClick={() => navigate(`/?challenge=${r.user_id}&mode=asosye`)}>Asosyé</button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {blocked.length > 0 && (
+        <details className="fr-card fr-blocked">
+          <summary>Blocked ({blocked.length})</summary>
+          {blocked.map(r => (
+            <div key={r.user_id} className="fr-person">
+              <Face p={r} size={32} /><span className="fr-name">{r.nickname}</span>
+              <button className="fr-btn ghost small" disabled={busy} onClick={() => act('friend_unblock', { p_user: r.user_id })}>Unblock</button>
+            </div>
+          ))}
+        </details>
+      )}
+    </div>
+  )
+}

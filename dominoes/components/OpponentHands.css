@@ -1,0 +1,103 @@
+/* Tile size grows a little on big screens. The hands sit just inside the
+   table's rail (the felt is inset by --rail). */
+.board-container { --opp-w: clamp(12px, 1.15vw, 19px); --rail: 10px; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .board-container { --opp-w: 10px; --rail: 5px; }
+}
+
+.opponent-area {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* TOP — Ti-Cam */
+.opponent-area.opponent-top {
+  top: calc(var(--rail, 10px) + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* LEFT — Jean */
+.opponent-area.opponent-left {
+  left: calc(var(--rail, 10px) + 6px);
+  top: calc(var(--rail, 10px) + 6px);
+  bottom: calc(var(--rail, 10px) + 6px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* RIGHT — Djo */
+.opponent-area.opponent-right {
+  right: calc(var(--rail, 10px) + 6px);
+  top: calc(var(--rail, 10px) + 6px);
+  bottom: calc(var(--rail, 10px) + 6px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.opponent-name {
+  font-size: 0.48rem;
+  letter-spacing: 0.12em;
+  color: var(--ivory-dim);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Seat plates ─────────────────────────────────────────────────── */
+.seat-plate { display: flex; align-items: center; gap: 5px; }
+.opponent-left .seat-plate,
+.opponent-right .seat-plate { flex-direction: column; gap: 3px; margin-bottom: 2px; }
+.seat-ring {
+  width: calc(var(--opp-w, 14px) * 2); height: calc(var(--opp-w, 14px) * 2);
+  min-width: 24px; min-height: 24px;
+  border-radius: 50%; padding: 2px; box-sizing: border-box; flex-shrink: 0;
+}
+.seat-initials {
+  width: 100%; height: 100%; border-radius: 50%;
+  background: #242118; color: var(--ivory, #f0ead8);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: calc(var(--opp-w, 14px) * 0.62); letter-spacing: 0.02em;
+}
+.opponent-area.is-turn .seat-initials { color: var(--gold-glow, #e8c96a); }
+@media (orientation: landscape) and (max-height: 500px) {
+  .opponent-left .opponent-name, .opponent-right .opponent-name { display: none; }
+  .seat-ring { min-width: 20px; min-height: 20px; }
+  .seat-initials { font-size: 8px; }
+}
+
+.opponent-area.is-turn .opponent-name { color: var(--gold); }
+.opponent-area.is-turn .opponent-tile {
+  box-shadow: 0 0 0 1px rgba(232,201,106,0.85), 0 0 8px rgba(232,201,106,0.45);
+}
+
+.opponent-tiles { display: flex; gap: 2px; }
+.opponent-tiles-top   { flex-direction: row; }
+.opponent-tiles-left,
+.opponent-tiles-right {
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: center;
+  max-height: calc(100% - 4.4rem);   /* leave room for the seat plate */
+}
+
+.opponent-tile {
+  position: relative;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.45);
+  flex-shrink: 0;
+}
+.opponent-tile.vertical   { width: var(--opp-w, 14px); height: calc(var(--opp-w, 14px) * 2); }
+.opponent-tile.horizontal { width: calc(var(--opp-w, 14px) * 2); height: var(--opp-w, 14px); }
+/* a picture (bot or trophy avatar) sits inside the plate's ring */
+.seat-ring.has-pic { padding: 3px; display: flex; align-items: center; justify-content: center; }

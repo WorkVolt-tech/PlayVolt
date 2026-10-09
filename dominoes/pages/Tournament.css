@@ -1,0 +1,302 @@
+/* ── Tournaments ────────────────────────────────────────────────── */
+
+.tp-page {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ivory);
+  font-family: 'DM Mono', monospace;
+  padding: 1rem 1rem 3rem;
+  padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+}
+
+.tp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; }
+.tp-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--gold); margin: 0; text-align: center; flex: 1; }
+.tp-back {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--gold);
+  border-radius: 16px; padding: 5px 11px; font-family: 'DM Mono', monospace;
+  font-size: 0.55rem; letter-spacing: 0.1em; cursor: pointer;
+}
+.tp-sub { text-align: center; font-size: 0.58rem; color: var(--ivory-dim); letter-spacing: 0.1em; margin-bottom: 1rem; text-transform: uppercase; }
+
+.tp-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.tp-label {
+  font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ivory-dim); margin-bottom: 0.6rem;
+}
+
+.tp-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+.tp-or { font-size: 0.58rem; color: var(--ivory-dim); text-align: center; margin: 0.5rem 0; }
+
+.tp-input, .tp-select {
+  flex: 1; min-width: 0;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--ivory);
+  border-radius: 4px; padding: 0.55rem 0.7rem;
+  font-family: 'DM Mono', monospace; font-size: 0.72rem; outline: none;
+}
+.tp-input:focus, .tp-select:focus { border-color: var(--gold); }
+
+.tp-btn {
+  background: var(--gold); color: var(--bg); border: none; border-radius: 4px;
+  padding: 0.55rem 1rem; font-family: 'DM Mono', monospace; font-size: 0.6rem;
+  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; flex-shrink: 0;
+}
+.tp-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.tp-btn.wide { width: 100%; margin-top: 0.4rem; }
+.tp-btn.small { background: transparent; border: 1px solid var(--border); color: var(--gold); padding: 0.35rem 0.7rem; font-size: 0.52rem; }
+
+.tp-msg { border-radius: 4px; padding: 0.5rem 0.7rem; font-size: 0.65rem; margin-bottom: 0.7rem; }
+.tp-msg.error { background: rgba(201,76,76,0.12); color: var(--red); border: 1px solid rgba(201,76,76,0.35); }
+
+.tp-gate { text-align: center; padding: 3rem 1rem; }
+.tp-gate p { color: var(--ivory-dim); font-size: 0.72rem; margin-bottom: 1.4rem; }
+
+.tp-team { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+.tp-code {
+  font-size: 0.8rem; color: var(--gold); letter-spacing: 0.3em;
+  border: 1px dashed rgba(201,168,76,0.45); border-radius: 4px;
+  padding: 4px 10px; font-family: 'DM Mono', monospace;
+  user-select: all;                 /* tap to select the whole code */
+}
+.tp-share { display: flex; gap: 0.4rem; margin: 0.5rem 0 0.2rem; flex-wrap: wrap; }
+.tp-members { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.tp-chip { font-size: 0.6rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 3px 9px; }
+.tp-chip.bot { color: var(--gold); border-color: rgba(201,168,76,0.4); }
+.tp-chip.empty { color: var(--ivory-dim); opacity: 0.7; }
+.tp-hint { font-size: 0.58rem; color: var(--ivory-dim); margin-top: 0.5rem; line-height: 1.5; }
+
+.tp-sides { display: flex; flex-direction: column; gap: 0.3rem; }
+.tp-side {
+  display: flex; justify-content: space-between; gap: 0.5rem;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 5px; padding: 0.4rem 0.6rem; font-size: 0.66rem;
+}
+.tp-side.out { opacity: 0.45; text-decoration: line-through; }
+.tp-side.bot { color: var(--gold); }
+.tp-side-members { color: var(--ivory-dim); font-size: 0.58rem; }
+
+.tp-match {
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.5rem 0.6rem; margin-bottom: 0.4rem; background: var(--surface2);
+}
+.tp-match.mine { border-color: var(--gold); background: rgba(201,168,76,0.07); }
+.tp-match.done { opacity: 0.75; }
+.tp-match-sides { display: flex; flex-wrap: wrap; gap: 0.6rem; font-size: 0.66rem; }
+.tp-match-sides span { display: inline-flex; align-items: center; gap: 4px; }
+.tp-match-sides em { font-style: normal; color: var(--ivory-dim); font-size: 0.58rem; }
+.tp-match-sides .won { color: var(--gold); }
+.tp-match-state { font-size: 0.55rem; color: var(--ivory-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.3rem; }
+.tp-match-actions { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+.tp-count { font-size: 0.55rem; color: var(--gold); }
+
+.tp-item {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.6rem 0.7rem; margin-bottom: 0.35rem; cursor: pointer;
+  font-family: 'DM Mono', monospace; color: var(--ivory); text-align: left;
+}
+.tp-item:hover { border-color: var(--gold); }
+.tp-item-name { font-size: 0.72rem; }
+.tp-item-meta { font-size: 0.55rem; color: var(--ivory-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+
+.tp-empty { font-size: 0.65rem; color: var(--ivory-dim); text-align: center; padding: 0.8rem 0; }
+
+.tp-btn.small.gold { background: var(--gold); color: var(--bg); border: none; }
+
+.tp-overlay {
+  position: fixed; inset: 0; background: rgba(10,9,8,0.9);
+  display: flex; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(3px);
+}
+.tp-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1.4rem 1.3rem; width: min(340px, 88vw); text-align: center;
+}
+.tp-card h3 { font-family: 'Playfair Display', serif; color: var(--gold); margin: 0 0 0.3rem; font-size: 1.05rem; }
+.tp-card p { color: var(--ivory-dim); font-size: 0.65rem; margin: 0 0 0.9rem; line-height: 1.5; }
+.tp-botlist { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-bottom: 1rem; }
+
+/* "your match is live" prompt */
+.tp-live {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.7rem;
+  background: rgba(201,168,76,0.12);
+  border: 1px solid var(--gold);
+  border-radius: 8px; padding: 0.7rem 0.8rem; margin-bottom: 0.75rem;
+  animation: tpPulse 2s ease-in-out infinite;
+}
+.tp-live strong { display: block; color: var(--gold); font-size: 0.74rem; margin-bottom: 2px; }
+.tp-live span { font-size: 0.6rem; color: var(--ivory-dim); }
+@keyframes tpPulse {
+  0%, 100% { border-color: var(--gold); }
+  50%      { border-color: rgba(201,168,76,0.35); }
+}
+
+/* practice without leaving the tournament */
+.tp-practice {
+  position: fixed; inset: 0; z-index: 250;
+  background: var(--bg); display: flex; flex-direction: column;
+}
+.tp-practice-bar {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  padding: 0.5rem 0.7rem;
+  padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tp-practice-live { font-size: 0.58rem; color: var(--gold); letter-spacing: 0.08em; }
+.tp-practice-wait { font-size: 0.58rem; color: var(--ivory-dim); letter-spacing: 0.08em; }
+.tp-practice > :last-child { flex: 1; min-height: 0; }
+
+.tp-stale { color: var(--red); }
+.tp-refresh {
+  background: none; border: none; color: var(--ivory-dim);
+  font-size: 0.75rem; cursor: pointer; margin-left: 0.4rem; padding: 0 2px;
+}
+.tp-refresh:hover { color: var(--gold); }
+
+/* champion / knocked out */
+.tp-champion {
+  text-align: center; padding: 1.2rem 1rem; margin-bottom: 0.75rem;
+  border: 1px solid var(--gold); border-radius: 8px;
+  background: rgba(201,168,76,0.1);
+}
+.tp-champion-label { font-size: 0.52rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--ivory-dim); }
+.tp-champion-name { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--gold); margin: 0.2rem 0; }
+.tp-champion-who  { font-size: 0.62rem; color: var(--ivory-dim); }
+.tp-champion-you  { margin-top: 0.5rem; font-size: 0.68rem; color: var(--gold); }
+
+.tp-out {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.7rem 0.8rem; margin-bottom: 0.75rem; background: var(--surface);
+}
+.tp-out strong { display: block; color: var(--red); font-size: 0.72rem; margin-bottom: 2px; }
+.tp-out span { font-size: 0.6rem; color: var(--ivory-dim); }
+
+/* ── the bracket ───────────────────────────────────────────────── */
+.tp-bracket {
+  display: flex; gap: 2rem; align-items: stretch;
+  overflow-x: auto; padding: 0.2rem 0 0.6rem;
+}
+/* fixed-width columns so it reads as a tree, not full-width panels.
+   Ties spread out evenly down each column, and each later round is
+   centred against the pair it comes from. */
+.tp-round {
+  width: 230px; flex: 0 0 230px;
+  display: flex; flex-direction: column;
+  justify-content: space-around; gap: 0.8rem;
+  position: relative;
+}
+.tp-round-label {
+  font-size: 0.52rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ivory-dim); text-align: center; padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+.tp-tie {
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--surface); overflow: hidden;
+}
+.tp-tie.mine { border-color: var(--gold); }
+.tp-tie.over { opacity: 0.95; }
+.tp-tie.champ { border-color: var(--gold); background: rgba(201,168,76,0.1); }
+
+.tp-tie-side {
+  display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0.6rem; font-size: 0.68rem;
+  border-bottom: 1px solid rgba(58,53,40,0.6);
+}
+.tp-tie-side:last-of-type { border-bottom: none; }
+.tp-tie-side.won  { color: var(--gold); background: rgba(201,168,76,0.08); font-weight: 600; }
+.tp-tie-side.lost { color: var(--ivory-dim); }
+.tp-tie-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-tie-score { font-family: 'DM Mono', monospace; font-size: 0.66rem; flex-shrink: 0; }
+.tp-tie-state {
+  font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ivory-dim); padding: 0.3rem 0.6rem; background: var(--surface2);
+}
+.tp-tie .tp-match-actions { padding: 0.5rem 0.6rem; margin: 0; }
+
+.tp-tie.pending { opacity: 0.45; border-style: dashed; }
+.tp-tie.pending .tp-tie-name { color: var(--ivory-dim); }
+
+/* connector lines between rounds */
+.tp-round:not(:first-child)::before {
+  content: '';
+  position: absolute; left: -1.05rem; top: 12%; bottom: 12%;
+  width: 1px; background: var(--border);
+}
+.tp-tie { position: relative; }
+.tp-round:not(:first-child) .tp-tie::before {
+  content: '';
+  position: absolute; left: -1.05rem; top: 50%;
+  width: 1.05rem; height: 1px; background: var(--border);
+}
+.tp-round:not(:last-child) .tp-tie::after {
+  content: '';
+  position: absolute; right: -1rem; top: 50%;
+  width: 1rem; height: 1px; background: var(--border);
+}
+.tp-round-label { position: sticky; top: 0; background: var(--bg); z-index: 1; }
+
+.tp-remove {
+  background: none; border: none; color: var(--red);
+  font-size: 0.9rem; line-height: 1; cursor: pointer;
+  margin-left: 0.5rem; padding: 0 3px;
+}
+.tp-remove:hover { color: #ff8080; }
+
+.tp-legend {
+  font-size: 0.48rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ivory-dim); text-align: center; margin-top: -0.4rem;
+}
+.tp-vyej, .tp-dek {
+  display: inline-block; margin-left: 0.4rem;
+  font-size: 0.45rem; letter-spacing: 0.1em; text-transform: uppercase;
+  border-radius: 8px; padding: 1px 6px; vertical-align: middle;
+}
+.tp-vyej { color: var(--gold); border: 1px solid rgba(201,168,76,0.5); }
+.tp-dek  { color: var(--green); border: 1px solid rgba(76,170,110,0.45); }
+
+.tp-organiser { display: flex; justify-content: flex-end; margin: -0.4rem 0 0.7rem; }
+.tp-btn.small.danger { background: transparent; border: 1px solid rgba(201,76,76,0.55); color: var(--red); }
+.tp-btn.small.danger:hover { background: rgba(201,76,76,0.1); }
+
+/* ── Where the tournament stands ───────────────────────────────── */
+.tp-steps { display: flex; gap: 4px; margin: 0.6rem 0 0.9rem; }
+.tp-step { flex: 1; text-align: center; font-size: 0.56rem; letter-spacing: 0.05em; color: #6b6555; }
+.tp-step-bar { height: 4px; border-radius: 2px; background: #2e2a20; margin-bottom: 5px; }
+.tp-step.done { color: var(--ivory-dim, #a09880); }
+.tp-step.done .tp-step-bar { background: #7a6a3a; }
+.tp-step.cur { color: var(--gold-glow, #e8c96a); }
+.tp-step.cur .tp-step-bar { background: var(--gold, #c9a84c); box-shadow: 0 0 8px rgba(201,168,76,0.6); }
+
+/* ── Tabs ── */
+.tp-tabs { display: flex; border-bottom: 1px solid var(--border, #3a3528); margin-bottom: 0.9rem; }
+.tp-tab {
+  flex: 1; padding: 0.6rem 0; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ivory-dim, #a09880); cursor: pointer;
+}
+.tp-tab.on { color: var(--gold, #c9a84c); border-bottom-color: var(--gold, #c9a84c); }
+
+/* ── What to do now ── */
+.tp-todo {
+  background: linear-gradient(180deg, rgba(201,168,76,0.14), rgba(201,168,76,0.04));
+  border: 1px solid var(--gold, #c9a84c); border-radius: 14px; padding: 0.9rem; margin-bottom: 0.8rem;
+}
+.tp-todo-label { font-size: 0.56rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-glow, #e8c96a); }
+.tp-todo-title { font-family: 'Playfair Display', Georgia, serif; font-size: 1.15rem; margin: 0.35rem 0 0.25rem; color: var(--ivory, #f0ead8); }
+.tp-todo p { font-size: 0.68rem; color: var(--ivory-dim, #a09880); line-height: 1.55; margin: 0 0 0.6rem; }
+
+/* ── How it works / organiser ── */
+.tp-how { background: var(--surface, #1a1814); border: 1px solid #2e2a20; border-radius: 12px; padding: 0.7rem 0.8rem; margin: 0.8rem 0; }
+.tp-how summary { cursor: pointer; font-size: 0.68rem; color: var(--ivory, #f0ead8); }
+.tp-how p { font-size: 0.64rem; color: var(--ivory-dim, #a09880); line-height: 1.6; margin: 0.4rem 0 0; }
+.tp-organiser-head {
+  margin: 1.1rem 0 0.5rem; padding-top: 0.8rem; border-top: 1px solid var(--border, #3a3528);
+  font-size: 0.56rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim, #a09880);
+}
