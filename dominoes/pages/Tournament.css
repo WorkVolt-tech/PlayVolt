@@ -300,3 +300,11 @@
   margin: 1.1rem 0 0.5rem; padding-top: 0.8rem; border-top: 1px solid var(--border, #3a3528);
   font-size: 0.56rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim, #a09880);
 }
+
+/* Installed as an app, the page is drawn under the phone's status bar and,
+   sideways, the camera — keep the Back button and title clear of them. */
+.tp-page {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+}
