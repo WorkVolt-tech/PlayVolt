@@ -687,6 +687,14 @@ export default function Lobby() {
   // Any regular bot, or an expert the host has unlocked. Bots take a seat like
   // a player (and play like the bots you already know). A table with a regular
   // bot doesn't count toward trophies; experts do.
+  // friend requests waiting for you (the badge on the Friends button)
+  const [friendRequests, setFriendRequests] = useState(0)
+  useEffect(() => {
+    db.auth.getUser().then(({ data }) => {
+      if (!data?.user) return
+      db.rpc('my_friends').then(({ data: rows }) => setFriendRequests((rows || []).filter(r => r.kind === 'incoming').length))
+    })
+  }, [])
   const [botToAdd, setBotToAdd] = useState('Ti-Djo')
   // 2 or 3 players: deal every tile (9 / 14 each), or 7 each with a draw pile
   const [dealVariant, setDealVariant] = useState('all')
@@ -980,6 +988,10 @@ export default function Lobby() {
         )}
       <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => navigate('/friends')} style={{ position: 'relative', background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>
+            👥 Friends
+            {friendRequests > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 18, height: 18, borderRadius: 9, background: '#c94c4c', color: '#fff', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{friendRequests}</span>}
+          </button>
           <button onClick={() => navigate('/trophies')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🏆 Trophies</button>
           <button onClick={() => navigate('/skins')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🎨 Skins</button>
           <button onClick={() => navigate('/practice')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🎲 Practice</button>
