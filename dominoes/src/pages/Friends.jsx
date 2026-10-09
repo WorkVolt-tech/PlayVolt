@@ -20,6 +20,17 @@ const MESSAGES = {
   'sign in first': 'Sign in to add friends.',
 }
 
+// A friend's status from their last check-in: online / in a game if they
+// checked in within the last 2½ minutes, otherwise when they were last seen.
+export function statusOf(r, now = Date.now()) {
+  if (!r.last_seen) return { live: false, text: 'Not seen yet' }
+  const secs = (now - new Date(r.last_seen).getTime()) / 1000
+  if (secs < 150) return r.activity === 'game' ? { live: true, game: true, text: '🎲 In a game' } : { live: true, text: '🟢 Online' }
+  const mins = Math.floor(secs / 60), hours = Math.floor(mins / 60), days = Math.floor(hours / 24)
+  const ago = days > 0 ? `${days} day${days > 1 ? 's' : ''}` : hours > 0 ? `${hours} hour${hours > 1 ? 's' : ''}` : `${mins} minute${mins > 1 ? 's' : ''}`
+  return { live: false, text: `Last seen ${ago} ago` }
+}
+
 function Face({ p, size = 40 }) {
   return p.avatar
     ? <TrophyAvatar trophyId={p.avatar} size={size} badge={false} />
@@ -55,6 +66,12 @@ export default function Friends() {
       load()
     })()
   }, [user, load])
+  // keep statuses fresh while the page is open
+  useEffect(() => {
+    if (!user) return
+    const t = setInterval(load, 30000)
+    return () => clearInterval(t)
+  }, [user, load])
 
   async function act(fn, args, confirmText) {
     if (confirmText && !window.confirm(confirmText)) return
@@ -76,7 +93,8 @@ export default function Friends() {
     )
   }
 
-  const friends = rows.filter(r => r.kind === 'friend')
+  const friends = rows.filter(r => r.kind === 'friend').sort((a, b) =>
+    (statusOf(b).live - statusOf(a).live) || (new Date(b.last_seen || 0) - new Date(a.last_seen || 0)))
   const incoming = rows.filter(r => r.kind === 'incoming')
   const outgoing = rows.filter(r => r.kind === 'outgoing')
   const blocked = rows.filter(r => r.kind === 'blocked')
@@ -133,7 +151,10 @@ export default function Friends() {
         {!friends.length && <p className="fr-empty">No friends yet — add someone by nickname, or share your link.</p>}
         {friends.map(r => (
           <div key={r.id} className="fr-person">
-            <Face p={r} /><span className="fr-name">{r.nickname}</span>
+            <Face p={r} />
+            <span className="fr-name">{r.nickname}
+              <small className={statusOf(r).live ? (statusOf(r).game ? 'fr-game' : 'fr-online') : ''}>{statusOf(r).text}</small>
+            </span>
             <button className="fr-btn ghost small" disabled={busy}
               onClick={() => act('friend_remove', { p_user: r.user_id }, `Remove ${r.nickname} from your friends?`)}>Remove</button>
             <button className="fr-btn ghost small danger" disabled={busy}

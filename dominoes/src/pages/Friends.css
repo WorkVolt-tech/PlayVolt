@@ -27,3 +27,5 @@
 .fr-msg { font-size: 0.7rem; padding: 0.55rem 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; border: 1px solid #8a3a3a; color: #e07a7a; background: rgba(138,58,58,0.12); }
 .fr-msg.ok { border-color: rgba(76,170,110,0.5); color: #7fd39a; background: rgba(76,170,110,0.1); }
 .fr-blocked summary { cursor: pointer; font-size: 0.66rem; color: var(--ivory-dim, #a09880); }
+.fr-name small.fr-online { color: #7fd39a; }
+.fr-name small.fr-game { color: var(--gold-glow, #e8c96a); }
