@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import {
-  TILE_SKINS, TABLE_SKINS, TILE_UNLOCKS, TABLE_UNLOCKS,
+  TILE_SKINS, TABLE_SKINS, TILE_UNLOCKS, TABLE_UNLOCKS, TILE_GROUPS, TABLE_GROUPS, groupCards,
   ownedSkins, setEquipped, useEquippedSkins, loadPlayerStats,
 } from '../lib/skins'
 import TileFace from '../components/TileFace'
@@ -57,49 +57,59 @@ export default function Skins() {
       </div>
 
       <h2 className="skins-section">Tiles</h2>
-      <div className="skins-grid tiles">
-        {tileCards.map(c => (
-          <div key={c.id} className={`skin-card ${c.on ? 'on' : ''} ${c.owned ? '' : 'locked'}`}>
-            <div className="skin-preview felt">
-              <div className="skin-tiles">
-                <div className="preview-tile v"><TileFace a={6} b={3} vertical skin={c.id} /></div>
-                <div className="preview-tile h"><TileFace a={5} b={1} vertical={false} skin={c.id} /></div>
-              </div>
-              {!c.owned && <span className="skin-lock"><Lock /></span>}
-            </div>
-            <div className="skin-name">{c.label}</div>
-            <div className="skin-note">{c.on ? 'In use' : c.owned ? 'Owned' : c.need}</div>
-            {c.on && <div className="skin-state on">Equipped</div>}
-            {!c.on && c.owned && <button className="skin-equip" onClick={() => setEquipped('tile', c.id)}>Equip</button>}
-            {!c.owned && <div className="skin-state locked">Locked</div>}
-          </div>
-        ))}
-      </div>
-
-      <h2 className="skins-section">Tables</h2>
-      <div className="skins-grid tables">
-        {tableCards.map(c => (
-          <div key={c.id} className={`skin-card ${c.on ? 'on' : ''} ${c.owned ? '' : 'locked'}`}>
-            <div className="skin-preview rail" style={{ background: c.look.rail }}>
-              <div className="skin-felt" style={{ background: c.look.felt }}>
-                <div className="preview-tile h small"><TileFace a={2} b={5} vertical={false} /></div>
-                <div className="preview-tile v small"><TileFace a={5} b={5} vertical /></div>
-                <div className="preview-tile h small"><TileFace a={5} b={0} vertical={false} /></div>
-              </div>
-              {!c.owned && <span className="skin-lock"><Lock /></span>}
-            </div>
-            <div className="skin-row">
-              <div>
+      {groupCards(tileCards, TILE_GROUPS).map(g => (
+        <section key={g.label} className="skins-group">
+          <h3 className="skins-group-title">{g.label}</h3>
+          <div className="skins-grid tiles">
+            {g.cards.map(c => (
+              <div key={c.id} className={`skin-card ${c.on ? 'on' : ''} ${c.owned ? '' : 'locked'}`}>
+                <div className="skin-preview felt">
+                  <div className="skin-tiles">
+                    <div className="preview-tile v"><TileFace a={6} b={3} vertical skin={c.id} /></div>
+                    <div className="preview-tile h"><TileFace a={5} b={1} vertical={false} skin={c.id} /></div>
+                  </div>
+                  {!c.owned && <span className="skin-lock"><Lock /></span>}
+                </div>
                 <div className="skin-name">{c.label}</div>
                 <div className="skin-note">{c.on ? 'In use' : c.owned ? 'Owned' : c.need}</div>
+                {c.on && <div className="skin-state on">Equipped</div>}
+                {!c.on && c.owned && <button className="skin-equip" onClick={() => setEquipped('tile', c.id)}>Equip</button>}
+                {!c.owned && <div className="skin-state locked">Locked</div>}
               </div>
-              {c.on && <div className="skin-state on compact">Equipped</div>}
-              {!c.on && c.owned && <button className="skin-equip compact" onClick={() => setEquipped('table', c.id)}>Equip</button>}
-              {!c.owned && <div className="skin-state locked compact"><Lock /></div>}
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </section>
+      ))}
+
+      <h2 className="skins-section">Tables</h2>
+      {groupCards(tableCards, TABLE_GROUPS).map(g => (
+        <section key={g.label} className="skins-group">
+          <h3 className="skins-group-title">{g.label}</h3>
+          <div className="skins-grid tables">
+            {g.cards.map(c => (
+              <div key={c.id} className={`skin-card ${c.on ? 'on' : ''} ${c.owned ? '' : 'locked'}`}>
+                <div className="skin-preview rail" style={{ background: c.look.rail }}>
+                  <div className="skin-felt" style={{ background: c.look.felt }}>
+                    <div className="preview-tile h small"><TileFace a={2} b={5} vertical={false} /></div>
+                    <div className="preview-tile v small"><TileFace a={5} b={5} vertical /></div>
+                    <div className="preview-tile h small"><TileFace a={5} b={0} vertical={false} /></div>
+                  </div>
+                  {!c.owned && <span className="skin-lock"><Lock /></span>}
+                </div>
+                <div className="skin-row">
+                  <div>
+                    <div className="skin-name">{c.label}</div>
+                    <div className="skin-note">{c.on ? 'In use' : c.owned ? 'Owned' : c.need}</div>
+                  </div>
+                  {c.on && <div className="skin-state on compact">Equipped</div>}
+                  {!c.on && c.owned && <button className="skin-equip compact" onClick={() => setEquipped('table', c.id)}>Equip</button>}
+                  {!c.owned && <div className="skin-state locked compact"><Lock /></div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   )
 }

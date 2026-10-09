@@ -77,3 +77,12 @@
 .skin-state.locked { border: 1px dashed var(--border); color: #6b6555; }
 .compact { flex-shrink: 0; padding: 0 12px; }
 .skin-state.locked.compact { width: 34px; padding: 0; }
+
+/* themed groups */
+.skins-group { margin-bottom: 1.1rem; }
+.skins-group-title {
+  margin: 0.4rem 0 0.6rem; font-family: 'DM Mono', monospace; font-weight: 500;
+  font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold, #c9a84c);
+  display: flex; align-items: center; gap: 10px;
+}
+.skins-group-title::after { content: ''; flex: 1; height: 1px; background: var(--border, #3a3528); }

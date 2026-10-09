@@ -1055,22 +1055,29 @@ export default function Lobby() {
             )}
           </div>
         )}
-      <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={() => navigate('/challenge')} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>⚔️ Challenge</button>
-          <button onClick={() => navigate('/friends')} style={{ position: 'relative', background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>
-            👥 Friends
-            {friendRequests > 0 && <span style={{ position: 'absolute', top: -7, right: -7, minWidth: 18, height: 18, borderRadius: 9, background: '#c94c4c', color: '#fff', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{friendRequests}</span>}
-          </button>
-          <button onClick={() => navigate('/trophies')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🏆 Trophies</button>
-          <button onClick={() => navigate('/skins')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🎨 Skins</button>
-          <button onClick={() => navigate('/practice')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🎲 Practice</button>
-          <button onClick={() => navigate('/tournament')} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>🏆 Tournament</button>
-          <button onClick={() => navigate('/story')} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>📖 Story Mode</button>
-          <button onClick={() => navigate('/wa-tab-la')} style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>👑 Wa Tab La</button>
-          <button onClick={() => navigate('/tracker')} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--ivory-dim)', borderRadius: 4, padding: '0.5rem 1.25rem', fontFamily: 'DM Mono, monospace', fontSize: '0.62rem', letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}>📊 Dekabess Tracker</button>
+      {/* the menu, in fixed rows: play modes · the crown and trophies · your stuff · the tracker */}
+      <nav className="lobby-menu">
+        <div className="menu-row">
+          <button className="menu-btn gold" onClick={() => navigate('/story')}>📖 Story Mode</button>
+          <button className="menu-btn gold" onClick={() => navigate('/challenge')}>⚔️ Challenge</button>
+          <button className="menu-btn gold" onClick={() => navigate('/tournament')}>🏆 Tournament</button>
         </div>
-      </div>
+        <div className="menu-row">
+          <button className="menu-btn gold" onClick={() => navigate('/wa-tab-la')}>👑 Wa Tab La</button>
+          <button className="menu-btn gold" onClick={() => navigate('/trophies')}>🥇 Trophies</button>
+        </div>
+        <div className="menu-row">
+          <button className="menu-btn" onClick={() => navigate('/skins')}>🎨 Skins</button>
+          <button className="menu-btn" onClick={() => navigate('/friends')}>
+            👥 Friends
+            {friendRequests > 0 && <span className="menu-badge">{friendRequests}</span>}
+          </button>
+          <button className="menu-btn" onClick={() => navigate('/practice')}>🎲 Practice</button>
+        </div>
+        <div className="menu-row">
+          <button className="menu-btn" onClick={() => navigate('/tracker')}>📊 Dekabess Tracker</button>
+        </div>
+      </nav>
 
       {showIosHint && (
         <div style={{

@@ -620,6 +620,8 @@ function TileImg({ tile, size = 40, style = {}, onClick, selected, dimmed, faceD
   return (
     <div
       onClick={onClick}
+      className={`tracker-tile ${selected ? 'is-selected' : ''}`}
+      data-tap={onClick ? '1' : '0'}
       style={{
         display: 'inline-flex',
         flexDirection: 'column',
@@ -1375,7 +1377,7 @@ export default function Tracker() {
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 12 }}>
         {[['game', '🎮 Game'], ['guide', '🎯 Dekabess Guide']].map(([id, label]) => (
-          <button key={id} onClick={() => setActiveTab(id)} style={{
+          <button key={id} className="tracker-tab" onClick={() => setActiveTab(id)} style={{
             flex: 1, padding: '0.6rem', background: 'none', border: 'none',
             borderBottom: `2px solid ${activeTab === id ? 'var(--gold)' : 'transparent'}`,
             color: activeTab === id ? 'var(--gold)' : 'var(--ivory-dim)',
