@@ -16,15 +16,17 @@ export default function OpponentHands({ players, myInfo, roomData, turnClock }) 
 
   // Position relative to MY seat, following the turn order (counter-clockwise).
   //   4 players: right, across, left.   3 players: right, left.   2 players: across.
-  const n = Math.max(2, Math.min(4, players.length || 4))
+  // Placed by each opponent's ORDER around the table, not their raw seat
+  // number: Story and Practice show a 2-player opponent at seat 2 (across),
+  // multiplayer uses seats 0 and 1 — both must land across from you.
+  const others = players
+    .filter(p => p.seat !== mySeat)
+    .map(p => p.seat)
+    .sort((a, b) => (((a - mySeat) % 4) + 4) % 4 - (((b - mySeat) % 4) + 4) % 4)
+  const SPOTS = { 1: ['top'], 2: ['right', 'left'], 3: ['right', 'top', 'left'] }[others.length] || ['right', 'top', 'left']
   function getPosition(theirSeat) {
-    const diff = ((theirSeat - mySeat) % n + n) % n
-    if (n === 2) return diff === 1 ? 'top' : null
-    if (n === 3) return diff === 1 ? 'right' : diff === 2 ? 'left' : null
-    if (diff === 1) return 'right'
-    if (diff === 2) return 'top'
-    if (diff === 3) return 'left'
-    return null
+    const i = others.indexOf(theirSeat)
+    return i >= 0 ? (SPOTS[i] || null) : null
   }
 
   return (
