@@ -6,24 +6,36 @@ export function useAuth() {
   const [profile, setProfile] = useState(null)
 
   useEffect(() => {
+    let active = true
+    let authChanged = false
     db.auth.getSession().then(({ data: { session } }) => {
+      if (!active || authChanged) return
       setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id)
+    }).catch(() => {
+      if (active && !authChanged) setUser(null)
     })
 
     const { data: { subscription } } = db.auth.onAuthStateChange((_event, session) => {
+      if (!active) return
+      authChanged = true
+      // Auth callbacks run under Supabase's session lock. Only update React
+      // state here; the separate effect below loads the profile afterwards.
       setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id)
-      else setProfile(null)
     })
 
-    return () => subscription.unsubscribe()
+    return () => { active = false; subscription.unsubscribe() }
   }, [])
 
-  async function loadProfile(userId) {
-    const { data } = await db.from('profiles').select('*').eq('id', userId).single()
-    setProfile(data)
-  }
+  const userId = user?.id
+  useEffect(() => {
+    let active = true
+    setProfile(null)
+    if (!userId) return
+    db.from('profiles').select('*').eq('id', userId).single()
+      .then(({ data }) => { if (active) setProfile(data) })
+      .catch(() => { if (active) setProfile(null) })
+    return () => { active = false }
+  }, [userId])
 
   async function signOut() {
     await db.auth.signOut()
