@@ -238,3 +238,6 @@ input[type="text"]::placeholder { color: #4a4538; }
   .menu-row { gap: 6px; }
   .menu-btn { font-size: 0.56rem; letter-spacing: 0.04em; padding: 0.5rem 0.25rem; }
 }
+
+/* which version is live — bumped with every delivery */
+.lobby-version { margin: 1.4rem 0 0.4rem; text-align: center; font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.18em; text-transform: uppercase; color: #5a5446; }

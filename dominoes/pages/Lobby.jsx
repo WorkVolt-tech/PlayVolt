@@ -6,6 +6,7 @@ import { generateRoomCode, generateDominoSet, shuffle, dealHands, dealTable } fr
 import './Lobby.css'
 import { SeatAvatar, hasSeatAvatar } from '../lib/avatars'
 import { statusOf } from './Friends'
+import { VERSION, VERSION_NOTE } from '../version'
 
 // ── Solo opponents ───────────────────────────────────────────────────────────
 // A bot's personality comes from its name (see getPersonality in botAI.js).
@@ -1080,6 +1081,7 @@ export default function Lobby() {
           <button className="menu-btn" onClick={() => navigate('/tracker')}>📊 Dekabess Tracker</button>
         </div>
       </nav>
+      <div className="lobby-version" title={VERSION_NOTE}>Dekabess {VERSION}</div>
 
       {showIosHint && (
         <div style={{
