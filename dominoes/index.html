@@ -11,7 +11,10 @@
 
     <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- "black": the iPhone keeps a solid strip for the clock and camera and
+         starts the app below it, so no page's buttons can end up underneath.
+         ("black-translucent" drew the app under the status bar.) -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Dekabess" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
 
