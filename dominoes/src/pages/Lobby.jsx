@@ -400,7 +400,7 @@ export default function Lobby() {
   }
 
   async function createRoom(modeArg) {
-    const mode = modeArg || selectedMode
+    const mode = typeof modeArg === 'string' ? modeArg : selectedMode
     const nick = getNickname(); if (!nick) return
     const code = generateRoomCode()
     const { data: room, error } = await db.from('domino_rooms')
@@ -412,7 +412,7 @@ export default function Lobby() {
       .select().single()
 
     if (player) setPlayers([player])
-    if (modeArg) setMode(modeArg)
+    if (typeof modeArg === 'string') setMode(modeArg)
     enterWaiting({ room: { ...room, game_mode: mode }, code, playerId: player?.id, seat: 0, host: true })
     return { room, code }
   }
@@ -731,9 +731,10 @@ export default function Lobby() {
   // hear when a friend declines your challenge
   useEffect(() => {
     let ch = null
+    let off = false
     db.auth.getUser().then(({ data }) => {
       const uid = data?.user?.id
-      if (!uid) return
+      if (!uid || off) return
       ch = db.channel(`challenge-replies-${uid}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'friend_challenges', filter: `from_user=eq.${uid}` }, async ({ new: c }) => {
           if (c?.status !== 'declined') return
@@ -743,7 +744,7 @@ export default function Lobby() {
         })
         .subscribe()
     })
-    return () => { if (ch) db.removeChannel(ch) }
+    return () => { off = true; if (ch) db.removeChannel(ch) }
   }, [])
   async function inviteFriend(f) {
     setInvited(v => ({ ...v, [f.user_id]: '…' }))
@@ -832,7 +833,7 @@ export default function Lobby() {
         {/* Create */}
         {tab === 'create' && (
           <div className="panel">
-            <button className="btn btn-primary" onClick={createRoom}>Create New Room</button>
+            <button className="btn btn-primary" onClick={() => createRoom()}>Create New Room</button>
           </div>
         )}
 
