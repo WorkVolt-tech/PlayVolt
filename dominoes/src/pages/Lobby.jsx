@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import TrophyNotice from '../components/TrophyNotice'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
+import { useAuth } from '../lib/useAuth'
 import { generateRoomCode, generateDominoSet, shuffle, dealHands, dealTable } from '../hooks/useGameState'
 import './Lobby.css'
 import { SeatAvatar, hasSeatAvatar } from '../lib/avatars'
@@ -66,30 +67,7 @@ function humanCapacity(mode) {
 
 export default function Lobby() {
   const navigate = useNavigate()
-  const [authUser, setAuthUser] = useState(null)
-  const [authProfile, setAuthProfile] = useState(null)
-
-  useEffect(() => {
-    import('../lib/supabase').then(({ db }) => {
-      db.auth.getSession().then(async ({ data: { session } }) => {
-        setAuthUser(session?.user ?? null)
-        if (session?.user) {
-          const { data } = await db.from('profiles').select('nickname').eq('id', session.user.id).single()
-          setAuthProfile(data)
-        }
-      })
-      db.auth.onAuthStateChange(async (_, s) => {
-        setAuthUser(s?.user ?? null)
-        if (s?.user) {
-          const { db: dbInner } = await import('../lib/supabase')
-          const { data } = await dbInner.from('profiles').select('nickname').eq('id', s.user.id).single()
-          setAuthProfile(data)
-        } else {
-          setAuthProfile(null)
-        }
-      })
-    })
-  }, [])
+  const { user: authUser, profile: authProfile } = useAuth()
 
   // Detect iOS Safari (not already installed)
   const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase())
@@ -730,22 +708,22 @@ export default function Lobby() {
   }, [tab, amHost])
   // hear when a friend declines your challenge
   useEffect(() => {
-    let ch = null
+    const uid = authUser?.id
+    if (!uid) return
     let off = false
-    db.auth.getUser().then(({ data }) => {
-      const uid = data?.user?.id
-      if (!uid || off) return
-      ch = db.channel(`challenge-replies-${uid}`)
+    // Channel removal is asynchronous. A remount must not reuse a channel
+    // that has already subscribed and is still being removed.
+    const ch = db.channel(`challenge-replies-${uid}-${crypto.randomUUID()}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'friend_challenges', filter: `from_user=eq.${uid}` }, async ({ new: c }) => {
           if (c?.status !== 'declined') return
           const { data: rows } = await db.rpc('my_friends')
+          if (off) return
           const who = (rows || []).find(r => r.user_id === c.to_user)?.nickname || 'Your friend'
           setMsg({ text: `${who} declined your challenge.`, type: 'error' })
         })
         .subscribe()
-    })
-    return () => { off = true; if (ch) db.removeChannel(ch) }
-  }, [])
+    return () => { off = true; db.removeChannel(ch) }
+  }, [authUser?.id])
   async function inviteFriend(f) {
     setInvited(v => ({ ...v, [f.user_id]: '…' }))
     await db.rpc('challenge_friend', { p_friend: f.user_id, p_room: myRoomId, p_code: myRoomCode, p_mode: roomMode || selectedMode })
