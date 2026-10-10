@@ -16,6 +16,8 @@ export default function Challenge() {
   const { user, isLoading } = useAuth()
   const [status, setStatus] = useState(null)
   const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false)          // Start pressed, waiting for the server
+  const [loadProblem, setLoadProblem] = useState('')
   const c = challengeFor()
   const next = challengeFor(new Date(weekStartUTC().getTime() + 7 * 86400000))
   const prize = TABLE_SKINS[c.table]
@@ -26,13 +28,23 @@ export default function Challenge() {
 
   useEffect(() => {
     if (!user) return
-    db.rpc('challenge_status').then(({ data }) => setStatus(Array.isArray(data) ? data[0] : data))
+    db.rpc('challenge_status').then(({ data, error }) => {
+      if (error) { setLoadProblem(`Couldn’t load your tries — ${error.message || 'server error'}`); return }
+      setStatus(Array.isArray(data) ? data[0] : data)
+    }, e => setLoadProblem(`Couldn’t reach the server — ${e?.message || 'check your connection'}`))
   }, [user])
 
   async function start() {
-    setMsg('')
-    const { data: left } = await db.rpc('challenge_start')
-    if (left == null || left < 0) { setMsg('No tries left this week.'); return }
+    if (busy) return                                   // one tap only
+    setMsg(''); setBusy(true)
+    const timeout = new Promise(r => setTimeout(() => r({ timedOut: true }), 10000))
+    let res
+    try { res = await Promise.race([db.rpc('challenge_start'), timeout]) }
+    catch (e) { res = { error: e } }
+    if (res?.timedOut) { setBusy(false); setMsg('The server didn’t answer — check your connection and try again.'); return }
+    if (res?.error) { setBusy(false); setMsg(`Couldn’t start — ${res.error.message || 'server error'}`); return }
+    const left = res?.data
+    if (left == null || left < 0) { setBusy(false); setMsg('No tries left this week.'); return }
     localStorage.removeItem('challenge_game')
     sessionStorage.setItem('challenge_setup', JSON.stringify({
       seats: c.seats, pile: c.pile, bots: c.opponents,
@@ -83,6 +95,7 @@ export default function Challenge() {
           <span className="ch-left">{won ? 'Beaten ✓' : `${left} left`}</span>
         </div>
 
+        {loadProblem && <div className="ch-msg">{loadProblem}</div>}
         {msg && <div className="ch-msg">{msg}</div>}
         {c.format === 'team' ? (
           <div className="ch-msg soft">Team challenges — you and a friend — arrive with the next update.</div>
@@ -91,7 +104,9 @@ export default function Challenge() {
         ) : inProgress ? (
           <button className="ch-btn" onClick={() => navigate('/challenge/play')}>Continue your match</button>
         ) : (
-          <button className="ch-btn" disabled={left <= 0} onClick={start}>{left > 0 ? 'Start — uses 1 try' : 'No tries left this week'}</button>
+          <button className="ch-btn" disabled={left <= 0 || busy} onClick={start}>
+            {busy ? 'Starting…' : left > 0 ? 'Start — uses 1 try' : 'No tries left this week'}
+          </button>
         )}
       </div>
 
