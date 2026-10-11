@@ -4,14 +4,6 @@ import { db } from '../lib/supabase'
 import { TABLE_SKINS, wtlPrize, weekStartUTC } from '../lib/skins'
 import './WaTabLa.css'
 
-function getWeekStart() {
-  const now = new Date()
-  const day = now.getDay()
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1) // Monday
-  const monday = new Date(now.setDate(diff))
-  return monday.toISOString().split('T')[0]
-}
-
 // One row per player: a signed-in player's wins from every device are added
 // together (guests, with no account, count per device). The name shown is the
 // one from the device with the most wins.
@@ -29,12 +21,10 @@ export function mergeByAccount(rows) {
   return [...by.values()].sort((a, b) => b.wins - a.wins).slice(0, 20)
 }
 
-function getTimeUntilSunday() {
+function getTimeUntilReset() {
   const now = new Date()
-  const nextSunday = new Date()
-  nextSunday.setDate(now.getDate() + (7 - now.getDay()))
-  nextSunday.setHours(0, 0, 0, 0)
-  const diff = nextSunday - now
+  const nextMonday = weekStartUTC(now).getTime() + 7 * 86400000
+  const diff = nextMonday - now.getTime()
   const h = Math.floor(diff / 3600000)
   const m = Math.floor((diff % 3600000) / 60000)
   return `${h}h ${m}m`
@@ -46,13 +36,13 @@ export default function WaTabLa() {
   const [solo, setSolo] = useState([])
   const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
-  const [timeLeft, setTimeLeft] = useState(getTimeUntilSunday())
+  const [timeLeft, setTimeLeft] = useState(getTimeUntilReset())
 
   const load = useCallback(async () => {
     setLoading(true)
     // award any finished weeks' prize tables before showing this week
     try { await db.rpc('settle_wa_tab_la') } catch { /* ignore */ }
-    const week = getWeekStart()
+    const week = weekStartUTC().toISOString().slice(0, 10)
     const [s, t] = await Promise.all([
       db.from('wa_tab_la').select('*').eq('mode', 'solo').eq('week_start', week).order('wins', { ascending: false }).limit(200),
       db.from('wa_tab_la').select('*').eq('mode', 'teams').eq('week_start', week).order('wins', { ascending: false }).limit(200),
@@ -64,7 +54,7 @@ export default function WaTabLa() {
 
   useEffect(() => { load() }, [load])
   useEffect(() => {
-    const t = setInterval(() => setTimeLeft(getTimeUntilSunday()), 60000)
+    const t = setInterval(() => setTimeLeft(getTimeUntilReset()), 60000)
     return () => clearInterval(t)
   }, [])
 
