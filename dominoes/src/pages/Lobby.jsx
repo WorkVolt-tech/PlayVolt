@@ -1038,7 +1038,6 @@ export default function Lobby() {
       <nav className="lobby-menu">
         <div className="menu-row">
           <button className="menu-btn gold" onClick={() => navigate('/story')}>📖 Story Mode</button>
-          <button className="menu-btn gold" onClick={() => navigate('/challenge')}>⚔️ Challenge</button>
           <button className="menu-btn gold" onClick={() => navigate('/tournament')}>🏆 Tournament</button>
         </div>
         <div className="menu-row">
