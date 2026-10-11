@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { db } from '../lib/supabase'
+import { createConfirmedSaver } from '../story/saveProgress'
 import { useAuth } from '../lib/useAuth'
 import { CHAPTERS, NORMAL_CIRCUIT } from '../story/chapters'
 import * as Engine from '../story/storyEngine'
@@ -58,7 +59,9 @@ export default function StoryChallenge() {
   // straight after a round can't count it twice.
   const counted = useRef(new Set(saved?.counted || []))
   // Challenges already written to your account on this device.
-  const recordedKeys = useRef(new Set(saved?.recorded || []))
+  // Old local "recorded" flags could have been written before a failed RPC.
+  const progressSaver = useRef(null)
+  if (!progressSaver.current) progressSaver.current = createConfirmedSaver(args => db.rpc('record_challenge', args))
   // Restoring a round in play: skip the automatic first deal.
   const resumeRound = useRef(!!saved?.st)
 
@@ -69,6 +72,7 @@ export default function StoryChallenge() {
   const [story, setStory] = useState(saved?.introSeen ? null : 'intro')   // 'intro' | null | 'outro'
   const [unlocked, setUnlocked] = useState([])   // bots this player has earned
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
   const busyRef = useRef(false)
   const [knock, setKnock] = useState(null)             // { name, position } while it plays
   const [opener, setOpener] = useState(null)           // "Round 2 · Ti-Sak opens", briefly
@@ -123,7 +127,6 @@ export default function StoryChallenge() {
         index, wins, losses, introSeen: story !== 'intro',
         st, partner,
         counted: [...counted.current],
-        recorded: [...recordedKeys.current],
       }))
     } catch { /* storage unavailable */ }
   }, [posKey, index, wins, losses, story, st, partner])
@@ -331,38 +334,47 @@ export default function StoryChallenge() {
     else setRoundPanel({ ...outcome.round, wins: w, losses: l, winner: st.winner })
   }, [st, result, challenge, wins, losses, deal, describeRound])
 
-  // ── save as soon as it's won ───────────────────────────────────────────────
-  // This used to happen when you pressed "Next challenge". Press "Leave"
-  // instead — or close the tab — and a chapter you had actually finished was
-  // never recorded. The result is now saved the moment it's earned; the
-  // buttons only decide where you go next.
-  useEffect(() => {
-    if (!result?.met || !user || !challenge) return
-    const key = `${chapter.id}:${challenge.id}`
-    if (recordedKeys.current.has(key)) return       // already saved, even across a refresh
-    recordedKeys.current.add(key)
-    const last = index === (chapter.challenges.length - 1)
-    ;(async () => {
-      const { error } = await db.rpc('record_challenge', {
+  // Confirm the account write before showing the chapter outro or moving on.
+  // Failed saves retain the won round locally and can be retried without replay.
+  const saveWin = useCallback(async () => {
+    if (!result?.met) return true
+    if (!user || !challenge) {
+      setSaveError('Sign in to save this win. Your won round is still on this device.')
+      return false
+    }
+    setSaving(true)
+    setSaveError(null)
+    const last = index === chapter.challenges.length - 1
+    try {
+      await progressSaver.current.save(`${user.id}:${chapter.id}:${challenge.id}`, {
         p_chapter: chapter.id,
         p_challenge: challenge.id,
         p_stars: result.stars,
         p_complete_chapter: last,
         p_unlock_bot: last ? (chapter.unlocks || null) : null,
       })
-      if (error) console.error('[story] could not save progress:', error.message)
-    })()
+      return true
+    } catch (error) {
+      console.error('[story] could not save progress:', error.message)
+      setSaveError('Your win has not saved yet. Check your connection and press Retry save. You do not need to replay it.')
+      return false
+    } finally {
+      setSaving(false)
+    }
   }, [result, user, chapter, challenge, index])
+
+  useEffect(() => {
+    if (result?.met && user && challenge) void saveWin()
+  }, [saveWin])
 
   async function finishChallenge() {
     if (!result || saving) return
-    setSaving(true)
-    const last = index === (chapter.challenges.length - 1)
-    setSaving(false)
+    if (result.met && !(await saveWin())) return
+    const last = index === chapter.challenges.length - 1
     setResult(null); setWins(0); setLosses(0)
     if (result.met && !last) setIndex(i => i + 1)
     else if (result.met && last) { clearSaved(); setStory('outro') }
-    else deal()   // failed — try again
+    else deal()
   }
 
   // Place a tile. The side is checked against the board first — the same
@@ -509,20 +521,16 @@ export default function StoryChallenge() {
     if (seat === 0) return 'You'
     return seatBot(seat) || (challenge.type === 'puzzle' ? `Seat ${seat + 1}` : '—')
   })
-  // In a 1v1 the only opponent is seat 1, which the table layout would place
-  // on your RIGHT. With nobody else at the table they belong across from you,
-  // so for display only they're shown as seat 2 (the "top" chair).
-  const twoSeat = (st?.seats ?? 4) === 2
-  const shown = seat => (twoSeat && seat === 1 ? 2 : seat)
+  // OpponentHands positions real seat indices for 2-, 3- and 4-seat tables.
   const fakePlayers = (st?.hands || []).map((h, seat) => ({
-    seat: shown(seat),
+    seat,
     engineSeat: seat,
     nickname: seatNames[seat],
     hand: h,
     is_ai: seat !== 0,
   }))
   const fakeRoom = {
-    current_turn: shown(st?.turn ?? 0),
+    current_turn: st?.turn ?? 0,
     game_mode: challenge.partner ? 'asosye' : 'chien',
     status: st?.status === 'over' ? 'round_end' : 'playing',
   }
@@ -703,13 +711,15 @@ export default function StoryChallenge() {
             </p>
             {result.met && <div className="sc-stars">{'★'.repeat(result.stars)}{'☆'.repeat(3 - result.stars)}</div>}
             {!result.met && partnerSwap}
+            {saveError && <p role="alert">{saveError}</p>}
             <div className="sc-actions">
               <button className="sc-btn" disabled={saving} onClick={finishChallenge}>
-                {result.met
+                {saving ? 'Saving…' : saveError ? 'Retry save' : result.met
                   ? (index === chapter.challenges.length - 1 ? 'Finish chapter' : 'Next challenge')
                   : 'Try again'}
               </button>
-              <button className="sc-btn ghost" onClick={() => {
+              <button className="sc-btn ghost" disabled={saving} onClick={async () => {
+                if (result.met && !(await saveWin())) return
                 if (result.met && index === chapter.challenges.length - 1) { clearSaved(); setStory('outro') }
                 else navigate('/story')
               }}>Leave</button>
