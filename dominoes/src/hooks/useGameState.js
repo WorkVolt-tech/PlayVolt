@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
+import { weekStartUTC } from '../lib/skins'
 import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 
 // Turn timing. Off by default; switch it on from the console with
@@ -479,10 +480,7 @@ export function useGameState(myInfo, navigate) {
           playerId = crypto.randomUUID()
           localStorage.setItem('dekabess_player_id', playerId)
         }
-        const weekStart = new Date()
-        const day = weekStart.getDay()
-        weekStart.setDate(weekStart.getDate() - day + (day === 0 ? -6 : 1))
-        const weekStr = weekStart.toISOString().split('T')[0]
+        const weekStr = weekStartUTC().toISOString().slice(0, 10)
         const leaderMode = room.game_mode === 'asosye' ? 'teams' : 'solo'
         const nickname = players.find(p => p.seat === myInfo.seat)?.nickname || 'Player'
         // wa_tab_la_win also records your account, so the week's prize table
