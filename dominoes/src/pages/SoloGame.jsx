@@ -11,7 +11,7 @@ import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
-import { TABLE_SKINS, weekStartUTC } from '../lib/skins'
+import { weekStartUTC } from '../lib/skins'
 import './StoryChallenge.css'      // the result card's styles
 import { botsCountForTrophies } from '../lib/trophies'
 import './Game.css'
@@ -61,15 +61,14 @@ function nextStreak(streak, winner, isDek) {
   return { seat: winner, team: winner, count: isDek ? 2 : 1 }
 }
 
-export default function SoloGame({ challengeMode = false }) {
+export default function SoloGame() {
   const navigate = useNavigate()
 
   // The game is saved on the device as you play, so a refresh — or closing
   // the app and coming back — picks up exactly where you were. The lobby
   // clears this when you start a NEW solo game.
-  // Challenge Mode runs on this same screen, with its own save and setup
-  const SAVE_KEY = challengeMode ? 'challenge_game' : 'solo_game'
-  const SETUP_KEY = challengeMode ? 'challenge_setup' : 'solo_setup'
+  const SAVE_KEY = 'solo_game'
+  const SETUP_KEY = 'solo_setup'
   const saved = (() => {
     try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') } catch { return null }
   })()
@@ -77,22 +76,19 @@ export default function SoloGame({ challengeMode = false }) {
   const setup = (() => {
     try { return JSON.parse(sessionStorage.getItem(SETUP_KEY) || 'null') } catch { return null }
   })()
-  // how many at the table (Challenge Mode: 2, 3 or 4), and whether there's a pile
+  // How many at the table (2, 3 or 4), and whether there is a pile.
   const seats = setup?.seats || saved?.seats || 4
   const pileOn = !!(setup?.pile ?? saved?.pile)
-  const challenge = setup?.challenge || saved?.challenge || null
   const bots = setup?.bots?.length === seats - 1 ? setup.bots
              : saved?.bots?.length === seats - 1 ? saved.bots
              : ['Ti-Djo', 'Ti-Cam', 'Ti-Jean'].slice(0, seats - 1)
   const myName = setup?.nickname || saved?.nickname || 'You'
   // 'asosye' = you + an AI partner (across, seat 2) vs 2 AI; otherwise every man for himself
   const teams = seats === 4 && (setup?.mode || saved?.mode) === 'asosye'
-  // every deal follows the table: size, pile, and (Challenge Mode, no pile) every tile dealt
-  const dealCfg = extra => ({ seats, pile: pileOn, dealAll: challengeMode && !pileOn && seats < 4, ...extra })
+  // Every deal follows the free-play table size and pile setting.
+  const dealCfg = extra => ({ seats, pile: pileOn, ...extra })
 
   const [round, setRound] = useState(saved?.round ?? 1)
-  const challengeDone = useRef(false)
-  const [challengeResult, setChallengeResult] = useState(null)
   const [st, setSt] = useState(() => saved?.st || Engine.startGame(dealCfg({ forceDoubleSix: true })))
   const [streak, setStreak] = useState(saved?.streak || { seat: null, team: null, count: 0 })
   const [selected, setSelected] = useState(null)
@@ -217,17 +213,6 @@ export default function SoloGame({ challengeMode = false }) {
       else if (down3) localStorage.setItem('dk-solo-down3', '1')
     } catch { /* ignore */ }
 
-    // Challenge Mode: the match is over — report it (a win unlocks the table)
-    if (challengeMode && vyej && !challengeDone.current) {
-      challengeDone.current = true
-      ;(async () => {
-        const { data: prize } = await db.rpc('challenge_finish', { p_won: mineWin })
-        const { data: status } = await db.rpc('challenge_status')
-        const row = Array.isArray(status) ? status[0] : status
-        setChallengeResult({ won: mineWin, prize: prize || null, left: row?.tries_left ?? 0 })
-        localStorage.removeItem(SAVE_KEY)          // this try is finished
-      })()
-    }
     recordRound({ won: mineWin, isDek: isDek && mineWin, vyej: vyej && mineWin, matchOver: vyej, clean, comeback,
       fiveDoubles: !!st.fiveDoubles, fiveDoublesWon: !!st.fiveDoubles && winner === 0 })
   }, [st.status])
@@ -245,8 +230,8 @@ export default function SoloGame({ challengeMode = false }) {
         p_results: [{ user_id: uid, won, vyej, dekabess: isDek, match_over: matchOver, trophy: botsCountForTrophies(bots) }],
       })
       // Expert free-play matches qualify for Wa Tab La, including a partner's
-      // Asosyé win. Story/weekly challenge rewards have their own progression.
-      if (!challengeMode && vyej && botsCountForTrophies(bots)) {
+      // Asosyé win. Story rewards have their own progression.
+      if (vyej && botsCountForTrophies(bots)) {
         let playerId = localStorage.getItem('dekabess_player_id')
         if (!playerId) {
           playerId = crypto.randomUUID()
@@ -287,7 +272,7 @@ export default function SoloGame({ challengeMode = false }) {
   useEffect(() => {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
-        bots, nickname: myName, mode: teams ? 'asosye' : 'solo', seats, pile: pileOn, challenge,
+        bots, nickname: myName, mode: teams ? 'asosye' : 'solo', seats, pile: pileOn,
         round, st, streak, roundEnd,
         passing: [...passingSeats],
         recorded: [...recorded.current],
@@ -311,7 +296,7 @@ export default function SoloGame({ challengeMode = false }) {
   const leave = () => {
     sessionStorage.removeItem(SETUP_KEY)
     localStorage.removeItem(SAVE_KEY)
-    navigate(challengeMode ? '/challenge' : '/')
+    navigate('/')
   }
 
   // ── placing tiles: same rules and tap behaviour as the live game ───────────
@@ -437,28 +422,7 @@ export default function SoloGame({ challengeMode = false }) {
         />
       )}
 
-      {challengeMode && challengeResult && !showDek && !boardDek && (
-        <div className="sc-overlay">
-          <div className="sc-card challenge-result">
-            <h2>{challengeResult.won ? 'Challenge beaten!' : 'Not this time'}</h2>
-            {challengeResult.won && challengeResult.prize && TABLE_SKINS[challengeResult.prize] ? (
-              <>
-                <p>You unlocked the <strong>{TABLE_SKINS[challengeResult.prize].label}</strong> table — it’s yours for good.</p>
-                <img src={TABLE_SKINS[challengeResult.prize].thumb} alt="" style={{ width: '100%', maxWidth: 260, borderRadius: 10, border: '1px solid var(--gold)' }} />
-              </>
-            ) : challengeResult.won ? (
-              <p>You beat this week’s challenge.</p>
-            ) : (
-              <p>{challengeResult.left > 0 ? `You have ${challengeResult.left} ${challengeResult.left === 1 ? 'try' : 'tries'} left this week.` : 'That was your last try this week — a new challenge starts on Monday.'}</p>
-            )}
-            <div className="sc-actions">
-              <button className="sc-btn" onClick={leave}>Back to Challenge</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {roundEnd && !showDek && !boardDek && !(challengeMode && roundEnd.vyej) && (
+      {roundEnd && !showDek && !boardDek && (
         <RoundOverlay
           roomData={roomLike}
           players={players}
