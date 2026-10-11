@@ -1,3 +1,5 @@
+import { isTableBlocked } from '../lib/blockedGame'
+
 // ── Story Mode engine ────────────────────────────────────────────────────────
 //
 // Runs a story match or puzzle ON THE DEVICE. No Supabase, no room rows, no
@@ -178,9 +180,7 @@ export function playTile(st, tile, side) {
 }
 
 function blockedNow(st) {
-  if (st.usePile && st.pile.length) return false
-  for (let s = 0; s < st.seats; s++) if (canPlay(st, s)) return false
-  return true
+  return isTableBlocked(st.board, st.hands, st.usePile ? st.pile.length : 0, st.seats)
 }
 
 // A jammed round: lowest pips wins, ties to the lowest seat — exactly as
@@ -206,13 +206,15 @@ export function drawFrom(st, index = 0) {
   const drawn = st.pile[i]
   const pile = st.pile.filter((_, j) => j !== i)
   const hands = st.hands.map((h, k) => (k === seat ? [...h, drawn] : h))
-  return { ...st, hands, pile, log: [...st.log, { seat, action: 'draw' }] }
+  const next = { ...st, hands, pile, log: [...st.log, { seat, action: 'draw' }] }
+  return blockedNow(next) ? endBlocked(next) : next
 }
 
 // "Can't play" — draw from the pile if there is one, otherwise pass.
 // Returns the new state; the seat keeps its turn while it is drawing.
 export function drawOrPass(st) {
   if (st.status !== 'playing') return st
+  if (blockedNow(st)) return endBlocked(st)
   const seat = st.turn
 
   if (st.usePile && st.pile.length && !canPlay(st, seat)) {
