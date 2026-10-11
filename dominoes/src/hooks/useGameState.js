@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
 import { weekStartUTC } from '../lib/skins'
 import { isTableBlocked } from '../lib/blockedGame'
+import { tableCountsForLeaderboard } from '../lib/trophies'
 import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 
 // Turn timing. Off by default; switch it on from the console with
@@ -483,8 +484,13 @@ export function useGameState(myInfo, navigate) {
       const isVyej    = newStreak.count >= 4
       const winnerKey = mode === 'asosye' ? (resolvedSeat === 0 || resolvedSeat === 2 ? 'A' : 'B') : resolvedSeat
       
-      // Record Vyèj in Wa Tab La leaderboard — for the winner only
-      if (isVyej && resolvedSeat === myInfo.seat) {
+      // Check the saved roster at match completion, including the AI partner.
+      // Missing/failed roster reads must never award an unverified table.
+      const leaderboardRoster = isVyej && resolvedSeat === myInfo.seat
+        ? await db.from('domino_players').select('seat,is_ai,stand_in,nickname').eq('room_id', myInfo.roomId)
+        : null
+      if (isVyej && resolvedSeat === myInfo.seat && !leaderboardRoster?.error &&
+          tableCountsForLeaderboard(leaderboardRoster?.data, room.seat_count || 4)) {
         // Get or create persistent player ID
         let playerId = localStorage.getItem('dekabess_player_id')
         if (!playerId) {
