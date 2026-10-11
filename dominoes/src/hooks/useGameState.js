@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/supabase'
 import { weekStartUTC } from '../lib/skins'
+import { isTableBlocked } from '../lib/blockedGame'
 import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 
 // Turn timing. Off by default; switch it on from the console with
@@ -465,7 +466,17 @@ export function useGameState(myInfo, navigate) {
       const streak = room.streak || { seat: null, team: null, count: 0 }
       let resolvedSeat = winningSeat
       if (winningSeat === null) {
-        const sorted = playersRef.current.map(p => ({ seat: p.seat, pips: pipCount(p.hand) })).sort((a, b) => a.pips - b.pips)
+        const [playerResult, boardResult] = await Promise.all([
+          db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
+          db.from('board').select('*').eq('room_id', myInfo.roomId).single(),
+        ])
+        const active = (playerResult.data || []).filter(p => p.seat < (room.seat_count || 4))
+        if (playerResult.error || boardResult.error || !isTableBlocked(
+          boardResult.data, active.map(p => p.hand), room.pile?.length || 0, room.seat_count || 4,
+        )) return
+        playersRef.current = playerResult.data
+        const sorted = active.map(p => ({ seat: p.seat, pips: pipCount(p.hand) }))
+          .sort((a, b) => a.pips - b.pips || a.seat - b.seat)
         resolvedSeat = sorted[0].seat
       }
       const newStreak = computeNewStreak(streak, resolvedSeat, isDek, mode)
@@ -648,10 +659,21 @@ export function useGameState(myInfo, navigate) {
     return () => clearTimeout(watchdogRef.current)
   }, [roomData?.status, players, myInfo, endRound])
 
-  const advanceTurn = useCallback(async (newHand, lastTile, updatedBoard) => {
+  // Evaluate the committed mover's hand, not its delayed realtime echo.
+  const blockedAfterMove = useCallback((seat, hand, board, pileCount = pileRef.current) => {
+    const hands = Array.from({ length: seatCountRef.current }, (_, n) =>
+      n === seat && Array.isArray(hand) ? hand : playersRef.current.find(p => p.seat === n)?.hand)
+    return isTableBlocked(board || boardRef.current, hands, pileCount, seatCountRef.current)
+  }, [])
+
+  const advanceTurn = useCallback(async (newHand, lastTile, updatedBoard, placedBoard) => {
     if (newHand.length === 0) {
       const boardToCheck = updatedBoard || boardRef.current
       await endRound(myInfo.seat, lastTile ? checkDekabess(lastTile, boardToCheck) : false)
+      return
+    }
+    if (blockedAfterMove(myInfo.seat, newHand, placedBoard)) {
+      await endRound(null, false)
       return
     }
     // Check if all 4 players passed consecutively — only valid if board has tiles
@@ -664,7 +686,7 @@ export function useGameState(myInfo, navigate) {
     const fromSeat = latestRoom?.current_turn ?? myInfo.seat
     const nextSeat = (fromSeat + 1) % seatCountRef.current
     await db.from('domino_rooms').update({ current_turn: nextSeat }).eq('id', myInfo.roomId)
-  }, [myInfo, endRound])
+  }, [myInfo, endRound, blockedAfterMove])
 
   // ── Single-round-trip move ───────────────────────────────────────────────
   // Sends one move to the play_move RPC, which performs the same writes the
@@ -720,10 +742,10 @@ export function useGameState(myInfo, navigate) {
         loadGameState()
         return 'error'
       }
-      return { blocked: !!retry.data?.blocked, stale: !!retry.data?.stale }
+      return { blocked: !!retry.data?.blocked || (!retry.data?.stale && blockedAfterMove(seat ?? myInfo.seat, hand, board)), stale: !!retry.data?.stale }
     }
-    return { blocked: !!data?.blocked, stale: !!data?.stale }
-  }, [myInfo, loadGameState])
+    return { blocked: !!data?.blocked || (!data?.stale && blockedAfterMove(seat ?? myInfo.seat, hand, board)), stale: !!data?.stale }
+  }, [myInfo, loadGameState, blockedAfterMove])
 
   const placeTile = useCallback(async (tile, idx, side) => {
     if (processingRef.current) return
@@ -787,7 +809,7 @@ export function useGameState(myInfo, navigate) {
           await db.from('board').update({ tiles: [{ tile, flipped: false }], left_end: tile[0], right_end: tile[1] }).eq('room_id', myInfo.roomId)
           await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
           await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
-          await advanceTurn(newHand, tile)
+          await advanceTurn(newHand, tile, undefined, boardPatch)
         }
       } else {
         const end = side === 'left' ? currentBoard.left_end : currentBoard.right_end
@@ -809,7 +831,7 @@ export function useGameState(myInfo, navigate) {
           await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', myInfo.seat)
           await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'place', tile })
           // Pass OLD board ends for Dekabess check — tile must match both ends BEFORE it's placed
-          await advanceTurn(newHand, tile, { left_end: currentBoard.left_end, right_end: currentBoard.right_end })
+          await advanceTurn(newHand, tile, { left_end: currentBoard.left_end, right_end: currentBoard.right_end }, boardPatch)
         }
       }
     } finally {
@@ -840,18 +862,27 @@ export function useGameState(myInfo, navigate) {
     await db.rpc('keep_deal', { p_room_id: myInfo.roomId })
   }, [myInfo, roomData?.round])
 
+  const drawForSeat = useCallback(async (seat) => {
+    const before = playersRef.current.find(p => p.seat === seat)?.hand
+    const { data, error } = await db.rpc('draw_tile', { p_room_id: myInfo.roomId, p_seat: seat })
+    if (!error && data?.ok && data.left === 0 && Array.isArray(before) &&
+        blockedAfterMove(seat, [...before, data.tile], boardRef.current, 0)) {
+      await endRound(null, false)
+    }
+  }, [myInfo, blockedAfterMove, endRound])
+
   // Draw from the pile (pile games): your turn, nothing playable, tiles left.
   const drawTile = useCallback(async () => {
     if (processingRef.current || !myInfo) return
     processingRef.current = true
     setProcessing(true)
     try {
-      await db.rpc('draw_tile', { p_room_id: myInfo.roomId, p_seat: myInfo.seat })
+      await drawForSeat(myInfo.seat)
     } finally {
       processingRef.current = false
       setProcessing(false)
     }
-  }, [myInfo])
+  }, [myInfo, drawForSeat])
 
   const passMove = useCallback(async () => {
     // Double-tap guard — the same one placeTile has always had. passMove
@@ -1141,7 +1172,7 @@ export function useGameState(myInfo, navigate) {
       // With a pile: draw instead of knocking. The draw shrinks the pile, which
       // re-runs this turn — play the drawn tile, or draw again.
       if (botPlayable.length === 0 && pileRef.current > 0) {
-        await db.rpc('draw_tile', { p_room_id: myInfo.roomId, p_seat: currentPlayer.seat })
+        await drawForSeat(currentPlayer.seat)
         botRunningRef.current = false
         return
       }
@@ -1246,6 +1277,11 @@ export function useGameState(myInfo, navigate) {
         await db.from('domino_players').update({ hand: newHand }).eq('room_id', myInfo.roomId).eq('seat', currentPlayer.seat)
         await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'place', tile })
         if (newHand.length === 0) { botRunningRef.current = false; await endRound(currentPlayer.seat, checkDekabess(tile, board)); return }
+        if (blockedAfterMove(currentPlayer.seat, newHand, boardPatch)) {
+          botRunningRef.current = false
+          await endRound(null, false)
+          return
+        }
         await db.from('domino_rooms').update({ current_turn: (currentPlayer.seat + 1) % seatCountRef.current }).eq('id', myInfo.roomId)
         botRunningRef.current = false
         return
@@ -1253,6 +1289,7 @@ export function useGameState(myInfo, navigate) {
       botRunningRef.current = false
       if (res === 'error' || res.stale) return
       if (handEmpty) { await endRound(currentPlayer.seat, checkDekabess(tile, board)); return }
+      if (res.blocked) { await endRound(null, false); return }
       loadGameState()
     }, 1200)
     return () => { clearTimeout(timer); clearTimeout(safetyTimer); botRunningRef.current = false }
