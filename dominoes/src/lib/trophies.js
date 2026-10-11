@@ -81,6 +81,13 @@ export const EXPERT_BOT_NAMES = ['Ti-Jòj', 'Ti-Tid', 'Ti-Roro', 'Ti-Chasè', 'T
 export function tableCountsForTrophies(players) {
   return (players || []).every(p => !p.is_ai || p.stand_in || EXPERT_BOT_NAMES.includes(p.nickname))
 }
+// Wa Tab La has no normal-bot exception, including bots standing in for humans.
+export function tableCountsForLeaderboard(players, seats = 4) {
+  return Array.isArray(players) && players.length === seats &&
+    new Set(players.map(p => p.seat)).size === seats &&
+    players.every(p => Number.isInteger(p.seat) && p.seat >= 0 && p.seat < seats &&
+      ((!p.is_ai && !p.stand_in) || EXPERT_BOT_NAMES.includes(p.nickname)))
+}
 export function botsCountForTrophies(botNames) {
   return (botNames || []).every(n => EXPERT_BOT_NAMES.includes(n))
 }
