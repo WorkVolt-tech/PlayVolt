@@ -24,13 +24,14 @@ await throwing.save(key, {})
 // Exercise the actual local-game recording function; all database writes mocked.
 const solo = read('../src/pages/SoloGame.jsx')
 const fn = solo.slice(solo.indexOf('  async function recordRound('), solo.indexOf('  const nextRound'))
-for (const [teams, eligible, vyej, expected] of [
-  [true, true, true, 'teams'], [false, true, true, 'solo'],
-  [true, true, false, null], [true, false, true, null],
+for (const [teams, challengeMode, eligible, vyej, expected] of [
+  [true, false, true, true, 'teams'], [false, false, true, true, 'solo'],
+  [true, false, true, false, null], [true, false, false, true, null],
+  [true, true, true, true, null],
 ]) {
   const rpcCalls = []
   const context = vm.createContext({
-    teams, bots: ['expert'], myName: 'Tester', round: 4,
+    teams, challengeMode, bots: ['expert'], myName: 'Tester', round: 4,
     recorded: { current: new Set() }, console, crypto,
     botsCountForTrophies: () => eligible,
     weekStartUTC: () => new Date('2026-10-05T00:00:00Z'),
