@@ -16,6 +16,7 @@ import { statusOf } from './Friends'
 // deliberately absent from the random replacement-bot name lists, so an
 // all-seeing bot can never silently take a disconnected player's seat in PvP.
 import { CHAPTERS } from '../story/chapters'
+import { VERSION, VERSION_NOTE } from '../version'
 
 // Experts are earned in Story Mode: beat a bot's chapter and they're yours.
 // Ordinary bots are always available.
@@ -1038,6 +1039,7 @@ export default function Lobby() {
       <nav className="lobby-menu">
         <div className="menu-row">
           <button className="menu-btn gold" onClick={() => navigate('/story')}>📖 Story Mode</button>
+          <button className="menu-btn gold" onClick={() => navigate('/challenge')}>⚔️ Challenge</button>
           <button className="menu-btn gold" onClick={() => navigate('/tournament')}>🏆 Tournament</button>
         </div>
         <div className="menu-row">
@@ -1056,6 +1058,7 @@ export default function Lobby() {
           <button className="menu-btn" onClick={() => navigate('/tracker')}>📊 Dekabess Tracker</button>
         </div>
       </nav>
+      <div className="lobby-version" title={VERSION_NOTE}>Dekabess {VERSION}</div>
 
       {showIosHint && (
         <div style={{
