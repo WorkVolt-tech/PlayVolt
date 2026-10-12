@@ -11,7 +11,7 @@ import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
-import { TABLE_SKINS } from '../lib/skins'
+import { TABLE_SKINS, weekStartUTC } from '../lib/skins'
 import './StoryChallenge.css'      // the result card's styles
 import { botsCountForTrophies } from '../lib/trophies'
 import './Game.css'
@@ -244,6 +244,22 @@ export default function SoloGame({ challengeMode = false }) {
       await db.rpc('record_round_stats', {
         p_results: [{ user_id: uid, won, vyej, dekabess: isDek, match_over: matchOver, trophy: botsCountForTrophies(bots) }],
       })
+      // Expert free-play matches qualify for Wa Tab La, including a partner's
+      // Asosyé win. Story/weekly challenge rewards have their own progression.
+      if (!challengeMode && vyej && botsCountForTrophies(bots)) {
+        let playerId = localStorage.getItem('dekabess_player_id')
+        if (!playerId) {
+          playerId = crypto.randomUUID()
+          localStorage.setItem('dekabess_player_id', playerId)
+        }
+        const { error } = await db.rpc('wa_tab_la_win', {
+          p_player_id: playerId,
+          p_nickname: myName,
+          p_mode: teams ? 'teams' : 'solo',
+          p_week_start: weekStartUTC().toISOString().slice(0, 10),
+        })
+        if (error) console.error('[solo] leaderboard win could not be saved:', error.message)
+      }
       // the feats are trophies only: they count against expert bots only
       if (!botsCountForTrophies(bots)) return
       if (clean) await db.rpc('record_feat', { p_kind: 'clean_round' })
