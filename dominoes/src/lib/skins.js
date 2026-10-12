@@ -89,18 +89,18 @@ export const TABLE_SKINS = {
   lakou:    { label: 'Lakou', felt: `${VIGNETTE}, linear-gradient(rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(90deg, rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(180deg, #a85a34 0%, #8a4424 100%)`, rail: WOOD },
   // ── Wa Tab La prize tables (your artwork): won by being #1 the week each is offered ──
   // (tiger / viking / marron keep their ids, so earlier winners get the new art)
-  tiger:    { label: 'Tiger Jungle', wtl: true, thumb: '/tables/tiger-v2-thumb.webp', felt: "url('/tables/tiger-v2.webp') center / cover no-repeat, #0f0d0b", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
-  viking:   { label: 'Norse', wtl: true, thumb: '/tables/norse-thumb.webp', felt: "url('/tables/norse.webp') center / cover no-repeat, #121417", rail: 'linear-gradient(180deg, #2e3640 0%, #12161b 100%)' },
-  marron:   { label: 'Maroon Resistance', wtl: true, thumb: '/tables/maroon-v2-thumb.webp', felt: "url('/tables/maroon-v2.webp') center / cover no-repeat, #15110c", rail: 'linear-gradient(180deg, #3a2a16 0%, #1a120a 100%)' },
-  jazz:     { label: 'Art Deco Jazz', wtl: true, thumb: '/tables/jazz-thumb.webp', felt: "url('/tables/jazz.webp') center / cover no-repeat, #3a0a12", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
+  tiger:    { label: 'Tiger Jungle', wtl: true, thumb: '/tables/tiger-wide.webp', felt: "url('/tables/tiger-wide.webp') center / cover no-repeat, #0f0d0b", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
+  viking:   { label: 'Norse', wtl: true, thumb: '/tables/norse-wide.webp', felt: "url('/tables/norse-wide.webp') center / cover no-repeat, #121417", rail: 'linear-gradient(180deg, #2e3640 0%, #12161b 100%)' },
+  marron:   { label: 'Maroon Resistance', wtl: true, thumb: '/tables/maroon-wide.webp', felt: "url('/tables/maroon-wide.webp') center / cover no-repeat, #15110c", rail: 'linear-gradient(180deg, #3a2a16 0%, #1a120a 100%)' },
+  jazz:     { label: 'Art Deco Jazz', wtl: true, thumb: '/tables/jazz-wide.webp', felt: "url('/tables/jazz-wide.webp') center / cover no-repeat, #3a0a12", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
   // the figure sits where the chain goes, so the centre is gently dimmed to keep tiles readable
-  negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-thumb.webp', felt: "radial-gradient(ellipse 46% 42% at 50% 50%, rgba(8,7,6,0.72) 0%, rgba(8,7,6,0.6) 60%, transparent 100%), url('/tables/negmaron.webp') center / cover no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
+  negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-wide.webp', felt: "radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), url('/tables/negmaron-wide.webp') center / cover no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
   // ── Challenge Mode prize tables (your artwork): won by beating the week's challenge ──
-  emerald:  { label: 'Emerald Crown', challenge: true, thumb: '/tables/emerald-thumb.webp', felt: "url('/tables/emerald.webp') center / cover no-repeat, #0c0d0b", rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
-  sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-thumb.webp', felt: "url('/tables/sapphire.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
-  burgundydeco: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundy-thumb.webp', felt: "url('/tables/burgundy.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
-  teal:     { label: 'Teal Deco', challenge: true, thumb: '/tables/teal-thumb.webp', felt: "url('/tables/teal.webp') center / cover no-repeat, #0c0d0d", rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
-  amethyst: { label: 'Amethyst Deco', challenge: true, thumb: '/tables/amethyst-thumb.webp', felt: "url('/tables/amethyst.webp') center / cover no-repeat, #0c0b0d", rail: 'linear-gradient(180deg, #2e1f48 0%, #120c1e 100%)' },
+  emerald:  { label: 'Emerald Crown', challenge: true, thumb: '/tables/emerald-wide.webp', felt: "url('/tables/emerald-wide.webp') center / cover no-repeat, #0c0d0b", rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
+  sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-wide.webp', felt: "url('/tables/sapphire-wide.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
+  burgundydeco: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundydeco-wide.webp', felt: "url('/tables/burgundydeco-wide.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
+  teal:     { label: 'Teal Deco', challenge: true, thumb: '/tables/teal-wide.webp', felt: "url('/tables/teal-wide.webp') center / cover no-repeat, #0c0d0d", rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
+  amethyst: { label: 'Amethyst Deco', challenge: true, thumb: '/tables/amethyst-wide.webp', felt: "url('/tables/amethyst-wide.webp') center / cover no-repeat, #0c0b0d", rail: 'linear-gradient(180deg, #2e1f48 0%, #120c1e 100%)' },
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
   jamaica:  { label: 'Jamaica', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(to top right, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), linear-gradient(to top left, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), conic-gradient(#0d5a2a 0deg ${JA}deg, #111111 ${JA}deg ${180 - JA}deg, #0d5a2a ${180 - JA}deg ${180 + JA}deg, #111111 ${180 + JA}deg ${360 - JA}deg, #0d5a2a ${360 - JA}deg)`, rail: WOOD },
   quebec:   { label: 'Québec', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.55) 47%, rgba(255,255,255,0.55) 53%, transparent 53%), linear-gradient(0deg, transparent 45%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.55) 55%, transparent 55%), #12357a`, rail: WOOD },
@@ -192,27 +192,13 @@ export function setRoomSkins(skins) {
 
 // The table is painted through two CSS variables, so every screen that shows
 // the board picks it up without knowing about skins.
-// Wide versions of the prize mats, for screens wider than they are tall
-// (computers, phones held sideways). Upright phones keep the square mats
-// until tall versions exist. The board picks one by screen shape (Board.css).
-const WIDE_MATS = {
-  tiger: 'tiger-wide', viking: 'norse-wide', marron: 'maroon-wide', jazz: 'jazz-wide', negmaron: 'negmaron-wide',
-  emerald: 'emerald-wide', sapphire: 'sapphire-wide', burgundydeco: 'burgundydeco-wide', teal: 'teal-wide', amethyst: 'amethyst-wide',
-}
-function wideFelt(id, t) {
-  const img = WIDE_MATS[id]
-  if (!img) return t.felt
-  // Neg Maron's wide mat has a faint engraved figure in the centre: dim it a little
-  const dim = id === 'negmaron' ? 'radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), ' : ''
-  return `${dim}url('/tables/${img}.webp') center / cover no-repeat, #0f0d0b`
-}
-
+// The latest artwork is shared by portrait, landscape, and skin previews.
 export function applyTableSkin(id) {
   const key = TABLE_SKINS[id] ? id : 'green'
   const t = TABLE_SKINS[key]
   const root = document.documentElement
   root.style.setProperty('--table-felt', t.felt)
-  root.style.setProperty('--table-felt-wide', wideFelt(key, t))
+  root.style.setProperty('--table-felt-wide', t.felt)
   root.style.setProperty('--table-rail', t.rail)
 }
 
