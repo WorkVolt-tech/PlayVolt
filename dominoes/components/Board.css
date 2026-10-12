@@ -217,3 +217,9 @@
   84%  { translate: calc(var(--jx) * -0.15) 0; rotate: calc(var(--jr) * -0.15); }
   100% { translate: 0 0; rotate: 0deg; }
 }
+
+
+/* On screens wider than they are tall, use the table's wide version if it has one */
+@media (orientation: landscape) {
+  .board-area { background: var(--table-felt-wide, var(--table-felt, radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt2) 100%))); }
+}
