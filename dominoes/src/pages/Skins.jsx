@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import {
   TILE_SKINS, TABLE_SKINS, TILE_UNLOCKS, TABLE_UNLOCKS, TILE_GROUPS, TABLE_GROUPS, groupCards,
-  ownedSkins, setEquipped, useEquippedSkins, loadPlayerStats,
+  ownedSkins, setEquipped, useEquippedSkins, loadPlayerStats, tableBase, tableVariant, tableLook,
 } from '../lib/skins'
 import TileFace from '../components/TileFace'
 import './Skins.css'
@@ -33,13 +33,34 @@ export default function Skins() {
 
   const owned = ownedSkins(stats)
 
+  // Gemini / Libra: which version each card shows (the equipped one first)
+  const [picks, setPicks] = useState({})
+  const pickOf = id => picks[id] || (tableBase(equipped.table) === id && tableVariant(equipped.table)) || Object.keys(TABLE_SKINS[id].variants || {})[0] || null
+  const valueOf = id => (TABLE_SKINS[id].variants ? `${id}@${pickOf(id)}` : id)
+  const choose = (id, v) => {
+    setPicks(p => ({ ...p, [id]: v }))
+    if (tableBase(equipped.table) === id) setEquipped('table', `${id}@${v}`)      // switch the one in use straight away
+  }
+  // buying from the shop (the server checks the price and your Goud)
+  const [shopMsg, setShopMsg] = useState(null)
+  const [buying, setBuying] = useState(null)
+  async function buy(c) {
+    if (buying) return
+    setBuying(c.id); setShopMsg(null)
+    const { data, error } = await db.rpc('goud_buy', { p_item: c.id })
+    setBuying(null)
+    const say = { bought: `${c.label} is yours — equip it below.`, owned: 'You already own that table.', 'not enough goud': 'Not enough Goud yet — keep playing!', 'not for sale': 'That table isn’t for sale.', 'sign in': 'Sign in to buy from the shop.' }
+    setShopMsg({ ok: data === 'bought', text: error ? `Couldn’t buy — ${error.message}` : say[data] || String(data) })
+    if (data === 'bought' || data === 'owned') loadPlayerStats().then(setStats)
+  }
+
   const tileCards = TILE_UNLOCKS.map(u => ({
     ...u, label: TILE_SKINS[u.id].label,
     owned: owned.tiles.has(u.id), on: equipped.tile === u.id,
   }))
   const tableCards = TABLE_UNLOCKS.map(u => ({
-    ...u, label: TABLE_SKINS[u.id].label, look: TABLE_SKINS[u.id],
-    owned: owned.tables.has(u.id), on: equipped.table === u.id,
+    ...u, label: TABLE_SKINS[u.id].label, look: tableLook(valueOf(u.id)),
+    owned: owned.tables.has(u.id), on: tableBase(equipped.table) === u.id,
   }))
 
   return (
@@ -82,6 +103,7 @@ export default function Skins() {
       ))}
 
       <h2 className="skins-section">Tables</h2>
+      {shopMsg && <div className={`skins-shop-msg ${shopMsg.ok ? 'ok' : ''}`}>{shopMsg.text}</div>}
       {groupCards(tableCards, TABLE_GROUPS).map(g => (
         <section key={g.label} className="skins-group">
           <h3 className="skins-group-title">{g.label}</h3>
@@ -102,14 +124,26 @@ export default function Skins() {
                   {!c.owned && <span className="skin-lock"><Lock /></span>}
                 </div>
                 )}
+                {TABLE_SKINS[c.id].variants && (
+                  <div className="skin-variants" role="group" aria-label="Version">
+                    {Object.entries(TABLE_SKINS[c.id].variants).map(([v, info]) => (
+                      <button key={v} className={pickOf(c.id) === v ? 'on' : ''} onClick={() => choose(c.id, v)}>{info.label}</button>
+                    ))}
+                  </div>
+                )}
                 <div className="skin-row">
                   <div>
                     <div className="skin-name">{c.label}</div>
                     <div className="skin-note">{c.on ? 'In use' : c.owned ? 'Owned' : c.need}</div>
                   </div>
                   {c.on && <div className="skin-state on compact">Equipped</div>}
-                  {!c.on && c.owned && <button className="skin-equip compact" onClick={() => setEquipped('table', c.id)}>Equip</button>}
-                  {!c.owned && <div className="skin-state locked compact"><Lock /></div>}
+                  {!c.on && c.owned && <button className="skin-equip compact" onClick={() => setEquipped('table', valueOf(c.id))}>Equip</button>}
+                  {!c.owned && c.shop && (
+                    <button className="skin-buy" disabled={buying === c.id} onClick={() => buy(c)}>
+                      {buying === c.id ? '…' : <><span className="goud-coin" aria-hidden="true">G</span>{c.shop.toLocaleString('en-US')}</>}
+                    </button>
+                  )}
+                  {!c.owned && !c.shop && <div className="skin-state locked compact"><Lock /></div>}
                 </div>
               </div>
             ))}

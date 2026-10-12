@@ -104,6 +104,23 @@ export const TABLE_SKINS = {
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
   jamaica:  { label: 'Jamaica', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(to top right, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), linear-gradient(to top left, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), conic-gradient(#0d5a2a 0deg ${JA}deg, #111111 ${JA}deg ${180 - JA}deg, #0d5a2a ${180 - JA}deg ${180 + JA}deg, #111111 ${180 + JA}deg ${360 - JA}deg, #0d5a2a ${360 - JA}deg)`, rail: WOOD },
   quebec:   { label: 'Québec', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.55) 47%, rgba(255,255,255,0.55) 53%, transparent 53%), linear-gradient(0deg, transparent 45%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.55) 55%, transparent 55%), #12357a`, rail: WOOD },
+  // ── Shop: the zodiac collection (your artwork), sold for Goud ──
+  // Gemini and Libra come in two versions; the chosen one is saved with the
+  // table as 'zodiac-gemini@male' (see tableLook).
+  'zodiac-aries': { label: 'Aries', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-aries-thumb.webp', felt: "url('/tables/zodiac-aries-wide.webp') center / cover no-repeat, #0e0c10" },
+  'zodiac-taurus': { label: 'Taurus', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-taurus-thumb.webp', felt: "url('/tables/zodiac-taurus-wide.webp') center / cover no-repeat, #0e0c10" },
+  'zodiac-gemini': { label: 'Gemini', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-gemini-female-thumb.webp', felt: "url('/tables/zodiac-gemini-female-wide.webp') center / cover no-repeat, #0e0c10",
+    variants: { female: { label: 'Female', thumb: '/tables/zodiac-gemini-female-thumb.webp', felt: "url('/tables/zodiac-gemini-female-wide.webp') center / cover no-repeat, #0e0c10" }, male: { label: 'Male', thumb: '/tables/zodiac-gemini-male-thumb.webp', felt: "url('/tables/zodiac-gemini-male-wide.webp') center / cover no-repeat, #0e0c10" } } },
+  'zodiac-cancer': { label: 'Cancer', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-cancer-thumb.webp', felt: "url('/tables/zodiac-cancer-wide.webp') center / cover no-repeat, #0e0c10" },
+  'zodiac-leo': { label: 'Leo', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-leo-thumb.webp', felt: "url('/tables/zodiac-leo-wide.webp') center / cover no-repeat, #0e0c10" },
+  'zodiac-virgo': { label: 'Virgo', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-virgo-thumb.webp', felt: "url('/tables/zodiac-virgo-wide.webp') center / cover no-repeat, #0e0c10" },
+  'zodiac-libra': { label: 'Libra', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-libra-female-thumb.webp', felt: "radial-gradient(ellipse 42% 40% at 50% 50%, rgba(6,5,4,0.55) 0%, rgba(6,5,4,0.4) 65%, transparent 100%), url('/tables/zodiac-libra-female-wide.webp') center / cover no-repeat, #0e0c10",
+    variants: { female: { label: 'Female', thumb: '/tables/zodiac-libra-female-thumb.webp', felt: "radial-gradient(ellipse 42% 40% at 50% 50%, rgba(6,5,4,0.55) 0%, rgba(6,5,4,0.4) 65%, transparent 100%), url('/tables/zodiac-libra-female-wide.webp') center / cover no-repeat, #0e0c10" }, male: { label: 'Male', thumb: '/tables/zodiac-libra-male-thumb.webp', felt: "radial-gradient(ellipse 42% 40% at 50% 50%, rgba(6,5,4,0.55) 0%, rgba(6,5,4,0.4) 65%, transparent 100%), url('/tables/zodiac-libra-male-wide.webp') center / cover no-repeat, #0e0c10" } } },
+  'zodiac-scorpio': { label: 'Scorpio', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-scorpio-thumb.webp', felt: "url('/tables/zodiac-scorpio-wide.webp') center / cover no-repeat, #0e0c10" },
+  'zodiac-sagittarius': { label: 'Sagittarius', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-sagittarius-thumb.webp', felt: "url('/tables/zodiac-sagittarius-wide.webp') center / cover no-repeat, #0e0c10" },
+  'zodiac-capricorn': { label: 'Capricorn', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-capricorn-thumb.webp', felt: "url('/tables/zodiac-capricorn-wide.webp') center / cover no-repeat, #0e0c10" },
+  'zodiac-aquarius': { label: 'Aquarius', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-aquarius-thumb.webp', felt: "url('/tables/zodiac-aquarius-wide.webp') center / cover no-repeat, #0e0c10" },
+  'zodiac-pisces': { label: 'Pisces', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-pisces-thumb.webp', felt: "url('/tables/zodiac-pisces-wide.webp') center / cover no-repeat, #0e0c10" },
 }
 
 // ── What unlocks what ────────────────────────────────────────────────────────
@@ -134,6 +151,9 @@ function unlocksFor(kind, free, ids) {
     if (kind === 'tables' && ['emerald', 'sapphire', 'burgundydeco', 'teal', 'amethyst'].includes(id)) {
       return { id, challenge: true, need: 'Challenge Mode prize — beat the challenge the week it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
     }
+    if (kind === 'tables' && TABLE_SKINS[id]?.shop) {
+      return { id, shop: TABLE_SKINS[id].shop, need: `Shop — ${TABLE_SKINS[id].shop.toLocaleString('en-US')} Goud`, test: s => (s.tableUnlocks || []).includes(id) }
+    }
     if (kind === 'tables' && WTL_TABLES.includes(id)) {
       return { id, wtl: true, need: 'Wa Tab La prize — be #1 the week it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
     }
@@ -156,12 +176,22 @@ export function ownedSkins(stats) {
 const KEY = 'dekabess_skins'
 const EVENT = 'dekabess-skins'
 
+// ── A table can carry a version: 'zodiac-gemini@male' ──
+export const tableBase = v => String(v || '').split('@')[0]
+export const tableVariant = v => String(v || '').split('@')[1] || null
+export function tableLook(v) {
+  const t = TABLE_SKINS[tableBase(v)] || TABLE_SKINS.green
+  const want = tableVariant(v)
+  const ver = t.variants && (t.variants[want] || Object.values(t.variants)[0])
+  return ver ? { ...t, ...ver, label: t.label } : t
+}
+
 export function getEquipped() {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || 'null') || {}
     return {
       tile:  TILE_SKINS[v.tile]   ? v.tile  : 'classic',
-      table: TABLE_SKINS[v.table] ? v.table : 'green',
+      table: TABLE_SKINS[tableBase(v.table)] ? v.table : 'green',
     }
   } catch { return { tile: 'classic', table: 'green' } }
 }
@@ -183,7 +213,7 @@ let roomSkins = null
 export function setRoomSkins(skins) {
   const clean = skins && {
     tile:  TILE_SKINS[skins.tile]   ? skins.tile  : null,
-    table: TABLE_SKINS[skins.table] ? skins.table : null,
+    table: TABLE_SKINS[tableBase(skins.table)] ? skins.table : null,
   }
   roomSkins = clean && (clean.tile || clean.table) ? clean : null
   applyTableSkin(roomSkins?.table || getEquipped().table)
@@ -194,8 +224,7 @@ export function setRoomSkins(skins) {
 // the board picks it up without knowing about skins.
 // The latest artwork is shared by portrait, landscape, and skin previews.
 export function applyTableSkin(id) {
-  const key = TABLE_SKINS[id] ? id : 'green'
-  const t = TABLE_SKINS[key]
+  const t = tableLook(TABLE_SKINS[tableBase(id)] ? id : 'green')      // the chosen version, if it has one
   const root = document.documentElement
   root.style.setProperty('--table-felt', t.felt)
   root.style.setProperty('--table-felt-wide', t.felt)
@@ -277,6 +306,7 @@ export const TABLE_GROUPS = [
   { label: 'Culture & Neon', ids: ['neon', 'krisal', 'kanaval', 'phoenix', 'lakou', 'dekabess', 'playvolt'] },
   { label: 'Wa Tab La Prizes', ids: ['tiger', 'viking', 'marron', 'jazz', 'negmaron'] },
   { label: 'Challenge Prizes', ids: ['emerald', 'sapphire', 'burgundydeco', 'teal', 'amethyst'] },
+  { label: 'Zodiac — Shop', ids: ['zodiac-aries', 'zodiac-taurus', 'zodiac-gemini', 'zodiac-cancer', 'zodiac-leo', 'zodiac-virgo', 'zodiac-libra', 'zodiac-scorpio', 'zodiac-sagittarius', 'zodiac-capricorn', 'zodiac-aquarius', 'zodiac-pisces'] },
 ]
 export function groupCards(cards, groups) {
   const byId = new Map(cards.map(c => [c.id, c]))

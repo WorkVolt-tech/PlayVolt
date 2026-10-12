@@ -90,3 +90,24 @@
 /* Show the complete artwork without gameplay overlays or locked-state dimming. */
 .skin-preview.table-art { background: #0f0d0b; }
 .skin-preview.table-art img { display: block; width: 100%; height: auto; border-radius: 9px; }
+
+/* ── The Goud shop ── */
+.skin-buy {
+  display: inline-flex; align-items: center; gap: 2px; height: 30px; padding: 0 10px; border-radius: 15px; cursor: pointer;
+  border: 1px solid var(--gold, #c9a84c); background: rgba(201,168,76,0.12); color: var(--gold-glow, #e8c96a);
+  font-family: 'DM Mono', monospace; font-size: 0.62rem; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+}
+.skin-buy:active { transform: scale(0.95); background: rgba(201,168,76,0.25); }
+.skin-buy:disabled { opacity: 0.6; }
+.skin-buy .goud-coin {
+  display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-right: 5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f6e08f, #c9a84c 55%, #8a6d22); color: #3a2a08; font-size: 0.5rem; font-weight: 700;
+}
+.skin-variants { display: flex; gap: 6px; margin: 8px 0 0; }
+.skin-variants button {
+  flex: 1; height: 28px; border-radius: 14px; cursor: pointer; border: 1px solid var(--border, #3a3528); background: transparent;
+  color: var(--ivory-dim, #a09880); font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em;
+}
+.skin-variants button.on { border-color: var(--gold, #c9a84c); background: rgba(201,168,76,0.15); color: var(--gold-glow, #e8c96a); }
+.skins-shop-msg { margin: 0 0 0.8rem; padding: 0.55rem 0.8rem; border-radius: 8px; font-size: 0.68rem; border: 1px solid #8a3a3a; color: #e07a7a; background: rgba(138,58,58,0.12); }
+.skins-shop-msg.ok { border-color: rgba(76,170,110,0.5); color: #8fe0aa; background: rgba(76,170,110,0.1); }

@@ -3,7 +3,7 @@ import { db } from '../lib/supabase'
 import { NORMAL_CIRCUIT, EXPERT_CIRCUIT } from '../story/chapters'
 import { tableCountsForTrophies } from '../lib/trophies'
 import ReshuffleOffer from '../components/ReshuffleOffer'
-import { getEquipped, setRoomSkins, useOwnedSkins, TILE_SKINS, TABLE_SKINS, TILE_UNLOCKS, TABLE_UNLOCKS } from '../lib/skins'
+import { getEquipped, setRoomSkins, useOwnedSkins, TILE_SKINS, TABLE_SKINS, TILE_UNLOCKS, TABLE_UNLOCKS, tableBase } from '../lib/skins'
 import { useNavigate } from 'react-router-dom'
 import { useGameState } from '../hooks/useGameState'
 import { canPlayOnSide } from '../hooks/useGameState'
@@ -227,9 +227,10 @@ export default function Game() {
   // say what unlocks them.
   const owned = useOwnedSkins()
   const unlockHints = []
-  if (roomData?.table_skin && TABLE_SKINS[roomData.table_skin] && !owned.tables.has(roomData.table_skin)) {
-    const u = TABLE_UNLOCKS.find(x => x.id === roomData.table_skin)
-    if (u?.need) unlockHints.push(`${TABLE_SKINS[roomData.table_skin].label} table — ${u.need}`)
+  const roomTable = tableBase(roomData?.table_skin)        // a table may carry a version: 'zodiac-gemini@male'
+  if (roomTable && TABLE_SKINS[roomTable] && !owned.tables.has(roomTable)) {
+    const u = TABLE_UNLOCKS.find(x => x.id === roomTable)
+    if (u?.need) unlockHints.push(`${TABLE_SKINS[roomTable].label} table — ${u.need}`)
   }
   if (roomData?.tile_skin && TILE_SKINS[roomData.tile_skin] && !owned.tiles.has(roomData.tile_skin)) {
     const u = TILE_UNLOCKS.find(x => x.id === roomData.tile_skin)
