@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Draggable, DropZone, useDrag } from '../components/DragDrop'
 import './Tracker.css'
+import TileFace from '../components/TileFace'          // tiles drawn in your equipped skin
 
 // ── Snake layout (same as Board.jsx) ────────────────────────────────────────
 const TW = 28, TH = 56, GAP = 3
@@ -346,7 +347,7 @@ function BoardTile({ entry, pos, ghost = false, highlighted = false }) {
       top: pos.y - pos.ph / 2,
       width: pos.pw,
       height: pos.ph,
-      background: '#fffef8',
+      background: 'transparent',            // the tile face (your skin) fills the box
       borderRadius: 5,
       border: ghost ? '1px dashed rgba(201,168,76,0.9)' : 'none',
       boxShadow: highlighted
@@ -362,42 +363,7 @@ function BoardTile({ entry, pos, ghost = false, highlighted = false }) {
       overflow: 'hidden',
       zIndex: 1,
     }}>
-      {/* Divider */}
-      <div style={{
-        position: 'absolute',
-        ...(isVert
-          ? { left: '10%', right: '10%', top: '50%', height: 1, transform: 'translateY(-50%)' }
-          : { top: '10%', bottom: '10%', left: '50%', width: 1, transform: 'translateX(-50%)' }
-        ),
-        background: 'rgba(26,24,20,0.25)',
-        pointerEvents: 'none',
-      }} />
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img
-          src={`/tiles-white/${first}.png`}
-          alt={String(first)}
-          style={{
-            width: '70%',
-            height: '70%',
-            objectFit: 'contain',
-            ...(!isVert && first === 6 ? { transform: 'rotate(90deg)' } : {}),
-          }}
-        />
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img
-          src={`/tiles-white/${second}.png`}
-          alt={String(second)}
-          style={{
-            width: '70%',
-            height: '70%',
-            objectFit: 'contain',
-            ...(!isVert && second === 6 ? { transform: 'rotate(90deg)' } : {}),
-          }}
-        />
-      </div>
+      <TileFace a={first} b={second} vertical={isVert} />
     </div>
   )
 }
@@ -499,25 +465,14 @@ function BoardTileT({ entry, pos }) {
       position: 'absolute',
       left: pos.x - pos.pw / 2, top: pos.y - pos.ph / 2,
       width: pos.pw, height: pos.ph,
-      background: '#fffef8', borderRadius: 4,
+      background: 'transparent', borderRadius: 4,      // the tile face (your skin) fills the box
       boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
       display: 'grid',
       gridTemplateRows: isVert ? '1fr 1fr' : 'none',
       gridTemplateColumns: isVert ? 'none' : '1fr 1fr',
       overflow: 'hidden', zIndex: 1,
     }}>
-      <div style={{ position: 'absolute',
-        ...(isVert ? { left: '10%', right: '10%', top: '50%', height: 1, transform: 'translateY(-50%)' }
-                   : { top: '10%', bottom: '10%', left: '50%', width: 1, transform: 'translateX(-50%)' }),
-        background: 'rgba(26,24,20,0.25)', pointerEvents: 'none' }} />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img src={`/tiles-white/${first}.png`} draggable={false}
-          style={{ width: '70%', height: '70%', objectFit: 'contain', pointerEvents: 'none' }} />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img src={`/tiles-white/${second}.png`} draggable={false}
-          style={{ width: '70%', height: '70%', objectFit: 'contain', pointerEvents: 'none' }} />
-      </div>
+      <TileFace a={first} b={second} vertical={isVert} />
     </div>
   )
 }
@@ -615,6 +570,17 @@ for (let a = 0; a <= 6; a++)
 
 const PLAYERS = ['RP', 'MP', 'LP']
 
+// One number, shown as the top half of a tile in your equipped skin
+function PipFace({ n, size = 20 }) {
+  return (
+    <span style={{ position: 'relative', display: 'inline-block', width: size, height: size, borderRadius: 3, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.45)', flexShrink: 0 }}>
+      <span style={{ position: 'absolute', left: 0, top: 0, width: size, height: size * 2, borderRadius: 3 }}>
+        <TileFace a={n} b={n} vertical />
+      </span>
+    </span>
+  )
+}
+
 function TileImg({ tile, size = 40, style = {}, onClick, selected, dimmed, faceDown }) {
   const [a, b] = tile
   return (
@@ -625,7 +591,7 @@ function TileImg({ tile, size = 40, style = {}, onClick, selected, dimmed, faceD
       style={{
         display: 'inline-flex',
         flexDirection: 'column',
-        background: faceDown ? 'var(--surface2)' : 'var(--ivory)',
+        background: faceDown ? 'var(--surface2)' : 'transparent',   // face: your skin
         border: selected ? '2px solid var(--gold)' : '1px solid var(--border)',
         borderRadius: 4,
         overflow: 'hidden',
@@ -640,17 +606,7 @@ function TileImg({ tile, size = 40, style = {}, onClick, selected, dimmed, faceD
         ...style,
       }}
     >
-      {!faceDown && (
-        <>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={`/tiles-white/${a}.png`} draggable={false} style={{ width: '70%', pointerEvents: 'none' }} />
-          </div>
-          <div style={{ height: 1, background: 'rgba(26,24,20,0.25)', margin: '0 10%' }} />
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={`/tiles-white/${b}.png`} draggable={false} style={{ width: '70%', pointerEvents: 'none' }} />
-          </div>
-        </>
-      )}
+      {!faceDown && <TileFace a={a} b={b} vertical />}
     </div>
   )
 }
@@ -1561,7 +1517,7 @@ export default function Tracker() {
                 <span style={{ color: PLAYER_COLORS[e.player], minWidth: 28 }}>{e.player}</span>
                 <span style={{ color: 'var(--ivory-dim)' }}>passed on</span>
                 {e.nums.map(n => (
-                  <img key={n} src={`/tiles-white/${n}.png`} style={{ height: 20, pointerEvents: 'none' }} />
+                  <PipFace key={n} n={n} />
                 ))}
               </div>
             ))}
