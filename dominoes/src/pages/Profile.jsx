@@ -7,6 +7,7 @@ import { TROPHIES, earnedTrophies } from '../lib/trophies'
 import { loadPlayerStats } from '../lib/skins'
 import { Medal } from './Trophies'
 import { TrophyAvatar } from '../lib/avatars'
+import { GoudPanel } from '../components/GoudBadge'
 
 const AVATAR_COLORS = ['#c9a84c','#4caa6e','#4c8cca','#c94c4c','#9b59b6','#e67e22','#1abc9c','#e91e63']
 
@@ -189,6 +190,9 @@ export default function Profile() {
 
       {/* Trophies: earned ones, as badges of honour */}
       <ProfileTrophies onOpen={() => navigate('/trophies')} />
+
+      {/* Goud: balance and recent earnings */}
+      <GoudPanel />
     </div>
   )
 }

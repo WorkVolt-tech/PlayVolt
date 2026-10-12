@@ -1,0 +1,24 @@
+/* ── Goud ──────────────────────────────────────────────────────── */
+.goud-coin {
+  display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-right: 6px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f6e08f, #c9a84c 55%, #8a6d22); color: #3a2a08;
+  font-family: 'Playfair Display', Georgia, serif; font-size: 0.55rem; font-weight: 700; box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+}
+.goud-badge {
+  position: relative; display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 20px;
+  background: var(--surface2, #242118); border: 1px solid rgba(201,168,76,0.55); color: var(--gold-glow, #e8c96a);
+  font-family: 'DM Mono', monospace; font-size: 0.66rem; letter-spacing: 0.04em; white-space: nowrap;
+}
+.goud-gain {
+  position: absolute; top: calc(100% + 6px); right: 0; padding: 5px 10px; border-radius: 8px; white-space: nowrap;
+  background: rgba(76,170,110,0.16); border: 1px solid rgba(76,170,110,0.5); color: #8fe0aa; font-size: 0.6rem;
+  animation: goudGain 5s ease both;
+}
+@keyframes goudGain { 0% { opacity: 0; transform: translateY(-4px); } 8%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.goud-panel { margin-top: 1rem; padding: 0.9rem 1rem; border-radius: 14px; background: var(--surface, #1a1814); border: 1px solid rgba(201,168,76,0.4); }
+.goud-panel-head { display: flex; align-items: center; justify-content: space-between; font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim, #a09880); }
+.goud-panel-head strong { display: inline-flex; align-items: center; font-family: 'Playfair Display', Georgia, serif; font-size: 1.4rem; letter-spacing: 0; color: var(--gold-glow, #e8c96a); }
+.goud-panel-how { font-size: 0.62rem; color: var(--ivory-dim, #a09880); line-height: 1.5; margin: 0.5rem 0 0.6rem; }
+.goud-row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid #24211a; font-size: 0.68rem; }
+.goud-plus { color: #8fe0aa; } .goud-minus { color: #e07a7a; }
+@media (prefers-reduced-motion: reduce) { .goud-gain { animation: none; } }

@@ -17,6 +17,7 @@ import { statusOf } from './Friends'
 // all-seeing bot can never silently take a disconnected player's seat in PvP.
 import { CHAPTERS } from '../story/chapters'
 import { VERSION, VERSION_NOTE } from '../version'
+import GoudBadge from '../components/GoudBadge'
 
 // Experts are earned in Story Mode: beat a bot's chapter and they're yours.
 // Ordinary bots are always available.
@@ -764,7 +765,8 @@ export default function Lobby() {
       <TrophyNotice />
       <div className="lobby-bg" />
       {/* clear of the phone's status bar (time, battery) and camera when installed as an app */}
-      <div style={{ position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', right: 'calc(12px + env(safe-area-inset-right, 0px))', zIndex: 10 }}>
+      <div style={{ position: 'absolute', top: 'calc(12px + env(safe-area-inset-top, 0px))', right: 'calc(12px + env(safe-area-inset-right, 0px))', zIndex: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+        {authUser && <GoudBadge />}
         {authUser ? (
           <button onClick={() => navigate('/profile')} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--gold)', borderRadius: 20, padding: '6px 14px', fontFamily: 'DM Mono, monospace', fontSize: '0.6rem', letterSpacing: '0.1em', cursor: 'pointer' }}>
             👤 Profile
