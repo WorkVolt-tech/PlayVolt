@@ -86,3 +86,7 @@
   display: flex; align-items: center; gap: 10px;
 }
 .skins-group-title::after { content: ''; flex: 1; height: 1px; background: var(--border, #3a3528); }
+
+/* Show the complete artwork without gameplay overlays or locked-state dimming. */
+.skin-preview.table-art { background: #0f0d0b; }
+.skin-preview.table-art img { display: block; width: 100%; height: auto; border-radius: 9px; }

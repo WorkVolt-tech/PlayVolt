@@ -88,6 +88,11 @@ export default function Skins() {
           <div className="skins-grid tables">
             {g.cards.map(c => (
               <div key={c.id} className={`skin-card ${c.on ? 'on' : ''} ${c.owned ? '' : 'locked'}`}>
+                {c.look.thumb ? (
+                  <div className="skin-preview table-art">
+                    <img src={c.look.thumb} alt={`${c.label} full table design`} />
+                  </div>
+                ) : (
                 <div className="skin-preview rail" style={{ background: c.look.rail }}>
                   <div className="skin-felt" style={{ background: c.look.felt }}>
                     <div className="preview-tile h small"><TileFace a={2} b={5} vertical={false} /></div>
@@ -96,6 +101,7 @@ export default function Skins() {
                   </div>
                   {!c.owned && <span className="skin-lock"><Lock /></span>}
                 </div>
+                )}
                 <div className="skin-row">
                   <div>
                     <div className="skin-name">{c.label}</div>
