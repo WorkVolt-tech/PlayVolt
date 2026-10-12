@@ -192,10 +192,27 @@ export function setRoomSkins(skins) {
 
 // The table is painted through two CSS variables, so every screen that shows
 // the board picks it up without knowing about skins.
+// Wide versions of the prize mats, for screens wider than they are tall
+// (computers, phones held sideways). Upright phones keep the square mats
+// until tall versions exist. The board picks one by screen shape (Board.css).
+const WIDE_MATS = {
+  tiger: 'tiger-wide', viking: 'norse-wide', marron: 'maroon-wide', jazz: 'jazz-wide', negmaron: 'negmaron-wide',
+  emerald: 'emerald-wide', sapphire: 'sapphire-wide', burgundydeco: 'burgundydeco-wide', teal: 'teal-wide', amethyst: 'amethyst-wide',
+}
+function wideFelt(id, t) {
+  const img = WIDE_MATS[id]
+  if (!img) return t.felt
+  // Neg Maron's wide mat has a faint engraved figure in the centre: dim it a little
+  const dim = id === 'negmaron' ? 'radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), ' : ''
+  return `${dim}url('/tables/${img}.webp') center / cover no-repeat, #0f0d0b`
+}
+
 export function applyTableSkin(id) {
-  const t = TABLE_SKINS[id] || TABLE_SKINS.green
+  const key = TABLE_SKINS[id] ? id : 'green'
+  const t = TABLE_SKINS[key]
   const root = document.documentElement
   root.style.setProperty('--table-felt', t.felt)
+  root.style.setProperty('--table-felt-wide', wideFelt(key, t))
   root.style.setProperty('--table-rail', t.rail)
 }
 
