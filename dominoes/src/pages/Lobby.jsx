@@ -198,6 +198,7 @@ export default function Lobby() {
   const [inQueue, setInQueue] = useState(false)
   const [myQueueId, setMyQueueId] = useState(null)
   const queueChannelRef = useRef(null)
+  const matchingRef = useRef(false)
 
   async function loadQueueCount() {
     const { data } = await db.from('queue').select('id').eq('status', 'waiting')
@@ -226,6 +227,9 @@ export default function Lobby() {
         if (waiting?.length >= 4) {
           const first4 = waiting.slice(0, 4)
           if (first4[0].id === entry.id) {
+            if (matchingRef.current) return
+            matchingRef.current = true
+            try {
             // I'm first — create room, deal hands, add all 4 players
             const code = generateRoomCode()
 
@@ -251,13 +255,14 @@ export default function Lobby() {
                 nickname: first4[i].nickname,
                 hand: hands[i],
                 is_connected: true, is_ai: false,
-                user_id: first4[i].user_id ?? null,
+                actor: first4[i].actor, user_id: first4[i].user_id ?? null,
               })
               await db.from('queue').update({ status: 'matched', room_id: room.id }).eq('id', first4[i].id)
             }
 
             // Set to playing AFTER everything is ready
             await db.from('domino_rooms').update({ status: 'playing' }).eq('id', room.id)
+            } finally { matchingRef.current = false }
           } else if (first4.some(p => p.id === entry.id)) {
             // I'm in the first 4 — watch for room assignment
             const myEntry = first4.find(p => p.id === entry.id)
@@ -401,79 +406,21 @@ export default function Lobby() {
     const code = (codeOverride || joinCode).toUpperCase()
     if (code.length !== 6) { setMsg({ text: 'Enter a 6-character room code.', type: 'error' }); return }
 
-    // A game already in progress: if you had a seat at it, take it back.
-    // (Phone died, lost signal, closed the app — a bot has been holding your
-    // seat, and the same code gets you straight back in.)
-    const { data: live } = await db.from('domino_rooms').select('*')
-      .eq('code', code).in('status', ['playing', 'round_end']).maybeSingle()
-    if (live) {
-      const { data: seats } = await db.from('domino_players')
-        .select('seat, nickname, user_id').eq('room_id', live.id)
-      // signed in: match your account; guest: match your nickname
-      const mine = (seats || []).find(r => myUserId ? r.user_id === myUserId : (!r.user_id && r.nickname === nick))
-      if (!mine) {
-        setMsg({ text: 'That game has already started, and you weren’t at the table.', type: 'error' })
-        return
-      }
+    const { data, error } = await db.rpc('join_room', { p_code: code, p_nickname: nick })
+    if (error || !data?.room || !data?.player) {
+      setMsg({ text: error?.message || 'Could not join room', type: 'error' }); return
+    }
+    const { room, player } = data
+    if (room.status === 'playing' || room.status === 'round_end') {
       sessionStorage.setItem('domino_player', JSON.stringify({
-        seat: mine.seat,
-        nickname: mine.nickname,
-        roomId: live.id,
-        roomCode: live.code,
-        gameMode: live.game_mode || 'chien',
-        ...(live.tournament_match_id ? { tournamentMatchId: live.tournament_match_id, fromTournament: true } : {}),
+        seat: player.seat, nickname: player.nickname, roomId: room.id, roomCode: room.code,
+        gameMode: room.game_mode || 'chien',
+        ...(room.tournament_match_id ? { tournamentMatchId: room.tournament_match_id, fromTournament: true } : {}),
       }))
-      navigate('/game')     // the game takes the seat back from the bot on arrival
+      navigate('/game')
       return
     }
-
-    const { data: room } = await db.from('domino_rooms').select('*').eq('code', code).eq('status', 'waiting').single()
-    if (!room) { setMsg({ text: 'Room not found.', type: 'error' }); return }
-
-    // Already sitting at this table (you refreshed, or joined twice)? Take
-    // that seat back instead of adding a second one. Matched by account, or
-    // for guests by the seat this browser tab took.
-    const remembered = readWaiting()
-    const { data: seatsHere } = await db.from('domino_players').select('id, seat, user_id').eq('room_id', room.id)
-    const mineAlready = (seatsHere || []).find(r =>
-      (myUserId && r.user_id === myUserId) || (remembered && remembered.roomId === room.id && r.id === remembered.playerId))
-    if (mineAlready) {
-      enterWaiting({ room, code, playerId: mineAlready.id, seat: mineAlready.seat, host: false })
-      return
-    }
-
-    const { data: existing } = await db.from('domino_players').select('seat').eq('room_id', room.id)
-    const capacity = humanCapacity(room.game_mode)
-    if ((existing || []).length >= capacity) {
-      setMsg({
-        text: capacity === 2 ? 'This table is full — Asosyé vs AI is 2 players only.'
-            : capacity === 1 ? 'This table is a solo game vs AI.'
-            : 'Room is full!',
-        type: 'error',
-      }); return
-    }
-
-    const takenSeats = (existing || []).map(p => p.seat)
-    const freeSeat = [0,1,2,3].find(s => !takenSeats.includes(s))
-
-    const { data: player, error } = await db.from('domino_players')
-      .insert({ room_id: room.id, seat: freeSeat, nickname: nick, hand: [], is_connected: true, user_id: myUserId })
-      .select().single()
-    if (error) { setMsg({ text: 'Error: ' + error.message, type: 'error' }); return }
-
-    // Two people can pass the check above at the same instant. Re-count after
-    // taking the seat; whoever overflowed the table steps back out.
-    const { data: after } = await db.from('domino_players').select('seat').eq('room_id', room.id)
-    const seatsNow = (after || []).map(p => p.seat).sort((x, y) => x - y)
-    if (seatsNow.length > capacity && seatsNow.indexOf(freeSeat) >= capacity) {
-      await db.from('domino_players').delete().eq('id', player.id)
-      setMsg({
-        text: capacity === 2 ? 'This table is full — Asosyé vs AI is 2 players only.' : 'Room is full!',
-        type: 'error',
-      }); return
-    }
-
-    enterWaiting({ room, code, playerId: player.id, seat: freeSeat, host: false })
+    enterWaiting({ room, code, playerId: player.id, seat: player.seat, host: false })
   }
 
   // ── The waiting room survives a refresh ───────────────────────────────────
@@ -700,13 +647,13 @@ export default function Lobby() {
   const [friendsHere, setFriendsHere] = useState([])
   const [invited, setInvited] = useState({})
   useEffect(() => {
-    if (tab !== 'waiting' || !amHost) return
+    if (tab !== 'waiting' || !amHost || !authUser?.id) return
     let off = false
     const load = () => db.rpc('my_friends').then(({ data }) => { if (!off) setFriendsHere((data || []).filter(r => r.kind === 'friend')) })
     load()
     const t = setInterval(load, 30000)
     return () => { off = true; clearInterval(t) }
-  }, [tab, amHost])
+  }, [tab, amHost, authUser?.id])
   // hear when a friend declines your challenge
   useEffect(() => {
     const uid = authUser?.id

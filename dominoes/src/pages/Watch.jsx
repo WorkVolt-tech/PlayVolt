@@ -52,11 +52,9 @@ export default function Watch() {
   // Spectators only ever keep the backs: each hand becomes blank tiles of the
   // same count before it's stored, so no face is ever drawn or kept here.
   const load = useCallback(async () => {
-    const [{ data: r }, { data: ps }, { data: b }] = await Promise.all([
-      db.from('domino_rooms').select('*').eq('id', roomId).maybeSingle(),
-      db.from('domino_players').select('seat, nickname, is_ai, stand_in, left_at, avatar, tile_skin, hand').eq('room_id', roomId).order('seat'),
-      db.from('board').select('*').eq('room_id', roomId).maybeSingle(),
-    ])
+    const { data, error } = await db.rpc('watch_room', { p_room: roomId })
+    if (error) return
+    const { room: r, players: ps, board: b } = data || {}
     if (!r) { setGone(true); return }
     setRoom(r)
     setPlayers((ps || []).map(p => ({ ...p, hand: (Array.isArray(p.hand) ? p.hand : []).map(() => [0, 0]) })))
@@ -85,7 +83,7 @@ export default function Watch() {
           setKnock(cur => { if (cur) { knockQueue.current.push(k); return cur } return k })
         }
       })
-      .subscribe()
+      .subscribe(status => { if (status === 'SUBSCRIBED') reload() })
     return () => { clearTimeout(t); db.removeChannel(ch) }
   }, [roomId, load])
 

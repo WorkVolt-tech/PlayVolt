@@ -22,7 +22,7 @@ export default function Auth() {
         if (nickname.length < 2 || nickname.length > 16) { setError('Nickname must be 2–16 characters'); setLoading(false); return }
         const { data, error: e } = await db.auth.signUp({
           email, password,
-          options: { data: { nickname: nickname.trim() } }
+          options: { data: { displayName: nickname.trim() } }
         })
         if (e) throw e
         // If session exists, confirmation is off — go straight to lobby
@@ -55,6 +55,7 @@ export default function Auth() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-logo">Dekabess!</div>
+        <p className="auth-sub">We moved to a new account system. Please create a new account if you played before the move. Previous progress has not been transferred.</p>
 
         {/* Tabs */}
         <div className="auth-tabs">
@@ -92,7 +93,7 @@ export default function Auth() {
           <input
             className="auth-input"
             type="password"
-            placeholder={mode === 'signup' ? 'Min 6 characters' : '••••••••'}
+            placeholder={mode === 'signup' ? 'Min 8 characters' : '••••••••'}
             value={password}
             onChange={e => setPassword(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
