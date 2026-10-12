@@ -17,7 +17,7 @@
 .ch-blurb { font-style: italic; }
 .ch-rule { color: var(--ivory, #f0ead8) !important; }
 .ch-prize { display: flex; align-items: center; gap: 12px; padding: 0.6rem; margin: 0.6rem 0; border-radius: 10px; background: var(--surface2, #242118); }
-.ch-prize img { width: 76px; height: 76px; border-radius: 8px; border: 1px solid rgba(201,168,76,0.5); object-fit: cover; }
+.ch-prize img { width: 136px; max-width: 45%; height: auto; aspect-ratio: 16 / 9; flex-shrink: 0; border-radius: 8px; border: 1px solid rgba(201,168,76,0.5); object-fit: contain; }
 .ch-prize-name { font-family: 'Playfair Display', Georgia, serif; font-size: 1rem; color: var(--gold-glow, #e8c96a); margin-top: 3px; }
 .ch-tries { display: flex; align-items: center; gap: 8px; margin: 0.7rem 0 0.8rem; }
 .ch-pip { width: 14px; height: 14px; border-radius: 50%; background: var(--gold, #c9a84c); box-shadow: 0 0 6px rgba(201,168,76,0.5); }
@@ -29,4 +29,4 @@
 .ch-msg.ok { border-color: rgba(76,170,110,0.5); color: #7fd39a; background: rgba(76,170,110,0.1); }
 .ch-msg.soft { border-color: var(--border, #3a3528); color: var(--ivory-dim, #a09880); background: transparent; }
 .ch-next-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 0.4rem; font-size: 0.7rem; }
-.ch-next-row img { width: 46px; height: 46px; border-radius: 6px; opacity: 0.85; }
+.ch-next-row img { width: 96px; max-width: 40%; height: auto; aspect-ratio: 16 / 9; flex-shrink: 0; object-fit: contain; border-radius: 6px; }
