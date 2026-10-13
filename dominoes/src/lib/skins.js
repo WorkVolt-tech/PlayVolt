@@ -147,12 +147,15 @@ export const TABLE_SKINS = {
   // ── Challenge Mode prize tables (your artwork): won by beating the week's challenge ──
   emerald:  { label: 'Emerald Crown', challenge: true, thumb: '/tables/emerald-wide.webp',
     felt: "url('/tables/emerald-wide.webp') center / cover no-repeat, #0c0d0b",
-    // Landscape uses the artwork as a true frame: the centre is zoomed so only
-    // the black/emerald marble remains, while the border itself is 9-sliced.
-    wideFelt: "url('/tables/emerald-wide.webp') center / 125% auto no-repeat, #0c0d0b",
+    // Landscape: use a separate dark marble centre so the original frame is not
+    // drawn underneath the 9-slice border. This makes the frame visibly adapt
+    // instead of looking like the old full-image background.
+    wideFelt: "radial-gradient(ellipse at 50% 42%, rgba(26,74,56,0.16) 0%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.5) 100%), linear-gradient(145deg, #151816 0%, #0d110f 52%, #090b0a 100%)",
     frameWide: "url('/tables/emerald-wide.webp')",
-    frameSlice: '7% 10%',
-    frameWidth: '7% 10%',
+    // The source artwork is 16:9. Keep the sliced corner proportions instead of
+    // using destination percentages (which made the frame look unchanged/squashed).
+    frameSlice: '76 192',
+    frameWidth: '54px 136px',
     rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
   sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-wide.webp', felt: "url('/tables/sapphire-wide.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
   burgundydeco: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundydeco-wide.webp', felt: "url('/tables/burgundydeco-wide.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
