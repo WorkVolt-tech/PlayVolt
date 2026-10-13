@@ -278,8 +278,16 @@ export function setRoomSkins(skins) {
 export function applyTableSkin(id) {
   const t = tableLook(TABLE_SKINS[tableBase(id)] ? id : 'green')      // the chosen version, if it has one
   const root = document.documentElement
+
+  // Portrait keeps the existing fit. In landscape, artwork tables use the full
+  // image instead of CSS "cover", which was cropping the decorative corners.
+  // Gradient/felt tables do not contain "cover", so they are unchanged.
+  const wideFelt = typeof t.felt === 'string'
+    ? t.felt.replace(/\/\s*cover\s+no-repeat/g, '/ 100% 100% no-repeat')
+    : t.felt
+
   root.style.setProperty('--table-felt', t.felt)
-  root.style.setProperty('--table-felt-wide', t.felt)
+  root.style.setProperty('--table-felt-wide', wideFelt)
   root.style.setProperty('--table-rail', t.rail)
 }
 
