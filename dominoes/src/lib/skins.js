@@ -150,14 +150,16 @@ export const TABLE_SKINS = {
     // Landscape: use a separate dark marble centre so the original frame is not
     // drawn underneath the 9-slice border. This makes the frame visibly adapt
     // instead of looking like the old full-image background.
-    wideFelt: "radial-gradient(ellipse at 50% 42%, rgba(26,74,56,0.16) 0%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.5) 100%), linear-gradient(145deg, #151816 0%, #0d110f 52%, #090b0a 100%)",
+    // Use the real centre marble from the artwork, zoomed just enough that the
+    // original decorative frame sits outside the playable area. This keeps the
+    // wide centre visually consistent with portrait instead of looking like a
+    // flat synthetic gradient.
+    wideFelt: "url('/tables/emerald-wide.webp') center / 132% auto no-repeat, #0c0d0b",
     frameWide: "url('/tables/emerald-wide.webp')",
-    // The source artwork is 16:9. Keep the sliced corner proportions instead of
-    // using destination percentages (which made the frame look unchanged/squashed).
-    frameSlice: '76 192 98 192',
-    // Bottom artwork is deeper than the top, so give it a larger source slice
-    // and rendered height to preserve the missing upper gold line.
-    frameWidth: '32px 96px 44px 96px',
+    // The bottom band in the source is slightly deeper than the top. Give it a
+    // little more source area and display height so the inner gold line is kept.
+    frameSlice: '76 192 106 192',
+    frameWidth: '32px 96px 48px 96px',
     rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
   sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-wide.webp', felt: "url('/tables/sapphire-wide.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
   burgundydeco: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundydeco-wide.webp', felt: "url('/tables/burgundydeco-wide.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
