@@ -154,11 +154,10 @@ export const TABLE_SKINS = {
     frameWide: "url('/tables/emerald-wide.webp')",
     // The source artwork is 16:9. Keep the sliced corner proportions instead of
     // using destination percentages (which made the frame look unchanged/squashed).
-    frameSlice: '76 192',
-    // Keep the decorative frame slim on wide screens. These widths preserve
-    // roughly the same corner aspect ratio as the source artwork without
-    // swallowing the playable area.
-    frameWidth: '24px 60px',
+    frameSlice: '76 192 98 192',
+    // Bottom artwork is deeper than the top, so give it a larger source slice
+    // and rendered height to preserve the missing upper gold line.
+    frameWidth: '32px 96px 44px 96px',
     rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
   sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-wide.webp', felt: "url('/tables/sapphire-wide.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
   burgundydeco: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundydeco-wide.webp', felt: "url('/tables/burgundydeco-wide.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
