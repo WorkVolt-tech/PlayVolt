@@ -145,7 +145,15 @@ export const TABLE_SKINS = {
   // the figure sits where the chain goes, so the centre is gently dimmed to keep tiles readable
   negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-wide.webp', felt: "radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), url('/tables/negmaron-wide.webp') center / cover no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
   // ── Challenge Mode prize tables (your artwork): won by beating the week's challenge ──
-  emerald:  { label: 'Emerald Crown', challenge: true, thumb: '/tables/emerald-wide.webp', felt: "url('/tables/emerald-wide.webp') center / cover no-repeat, #0c0d0b", rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
+  emerald:  { label: 'Emerald Crown', challenge: true, thumb: '/tables/emerald-wide.webp',
+    felt: "url('/tables/emerald-wide.webp') center / cover no-repeat, #0c0d0b",
+    // Landscape uses the artwork as a true frame: the centre is zoomed so only
+    // the black/emerald marble remains, while the border itself is 9-sliced.
+    wideFelt: "url('/tables/emerald-wide.webp') center / 125% auto no-repeat, #0c0d0b",
+    frameWide: "url('/tables/emerald-wide.webp')",
+    frameSlice: '7% 10%',
+    frameWidth: '7% 10%',
+    rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
   sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-wide.webp', felt: "url('/tables/sapphire-wide.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
   burgundydeco: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundydeco-wide.webp', felt: "url('/tables/burgundydeco-wide.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
   teal:     { label: 'Teal Deco', challenge: true, thumb: '/tables/teal-wide.webp', felt: "url('/tables/teal-wide.webp') center / cover no-repeat, #0c0d0d", rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
@@ -279,16 +287,22 @@ export function applyTableSkin(id) {
   const t = tableLook(TABLE_SKINS[tableBase(id)] ? id : 'green')      // the chosen version, if it has one
   const root = document.documentElement
 
-  // Portrait keeps the existing fit. In landscape, artwork tables use the full
-  // image instead of CSS "cover", which was cropping the decorative corners.
-  // Gradient/felt tables do not contain "cover", so they are unchanged.
-  const wideFelt = typeof t.felt === 'string'
-    ? t.felt.replace(/\/\s*cover\s+no-repeat/g, '/ 100% 100% no-repeat')
-    : t.felt
-
+  // Tables can opt into a landscape-specific centre + 9-slice frame.
+  // Everything else keeps its original rendering, so no gameplay/layout code
+  // is involved and non-sliced artwork is never stretched.
   root.style.setProperty('--table-felt', t.felt)
-  root.style.setProperty('--table-felt-wide', wideFelt)
+  root.style.setProperty('--table-felt-wide', t.wideFelt || t.felt)
   root.style.setProperty('--table-rail', t.rail)
+
+  if (t.frameWide) {
+    root.style.setProperty('--table-frame-image', t.frameWide)
+    root.style.setProperty('--table-frame-slice', t.frameSlice || '7% 10%')
+    root.style.setProperty('--table-frame-width', t.frameWidth || '7% 10%')
+  } else {
+    root.style.removeProperty('--table-frame-image')
+    root.style.removeProperty('--table-frame-slice')
+    root.style.removeProperty('--table-frame-width')
+  }
 }
 
 // Components that draw tiles use this, so equipping a skin repaints them.
