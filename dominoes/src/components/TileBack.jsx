@@ -1,4 +1,5 @@
 import { TILE_SKINS, useEquippedSkins } from '../lib/skins'
+import { GlyphPath } from '../lib/zodiacGlyphs'
 
 // ── TileBack ─────────────────────────────────────────────────────────────────
 // The back of a domino, in the equipped skin — used wherever a tile is face
@@ -131,6 +132,16 @@ export default function TileBack({ skin, turn = 0 }) {
         ? 'inset 0 0 0 1px #b9b3a6, inset 0 1px 0 rgba(255,255,255,0.6)'
         : `inset 0 0 0 1px ${S.edge}, inset 0 1px 0 rgba(255,255,255,0.18)`,
     }}>
+      {S.glyph && (
+        // zodiac skins: a gold frame and the sign's glyph in the middle
+        <>
+          <div style={{ position: 'absolute', inset: '7%', borderRadius: 3, border: `1px solid ${S.bezel || S.glyphColor}`, opacity: 0.9 }} />
+          <svg viewBox="0 0 100 200" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+            <circle cx="50" cy="100" r="30" fill="none" stroke={S.glyphColor} strokeWidth="1.2" opacity="0.75" />
+            <GlyphPath sign={S.glyph} x={28} y={78} size={44} color={S.glyphColor} width={2.2} />
+          </svg>
+        </>
+      )}
       {S.flag && (
         // The real flag, landscape 3:2, centred: 84% of the back's width.
         // (Its own drawing — the tile face patterns are laid out for the tile,

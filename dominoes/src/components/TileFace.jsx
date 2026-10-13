@@ -1,4 +1,5 @@
 import { TILE_SKINS, useEquippedSkins } from '../lib/skins'
+import { GlyphPath } from '../lib/zodiacGlyphs'
 
 // ── TileFace ─────────────────────────────────────────────────────────────────
 // Draws a domino's face to fill whatever box it's placed in.
@@ -21,20 +22,28 @@ const PIP_R = 9             // every pip, every tile: the same radius
 
 export default function TileFace({ a, b, vertical = true, skin }) {
   const equipped = useEquippedSkins()
-  const S = TILE_SKINS[skin || equipped.tile] || TILE_SKINS.classic
+  const skinId = TILE_SKINS[skin || equipped.tile] ? (skin || equipped.tile) : 'classic'
+  const S = TILE_SKINS[skinId]
+  // luxury options (only skins that set them use them): jewel/metal pips
+  // (pipGrad), a highlight on each pip (pipShine), a gilded bezel (bezel),
+  // an engraved corner glyph (glyph), and a heavier centre line (dividerW)
+  const pipFill = S.pipGrad ? `url(#pg-${skinId})` : S.pip
   const layout = vertical ? UPRIGHT : SIDEWAYS
   const W = vertical ? 100 : 200
   const H = vertical ? 200 : 100
   const outline = S.ring && S.ring !== 'none'
 
   // pips for one half; (ox, oy) is that half's top-left corner in the drawing
+  const shine = (n, ox, oy, key) => !S.pipShine ? null : (layout[n] || []).map(i => (
+    <circle key={`${key}-s${i}`} cx={ox + SPOT[i % 3] - 3} cy={oy + SPOT[Math.floor(i / 3)] - 3.4} r="2.6" fill="rgba(255,255,255,0.78)" />
+  ))
   const pips = (n, ox, oy, key) => (layout[n] || []).map(i => (
     <circle
       key={`${key}-${i}`}
       cx={ox + SPOT[i % 3]}
       cy={oy + SPOT[Math.floor(i / 3)]}
       r={PIP_R}
-      fill={S.pip}
+      fill={pipFill}
       // flag tiles: white pips with a firm dark edge, so they still read
       // where they land on a white stripe or cross. A skin can set its own
       // pip edge (pipStroke / pipStrokeW) to override this.
@@ -63,6 +72,9 @@ export default function TileFace({ a, b, vertical = true, skin }) {
             // a hair oversized so a box that isn't exactly 2:1 has no gaps
             transform: 'rotate(-90deg) scale(1.06)',
           }} />
+      {S.bezel && (
+        <div style={{ position: 'absolute', inset: 3, borderRadius: 3, border: `1px solid ${S.bezel}`, opacity: 0.85 }} />
+      )}
       {/* edge and bevel sit on top, unrotated */}
       <div style={{
         position: 'absolute', inset: 0, borderRadius: 'inherit',
@@ -82,14 +94,28 @@ export default function TileFace({ a, b, vertical = true, skin }) {
           </radialGradient>
         </defs>
 
+        {S.pipGrad && (
+          <defs>
+            <radialGradient id={`pg-${skinId}`} cx="34%" cy="30%" r="78%">
+              {S.pipGrad.map(([o, c]) => <stop key={o} offset={o} stopColor={c} />)}
+            </radialGradient>
+          </defs>
+        )}
+        {/* an engraved glyph in a corner of each half (zodiac skins) */}
+        {S.glyph && (vertical
+          ? <><GlyphPath sign={S.glyph} x={5} y={5} size={11} color={S.glyphColor} width={1.1} opacity={S.glyphOpacity ?? 0.6} />
+              <GlyphPath sign={S.glyph} x={84} y={184} size={11} color={S.glyphColor} width={1.1} opacity={S.glyphOpacity ?? 0.6} rotate={180} /></>
+          : <><GlyphPath sign={S.glyph} x={5} y={5} size={11} color={S.glyphColor} width={1.1} opacity={S.glyphOpacity ?? 0.6} />
+              <GlyphPath sign={S.glyph} x={184} y={84} size={11} color={S.glyphColor} width={1.1} opacity={S.glyphOpacity ?? 0.6} rotate={180} /></>)}
+
         {vertical
-          ? <>{pips(a, 0, 0, 'a')}{pips(b, 0, 100, 'b')}</>
-          : <>{pips(a, 0, 0, 'a')}{pips(b, 100, 0, 'b')}</>}
+          ? <>{pips(a, 0, 0, 'a')}{shine(a, 0, 0, 'a')}{pips(b, 0, 100, 'b')}{shine(b, 0, 100, 'b')}</>
+          : <>{pips(a, 0, 0, 'a')}{shine(a, 0, 0, 'a')}{pips(b, 100, 0, 'b')}{shine(b, 100, 0, 'b')}</>}
 
         {/* centre line */}
         {vertical
-          ? <line x1="12" y1="100" x2="88" y2="100" stroke={S.divider} strokeWidth="1.5" />
-          : <line x1="100" y1="12" x2="100" y2="88" stroke={S.divider} strokeWidth="1.5" />}
+          ? <line x1="12" y1="100" x2="88" y2="100" stroke={S.divider} strokeWidth={S.dividerW || 1.5} />
+          : <line x1="100" y1="12" x2="100" y2="88" stroke={S.divider} strokeWidth={S.dividerW || 1.5} />}
 
         {/* brass pin */}
         <circle cx={W / 2} cy={H / 2} r="6.5" fill="url(#dk-pin)" />

@@ -111,3 +111,4 @@
 .skin-variants button.on { border-color: var(--gold, #c9a84c); background: rgba(201,168,76,0.15); color: var(--gold-glow, #e8c96a); }
 .skins-shop-msg { margin: 0 0 0.8rem; padding: 0.55rem 0.8rem; border-radius: 8px; font-size: 0.68rem; border: 1px solid #8a3a3a; color: #e07a7a; background: rgba(138,58,58,0.12); }
 .skins-shop-msg.ok { border-color: rgba(76,170,110,0.5); color: #8fe0aa; background: rgba(76,170,110,0.1); }
+.skin-buy.wide { width: 100%; justify-content: center; margin-top: 8px; height: 34px; }

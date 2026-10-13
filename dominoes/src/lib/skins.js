@@ -63,6 +63,55 @@ export const TILE_SKINS = {
   // the pips, and on its side it still reads as the flag
   usa:      { label: 'USA', face: () => 'linear-gradient(180deg, #2c3a78 0%, #2c3a78 50%, transparent 50%), repeating-linear-gradient(90deg, #c4505c 0%, #c4505c 20%, #f4efe6 20%, #f4efe6 40%)', edge: '#1c1b3a', pip: WHITE, ring: '0 0 0 1px rgba(0,0,0,0.6)', divider: 'rgba(255,255,255,0.5)' , flag: true, emblem: 'usa', flagArt: 'linear-gradient(#3C3B6E, #3C3B6E) 0 0 / 40% 53.85% no-repeat, repeating-linear-gradient(180deg, #B22234 0%, #B22234 7.69%, #ffffff 7.69%, #ffffff 15.38%)', pipStroke: '#000000', pipStrokeW: 6 },
   france:   { label: 'France', face: () => 'linear-gradient(90deg, #0055A4 0%, #0055A4 33.3%, #ffffff 33.3%, #ffffff 66.6%, #EF4135 66.6%, #EF4135 100%)', edge: '#22304d', pip: WHITE, ring: '0 0 0 1px rgba(0,0,0,0.6)', divider: 'rgba(0,0,0,0.25)' , flag: true, flagArt: 'linear-gradient(90deg, #0055A4 0%, #0055A4 33.3%, #ffffff 33.3%, #ffffff 66.6%, #EF4135 66.6%, #EF4135 100%)', pipStroke: '#000000', pipStrokeW: 6 },
+  // ── Shop: zodiac tiles (luxury) — one design per sign, matching its table ──
+  'zodiac-aries': { label: 'Aries', shop: 2500, glyph: 'aries', glyphColor: '#e3bd62', glyphOpacity: 0.7,
+    face: () => 'radial-gradient(ellipse 70% 40% at 30% 20%, rgba(255,255,255,0.10) 0%, transparent 60%), linear-gradient(118deg, transparent 0%, transparent 30%, rgba(150,18,32,0.55) 33%, transparent 37%, transparent 60%, rgba(120,12,26,0.45) 63%, transparent 67%, transparent 100%), linear-gradient(160deg, #2a0b10 0%, #160507 55%, #0b0203 100%)',
+    edge: '#8a6a22', bezel: '#c9a84c', divider: '#d8b25a', dividerW: 2.2, ring: 'none',
+    pipGrad: [['0%', '#ffb3b3'], ['35%', '#e0213b'], ['75%', '#8f0a1d'], ['100%', '#4a030c']], pipShine: true, pipStroke: '#d8b25a', pipStrokeW: 1.6 },
+  'zodiac-gemini': { label: 'Gemini', shop: 2500, glyph: 'gemini', glyphColor: '#e6cf98', glyphOpacity: 0.65,
+    face: () => 'radial-gradient(ellipse 80% 45% at 35% 18%, rgba(214,190,255,0.22) 0%, transparent 60%), radial-gradient(ellipse 70% 50% at 70% 90%, rgba(120,70,170,0.30) 0%, transparent 65%), linear-gradient(160deg, #3d2156 0%, #2a1340 50%, #170a24 100%)',
+    edge: '#7d6232', bezel: '#d6bf86', divider: '#d8bf7c', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#ffffff'], ['40%', '#f1ebf6'], ['80%', '#c9bcd8'], ['100%', '#9a8aad']], pipShine: true, pipStroke: 'rgba(214,191,134,0.9)', pipStrokeW: 1.2 },
+  'zodiac-libra': { label: 'Libra', shop: 2500, glyph: 'libra', glyphColor: '#b8913a', glyphOpacity: 0.75,
+    face: () => 'linear-gradient(122deg, transparent 0%, transparent 27%, rgba(196,158,72,0.55) 29%, transparent 31.5%, transparent 55%, rgba(160,160,160,0.35) 57%, transparent 59%, transparent 74%, rgba(196,158,72,0.45) 75.5%, transparent 77.5%, transparent 100%), radial-gradient(ellipse 80% 50% at 30% 15%, #ffffff 0%, transparent 70%), linear-gradient(160deg, #fbf8f1 0%, #eee8da 55%, #ddd4c1 100%)',
+    edge: '#9c7c32', bezel: '#c9a84c', divider: '#b8913a', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#6d6d6d'], ['35%', '#1f1f1f'], ['100%', '#000000']], pipShine: true, pipStroke: '#c9a84c', pipStrokeW: 1.6 },
+  'zodiac-taurus': { label: 'Taurus', shop: 2500, glyph: 'taurus', glyphColor: '#e3c46e', glyphOpacity: 0.68,
+    face: () => 'repeating-radial-gradient(ellipse at 20% 110%, rgba(255,255,255,0) 0px, rgba(255,255,255,0) 7px, rgba(120,220,170,0.10) 8px, rgba(255,255,255,0) 10px), radial-gradient(ellipse 80% 45% at 30% 15%, rgba(255,255,255,0.14) 0%, transparent 60%), linear-gradient(160deg, #0f5a3a 0%, #0a3f29 55%, #05261a 100%)',
+    edge: '#7d6232', bezel: '#c9a84c', divider: '#d8b25a', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#fff4c8'], ['40%', '#e6c05e'], ['80%', '#a87d24'], ['100%', '#6b4c10']], pipShine: true, pipStroke: '#7a5a1a', pipStrokeW: 1.2 },
+  'zodiac-cancer': { label: 'Cancer', shop: 2500, glyph: 'cancer', glyphColor: '#e8d6a6', glyphOpacity: 0.68,
+    face: () => 'radial-gradient(ellipse 85% 45% at 30% 15%, rgba(170,200,255,0.16) 0%, transparent 60%), radial-gradient(ellipse 80% 40% at 70% 92%, rgba(60,110,180,0.28) 0%, transparent 65%), linear-gradient(160deg, #142a52 0%, #0c1b3a 55%, #060e22 100%)',
+    edge: '#7a6a44', bezel: '#d9c48f', divider: '#d9c48f', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#ffffff'], ['40%', '#e3eefb'], ['80%', '#a9c2e0'], ['100%', '#6f8db3']], pipShine: true, pipStroke: 'rgba(217,196,143,0.95)', pipStrokeW: 1.2 },
+  'zodiac-leo': { label: 'Leo', shop: 2500, glyph: 'leo', glyphColor: '#f0c75e', glyphOpacity: 0.68,
+    face: () => 'radial-gradient(ellipse 80% 45% at 30% 15%, rgba(255,200,120,0.14) 0%, transparent 60%), radial-gradient(ellipse 70% 40% at 70% 92%, rgba(160,70,20,0.30) 0%, transparent 65%), linear-gradient(160deg, #3a240f 0%, #241507 55%, #120a03 100%)',
+    edge: '#8a6a22', bezel: '#d4a93c', divider: '#e0b64c', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#fff2b0'], ['35%', '#f7a91e'], ['75%', '#b35a00'], ['100%', '#6a2e00']], pipShine: true, pipStroke: '#e0b64c', pipStrokeW: 1.6 },
+  'zodiac-virgo': { label: 'Virgo', shop: 2500, glyph: 'virgo', glyphColor: '#e6cf8c', glyphOpacity: 0.68,
+    face: () => 'linear-gradient(125deg, transparent 0%, transparent 35%, rgba(214,180,100,0.16) 37%, transparent 39%, transparent 100%), radial-gradient(ellipse 80% 45% at 30% 15%, rgba(255,230,200,0.12) 0%, transparent 60%), linear-gradient(160deg, #351a2c 0%, #24101e 55%, #140810 100%)',
+    edge: '#7d6232', bezel: '#d6bd7a', divider: '#d6bd7a', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#fffbe6'], ['40%', '#f0dca0'], ['80%', '#c9a456'], ['100%', '#8f6c26']], pipShine: true, pipStroke: '#8f6c26', pipStrokeW: 1.2 },
+  'zodiac-scorpio': { label: 'Scorpio', shop: 2500, glyph: 'scorpio', glyphColor: '#d9d9de', glyphOpacity: 0.68,
+    face: () => 'radial-gradient(ellipse 75% 40% at 30% 15%, rgba(255,255,255,0.08) 0%, transparent 60%), radial-gradient(ellipse 85% 55% at 60% 80%, rgba(140,10,24,0.42) 0%, transparent 70%), linear-gradient(160deg, #1e0a0d 0%, #120506 55%, #070203 100%)',
+    edge: '#6b6b72', bezel: '#c9c9d1', divider: '#c9c9d1', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#ffb0b8'], ['35%', '#c3122e'], ['75%', '#6d0617'], ['100%', '#33020a']], pipShine: true, pipStroke: '#c9c9d1', pipStrokeW: 1.6 },
+  'zodiac-sagittarius': { label: 'Sagittarius', shop: 2500, glyph: 'sagittarius', glyphColor: '#e3bd62', glyphOpacity: 0.68,
+    face: () => 'radial-gradient(ellipse 80% 45% at 30% 15%, rgba(170,190,255,0.12) 0%, transparent 60%), radial-gradient(ellipse 70% 45% at 75% 88%, rgba(150,20,50,0.35) 0%, transparent 65%), linear-gradient(160deg, #18213f 0%, #0f152c 55%, #070a18 100%)',
+    edge: '#8a6a22', bezel: '#c9a84c', divider: '#d8b25a', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#c9fff0'], ['35%', '#1fb592'], ['75%', '#0a6b55'], ['100%', '#033328']], pipShine: true, pipStroke: '#d8b25a', pipStrokeW: 1.6 },
+  'zodiac-capricorn': { label: 'Capricorn', shop: 2500, glyph: 'capricorn', glyphColor: '#e3bd62', glyphOpacity: 0.68,
+    face: () => 'linear-gradient(150deg, transparent 0%, transparent 60%, rgba(255,255,255,0.05) 62%, transparent 70%), radial-gradient(ellipse 80% 45% at 30% 15%, rgba(200,215,255,0.12) 0%, transparent 60%), linear-gradient(160deg, #22262f 0%, #161a22 55%, #0b0d12 100%)',
+    edge: '#8a6a22', bezel: '#c9a84c', divider: '#d8b25a', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#d6e4ff'], ['35%', '#2d64e0'], ['75%', '#102f86'], ['100%', '#06154a']], pipShine: true, pipStroke: '#d8b25a', pipStrokeW: 1.6 },
+  'zodiac-aquarius': { label: 'Aquarius', shop: 2500, glyph: 'aquarius', glyphColor: '#d6ecf5', glyphOpacity: 0.68,
+    face: () => 'repeating-linear-gradient(165deg, rgba(255,255,255,0) 0px, rgba(255,255,255,0) 9px, rgba(150,220,255,0.08) 10px, rgba(255,255,255,0) 12px), radial-gradient(ellipse 80% 45% at 30% 15%, rgba(180,230,255,0.18) 0%, transparent 60%), linear-gradient(160deg, #0f3a5c 0%, #0a2742 55%, #051628 100%)',
+    edge: '#6c8796', bezel: '#cfe6f2', divider: '#cfe6f2', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#ffffff'], ['35%', '#9fe6ff'], ['75%', '#2b8fc9'], ['100%', '#0e4f7a']], pipShine: true, pipStroke: '#e0f2fa', pipStrokeW: 1.4 },
+  'zodiac-pisces': { label: 'Pisces', shop: 2500, glyph: 'pisces', glyphColor: '#e8d9a6', glyphOpacity: 0.68,
+    face: () => 'radial-gradient(ellipse 85% 45% at 30% 15%, rgba(190,255,240,0.14) 0%, transparent 60%), radial-gradient(ellipse 80% 40% at 70% 92%, rgba(30,120,120,0.30) 0%, transparent 65%), linear-gradient(160deg, #0f3a3d 0%, #0a282b 55%, #041619 100%)',
+    edge: '#7a6a44', bezel: '#dccb94', divider: '#dccb94', dividerW: 2, ring: 'none',
+    pipGrad: [['0%', '#ffffff'], ['40%', '#e7f6f2'], ['80%', '#a8d4ca'], ['100%', '#6aa598']], pipShine: true, pipStroke: 'rgba(220,203,148,0.95)', pipStrokeW: 1.2 },
 }
 
 const VIGNETTE = 'radial-gradient(ellipse at 50% 42%, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.5) 100%)'
@@ -150,6 +199,9 @@ function unlocksFor(kind, free, ids) {
     if (free.includes(id)) return { id, free: true }
     if (kind === 'tables' && ['emerald', 'sapphire', 'burgundydeco', 'teal', 'amethyst'].includes(id)) {
       return { id, challenge: true, need: 'Challenge Mode prize — beat the challenge the week it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
+    }
+    if (kind === 'tiles' && TILE_SKINS[id]?.shop) {
+      return { id, shop: TILE_SKINS[id].shop, need: `Shop — ${TILE_SKINS[id].shop.toLocaleString('en-US')} Goud`, test: s => (s.tileUnlocks || []).includes(id) }
     }
     if (kind === 'tables' && TABLE_SKINS[id]?.shop) {
       return { id, shop: TABLE_SKINS[id].shop, need: `Shop — ${TABLE_SKINS[id].shop.toLocaleString('en-US')} Goud`, test: s => (s.tableUnlocks || []).includes(id) }
@@ -247,14 +299,15 @@ export function useEquippedSkins() {
 // ── A player's stats, as trophies and skins read them ──────────────────────
 // Guests (no account) get all zeros.
 export async function loadPlayerStats() {
-  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0, fiveDoubles: 0, fiveDoublesWon: 0, tableUnlocks: [] }
+  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0, fiveDoubles: 0, fiveDoublesWon: 0, tableUnlocks: [], tileUnlocks: [] }
   const { data: auth } = await db.auth.getUser()
   const uid = auth?.user?.id
   if (!uid) return zero
-  const [{ data: prof }, { data: sp }, { data: won }] = await Promise.all([
+  const [{ data: prof }, { data: sp }, { data: won }, { data: tilesOwned }] = await Promise.all([
     db.from('profiles').select('*').eq('id', uid).maybeSingle(),
     db.rpc('ensure_story_progress'),
     db.from('table_unlocks').select('skin').eq('user_id', uid),
+    db.from('tile_unlocks').select('skin').eq('user_id', uid),          // tiles bought in the shop
   ])
   const row = Array.isArray(sp) ? sp[0] : sp
   return {
@@ -270,6 +323,7 @@ export async function loadPlayerStats() {
     fiveDoubles: prof?.total_five_double_rounds ?? 0,
     fiveDoublesWon: prof?.total_five_double_wins ?? 0,
     tableUnlocks: (won || []).map(r => r.skin),
+    tileUnlocks: (tilesOwned || []).map(r => r.skin),
     uid,
   }
 }
@@ -299,6 +353,7 @@ export const TILE_GROUPS = [
   { label: 'Neon', ids: ['neonGreen', 'neonPink', 'neonOrange', 'neonYellow', 'neonBlue', 'glow'] },
   { label: 'Flags', ids: ['haiti', 'quebec', 'jamaica', 'trinidad', 'dominican', 'usa', 'france'] },
   { label: 'Culture & Dekabess', ids: ['kafe', 'kanaval', 'phoenix', 'dekabess', 'playvolt'] },
+  { label: 'Zodiac — Shop', ids: ['zodiac-aries', 'zodiac-taurus', 'zodiac-gemini', 'zodiac-cancer', 'zodiac-leo', 'zodiac-virgo', 'zodiac-libra', 'zodiac-scorpio', 'zodiac-sagittarius', 'zodiac-capricorn', 'zodiac-aquarius', 'zodiac-pisces'] },
 ]
 export const TABLE_GROUPS = [
   { label: 'Classic Felts', ids: ['green', 'midnight', 'burgundy', 'slate', 'mahogany', 'purple', 'pink', 'ocean'] },

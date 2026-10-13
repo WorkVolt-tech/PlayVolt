@@ -44,12 +44,14 @@ export default function Skins() {
   // buying from the shop (the server checks the price and your Goud)
   const [shopMsg, setShopMsg] = useState(null)
   const [buying, setBuying] = useState(null)
-  async function buy(c) {
+  async function buy(c, kind = 'table') {
     if (buying) return
-    setBuying(c.id); setShopMsg(null)
-    const { data, error } = await db.rpc('goud_buy', { p_item: c.id })
+    const item = kind === 'tile' ? `tile:${c.id}` : c.id          // tiles and tables of a sign are separate items
+    setBuying(item); setShopMsg(null)
+    const { data, error } = await db.rpc('goud_buy', { p_item: item })
     setBuying(null)
-    const say = { bought: `${c.label} is yours — equip it below.`, owned: 'You already own that table.', 'not enough goud': 'Not enough Goud yet — keep playing!', 'not for sale': 'That table isn’t for sale.', 'sign in': 'Sign in to buy from the shop.' }
+    const what = kind === 'tile' ? `${c.label} tiles are` : `The ${c.label} table is`
+    const say = { bought: `${what} yours — equip ${kind === 'tile' ? 'them' : 'it'} below.`, owned: 'You already own that.', 'not enough goud': 'Not enough Goud yet — keep playing!', 'not for sale': 'That table isn’t for sale.', 'sign in': 'Sign in to buy from the shop.' }
     setShopMsg({ ok: data === 'bought', text: error ? `Couldn’t buy — ${error.message}` : say[data] || String(data) })
     if (data === 'bought' || data === 'owned') loadPlayerStats().then(setStats)
   }
@@ -77,6 +79,7 @@ export default function Skins() {
         </div>
       </div>
 
+      {shopMsg && <div className={`skins-shop-msg ${shopMsg.ok ? 'ok' : ''}`}>{shopMsg.text}</div>}
       <h2 className="skins-section">Tiles</h2>
       {groupCards(tileCards, TILE_GROUPS).map(g => (
         <section key={g.label} className="skins-group">
@@ -95,7 +98,12 @@ export default function Skins() {
                 <div className="skin-note">{c.on ? 'In use' : c.owned ? 'Owned' : c.need}</div>
                 {c.on && <div className="skin-state on">Equipped</div>}
                 {!c.on && c.owned && <button className="skin-equip" onClick={() => setEquipped('tile', c.id)}>Equip</button>}
-                {!c.owned && <div className="skin-state locked">Locked</div>}
+                {!c.owned && c.shop && (
+                  <button className="skin-buy wide" disabled={buying === `tile:${c.id}`} onClick={() => buy(c, 'tile')}>
+                    {buying === `tile:${c.id}` ? '…' : <><span className="goud-coin" aria-hidden="true">G</span>{c.shop.toLocaleString('en-US')}</>}
+                  </button>
+                )}
+                {!c.owned && !c.shop && <div className="skin-state locked">Locked</div>}
               </div>
             ))}
           </div>
@@ -103,7 +111,6 @@ export default function Skins() {
       ))}
 
       <h2 className="skins-section">Tables</h2>
-      {shopMsg && <div className={`skins-shop-msg ${shopMsg.ok ? 'ok' : ''}`}>{shopMsg.text}</div>}
       {groupCards(tableCards, TABLE_GROUPS).map(g => (
         <section key={g.label} className="skins-group">
           <h3 className="skins-group-title">{g.label}</h3>
@@ -139,7 +146,7 @@ export default function Skins() {
                   {c.on && <div className="skin-state on compact">Equipped</div>}
                   {!c.on && c.owned && <button className="skin-equip compact" onClick={() => setEquipped('table', valueOf(c.id))}>Equip</button>}
                   {!c.owned && c.shop && (
-                    <button className="skin-buy" disabled={buying === c.id} onClick={() => buy(c)}>
+                    <button className="skin-buy" disabled={buying === c.id} onClick={() => buy(c, 'table')}>
                       {buying === c.id ? '…' : <><span className="goud-coin" aria-hidden="true">G</span>{c.shop.toLocaleString('en-US')}</>}
                     </button>
                   )}
