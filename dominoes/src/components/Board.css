@@ -12,7 +12,13 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  background-attachment: local;
+
+  /* Keep the mat anchored to the board viewport.
+     background-attachment: local repaints/moves large WebP table skins as this
+     scroll container changes during play, which can flash on mobile/PWA.
+     "scroll" leaves domino/drag/placement logic untouched and keeps the mat
+     stable while only the board contents update. */
+  background-attachment: scroll;
 }
 
 .board-area::before {
