@@ -155,7 +155,10 @@ export const TABLE_SKINS = {
     // The source artwork is 16:9. Keep the sliced corner proportions instead of
     // using destination percentages (which made the frame look unchanged/squashed).
     frameSlice: '76 192',
-    frameWidth: '54px 136px',
+    // Keep the decorative frame slim on wide screens. These widths preserve
+    // roughly the same corner aspect ratio as the source artwork without
+    // swallowing the playable area.
+    frameWidth: '24px 60px',
     rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
   sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-wide.webp', felt: "url('/tables/sapphire-wide.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
   burgundydeco: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundydeco-wide.webp', felt: "url('/tables/burgundydeco-wide.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
