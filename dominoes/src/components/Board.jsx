@@ -771,7 +771,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
         const topHud = topBar ? Math.max(0, topBar.bottom - a.top) + pad : 0
         r.top = Math.round(Math.max(topOpponent, topHud))
 
-        // The player's hand now floats over the full-screen table. Reserve its
+        // The player's hand floats over the full-screen table. Reserve its
         // actual overlap so long chains fit above it in both orientations.
         if (hand) r.bottom = Math.round(Math.max(0, a.bottom - hand.top) + pad)
 
@@ -1222,3 +1222,166 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
     e.preventDefault()
     e.stopPropagation()
     setDragOver(null)
+    console.log('[Board] drop fired, isMyTurn:', isMyTurn, 'draggingRef:', draggingRef.current)
+
+    if (!isMyTurn) return
+
+    const data = getEventDragData(e)
+    console.log('[Board] resolved data:', data)
+    if (!data) {
+      setNativeDragging(null)
+      return
+    }
+
+    if (!hasTiles) {
+      const dragged = mergeDragPayload(readTransferPayload(e?.dataTransfer), draggingRef.current, null)
+      if (dragged?.tile) placeDraggedDomino(dragged, 'first')
+      setNativeDragging(null)
+      return
+    }
+
+    // If the pointer is over an explicit target, prefer that target. Otherwise
+    // snap to the nearest legal open end.
+    const explicitSide = e.target?.closest?.('[data-drop-side]')?.dataset?.dropSide
+
+    const side =
+      explicitSide === 'left' || explicitSide === 'right'
+        ? explicitSide
+        : resolveNearestDropSide(e, data)
+
+    if (side) {
+      placeDraggedDomino(data, side)
+    }
+
+    setNativeDragging(null)
+  }
+
+  return (
+    <div
+      className={`board-area ${draggingRef?.current || nativeDragging ? 'drag-active' : ''}`}
+      ref={areaRef}
+      onDragEnter={e => {
+        if (!isMyTurn) return
+
+        // Crucial: a valid HTML5 drop target must cancel dragEnter/dragOver.
+        e.preventDefault()
+        recoverNativeDrag(e)
+      }}
+      onDragOver={e => {
+        if (!isMyTurn) return
+        e.preventDefault()
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+        recoverNativeDrag(e)
+      }}
+      onDragLeave={e => {
+        // Do not clear state while merely moving between children inside board.
+        if (areaRef.current?.contains(e.relatedTarget)) return
+        setDragOver(null)
+        setNativeDragging(null)
+      }}
+      onDrop={handleBoardDrop}
+    >
+      {!hasTiles && (
+        <div className="board-hint">
+          <span className="board-hint-text">
+            {isMyTurn ? 'Drag a tile here to start' : 'Waiting for first tile…'}
+          </span>
+        </div>
+      )}
+
+      {/* lets the table scroll down to just below the lowest tile */}
+      {needsScroll && (
+        <div aria-hidden="true" style={{ position: 'absolute', left: 0, top: chainBottom, width: 1, height: 1, pointerEvents: 'none' }} />
+      )}
+
+      {positions.map((pos, i) => (
+        // The newest tile gets its own key, so its drop-in plays every time —
+        // even when two tiles in a row land at the same end.
+        <BoardTile
+          key={i === freshIdx ? `fresh-${tiles.length}-${tiles[i]?.tile?.join('')}` : i}
+          entry={tiles[i]}
+          pos={pos}
+          fresh={i === freshIdx}
+          freshFrom={i === freshIdx ? freshFrom : null}
+          jolt={dekPhase === 'slam' ? joltFor(i) : null}
+          hidden={dekPhase === 'travel' && i === dekIdx}
+        />
+      ))}
+
+      {/* Dekabess: the winning tile's trip to the other end and back. It's
+          drawn where it WOULD be placed at the far end — turned so its
+          matching number touches that end — and animated out of its own
+          spot, turning on the way, then back home. */}
+      {dekPhase === 'travel' && dekTrip && (
+        <BoardTile
+          key={`dek-travel-${dekabessKey}`}
+          entry={dekTrip.entry}
+          pos={dekTrip.pos}
+          travel={dekTrip.legacy ? { dx: dekTrip.legacy.dx, dy: dekTrip.legacy.dy, rot: 0, legacy: true } : { dx: dekTrip.dx, dy: dekTrip.dy, rot: dekTrip.rot }}
+        />
+      )}
+
+      {/* Dekabess: the hand slamming the table twice */}
+      {dekPhase === 'slam' && (
+        <div className="dek-slam-wrap" style={{ left: dekCenter.x, top: dekCenter.y }} aria-hidden="true">
+          <div className="dek-slam-arm" style={{ rotate: SLAM_TURN[dekabessFrom] || SLAM_TURN.top }}>
+            <img className="dek-slam" src="/handslam.webp" alt="" draggable={false} />
+          </div>
+        </div>
+      )}
+
+      {!hasTiles && firstPreview && (
+        <>
+          <BoardTile
+            entry={{ tile: draggedTile, flipped: false }}
+            pos={firstPreview}
+            ghost
+            highlighted={dragOver === 'first'}
+          />
+
+          <DropZone
+            onDrop={data => commitDrop(data, 'first')}
+            className={`domino-drop-target ${dragOver === 'first' ? 'drag-over' : ''}`}
+            style={getDropHitStyle(firstPreview, dims.w, dims.h)}
+          />
+        </>
+      )}
+
+      {canLeft && previewLeft && (
+        <>
+          <BoardTile
+            entry={{ tile: activeTile, flipped: previewLeft.flipped ?? false }}
+            pos={previewLeft}
+            ghost
+            highlighted={dragOver === 'left'}
+          />
+
+          <DropZone
+            onDrop={data => commitDrop(data, 'left')}
+            onTap={() => tapSide('left')}
+            className={`domino-drop-target ${dragOver === 'left' ? 'drag-over' : ''}`}
+            style={getDropHitStyle(previewLeft, dims.w, dims.h)}
+          />
+        </>
+      )}
+
+      {canRight && previewRight && (
+        <>
+          <BoardTile
+            entry={{ tile: activeTile, flipped: previewRight.flipped ?? false }}
+            pos={previewRight}
+            ghost
+            highlighted={dragOver === 'right'}
+          />
+
+          <DropZone
+            onDrop={data => commitDrop(data, 'right')}
+            onTap={() => tapSide('right')}
+            className={`domino-drop-target ${dragOver === 'right' ? 'drag-over' : ''}`}
+            style={getDropHitStyle(previewRight, dims.w, dims.h)}
+          />
+        </>
+      )}
+    </div>
+  )
+}
