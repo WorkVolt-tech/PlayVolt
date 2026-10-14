@@ -34,6 +34,18 @@ export default function Challenge() {
     }, e => setLoadProblem(`Couldn’t reach the server — ${e?.message || 'check your connection'}`))
   }, [user])
 
+  // Team weeks: the server creates the room (line-up fixed), then you wait
+  // for your partner there
+  async function createTeam() {
+    if (busy) return
+    setMsg(''); setBusy(true)
+    const { data, error } = await db.rpc('challenge_team_create')
+    setBusy(false)
+    const row = Array.isArray(data) ? data[0] : data
+    if (error || !row?.code) { setMsg(error ? `Couldn’t create the room — ${error.message}` : row?.problem || 'Couldn’t create the room.'); return }
+    navigate(`/?join=${row.code}&auto=1`)
+  }
+
   async function start() {
     if (busy) return                                   // one tap only
     setMsg(''); setBusy(true)
@@ -98,7 +110,12 @@ export default function Challenge() {
         {loadProblem && <div className="ch-msg">{loadProblem}</div>}
         {msg && <div className="ch-msg">{msg}</div>}
         {c.format === 'team' ? (
-          <div className="ch-msg soft">Team challenges — you and a friend — arrive with the next update.</div>
+          won ? <div className="ch-msg ok">You beat this week’s challenge. A new one starts on Monday.</div>
+          : left <= 0 ? <div className="ch-msg soft">No tries left this week — but you can still help a friend: open their invite link.</div>
+          : <>
+              <button className="ch-btn" disabled={busy} onClick={createTeam}>{busy ? 'Creating…' : 'Create your team room'}</button>
+              <div className="ch-msg soft">Invite your partner with the room’s link — anyone can join. Each player with a try left spends one when the game starts.</div>
+            </>
         ) : won ? (
           <div className="ch-msg ok">You beat this week’s challenge. A new one starts on Monday.</div>
         ) : inProgress ? (

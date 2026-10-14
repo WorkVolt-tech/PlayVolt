@@ -242,3 +242,6 @@ input[type="text"]::placeholder { color: #4a4538; }
 
 /* which version is live — bumped with every delivery */
 .lobby-version { margin: 1.4rem 0 0.4rem; text-align: center; font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.18em; text-transform: uppercase; color: #5a5446; }
+
+/* Team Challenge room */
+.team-ch-note { font-size: 0.66rem; line-height: 1.55; color: var(--ivory-dim, #a09880); margin: 0.4rem 0 0; }

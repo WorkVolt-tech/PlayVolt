@@ -54,6 +54,18 @@ export default function Game() {
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
 
+  // ── Team Challenge: at the Vyèj, the server decides your result ──────────
+  const [teamResult, setTeamResult] = useState(null)
+  useEffect(() => {
+    if (!roomData?.challenge_week || roomData.status !== 'finished' || !roomData.match_winner || !myInfo?.roomId) return
+    const key = `team-ch-${myInfo.roomId}`
+    const known = sessionStorage.getItem(key)
+    if (known) { setTeamResult(known); return }
+    db.rpc('challenge_team_finish', { p_room: myInfo.roomId }).then(({ data }) => {
+      if (data && data !== 'not finished') { try { sessionStorage.setItem(key, data) } catch { /* ignore */ } setTeamResult(data) }
+    })
+  }, [roomData?.challenge_week, roomData?.status, roomData?.match_winner])   // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // ── Who played the newest tile (for the slide) ─────────────────────────────
   // The new tile was in exactly one player's hand. The screen remembers who
@@ -360,6 +372,14 @@ export default function Game() {
 
   return (
     <div className="game-layout">
+      {teamResult && (
+        <div className={`team-ch-result ${teamResult === 'won' ? 'won' : ''}`}>
+          {teamResult === 'won' ? '⚔️ Team Challenge beaten! The prize table and 500 Goud are yours.'
+            : teamResult === 'lost' ? '⚔️ The experts won this one. Check the Challenge page for your tries left.'
+            : teamResult === 'helper' ? '⚔️ Thanks for helping — no try was used.'
+            : null}
+        </div>
+      )}
       {/* Top bar */}
       {realMatch && (
         <div className="practice-live">

@@ -1,4 +1,4 @@
 // The version shown at the bottom of the lobby. Bumped with every delivery,
 // so a glance at the lobby tells you whether the newest code is live.
-export const VERSION = 'v1.12'
-export const VERSION_NOTE = 'Goud shop — zodiac tables and tiles'
+export const VERSION = 'v1.13'
+export const VERSION_NOTE = 'Team Challenge'

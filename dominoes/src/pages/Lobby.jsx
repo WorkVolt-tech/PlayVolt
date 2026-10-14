@@ -105,6 +105,10 @@ export default function Lobby() {
   const [botPicks, setBotPicks]     = useState(['Ti-Djo', 'Ti-Cam', 'Ti-Jean'])
   const [unlockedBots, setUnlockedBots] = useState([])
   const [selectedPartner, setPartner] = useState(null)
+  // A Team Challenge room: the line-up is fixed, so the mode, bots and
+  // partner can't be changed here (the server set the room up)
+  const [challengeWeek, setChallengeWeek] = useState(null)
+  const locked = !!challengeWeek
   const [amHost, setAmHost]         = useState(false)
   const [queueCount, setQueueCount] = useState(0)
   const channelRef = useRef(null)
@@ -380,6 +384,9 @@ export default function Lobby() {
   }
 
   async function createRoom(modeArg) {
+    // who's signed in, asked now: on a link that joins as the page opens,
+    // the page's own copy of this may not have loaded yet
+    const uid = myUserId ?? (await db.auth.getUser()).data?.user?.id ?? null
     const mode = typeof modeArg === 'string' ? modeArg : selectedMode
     const nick = getNickname(); if (!nick) return
     const code = generateRoomCode()
@@ -388,7 +395,7 @@ export default function Lobby() {
     if (error) { setMsg({ text: 'Error: ' + error.message, type: 'error' }); return }
 
     const { data: player } = await db.from('domino_players')
-      .insert({ room_id: room.id, seat: 0, nickname: nick, hand: [], is_connected: true, user_id: myUserId })
+      .insert({ room_id: room.id, seat: 0, nickname: nick, hand: [], is_connected: true, user_id: uid })
       .select().single()
 
     if (player) setPlayers([player])
@@ -398,6 +405,9 @@ export default function Lobby() {
   }
 
   async function joinRoom(codeOverride) {
+    // who's signed in, asked now: on a link that joins as the page opens,
+    // the page's own copy of this may not have loaded yet
+    const uid = myUserId ?? (await db.auth.getUser()).data?.user?.id ?? null
     const nick = getNickname(); if (!nick) return
     const code = (codeOverride || joinCode).toUpperCase()
     if (code.length !== 6) { setMsg({ text: 'Enter a 6-character room code.', type: 'error' }); return }
@@ -411,7 +421,7 @@ export default function Lobby() {
       const { data: seats } = await db.from('domino_players')
         .select('seat, nickname, user_id').eq('room_id', live.id)
       // signed in: match your account; guest: match your nickname
-      const mine = (seats || []).find(r => myUserId ? r.user_id === myUserId : (!r.user_id && r.nickname === nick))
+      const mine = (seats || []).find(r => uid ? r.user_id === uid : (!r.user_id && r.nickname === nick))
       if (!mine) {
         setMsg({ text: 'That game has already started, and you weren’t at the table.', type: 'error' })
         return
@@ -437,9 +447,9 @@ export default function Lobby() {
     const remembered = readWaiting()
     const { data: seatsHere } = await db.from('domino_players').select('id, seat, user_id').eq('room_id', room.id)
     const mineAlready = (seatsHere || []).find(r =>
-      (myUserId && r.user_id === myUserId) || (remembered && remembered.roomId === room.id && r.id === remembered.playerId))
+      (uid && r.user_id === uid) || (remembered && remembered.roomId === room.id && r.id === remembered.playerId))
     if (mineAlready) {
-      enterWaiting({ room, code, playerId: mineAlready.id, seat: mineAlready.seat, host: false })
+      enterWaiting({ room, code, playerId: mineAlready.id, seat: mineAlready.seat, host: mineAlready.seat === 0 })
       return
     }
 
@@ -458,7 +468,7 @@ export default function Lobby() {
     const freeSeat = [0,1,2,3].find(s => !takenSeats.includes(s))
 
     const { data: player, error } = await db.from('domino_players')
-      .insert({ room_id: room.id, seat: freeSeat, nickname: nick, hand: [], is_connected: true, user_id: myUserId })
+      .insert({ room_id: room.id, seat: freeSeat, nickname: nick, hand: [], is_connected: true, user_id: uid })
       .select().single()
     if (error) { setMsg({ text: 'Error: ' + error.message, type: 'error' }); return }
 
@@ -500,6 +510,8 @@ export default function Lobby() {
     try { sessionStorage.setItem(WAITING_KEY, JSON.stringify({ roomId: room.id, code, playerId, seat, host })) } catch { /* ignore */ }
     setMyRoomId(room.id); setMyRoomCode(code)
     setRoomMode(room.game_mode || 'chien')
+    setChallengeWeek(room.challenge_week || null)
+    if (room.challenge_week) { setMode('asosye'); setPartner(null) }
     setMyPlayerId(playerId); myPlayerIdRef.current = playerId
     setMySeat(seat); mySeatRef.current = seat
     setAmHost(!!host)
@@ -553,6 +565,13 @@ export default function Lobby() {
     }
 
     let allPlayers = await loadPlayers(myRoomId)
+
+    // Team Challenge: the server spends each player's try before anything is
+    // dealt (and refuses if, say, the week has changed)
+    if (challengeWeek) {
+      const { data: ok, error } = await db.rpc('challenge_team_begin', { p_room: myRoomId })
+      if (error || ok !== 'ok') { setMsg({ text: error ? `Couldn’t start — ${error.message}` : ok, type: 'error' }); return }
+    }
 
     // Asosye: reassign seats for teams
     if (selectedMode === 'asosye' && selectedPartner) {
@@ -885,10 +904,10 @@ export default function Lobby() {
                   <span className="player-row-name">{p.nickname}</span>
                   {p.id === myPlayerId && <span className="player-row-you">(you)</span>}
                   {p.is_ai && <span className="player-row-you">(bot)</span>}
-                  {p.is_ai && amHost && (
+                  {p.is_ai && amHost && !locked && (
                     <button className="partner-btn" onClick={() => removeBotSeat(p.id)}>Remove</button>
                   )}
-                  {amHost && selectedMode === 'asosye' && p.id !== myPlayerId && (
+                  {amHost && !locked && selectedMode === 'asosye' && p.id !== myPlayerId && (
                     <button
                       className={`partner-btn ${selectedPartner === p.id ? 'is-partner' : ''}`}
                       onClick={() => setPartner(selectedPartner === p.id ? null : p.id)}
@@ -904,7 +923,7 @@ export default function Lobby() {
                     {roomMode === 'duo' ? 'Waiting for your partner…' : 'Waiting…'}
                   </span>
                   {/* the host can fill this seat with a bot (Chien Manjé Chien) */}
-                  {i === 0 && amHost && (['chien', 'asosye'].includes(roomMode) || ['chien', 'asosye'].includes(selectedMode)) && (
+                  {i === 0 && amHost && !locked && (['chien', 'asosye'].includes(roomMode) || ['chien', 'asosye'].includes(selectedMode)) && (
                     <span style={{ display: 'flex', gap: 6, marginLeft: 'auto' }}>
                       <select className="bot-select" value={botToAdd} onChange={e => setBotToAdd(e.target.value)}>
                         {BOT_ROSTER.map(b => {
@@ -935,15 +954,32 @@ export default function Lobby() {
                   ))}
                 </div>
               )}
-              {amHost && selectedMode === 'asosye' && players.some(p => p.is_ai) && (
+              {amHost && !locked && selectedMode === 'asosye' && players.some(p => p.is_ai) && (
                 <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', margin: '2px 2px 0' }}>
                   Tap Pick Partner on a bot to team up with it.
                 </div>
               )}
             </div>
 
+            {/* Team Challenge: who you're up against, and the Start button */}
+            {locked && (
+              <div className="mode-selector">
+                <div className="mode-label">⚔️ Team Challenge</div>
+                <p className="team-ch-note">
+                  You and your partner vs {players.filter(p => p.is_ai).map(p => p.nickname).join(' & ') || 'the experts'}.
+                  Send your partner the invite link — anyone can join. When the game starts, each player with a try
+                  left spends one; anyone else plays along as a helper. Win to a Vyèj to beat the challenge.
+                </p>
+                {amHost && (
+                  <button className="btn btn-primary" disabled={players.length < 4} onClick={startGame} style={{ marginTop: '0.6rem' }}>
+                    {players.length < 4 ? 'Waiting for your partner…' : 'Start the challenge'}
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Mode selector (host only) */}
-            {amHost && (
+            {amHost && !locked && (
               <div className="mode-selector">
                 <div className="mode-label">Game Mode</div>
                 <div className="mode-options">
