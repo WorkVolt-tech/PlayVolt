@@ -262,13 +262,13 @@ export default function Practice({ embedded = false, onExit }) {
 
   const seatNames = [0, 1, 2, 3].map(seat =>
     seat === 0 ? 'You' : (setup.seats === 2 ? setup.opponents[0] : setup.opponents[seat - 1]))
-  // 1v1: the lone opponent sits ACROSS from you, not to your right.
-  const twoSeat = (st?.seats ?? 4) === 2
-  const shown = seat => (twoSeat && seat === 1 ? 2 : seat)
+  // Keep the engine's real seat numbers. OpponentHands already knows that on
+  // a 2-seat table seat 1 sits across from seat 0. Remapping seat 1 to 2 made
+  // the modulo calculation resolve it as "me", so the opponent hand vanished.
   const fakePlayers = (st?.hands || []).map((h, seat) => ({
-    seat: shown(seat), engineSeat: seat, nickname: seatNames[seat], hand: h, is_ai: seat !== 0,
+    seat, engineSeat: seat, nickname: seatNames[seat], hand: h, is_ai: seat !== 0,
   }))
-  const fakeRoom = { current_turn: shown(st?.turn ?? 0), game_mode: 'chien', status: 'playing' }
+  const fakeRoom = { current_turn: st?.turn ?? 0, game_mode: 'chien', status: 'playing' }
 
   return (
     <div className="game-layout">
