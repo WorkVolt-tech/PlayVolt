@@ -15,10 +15,10 @@
     <stop offset="1" stop-color="#4c310d"/>
   </linearGradient>
   <linearGradient id="emerald" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#0e5b4a"/>
-    <stop offset=".28" stop-color="#0a3d34"/>
-    <stop offset=".60" stop-color="#06251f"/>
-    <stop offset="1" stop-color="#03120f"/>
+    <stop offset="0" stop-color="#0f5a49"/>
+    <stop offset=".32" stop-color="#0a4035"/>
+    <stop offset=".70" stop-color="#05251f"/>
+    <stop offset="1" stop-color="#03130f"/>
   </linearGradient>
   <linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0" stop-color="#ff6580"/>
@@ -26,32 +26,31 @@
     <stop offset=".70" stop-color="#5b0718"/>
     <stop offset="1" stop-color="#210208"/>
   </linearGradient>
-  <radialGradient id="centerGlow" cx=".5" cy=".42" r=".72">
-    <stop offset="0" stop-color="#0d4037" stop-opacity=".16"/>
-    <stop offset=".55" stop-color="#0b2c27" stop-opacity=".04"/>
+  <radialGradient id="centerGlow" cx=".5" cy=".44" r=".75">
+    <stop offset="0" stop-color="#0b463b" stop-opacity=".13"/>
+    <stop offset=".58" stop-color="#082d27" stop-opacity=".035"/>
     <stop offset="1" stop-color="#000" stop-opacity="0"/>
   </radialGradient>
-  <pattern id="centerMarble" width="380" height="270" patternUnits="userSpaceOnUse">
-    <path d="M-40 240 C50 190 80 120 170 82 S290 54 420 -35" fill="none" stroke="#2b8d73" stroke-opacity=".08" stroke-width="3"/>
-    <path d="M-20 260 C60 205 115 165 205 130 S310 88 420 20" fill="none" stroke="#d0efe7" stroke-opacity=".035" stroke-width="1.4"/>
+  <pattern id="centerMarble" width="420" height="290" patternUnits="userSpaceOnUse">
+    <path d="M-40 250 C55 195 90 120 190 75 S310 48 450 -40" fill="none" stroke="#2b8d73" stroke-opacity=".065" stroke-width="2.8"/>
+    <path d="M-20 275 C70 215 125 168 220 128 S330 85 450 20" fill="none" stroke="#d0efe7" stroke-opacity=".028" stroke-width="1.2"/>
   </pattern>
-  <pattern id="edgeMarble" width="280" height="180" patternUnits="userSpaceOnUse">
-    <path d="M-20 155 C45 115 75 55 150 35 S230 22 300 -20" fill="none" stroke="#61d3b2" stroke-opacity=".13" stroke-width="2.2"/>
-    <path d="M-20 175 C50 130 100 110 170 75 S235 58 300 25" fill="none" stroke="#d7fff4" stroke-opacity=".06" stroke-width="1.2"/>
+  <pattern id="edgeMarble" width="260" height="170" patternUnits="userSpaceOnUse">
+    <path d="M-20 145 C40 108 70 52 138 33 S215 20 280 -16" fill="none" stroke="#61d3b2" stroke-opacity=".12" stroke-width="2.1"/>
+    <path d="M-20 165 C46 125 91 103 160 71 S222 53 290 24" fill="none" stroke="#d7fff4" stroke-opacity=".05" stroke-width="1.1"/>
   </pattern>
   <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
-    <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".55"/>
+    <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".5"/>
   </filter>
   <symbol id="rubyDiamond" viewBox="0 0 72 86">
     <path d="M36 3 L67 43 L36 83 L5 43 Z" fill="url(#ruby)" stroke="url(#gold)" stroke-width="6"/>
     <path d="M36 14 L56 43 L36 72 L16 43 Z" fill="none" stroke="#ffd5df" stroke-opacity=".36" stroke-width="2"/>
-    <path d="M17 43 H55 M36 14 V72" stroke="#ffd5df" stroke-opacity=".18" stroke-width="1.4"/>
   </symbol>
   <symbol id="crown" viewBox="0 0 120 96">
     <g filter="url(#shadow)">
       <path d="M12 60 L21 24 L43 42 L60 10 L77 42 L99 24 L108 60 L96 77 H24 Z" fill="url(#gold)"/>
       <path d="M24 77 H96 V88 H24 Z" fill="url(#goldDark)"/>
-      <path d="M26 58 C46 48 74 48 94 58" fill="none" stroke="#fff0b6" stroke-opacity=".38" stroke-width="3"/>
+      <path d="M26 58 C46 48 74 48 94 58" fill="none" stroke="#fff0b6" stroke-opacity=".34" stroke-width="3"/>
       <circle cx="21" cy="24" r="6" fill="#f6e5af"/><circle cx="60" cy="10" r="6" fill="#f6e5af"/><circle cx="99" cy="24" r="6" fill="#f6e5af"/>
       <circle cx="21" cy="24" r="2.5" fill="#8f0d26"/><circle cx="60" cy="10" r="2.5" fill="#8f0d26"/><circle cx="99" cy="24" r="2.5" fill="#8f0d26"/>
     </g>
@@ -63,65 +62,47 @@
   </symbol>
 </defs>
 
+<!-- Entire logical board is usable; artwork no longer defines a smaller inner table. -->
 <rect width="1600" height="900" fill="#020504"/>
-<rect x="18" y="18" width="1564" height="864" rx="10" fill="#06100d" stroke="#15251f" stroke-width="4"/>
+<rect x="18" y="18" width="1564" height="864" rx="10" fill="url(#emerald)"/>
+<rect x="18" y="18" width="1564" height="864" rx="10" fill="url(#edgeMarble)" opacity=".82"/>
 
-<!-- emerald decorative band -->
-<rect x="28" y="28" width="1544" height="844" rx="8" fill="url(#emerald)"/>
-<rect x="28" y="28" width="1544" height="844" rx="8" fill="url(#edgeMarble)" opacity=".9"/>
+<!-- Play surface extends almost to the actual board edge so chains never appear outside the table. -->
+<rect x="64" y="76" width="1472" height="748" rx="3" fill="#060a09"/>
+<rect x="64" y="76" width="1472" height="748" rx="3" fill="url(#centerGlow)"/>
+<rect x="64" y="76" width="1472" height="748" rx="3" fill="url(#centerMarble)"/>
 
-<!-- playable black marble center -->
-<rect x="126" y="106" width="1348" height="688" rx="2" fill="#070a0a"/>
-<rect x="126" y="106" width="1348" height="688" rx="2" fill="url(#centerGlow)"/>
-<rect x="126" y="106" width="1348" height="688" rx="2" fill="url(#centerMarble)"/>
+<!-- restrained outer rails only -->
+<rect x="22" y="22" width="1556" height="856" rx="8" fill="none" stroke="url(#gold)" stroke-width="8"/>
+<rect x="32" y="32" width="1536" height="836" rx="6" fill="none" stroke="#fff2bd" stroke-opacity=".24" stroke-width="2"/>
+<rect x="56" y="68" width="1488" height="764" rx="4" fill="none" stroke="url(#gold)" stroke-width="5"/>
+<rect x="62" y="74" width="1476" height="752" rx="3" fill="none" stroke="#fff4cf" stroke-opacity=".13" stroke-width="1.4"/>
 
-<!-- refined rails -->
-<rect x="30" y="30" width="1540" height="840" rx="8" fill="none" stroke="url(#gold)" stroke-width="8"/>
-<rect x="41" y="41" width="1518" height="818" rx="6" fill="none" stroke="#fff2bd" stroke-opacity=".26" stroke-width="2"/>
-<rect x="114" y="94" width="1372" height="712" rx="3" fill="none" stroke="url(#gold)" stroke-width="6"/>
-<rect x="121" y="101" width="1358" height="698" rx="2" fill="none" stroke="#fff4cf" stroke-opacity=".16" stroke-width="1.5"/>
-
-<!-- art deco top/bottom center -->
-<g stroke="url(#gold)" fill="none" stroke-linecap="square" stroke-linejoin="miter">
-  <path d="M520 70 H690 L740 28 H860 L910 70 H1080" stroke-width="12"/>
-  <path d="M560 52 H710 M590 35 H730 M1040 52 H890 M1010 35 H870" stroke-width="7"/>
-  <path d="M520 830 H690 L740 872 H860 L910 830 H1080" stroke-width="12"/>
-  <path d="M560 848 H710 M590 865 H730 M1040 848 H890 M1010 865 H870" stroke-width="7"/>
+<!-- compact top/bottom centerpiece kept inside border band -->
+<g stroke="url(#gold)" fill="none" stroke-linejoin="miter">
+  <path d="M550 66 H710 L748 34 H852 L890 66 H1050" stroke-width="10"/>
+  <path d="M590 50 H718 M1010 50 H882" stroke-width="6"/>
+  <path d="M550 834 H710 L748 866 H852 L890 834 H1050" stroke-width="10"/>
+  <path d="M590 850 H718 M1010 850 H882" stroke-width="6"/>
 </g>
+<use href="#crown" x="765" y="21" width="70" height="56"/>
+<use href="#rubyDiamond" x="781" y="63" width="38" height="46"/>
+<use href="#crown" x="765" y="823" width="70" height="56"/>
+<use href="#rubyDiamond" x="781" y="791" width="38" height="46"/>
 
-<!-- center crowns and ruby -->
-<use href="#crown" x="742" y="14" width="116" height="92"/>
-<use href="#rubyDiamond" x="773" y="68" width="54" height="64"/>
-<use href="#crown" x="742" y="794" width="116" height="92"/>
-<use href="#rubyDiamond" x="773" y="768" width="54" height="64"/>
+<!-- side accents sit in the narrow rail, not inside play space -->
+<use href="#rubyDiamond" x="30" y="426" width="34" height="48"/>
+<use href="#rubyDiamond" x="1536" y="426" width="34" height="48"/>
 
-<!-- side deco rails -->
-<g stroke="url(#gold)" fill="none">
-  <path d="M72 250 V350 M72 550 V650" stroke-width="10"/>
-  <path d="M1528 250 V350 M1528 550 V650" stroke-width="10"/>
-  <path d="M72 350 L47 390 L72 430 L97 390 Z" stroke-width="7"/>
-  <path d="M1528 350 L1503 390 L1528 430 L1553 390 Z" stroke-width="7"/>
-</g>
-<use href="#rubyDiamond" x="47" y="360" width="50" height="60"/>
-<use href="#rubyDiamond" x="1503" y="360" width="50" height="60"/>
+<!-- compact corners -->
+<use href="#corner" x="20" y="20" width="92" height="92"/>
+<use href="#crown" x="34" y="33" width="70" height="56"/>
+<use href="#corner" x="1488" y="20" width="92" height="92"/>
+<use href="#crown" x="1502" y="33" width="70" height="56"/>
+<use href="#corner" x="20" y="788" width="92" height="92"/>
+<use href="#crown" x="34" y="801" width="70" height="56"/>
+<use href="#corner" x="1488" y="788" width="92" height="92"/>
+<use href="#crown" x="1502" y="801" width="70" height="56"/>
 
-<!-- corners -->
-<g>
-  <use href="#corner" x="28" y="28" width="120" height="120"/><use href="#crown" x="50" y="49" width="76" height="62"/>
-  <use href="#corner" x="1452" y="28" width="120" height="120"/><use href="#crown" x="1474" y="49" width="76" height="62"/>
-  <use href="#corner" x="28" y="752" width="120" height="120"/><use href="#crown" x="50" y="773" width="76" height="62"/>
-  <use href="#corner" x="1452" y="752" width="120" height="120"/><use href="#crown" x="1474" y="773" width="76" height="62"/>
-</g>
-
-<!-- subtle corner transitions -->
-<g fill="none" stroke="url(#gold)" stroke-width="7">
-  <path d="M148 62 H190 L220 94"/>
-  <path d="M1452 62 H1410 L1380 94"/>
-  <path d="M148 838 H190 L220 806"/>
-  <path d="M1452 838 H1410 L1380 806"/>
-</g>
-
-<!-- restrained highlights -->
-<path d="M70 47 H1510" stroke="#fff7d5" stroke-opacity=".16" stroke-width="3" stroke-linecap="round"/>
-<path d="M70 853 H1510" stroke="#fff7d5" stroke-opacity=".10" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M60 36 H1540" stroke="#fff7d5" stroke-opacity=".13" stroke-width="2.5" stroke-linecap="round"/>
 </svg>
