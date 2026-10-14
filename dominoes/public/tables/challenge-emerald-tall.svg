@@ -1,225 +1,123 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350">
-  <defs>
-    <linearGradient id="goldMetal" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#6f4b14"/>
-      <stop offset=".12" stop-color="#fff4b4"/>
-      <stop offset=".26" stop-color="#d7ae4d"/>
-      <stop offset=".44" stop-color="#8e641e"/>
-      <stop offset=".62" stop-color="#f6d982"/>
-      <stop offset=".78" stop-color="#9b6c22"/>
-      <stop offset="1" stop-color="#fff0a6"/>
-    </linearGradient>
-
-    <linearGradient id="goldEdge" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff7ca" stop-opacity=".95"/>
-      <stop offset=".35" stop-color="#d4a842" stop-opacity=".75"/>
-      <stop offset="1" stop-color="#5d3d10" stop-opacity=".9"/>
-    </linearGradient>
-
-    <linearGradient id="emeraldGem" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#35e0a0"/>
-      <stop offset=".25" stop-color="#087650"/>
-      <stop offset=".62" stop-color="#073927"/>
-      <stop offset="1" stop-color="#01150e"/>
-    </linearGradient>
-
-    <linearGradient id="rubyGem" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff6b85"/>
-      <stop offset=".3" stop-color="#b91f40"/>
-      <stop offset=".7" stop-color="#5b0b20"/>
-      <stop offset="1" stop-color="#21030b"/>
-    </linearGradient>
-
-    <radialGradient id="centerGlow" cx=".5" cy=".42" r=".72">
-      <stop offset="0" stop-color="#0d6e4d" stop-opacity=".18"/>
-      <stop offset=".55" stop-color="#0d6e4d" stop-opacity=".04"/>
-      <stop offset="1" stop-color="#000" stop-opacity=".5"/>
-    </radialGradient>
-
-    <pattern id="marble" width="260" height="220" patternUnits="userSpaceOnUse">
-      <path d="M-20 180 C50 130 60 60 150 45 C205 36 230 10 280 -20" fill="none" stroke="#2d6b54" stroke-opacity=".10" stroke-width="8"/>
-      <path d="M-30 205 C60 145 92 115 174 92 C220 79 250 52 285 20" fill="none" stroke="#d7ae4d" stroke-opacity=".045" stroke-width="3"/>
-    </pattern>
-
-    <filter id="metalShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".7"/>
-    </filter>
-
-    <filter id="glowGold" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="3.4" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-
-    <filter id="sparkleGlow" x="-80%" y="-80%" width="260%" height="260%">
-      <feGaussianBlur stdDeviation="2.2" result="s"/>
-      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
-
-  <!-- dark emerald stone centre -->
-  <rect width="900" height="1350" fill="#050907"/>
-  <rect width="900" height="1350" fill="url(#centerGlow)"/>
-  <rect width="900" height="1350" fill="url(#marble)" opacity=".75"/>
-
-  <!-- outer polished frame -->
-  <rect x="25" y="25" width="850" height="1300" rx="17.5"
-    fill="none" stroke="url(#goldMetal)" stroke-width="8" filter="url(#metalShadow)"/>
-  <rect x="32" y="32" width="836" height="1286" rx="13.5"
-    fill="none" stroke="#fff8d0" stroke-opacity=".45" stroke-width="2.2"/>
-  <rect x="42" y="42" width="816" height="1266" rx="11.25"
-    fill="none" stroke="#6f4b14" stroke-opacity=".85" stroke-width="4"/>
-
-  <!-- enamel band -->
-  <rect x="44.8" y="44.8" width="810.4" height="1260.4" rx="8.75"
-    fill="none" stroke="#0b6b4d" stroke-width="17.82" opacity=".9"/>
-  <rect x="44.8" y="44.8" width="810.4" height="1260.4" rx="8.75"
-    fill="none" stroke="#8ff0c5" stroke-opacity=".18" stroke-width="3"/>
-
-  <!-- inner gold rail -->
-  <rect x="124" y="124" width="652" height="1102" rx="6"
-    fill="none" stroke="url(#goldMetal)" stroke-width="4"/>
-  <rect x="131" y="131" width="638" height="1088" rx="4.5"
-    fill="none" stroke="#fff7c6" stroke-opacity=".20" stroke-width="2"/>
-
-  <!-- beading -->
-  <g filter="url(#glowGold)"><circle cx="144" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="199.63636363636363" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="255.27272727272725" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="310.9090909090909" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="366.5454545454545" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="422.1818181818182" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="477.8181818181818" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="533.4545454545455" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="589.090909090909" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="644.7272727272727" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="700.3636363636364" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="756" cy="41.83" r="3.7" fill="url(#goldMetal)"/><circle cx="144" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="199.63636363636363" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="255.27272727272725" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="310.9090909090909" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="366.5454545454545" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="422.1818181818182" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="477.8181818181818" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="533.4545454545455" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="589.090909090909" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="644.7272727272727" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="700.3636363636364" cy="1308.17" r="3.7" fill="url(#goldMetal)"/><circle cx="756" cy="1308.17" r="3.7" fill="url(#goldMetal)"/></g>
-
-  <!-- filigree -->
-  <g opacity=".95">
-    
-    <g transform="translate(156 54.7) rotate(0) scale(0.68 0.68)" fill="none" stroke="url(#goldMetal)" stroke-linecap="round">
-      <path d="M0 0 C28-42 66-40 86-8 C62-22 45-8 38 14 C30 38 8 42 0 20" stroke-width="4.2"/>
-      <path d="M18 8 C38-12 58-8 64 10 C48 2 36 14 34 28" stroke-width="2.3"/>
-      <path d="M4 15 C18 18 24 30 20 43" stroke-width="2"/>
+<defs>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6b4712"/>
+    <stop offset=".12" stop-color="#f7e5a8"/>
+    <stop offset=".28" stop-color="#c9963b"/>
+    <stop offset=".48" stop-color="#7f5619"/>
+    <stop offset=".66" stop-color="#efcf70"/>
+    <stop offset=".84" stop-color="#a87526"/>
+    <stop offset="1" stop-color="#fff2bd"/>
+  </linearGradient>
+  <linearGradient id="goldDark" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f1d88c"/>
+    <stop offset=".45" stop-color="#a77424"/>
+    <stop offset="1" stop-color="#4c310d"/>
+  </linearGradient>
+  <linearGradient id="emerald" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#0e5b4a"/>
+    <stop offset=".28" stop-color="#0a3d34"/>
+    <stop offset=".60" stop-color="#06251f"/>
+    <stop offset="1" stop-color="#03120f"/>
+  </linearGradient>
+  <linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ff6580"/>
+    <stop offset=".30" stop-color="#b81333"/>
+    <stop offset=".70" stop-color="#5b0718"/>
+    <stop offset="1" stop-color="#210208"/>
+  </linearGradient>
+  <radialGradient id="centerGlow" cx=".5" cy=".42" r=".72">
+    <stop offset="0" stop-color="#0d4037" stop-opacity=".16"/>
+    <stop offset=".55" stop-color="#0b2c27" stop-opacity=".04"/>
+    <stop offset="1" stop-color="#000" stop-opacity="0"/>
+  </radialGradient>
+  <pattern id="centerMarble" width="340" height="250" patternUnits="userSpaceOnUse">
+    <path d="M-40 220 C45 178 78 118 162 80 S270 50 370 -28" fill="none" stroke="#2b8d73" stroke-opacity=".08" stroke-width="3"/>
+    <path d="M-20 240 C58 192 105 158 190 125 S285 82 375 18" fill="none" stroke="#d0efe7" stroke-opacity=".035" stroke-width="1.4"/>
+  </pattern>
+  <pattern id="edgeMarble" width="240" height="170" patternUnits="userSpaceOnUse">
+    <path d="M-20 145 C40 108 70 52 138 33 S215 20 260 -16" fill="none" stroke="#61d3b2" stroke-opacity=".13" stroke-width="2.1"/>
+    <path d="M-20 165 C46 125 91 103 160 71 S222 53 270 24" fill="none" stroke="#d7fff4" stroke-opacity=".06" stroke-width="1.1"/>
+  </pattern>
+  <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".55"/>
+  </filter>
+  <symbol id="rubyDiamond" viewBox="0 0 72 86">
+    <path d="M36 3 L67 43 L36 83 L5 43 Z" fill="url(#ruby)" stroke="url(#gold)" stroke-width="6"/>
+    <path d="M36 14 L56 43 L36 72 L16 43 Z" fill="none" stroke="#ffd5df" stroke-opacity=".36" stroke-width="2"/>
+  </symbol>
+  <symbol id="crown" viewBox="0 0 120 96">
+    <g filter="url(#shadow)">
+      <path d="M12 60 L21 24 L43 42 L60 10 L77 42 L99 24 L108 60 L96 77 H24 Z" fill="url(#gold)"/>
+      <path d="M24 77 H96 V88 H24 Z" fill="url(#goldDark)"/>
+      <path d="M26 58 C46 48 74 48 94 58" fill="none" stroke="#fff0b6" stroke-opacity=".38" stroke-width="3"/>
+      <circle cx="21" cy="24" r="6" fill="#f6e5af"/><circle cx="60" cy="10" r="6" fill="#f6e5af"/><circle cx="99" cy="24" r="6" fill="#f6e5af"/>
+      <circle cx="21" cy="24" r="2.5" fill="#8f0d26"/><circle cx="60" cy="10" r="2.5" fill="#8f0d26"/><circle cx="99" cy="24" r="2.5" fill="#8f0d26"/>
     </g>
-    
-    <g transform="translate(744 54.7) rotate(0) scale(-0.68 0.68)" fill="none" stroke="url(#goldMetal)" stroke-linecap="round">
-      <path d="M0 0 C28-42 66-40 86-8 C62-22 45-8 38 14 C30 38 8 42 0 20" stroke-width="4.2"/>
-      <path d="M18 8 C38-12 58-8 64 10 C48 2 36 14 34 28" stroke-width="2.3"/>
-      <path d="M4 15 C18 18 24 30 20 43" stroke-width="2"/>
-    </g>
-    
-    <g transform="translate(156 1295.3) rotate(180) scale(0.68 0.68)" fill="none" stroke="url(#goldMetal)" stroke-linecap="round">
-      <path d="M0 0 C28-42 66-40 86-8 C62-22 45-8 38 14 C30 38 8 42 0 20" stroke-width="4.2"/>
-      <path d="M18 8 C38-12 58-8 64 10 C48 2 36 14 34 28" stroke-width="2.3"/>
-      <path d="M4 15 C18 18 24 30 20 43" stroke-width="2"/>
-    </g>
-    
-    <g transform="translate(744 1295.3) rotate(180) scale(-0.68 0.68)" fill="none" stroke="url(#goldMetal)" stroke-linecap="round">
-      <path d="M0 0 C28-42 66-40 86-8 C62-22 45-8 38 14 C30 38 8 42 0 20" stroke-width="4.2"/>
-      <path d="M18 8 C38-12 58-8 64 10 C48 2 36 14 34 28" stroke-width="2.3"/>
-      <path d="M4 15 C18 18 24 30 20 43" stroke-width="2"/>
-    </g>
-    
-    <g transform="translate(54.7 154) rotate(90) scale(0.62 0.62)" fill="none" stroke="url(#goldMetal)" stroke-linecap="round">
-      <path d="M0 0 C28-42 66-40 86-8 C62-22 45-8 38 14 C30 38 8 42 0 20" stroke-width="4.2"/>
-      <path d="M18 8 C38-12 58-8 64 10 C48 2 36 14 34 28" stroke-width="2.3"/>
-      <path d="M4 15 C18 18 24 30 20 43" stroke-width="2"/>
-    </g>
-    
-    <g transform="translate(54.7 1196) rotate(-90) scale(0.62 0.62)" fill="none" stroke="url(#goldMetal)" stroke-linecap="round">
-      <path d="M0 0 C28-42 66-40 86-8 C62-22 45-8 38 14 C30 38 8 42 0 20" stroke-width="4.2"/>
-      <path d="M18 8 C38-12 58-8 64 10 C48 2 36 14 34 28" stroke-width="2.3"/>
-      <path d="M4 15 C18 18 24 30 20 43" stroke-width="2"/>
-    </g>
-    
-    <g transform="translate(845.3 154) rotate(-90) scale(0.62 0.62)" fill="none" stroke="url(#goldMetal)" stroke-linecap="round">
-      <path d="M0 0 C28-42 66-40 86-8 C62-22 45-8 38 14 C30 38 8 42 0 20" stroke-width="4.2"/>
-      <path d="M18 8 C38-12 58-8 64 10 C48 2 36 14 34 28" stroke-width="2.3"/>
-      <path d="M4 15 C18 18 24 30 20 43" stroke-width="2"/>
-    </g>
-    
-    <g transform="translate(845.3 1196) rotate(90) scale(0.62 0.62)" fill="none" stroke="url(#goldMetal)" stroke-linecap="round">
-      <path d="M0 0 C28-42 66-40 86-8 C62-22 45-8 38 14 C30 38 8 42 0 20" stroke-width="4.2"/>
-      <path d="M18 8 C38-12 58-8 64 10 C48 2 36 14 34 28" stroke-width="2.3"/>
-      <path d="M4 15 C18 18 24 30 20 43" stroke-width="2"/>
-    </g>
-  </g>
+  </symbol>
+  <symbol id="corner" viewBox="0 0 150 150">
+    <rect x="4" y="4" width="142" height="142" rx="4" fill="#07120f" stroke="url(#gold)" stroke-width="8"/>
+    <rect x="18" y="18" width="114" height="114" rx="3" fill="none" stroke="#6f4d18" stroke-width="2"/>
+    <path d="M22 52 V22 H52 M128 52 V22 H98 M22 98 V128 H52 M128 98 V128 H98" fill="none" stroke="url(#gold)" stroke-width="8"/>
+  </symbol>
+</defs>
 
-  <!-- royal ornaments -->
-  <g filter="url(#metalShadow)">
-    
-    <g transform="translate(79.45 79.45) scale(0.86 0.86)">
-      <path d="M-50 16 L-40-25 L-16 3 L0-38 L16 3 L40-25 L50 16 L38 35 L-38 35 Z"
-        fill="url(#emeraldGem)" stroke="url(#goldMetal)" stroke-width="4.5"/>
-      <path d="M-38 14 C-18 2 18 2 38 14" fill="none" stroke="#fff7c7" stroke-opacity=".28" stroke-width="2.4"/>
-      <rect x="-40" y="35" width="80" height="12" rx="4" fill="url(#goldMetal)"/>
-      <circle cx="-40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="0" cy="-38" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-    </g>
-    
-    <g transform="translate(820.55 79.45) scale(-0.86 0.86)">
-      <path d="M-50 16 L-40-25 L-16 3 L0-38 L16 3 L40-25 L50 16 L38 35 L-38 35 Z"
-        fill="url(#emeraldGem)" stroke="url(#goldMetal)" stroke-width="4.5"/>
-      <path d="M-38 14 C-18 2 18 2 38 14" fill="none" stroke="#fff7c7" stroke-opacity=".28" stroke-width="2.4"/>
-      <rect x="-40" y="35" width="80" height="12" rx="4" fill="url(#goldMetal)"/>
-      <circle cx="-40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="0" cy="-38" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-    </g>
-    
-    <g transform="translate(79.45 1270.55) scale(0.86 0.86)">
-      <path d="M-50 16 L-40-25 L-16 3 L0-38 L16 3 L40-25 L50 16 L38 35 L-38 35 Z"
-        fill="url(#emeraldGem)" stroke="url(#goldMetal)" stroke-width="4.5"/>
-      <path d="M-38 14 C-18 2 18 2 38 14" fill="none" stroke="#fff7c7" stroke-opacity=".28" stroke-width="2.4"/>
-      <rect x="-40" y="35" width="80" height="12" rx="4" fill="url(#goldMetal)"/>
-      <circle cx="-40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="0" cy="-38" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-    </g>
-    
-    <g transform="translate(820.55 1270.55) scale(-0.86 0.86)">
-      <path d="M-50 16 L-40-25 L-16 3 L0-38 L16 3 L40-25 L50 16 L38 35 L-38 35 Z"
-        fill="url(#emeraldGem)" stroke="url(#goldMetal)" stroke-width="4.5"/>
-      <path d="M-38 14 C-18 2 18 2 38 14" fill="none" stroke="#fff7c7" stroke-opacity=".28" stroke-width="2.4"/>
-      <rect x="-40" y="35" width="80" height="12" rx="4" fill="url(#goldMetal)"/>
-      <circle cx="-40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="0" cy="-38" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-    </g>
-    
-    <g transform="translate(450 77.47) scale(0.68 0.68)">
-      <path d="M-50 16 L-40-25 L-16 3 L0-38 L16 3 L40-25 L50 16 L38 35 L-38 35 Z"
-        fill="url(#emeraldGem)" stroke="url(#goldMetal)" stroke-width="4.5"/>
-      <path d="M-38 14 C-18 2 18 2 38 14" fill="none" stroke="#fff7c7" stroke-opacity=".28" stroke-width="2.4"/>
-      <rect x="-40" y="35" width="80" height="12" rx="4" fill="url(#goldMetal)"/>
-      <circle cx="-40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="0" cy="-38" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-    </g>
-    
-    <g transform="translate(450 1272.53) scale(0.68 0.68)">
-      <path d="M-50 16 L-40-25 L-16 3 L0-38 L16 3 L40-25 L50 16 L38 35 L-38 35 Z"
-        fill="url(#emeraldGem)" stroke="url(#goldMetal)" stroke-width="4.5"/>
-      <path d="M-38 14 C-18 2 18 2 38 14" fill="none" stroke="#fff7c7" stroke-opacity=".28" stroke-width="2.4"/>
-      <rect x="-40" y="35" width="80" height="12" rx="4" fill="url(#goldMetal)"/>
-      <circle cx="-40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="0" cy="-38" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-      <circle cx="40" cy="-25" r="5.5" fill="url(#rubyGem)" stroke="#ffd991" stroke-width="1.4"/>
-    </g>
-    
-    <g transform="translate(79.45 675) rotate(0)">
-      <ellipse rx="18" ry="28" fill="url(#rubyGem)" stroke="url(#goldMetal)" stroke-width="3.5"/>
-      <ellipse cx="-3.6" cy="-7.840000000000001" rx="6.3" ry="5.04" fill="#fff" opacity=".28"/>
-      <path d="M-12.959999999999999 0 H12.959999999999999 M0 -20.16 V20.16" stroke="#fff" stroke-opacity=".12" stroke-width="1.2"/>
-    </g>
-    
-    <g transform="translate(820.55 675) rotate(0)">
-      <ellipse rx="18" ry="28" fill="url(#rubyGem)" stroke="url(#goldMetal)" stroke-width="3.5"/>
-      <ellipse cx="-3.6" cy="-7.840000000000001" rx="6.3" ry="5.04" fill="#fff" opacity=".28"/>
-      <path d="M-12.959999999999999 0 H12.959999999999999 M0 -20.16 V20.16" stroke="#fff" stroke-opacity=".12" stroke-width="1.2"/>
-    </g>
-  </g>
+<rect width="900" height="1350" fill="#020504"/>
+<rect x="18" y="18" width="864" height="1314" rx="10" fill="#06100d" stroke="#15251f" stroke-width="4"/>
 
-  <!-- reflective glints -->
-  <g stroke="#fffdf3" stroke-linecap="round" filter="url(#sparkleGlow)">
-    <path d="M443 49.75 H457 M450 42.75 V56.75" stroke-width="2.4" opacity=".78"/>
-    <path d="M72.45 672 H86.45 M79.45 665 V679" stroke-width="2.2" opacity=".55"/>
-    <path d="M813.55 679 H827.55 M820.55 672 V686" stroke-width="2.2" opacity=".45"/>
-  </g>
+<!-- emerald decorative band -->
+<rect x="30" y="30" width="840" height="1290" rx="8" fill="url(#emerald)"/>
+<rect x="30" y="30" width="840" height="1290" rx="8" fill="url(#edgeMarble)" opacity=".9"/>
 
-  <!-- subtle top-left reflective edge -->
-  <path d="M51 35 H378" stroke="#fff9d3" stroke-opacity=".32" stroke-width="3.2" stroke-linecap="round"/>
-  <path d="M35 51 V459.00000000000006" stroke="#fff9d3" stroke-opacity=".22" stroke-width="2.4" stroke-linecap="round"/>
+<!-- playable black marble center -->
+<rect x="110" y="150" width="680" height="1050" rx="3" fill="#070a0a"/>
+<rect x="110" y="150" width="680" height="1050" rx="3" fill="url(#centerGlow)"/>
+<rect x="110" y="150" width="680" height="1050" rx="3" fill="url(#centerMarble)"/>
+
+<!-- rails -->
+<rect x="32" y="32" width="836" height="1286" rx="8" fill="none" stroke="url(#gold)" stroke-width="8"/>
+<rect x="43" y="43" width="814" height="1264" rx="6" fill="none" stroke="#fff2bd" stroke-opacity=".26" stroke-width="2"/>
+<rect x="98" y="138" width="704" height="1074" rx="4" fill="none" stroke="url(#gold)" stroke-width="6"/>
+<rect x="105" y="145" width="690" height="1060" rx="3" fill="none" stroke="#fff4cf" stroke-opacity=".16" stroke-width="1.5"/>
+
+<!-- top/bottom art deco centerpiece -->
+<g stroke="url(#gold)" fill="none" stroke-linecap="square" stroke-linejoin="miter">
+  <path d="M205 92 H330 L382 50 H518 L570 92 H695" stroke-width="11"/>
+  <path d="M238 74 H346 M265 58 H360 M662 74 H554 M635 58 H540" stroke-width="7"/>
+  <path d="M205 1258 H330 L382 1300 H518 L570 1258 H695" stroke-width="11"/>
+  <path d="M238 1276 H346 M265 1292 H360 M662 1276 H554 M635 1292 H540" stroke-width="7"/>
+</g>
+<use href="#crown" x="390" y="38" width="120" height="96"/>
+<use href="#rubyDiamond" x="423" y="91" width="54" height="64"/>
+<use href="#crown" x="390" y="1218" width="120" height="96"/>
+<use href="#rubyDiamond" x="423" y="1190" width="54" height="64"/>
+
+<!-- side rails and ruby accents -->
+<g stroke="url(#gold)" fill="none">
+  <path d="M68 340 V485 M68 865 V1010" stroke-width="10"/>
+  <path d="M832 340 V485 M832 865 V1010" stroke-width="10"/>
+  <path d="M68 485 L44 525 L68 565 L92 525 Z" stroke-width="7"/>
+  <path d="M832 485 L808 525 L832 565 L856 525 Z" stroke-width="7"/>
+</g>
+<use href="#rubyDiamond" x="44" y="495" width="48" height="58"/>
+<use href="#rubyDiamond" x="808" y="495" width="48" height="58"/>
+
+<!-- corners: smaller and cleaner for mobile -->
+<g>
+  <use href="#corner" x="32" y="32" width="100" height="100"/><use href="#crown" x="50" y="50" width="64" height="52"/>
+  <use href="#corner" x="768" y="32" width="100" height="100"/><use href="#crown" x="786" y="50" width="64" height="52"/>
+  <use href="#corner" x="32" y="1218" width="100" height="100"/><use href="#crown" x="50" y="1236" width="64" height="52"/>
+  <use href="#corner" x="768" y="1218" width="100" height="100"/><use href="#crown" x="786" y="1236" width="64" height="52"/>
+</g>
+
+<!-- subtle transition details -->
+<g fill="none" stroke="url(#gold)" stroke-width="7">
+  <path d="M132 66 H170 L198 94"/>
+  <path d="M768 66 H730 L702 94"/>
+  <path d="M132 1284 H170 L198 1256"/>
+  <path d="M768 1284 H730 L702 1256"/>
+</g>
+
+<path d="M70 50 H830" stroke="#fff7d5" stroke-opacity=".15" stroke-width="3" stroke-linecap="round"/>
+<path d="M70 1300 H830" stroke="#fff7d5" stroke-opacity=".10" stroke-width="2.5" stroke-linecap="round"/>
 </svg>
