@@ -1,126 +1,127 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" fill="none">
-  <defs>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#6e4a14"/>
-      <stop offset="10%" stop-color="#f4e0a2"/>
-      <stop offset="22%" stop-color="#c8963f"/>
-      <stop offset="45%" stop-color="#7b531a"/>
-      <stop offset="68%" stop-color="#f1d47e"/>
-      <stop offset="84%" stop-color="#a06e22"/>
-      <stop offset="100%" stop-color="#fff0ba"/>
-    </linearGradient>
-    <linearGradient id="goldSoft" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#fff3c4"/>
-      <stop offset="50%" stop-color="#c99841"/>
-      <stop offset="100%" stop-color="#6c4916"/>
-    </linearGradient>
-    <linearGradient id="emerald" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0a3b35"/>
-      <stop offset="28%" stop-color="#0d6b5d"/>
-      <stop offset="58%" stop-color="#042820"/>
-      <stop offset="100%" stop-color="#021510"/>
-    </linearGradient>
-    <linearGradient id="centerGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0a0f10"/>
-      <stop offset="50%" stop-color="#040707"/>
-      <stop offset="100%" stop-color="#0a0f10"/>
-    </linearGradient>
-    <linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#ff6d87"/>
-      <stop offset="28%" stop-color="#b30f31"/>
-      <stop offset="70%" stop-color="#5b0819"/>
-      <stop offset="100%" stop-color="#22030a"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000" flood-opacity="0.45"/>
-    </filter>
-    <filter id="innerShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feOffset dx="0" dy="1"/>
-      <feGaussianBlur stdDeviation="4" result="offBlur"/>
-      <feComposite in="SourceGraphic" in2="offBlur" operator="arithmetic" k2="-1" k3="1"/>
-    </filter>
-    <radialGradient id="centerLight" cx="50%" cy="46%" r="62%">
-      <stop offset="0%" stop-color="#0f5b4f" stop-opacity="0.20"/>
-      <stop offset="55%" stop-color="#0b3d35" stop-opacity="0.05"/>
-      <stop offset="100%" stop-color="#000" stop-opacity="0.0"/>
-    </radialGradient>
-    <pattern id="centerVeins" width="400" height="300" patternUnits="userSpaceOnUse">
-      <path d="M-20 220 C 80 180, 100 80, 220 30 S 370 40, 430 -20" stroke="#3ac7a3" stroke-opacity="0.13" stroke-width="2.3" fill="none"/>
-      <path d="M-30 250 C 60 200, 160 120, 260 100 S 360 50, 430 20" stroke="#d5f9ef" stroke-opacity="0.10" stroke-width="1.1" fill="none"/>
-      <path d="M10 310 C 110 250, 130 160, 270 140 S 380 130, 460 70" stroke="#2da68b" stroke-opacity="0.12" stroke-width="1.7" fill="none"/>
-    </pattern>
-    <pattern id="emeraldVeins" width="320" height="200" patternUnits="userSpaceOnUse">
-      <path d="M-10 120 C 60 80, 100 20, 180 10 S 260 20, 330 -30" stroke="#6ce5c3" stroke-opacity="0.15" stroke-width="2.2" fill="none"/>
-      <path d="M-20 150 C 70 90, 120 110, 200 50 S 260 60, 340 30" stroke="#ddfff8" stroke-opacity="0.09" stroke-width="1.2" fill="none"/>
-      <path d="M0 190 C 50 130, 120 150, 220 100 S 290 100, 350 80" stroke="#12967b" stroke-opacity="0.12" stroke-width="1.8" fill="none"/>
-    </pattern>
-    <symbol id="rubyDiamond" viewBox="-26 -34 52 68">
-      <path d="M0 -28 L18 0 L0 28 L-18 0 Z" fill="url(#ruby)" stroke="url(#gold)" stroke-width="4"/>
-      <path d="M0 -19 L10 0 L0 19 L-10 0 Z" fill="none" stroke="#ffd1dc" stroke-opacity="0.45" stroke-width="1.4"/>
-      <path d="M-10 -1 H10 M0 -19 V19" stroke="#ffd1dc" stroke-opacity="0.20" stroke-width="1"/>
-    </symbol>
-    <symbol id="crown" viewBox="-55 -50 110 100">
-      <g filter="url(#shadow)">
-        <path d="M-48 12 L-38 -14 L-15 2 L0 -30 L15 2 L38 -14 L48 12 L39 30 L-39 30 Z" fill="url(#gold)"/>
-        <path d="M-39 30 H39 V40 H-39 Z" fill="url(#goldSoft)"/>
-        <path d="M-36 11 C-15 4 15 4 36 11" stroke="#fff1bc" stroke-opacity="0.38" stroke-width="2" fill="none"/>
-        <circle cx="-38" cy="-14" r="5" fill="#f7e8b8"/>
-        <circle cx="0" cy="-30" r="5" fill="#f7e8b8"/>
-        <circle cx="38" cy="-14" r="5" fill="#f7e8b8"/>
-        <circle cx="-38" cy="-14" r="2" fill="#8e0b22"/>
-        <circle cx="0" cy="-30" r="2" fill="#8e0b22"/>
-        <circle cx="38" cy="-14" r="2" fill="#8e0b22"/>
-      </g>
-    </symbol>
-    <symbol id="cornerBlock" viewBox="0 0 170 170">
-      <rect x="8" y="8" width="154" height="154" rx="3" fill="none" stroke="url(#gold)" stroke-width="10"/>
-      <rect x="22" y="22" width="126" height="126" rx="2" fill="none" stroke="#3b2a0d" stroke-width="3" opacity="0.7"/>
-      <path d="M148 22 L148 58 L112 22 Z" fill="none" stroke="url(#gold)" stroke-width="8"/>
-      <path d="M22 148 L58 148 L22 112 Z" fill="none" stroke="url(#gold)" stroke-width="8"/>
-      <path d="M149 149 L121 149 L149 121" fill="none" stroke="url(#gold)" stroke-width="8"/>
-      <path d="M22 58 L22 22 L58 22" fill="none" stroke="url(#gold)" stroke-width="8"/>
-    </symbol>
-    <symbol id="topDeco" viewBox="0 0 320 110">
-      <path d="M0 60 H105 L145 18 H175 L215 60 H320" stroke="url(#gold)" stroke-width="10" fill="none" stroke-linejoin="miter"/>
-      <path d="M32 60 H120 M50 42 H128 M68 24 H136" stroke="url(#gold)" stroke-width="7" fill="none"/>
-      <path d="M288 60 H200 M270 42 H192 M252 24 H184" stroke="url(#gold)" stroke-width="7" fill="none"/>
-    </symbol>
-    <symbol id="sideDeco" viewBox="0 0 90 270">
-      <path d="M45 0 V92" stroke="url(#gold)" stroke-width="10"/>
-      <path d="M45 178 V270" stroke="url(#gold)" stroke-width="10"/>
-      <path d="M20 100 H70 L45 135 Z" fill="none" stroke="url(#gold)" stroke-width="8"/>
-      <use href="#rubyDiamond" x="45" y="135" width="36" height="44" transform="translate(45 135) scale(0.85) translate(-26 -34)"/>
-    </symbol>
-  </defs>
-  <rect width="1600" height="900" fill="#020605"/>
-  <rect x="14" y="14" width="1572" height="872" rx="10" fill="#07110f" stroke="#0b1b17" stroke-width="4"/>
-  <rect x="26" y="26" width="1548" height="848" rx="8" fill="url(#emerald)"/>
-  <rect x="26" y="26" width="1548" height="848" rx="8" fill="url(#emeraldVeins)" opacity="0.95"/>
-  <rect x="93" y="94" width="1414" height="712" rx="4" fill="url(#centerGrad)" filter="url(#innerShadow)"/>
-  <rect x="93" y="94" width="1414" height="712" rx="4" fill="url(#centerLight)"/>
-  <rect x="93" y="94" width="1414" height="712" rx="4" fill="url(#centerVeins)" opacity="0.95"/>
-  <rect x="28" y="28" width="1544" height="844" rx="8" fill="none" stroke="url(#gold)" stroke-width="8"/>
-  <rect x="40" y="40" width="1520" height="820" rx="6" fill="none" stroke="#fff0bc" stroke-opacity="0.28" stroke-width="2"/>
-  <rect x="82" y="83" width="1436" height="734" rx="4" fill="none" stroke="url(#gold)" stroke-width="6"/>
-  <rect x="89" y="90" width="1422" height="720" rx="3" fill="none" stroke="#fff4cf" stroke-opacity="0.18" stroke-width="1.5"/>
-  <g transform="translate(640 18)">
-    <use href="#topDeco" width="320" height="110"/>
-    <use href="#crown" x="110" y="8" width="100" height="92"/>
-    <use href="#rubyDiamond" x="136" y="66" width="48" height="60"/>
-  </g>
-  <g transform="translate(640 770)">
-    <use href="#topDeco" width="320" height="110"/>
-    <use href="#crown" x="110" y="8" width="100" height="92"/>
-    <use href="#rubyDiamond" x="136" y="66" width="48" height="60"/>
-  </g>
-  <g transform="translate(18 315)"><use href="#sideDeco" width="90" height="270"/></g>
-  <g transform="translate(1492 315)"><use href="#sideDeco" width="90" height="270"/></g>
-  <g transform="translate(26 26)"><use href="#cornerBlock" width="124" height="124"/><use href="#crown" x="24" y="18" width="72" height="66"/></g>
-  <g transform="translate(1450 26)"><use href="#cornerBlock" width="124" height="124"/><use href="#crown" x="24" y="18" width="72" height="66"/></g>
-  <g transform="translate(26 750)"><use href="#cornerBlock" width="124" height="124"/><use href="#crown" x="24" y="18" width="72" height="66"/></g>
-  <g transform="translate(1450 750)"><use href="#cornerBlock" width="124" height="124"/><use href="#crown" x="24" y="18" width="72" height="66"/></g>
-  <path d="M70 48 H1528" stroke="#fff8df" stroke-opacity="0.16" stroke-width="3" stroke-linecap="round"/>
-  <path d="M70 852 H1528" stroke="#fff8df" stroke-opacity="0.11" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M48 70 V830" stroke="#fff8df" stroke-opacity="0.12" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M1552 70 V830" stroke="#fff8df" stroke-opacity="0.08" stroke-width="2" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<defs>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6b4712"/>
+    <stop offset=".12" stop-color="#f7e5a8"/>
+    <stop offset=".28" stop-color="#c9963b"/>
+    <stop offset=".48" stop-color="#7f5619"/>
+    <stop offset=".66" stop-color="#efcf70"/>
+    <stop offset=".84" stop-color="#a87526"/>
+    <stop offset="1" stop-color="#fff2bd"/>
+  </linearGradient>
+  <linearGradient id="goldDark" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f1d88c"/>
+    <stop offset=".45" stop-color="#a77424"/>
+    <stop offset="1" stop-color="#4c310d"/>
+  </linearGradient>
+  <linearGradient id="emerald" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#0e5b4a"/>
+    <stop offset=".28" stop-color="#0a3d34"/>
+    <stop offset=".60" stop-color="#06251f"/>
+    <stop offset="1" stop-color="#03120f"/>
+  </linearGradient>
+  <linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ff6580"/>
+    <stop offset=".30" stop-color="#b81333"/>
+    <stop offset=".70" stop-color="#5b0718"/>
+    <stop offset="1" stop-color="#210208"/>
+  </linearGradient>
+  <radialGradient id="centerGlow" cx=".5" cy=".42" r=".72">
+    <stop offset="0" stop-color="#0d4037" stop-opacity=".16"/>
+    <stop offset=".55" stop-color="#0b2c27" stop-opacity=".04"/>
+    <stop offset="1" stop-color="#000" stop-opacity="0"/>
+  </radialGradient>
+  <pattern id="centerMarble" width="380" height="270" patternUnits="userSpaceOnUse">
+    <path d="M-40 240 C50 190 80 120 170 82 S290 54 420 -35" fill="none" stroke="#2b8d73" stroke-opacity=".08" stroke-width="3"/>
+    <path d="M-20 260 C60 205 115 165 205 130 S310 88 420 20" fill="none" stroke="#d0efe7" stroke-opacity=".035" stroke-width="1.4"/>
+  </pattern>
+  <pattern id="edgeMarble" width="280" height="180" patternUnits="userSpaceOnUse">
+    <path d="M-20 155 C45 115 75 55 150 35 S230 22 300 -20" fill="none" stroke="#61d3b2" stroke-opacity=".13" stroke-width="2.2"/>
+    <path d="M-20 175 C50 130 100 110 170 75 S235 58 300 25" fill="none" stroke="#d7fff4" stroke-opacity=".06" stroke-width="1.2"/>
+  </pattern>
+  <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".55"/>
+  </filter>
+  <symbol id="rubyDiamond" viewBox="0 0 72 86">
+    <path d="M36 3 L67 43 L36 83 L5 43 Z" fill="url(#ruby)" stroke="url(#gold)" stroke-width="6"/>
+    <path d="M36 14 L56 43 L36 72 L16 43 Z" fill="none" stroke="#ffd5df" stroke-opacity=".36" stroke-width="2"/>
+    <path d="M17 43 H55 M36 14 V72" stroke="#ffd5df" stroke-opacity=".18" stroke-width="1.4"/>
+  </symbol>
+  <symbol id="crown" viewBox="0 0 120 96">
+    <g filter="url(#shadow)">
+      <path d="M12 60 L21 24 L43 42 L60 10 L77 42 L99 24 L108 60 L96 77 H24 Z" fill="url(#gold)"/>
+      <path d="M24 77 H96 V88 H24 Z" fill="url(#goldDark)"/>
+      <path d="M26 58 C46 48 74 48 94 58" fill="none" stroke="#fff0b6" stroke-opacity=".38" stroke-width="3"/>
+      <circle cx="21" cy="24" r="6" fill="#f6e5af"/><circle cx="60" cy="10" r="6" fill="#f6e5af"/><circle cx="99" cy="24" r="6" fill="#f6e5af"/>
+      <circle cx="21" cy="24" r="2.5" fill="#8f0d26"/><circle cx="60" cy="10" r="2.5" fill="#8f0d26"/><circle cx="99" cy="24" r="2.5" fill="#8f0d26"/>
+    </g>
+  </symbol>
+  <symbol id="corner" viewBox="0 0 150 150">
+    <rect x="4" y="4" width="142" height="142" rx="4" fill="#07120f" stroke="url(#gold)" stroke-width="8"/>
+    <rect x="18" y="18" width="114" height="114" rx="3" fill="none" stroke="#6f4d18" stroke-width="2"/>
+    <path d="M22 52 V22 H52 M128 52 V22 H98 M22 98 V128 H52 M128 98 V128 H98" fill="none" stroke="url(#gold)" stroke-width="8"/>
+  </symbol>
+</defs>
+
+<rect width="1600" height="900" fill="#020504"/>
+<rect x="18" y="18" width="1564" height="864" rx="10" fill="#06100d" stroke="#15251f" stroke-width="4"/>
+
+<!-- emerald decorative band -->
+<rect x="28" y="28" width="1544" height="844" rx="8" fill="url(#emerald)"/>
+<rect x="28" y="28" width="1544" height="844" rx="8" fill="url(#edgeMarble)" opacity=".9"/>
+
+<!-- playable black marble center -->
+<rect x="126" y="106" width="1348" height="688" rx="2" fill="#070a0a"/>
+<rect x="126" y="106" width="1348" height="688" rx="2" fill="url(#centerGlow)"/>
+<rect x="126" y="106" width="1348" height="688" rx="2" fill="url(#centerMarble)"/>
+
+<!-- refined rails -->
+<rect x="30" y="30" width="1540" height="840" rx="8" fill="none" stroke="url(#gold)" stroke-width="8"/>
+<rect x="41" y="41" width="1518" height="818" rx="6" fill="none" stroke="#fff2bd" stroke-opacity=".26" stroke-width="2"/>
+<rect x="114" y="94" width="1372" height="712" rx="3" fill="none" stroke="url(#gold)" stroke-width="6"/>
+<rect x="121" y="101" width="1358" height="698" rx="2" fill="none" stroke="#fff4cf" stroke-opacity=".16" stroke-width="1.5"/>
+
+<!-- art deco top/bottom center -->
+<g stroke="url(#gold)" fill="none" stroke-linecap="square" stroke-linejoin="miter">
+  <path d="M520 70 H690 L740 28 H860 L910 70 H1080" stroke-width="12"/>
+  <path d="M560 52 H710 M590 35 H730 M1040 52 H890 M1010 35 H870" stroke-width="7"/>
+  <path d="M520 830 H690 L740 872 H860 L910 830 H1080" stroke-width="12"/>
+  <path d="M560 848 H710 M590 865 H730 M1040 848 H890 M1010 865 H870" stroke-width="7"/>
+</g>
+
+<!-- center crowns and ruby -->
+<use href="#crown" x="742" y="14" width="116" height="92"/>
+<use href="#rubyDiamond" x="773" y="68" width="54" height="64"/>
+<use href="#crown" x="742" y="794" width="116" height="92"/>
+<use href="#rubyDiamond" x="773" y="768" width="54" height="64"/>
+
+<!-- side deco rails -->
+<g stroke="url(#gold)" fill="none">
+  <path d="M72 250 V350 M72 550 V650" stroke-width="10"/>
+  <path d="M1528 250 V350 M1528 550 V650" stroke-width="10"/>
+  <path d="M72 350 L47 390 L72 430 L97 390 Z" stroke-width="7"/>
+  <path d="M1528 350 L1503 390 L1528 430 L1553 390 Z" stroke-width="7"/>
+</g>
+<use href="#rubyDiamond" x="47" y="360" width="50" height="60"/>
+<use href="#rubyDiamond" x="1503" y="360" width="50" height="60"/>
+
+<!-- corners -->
+<g>
+  <use href="#corner" x="28" y="28" width="120" height="120"/><use href="#crown" x="50" y="49" width="76" height="62"/>
+  <use href="#corner" x="1452" y="28" width="120" height="120"/><use href="#crown" x="1474" y="49" width="76" height="62"/>
+  <use href="#corner" x="28" y="752" width="120" height="120"/><use href="#crown" x="50" y="773" width="76" height="62"/>
+  <use href="#corner" x="1452" y="752" width="120" height="120"/><use href="#crown" x="1474" y="773" width="76" height="62"/>
+</g>
+
+<!-- subtle corner transitions -->
+<g fill="none" stroke="url(#gold)" stroke-width="7">
+  <path d="M148 62 H190 L220 94"/>
+  <path d="M1452 62 H1410 L1380 94"/>
+  <path d="M148 838 H190 L220 806"/>
+  <path d="M1452 838 H1410 L1380 806"/>
+</g>
+
+<!-- restrained highlights -->
+<path d="M70 47 H1510" stroke="#fff7d5" stroke-opacity=".16" stroke-width="3" stroke-linecap="round"/>
+<path d="M70 853 H1510" stroke="#fff7d5" stroke-opacity=".10" stroke-width="2.5" stroke-linecap="round"/>
 </svg>
