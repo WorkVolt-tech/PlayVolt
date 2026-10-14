@@ -14,9 +14,11 @@
   pointer-events: none;
 }
 
-/* TOP — Ti-Cam */
+/* TOP — across the table.
+   The table is now full-screen and the HUD floats over it, so opponent hands
+   must start below that HUD instead of being painted underneath it. */
 .opponent-area.opponent-top {
-  top: calc(var(--rail, 10px) + 6px);
+  top: calc(44px + env(safe-area-inset-top, 0px) + var(--rail, 10px) + 6px);
   left: 50%;
   transform: translateX(-50%);
   flex-direction: row;
@@ -28,7 +30,7 @@
 /* LEFT — Jean */
 .opponent-area.opponent-left {
   left: calc(var(--rail, 10px) + 6px);
-  top: calc(var(--rail, 10px) + 6px);
+  top: calc(44px + env(safe-area-inset-top, 0px) + var(--rail, 10px) + 6px);
   bottom: calc(var(--rail, 10px) + 6px);
   flex-direction: column;
   align-items: center;
@@ -38,7 +40,7 @@
 /* RIGHT — Djo */
 .opponent-area.opponent-right {
   right: calc(var(--rail, 10px) + 6px);
-  top: calc(var(--rail, 10px) + 6px);
+  top: calc(44px + env(safe-area-inset-top, 0px) + var(--rail, 10px) + 6px);
   bottom: calc(var(--rail, 10px) + 6px);
   flex-direction: column;
   align-items: center;
