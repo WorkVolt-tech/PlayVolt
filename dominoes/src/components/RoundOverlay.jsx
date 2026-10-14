@@ -22,6 +22,11 @@ export default function RoundOverlay({ boardTiles = null, roomData, players, myI
   const isMyTeamWin     = mode === 'asosye' &&
     ((myInfo.seat === 0 || myInfo.seat === 2) === (roundWinnerSeat === 0 || roundWinnerSeat === 2))
 
+  // The streak always belongs to whoever just won the round: name them, so a
+  // new winner's 1/4 isn't read as someone else's streak carrying on
+  const streakOf = mode === 'asosye'
+    ? (isMyTeamWin ? 'Your team’s streak' : 'Their team’s streak')
+    : isMe ? 'Your streak' : `${roundWinner?.nickname ?? '?'}’s streak`
   const isKnockout = isMatchOver && roomData.ended_by === 'knockout'
 
   let title, desc
@@ -33,13 +38,13 @@ export default function RoundOverlay({ boardTiles = null, roomData, players, myI
     desc  = `${roundWinner?.nickname ?? '?'} wins the match with a Dekabess! 🏆`
   } else if (isDekabess) {
     title = '🎯 Dekabess!'
-    desc  = `${roundWinner?.nickname ?? '?'} plays a Dekabess! Counts as 2 wins. Streak: ${streak.count}/4`
+    desc  = `${roundWinner?.nickname ?? '?'} plays a Dekabess! Counts as 2 wins. ${streakOf}: ${streak.count}/4`
   } else if (isMatchOver) {
     title = (isMe || isMyTeamWin) ? '🏆 Vyèj!' : 'Vyèj!'
     desc  = `${roundWinner?.nickname ?? '?'} wins the match!`
   } else {
     title = (isMe || isMyTeamWin) ? '✊ Round Won!' : 'Round Over'
-    desc  = `${roundWinner?.nickname ?? '?'} wins this round. Streak: ${streak.count}/4`
+    desc  = `${roundWinner?.nickname ?? '?'} wins this round. ${streakOf}: ${streak.count}/4`
   }
 
   const isBlocked = roomData.blocked === true || roomData.blocked === 'true'
@@ -84,7 +89,7 @@ export default function RoundOverlay({ boardTiles = null, roomData, players, myI
 
         {/* Streak dots */}
         <div className="streak-row">
-          <div className="streak-label">Streak</div>
+          <div className="streak-label">{streakOf}</div>
           <div className="streak-pips">
             {[0,1,2,3].map(i => (
               <div key={i} className={`streak-pip ${i < streak.count ? 'won' : ''}`} />

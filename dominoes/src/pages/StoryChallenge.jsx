@@ -329,6 +329,13 @@ export default function StoryChallenge() {
         db.rpc('record_feat', { p_kind: 'five_doubles' }).then(() => {})
         if (st.winner === 0) db.rpc('record_feat', { p_kind: 'five_doubles_won' }).then(() => {})
       }
+      // Goud: a round won against expert opponents pays, like other games.
+      // In partner chapters your partner sits across (seat 2) and isn't an opponent.
+      const mate = challenge.partner === 'pick' ? partner : challenge.partner
+      const rivals = (mate && (st.seats ?? 4) === 4 ? [1, 3] : Array.from({ length: (st.seats ?? 4) - 1 }, (_, i) => i + 1)).map(seatBot)
+      if (outcome.won && user && rivals.length && rivals.every(n => n && isExpertBot(getPersonality(n)))) {
+        db.rpc('goud_story_round', { p_won: true, p_dekabess: !!st.dekabess, p_match: w >= 2 }).then(() => {})
+      }
     }
     if (w >= 2 || l >= 2) setResult({ ...outcome, met: w >= 2, stars: w >= 2 ? (l === 0 ? 3 : 2) : 0 })
     else setRoundPanel({ ...outcome.round, wins: w, losses: l, winner: st.winner })

@@ -46,22 +46,16 @@ export default function Challenge() {
     navigate(`/?join=${row.code}&auto=1`)
   }
 
-  async function start() {
-    if (busy) return                                   // one tap only
-    setMsg(''); setBusy(true)
-    const timeout = new Promise(r => setTimeout(() => r({ timedOut: true }), 10000))
-    let res
-    try { res = await Promise.race([db.rpc('challenge_start'), timeout]) }
-    catch (e) { res = { error: e } }
-    if (res?.timedOut) { setBusy(false); setMsg('The server didn’t answer — check your connection and try again.'); return }
-    if (res?.error) { setBusy(false); setMsg(`Couldn’t start — ${res.error.message || 'server error'}`); return }
-    const left = res?.data
-    if (left == null || left < 0) { setBusy(false); setMsg('No tries left this week.'); return }
+  // Start: open the game; the game itself spends the try as it opens (so a
+  // game that fails to open never costs one)
+  function start() {
+    if (busy || left <= 0) return
     localStorage.removeItem('challenge_game')
     sessionStorage.setItem('challenge_setup', JSON.stringify({
       seats: c.seats, pile: c.pile, bots: c.opponents,
       nickname: localStorage.getItem('domino_nickname') || 'You',
       challenge: { week: c.week, table: c.table },
+      payTry: true,
     }))
     navigate('/challenge/play')
   }

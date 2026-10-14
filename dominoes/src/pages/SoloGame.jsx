@@ -92,6 +92,28 @@ export default function SoloGame({ challengeMode = false }) {
 
   const [round, setRound] = useState(saved?.round ?? 1)
   const challengeDone = useRef(false)
+
+  // ── Challenge Mode: the try is spent HERE, as the game opens ──────────────
+  // (not on the Challenge page), so a game that never opens never costs a try.
+  // Until the server confirms, the bots wait and a "Starting…" screen shows.
+  const [tryState, setTryState] = useState(() => (challengeMode && setup?.payTry ? 'paying' : 'ok'))
+  const paying = useRef(false)
+  useEffect(() => {
+    if (tryState !== 'paying' || paying.current) return
+    paying.current = true
+    ;(async () => {
+      const timeout = new Promise(r => setTimeout(() => r({ timedOut: true }), 10000))
+      let res
+      try { res = await Promise.race([db.rpc('challenge_start'), timeout]) } catch (e) { res = { error: e } }
+      paying.current = false
+      if (res?.timedOut) return setTryState({ error: 'The server didn’t answer — check your connection and try again.', maybeUsed: true })
+      if (res?.error) return setTryState({ error: `Couldn’t start — ${res.error.message || 'server error'}`, maybeUsed: true })
+      if (res?.data == null || res.data < 0) return setTryState({ error: 'No tries left this week.' })
+      try { sessionStorage.setItem(SETUP_KEY, JSON.stringify({ ...setup, payTry: false })) } catch { /* ignore */ }
+      setTryState('ok')
+    })()
+  }, [tryState])   // eslint-disable-line react-hooks/exhaustive-deps
+  const paused = tryState !== 'ok'
   const [challengeResult, setChallengeResult] = useState(null)
   const [st, setSt] = useState(() => saved?.st || Engine.startGame(dealCfg({ forceDoubleSix: true })))
   const [streak, setStreak] = useState(saved?.streak || { seat: null, team: null, count: 0 })
@@ -130,7 +152,7 @@ export default function SoloGame({ challengeMode = false }) {
 
   // ── bots play ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (st.status !== 'playing' || st.turn === 0 || botBusy.current || knock || offerOpen) return
+    if (paused || st.status !== 'playing' || st.turn === 0 || botBusy.current || knock || offerOpen) return
     botBusy.current = true
     const t = setTimeout(() => {
       setSt(prev => {
@@ -159,16 +181,16 @@ export default function SoloGame({ challengeMode = false }) {
       botBusy.current = false
     }, BOT_DELAY)
     return () => { clearTimeout(t); botBusy.current = false }
-  }, [st, knock])
+  }, [st, knock, paused])
 
   // You can't play: you knock automatically — but you SEE it, the same knock
   // the live game shows, and the game waits for it before moving on.
   useEffect(() => {
-    if (st.status !== 'playing' || st.turn !== 0 || knock || offerOpen) return
+    if (paused || st.status !== 'playing' || st.turn !== 0 || knock || offerOpen) return
     if (Engine.canPlay(st)) return
     const t = setTimeout(() => setSt(p => (p.turn === 0 && !Engine.canPlay(p) ? Engine.drawOrPass(p) : p)), BOT_DELAY)
     return () => clearTimeout(t)
-  }, [st, knock])
+  }, [st, knock, paused])
 
   // Watch the move log: every pass gets its knock, and a seat stops showing
   // PASS the moment it plays a tile again.
@@ -360,6 +382,20 @@ export default function SoloGame({ challengeMode = false }) {
   const moves = Engine.legalMoves(st, 0)
   const playable = moves.map(m => m.tile)
     .filter((t, i, arr) => arr.findIndex(x => x[0] === t[0] && x[1] === t[1]) === i)
+
+  if (paused) {
+    return (
+      <div className="sc-loading" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '2rem', textAlign: 'center' }}>
+        {tryState === 'paying'
+          ? <div className="ch-msg soft">Starting your challenge…</div>
+          : <>
+              <div className="ch-msg">{tryState.error}</div>
+              <div className="ch-msg soft">{tryState.maybeUsed ? 'If the server did receive it, the Challenge page will show the try as used.' : 'No try was used.'}</div>
+              <button className="ch-btn" onClick={() => { sessionStorage.removeItem(SETUP_KEY); navigate('/challenge') }}>← Back to the Challenge</button>
+            </>}
+      </div>
+    )
+  }
 
   return (
     <div className="game-layout">
