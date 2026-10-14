@@ -151,6 +151,8 @@ export const TABLE_SKINS = {
     wideFelt: "radial-gradient(ellipse at 50% 42%, rgba(20,104,73,0.16) 0%, transparent 52%), linear-gradient(145deg, #101915 0%, #09110d 55%, #050806 100%)",
     frame: "url('/tables/challenge-emerald-tall.svg')",
     frameWide: "url('/tables/challenge-emerald-wide.svg')",
+    frameOverlay: "url('/tables/challenge-emerald-tall.svg')",
+    frameOverlayWide: "url('/tables/challenge-emerald-wide.svg')",
     frameSlice: '120', frameSliceWide: '120',
     // Desktop landscape gets a heavier destination frame so the polished
     // ornaments stay visually substantial instead of shrinking into a thin rail.
@@ -162,6 +164,8 @@ export const TABLE_SKINS = {
     wideFelt: "radial-gradient(ellipse at 48% 40%, rgba(35,74,170,0.18) 0%, transparent 55%), linear-gradient(145deg, #111a34 0%, #090e21 56%, #050812 100%)",
     frame: "url('/tables/challenge-sapphire-tall.svg')",
     frameWide: "url('/tables/challenge-sapphire-wide.svg')",
+    frameOverlay: "url('/tables/challenge-sapphire-tall.svg')",
+    frameOverlayWide: "url('/tables/challenge-sapphire-wide.svg')",
     frameSlice: '120', frameSliceWide: '120',
     frameWidth: '58px 42px 64px 42px', frameWidthWide: '50px 108px 56px 108px',
     rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
@@ -171,6 +175,8 @@ export const TABLE_SKINS = {
     wideFelt: "radial-gradient(ellipse at 50% 40%, rgba(118,28,45,0.18) 0%, transparent 55%), linear-gradient(145deg, #241014 0%, #13090b 58%, #080506 100%)",
     frame: "url('/tables/challenge-burgundydeco-tall.svg')",
     frameWide: "url('/tables/challenge-burgundydeco-wide.svg')",
+    frameOverlay: "url('/tables/challenge-burgundydeco-tall.svg')",
+    frameOverlayWide: "url('/tables/challenge-burgundydeco-wide.svg')",
     frameSlice: '120', frameSliceWide: '120',
     frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
     rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
@@ -180,6 +186,8 @@ export const TABLE_SKINS = {
     wideFelt: "radial-gradient(ellipse at 50% 42%, rgba(25,130,120,0.16) 0%, transparent 54%), linear-gradient(145deg, #102322 0%, #091414 56%, #050a0a 100%)",
     frame: "url('/tables/challenge-teal-tall.svg')",
     frameWide: "url('/tables/challenge-teal-wide.svg')",
+    frameOverlay: "url('/tables/challenge-teal-tall.svg')",
+    frameOverlayWide: "url('/tables/challenge-teal-wide.svg')",
     frameSlice: '120', frameSliceWide: '120',
     frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
     rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
@@ -189,6 +197,8 @@ export const TABLE_SKINS = {
     wideFelt: "radial-gradient(ellipse at 50% 40%, rgba(117,67,177,0.18) 0%, transparent 55%), linear-gradient(145deg, #1c1430 0%, #100a1c 57%, #08050e 100%)",
     frame: "url('/tables/challenge-amethyst-tall.svg')",
     frameWide: "url('/tables/challenge-amethyst-wide.svg')",
+    frameOverlay: "url('/tables/challenge-amethyst-tall.svg')",
+    frameOverlayWide: "url('/tables/challenge-amethyst-wide.svg')",
     frameSlice: '120', frameSliceWide: '120',
     frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
     rail: 'linear-gradient(180deg, #2e1f48 0%, #120c1e 100%)' },
@@ -327,6 +337,7 @@ export function applyTableSkin(id) {
   root.style.setProperty('--table-felt', t.felt)
   root.style.setProperty('--table-felt-wide', t.wideFelt || t.felt)
   root.style.setProperty('--table-rail', t.rail)
+  root.style.setProperty('--table-frame-image-effective', t.frameOverlay ? 'none' : (t.frame || t.frameWide || 'none'))
 
   if (t.frame || t.frameWide) {
     root.style.setProperty('--table-frame-image', t.frame || t.frameWide)
@@ -335,6 +346,8 @@ export function applyTableSkin(id) {
     root.style.setProperty('--table-frame-slice-wide', t.frameSliceWide || t.frameSlice || '120')
     root.style.setProperty('--table-frame-width', t.frameWidth || '58px 42px 64px 42px')
     root.style.setProperty('--table-frame-width-wide', t.frameWidthWide || t.frameWidth || '32px 70px 40px 70px')
+    root.style.setProperty('--table-frame-overlay', t.frameOverlay || 'none')
+    root.style.setProperty('--table-frame-overlay-wide', t.frameOverlayWide || t.frameOverlay || 'none')
   } else {
     root.style.removeProperty('--table-frame-image')
     root.style.removeProperty('--table-frame-image-wide')
@@ -342,6 +355,8 @@ export function applyTableSkin(id) {
     root.style.removeProperty('--table-frame-slice-wide')
     root.style.removeProperty('--table-frame-width')
     root.style.removeProperty('--table-frame-width-wide')
+    root.style.removeProperty('--table-frame-overlay')
+    root.style.removeProperty('--table-frame-overlay-wide')
   }
 }
 
