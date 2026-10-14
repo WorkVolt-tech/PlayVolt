@@ -20,8 +20,15 @@
 
 /* ── Top bar ─────────────────────────────────────────────────── */
 .top-bar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 180;
+  background: linear-gradient(180deg, rgba(18,17,14,0.94) 0%, rgba(18,17,14,0.78) 72%, rgba(18,17,14,0.28) 100%);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
   padding: 0 0.75rem;
@@ -108,13 +115,23 @@
 }
 .btn-leave:hover { background: rgba(201,76,76,0.1); }
 
-/* ── Board container — fills ALL remaining space ─────────────── */
+/* ── Full-bleed table ──────────────────────────────────────────
+   The table is the screen. HUD and player hand float above it instead of
+   consuming separate rows, so portrait and landscape feel like the same seat
+   at the same table. Board.jsx reserves those overlay lanes for the domino
+   chain, so this is visual/layout only — gameplay coordinates stay safe. */
 .board-container {
-  flex: 1;
+  position: absolute;
+  inset: 0;
   min-height: 0;
-  position: relative;
-  /* the table's rail, from the equipped table skin */
   background: var(--table-rail, #2f190b);
+}
+
+/* Remove the old inset "floating board" look. The mat reaches the viewport
+   edges; table artwork itself provides its decorative border. */
+.game-layout .board-area {
+  inset: 0;
+  border-radius: 0;
 }
 
 /* ── Hand area ───────────────────────────────────────────────── */
@@ -129,8 +146,13 @@
 }
 
 .hand-area {
-  background: var(--surface);
-  border-top: 1px solid var(--border);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 180;
+  background: linear-gradient(180deg, rgba(12,12,10,0) 0%, rgba(12,12,10,0.56) 22%, rgba(12,12,10,0.90) 100%);
+  border-top: 1px solid rgba(255,255,255,0.05);
   display: flex;
   align-items: center;
   padding: 0 0.75rem;
@@ -141,6 +163,8 @@
   flex-shrink: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 /* tiles in hand follow the same measure */
