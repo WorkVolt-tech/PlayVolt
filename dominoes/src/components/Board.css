@@ -29,23 +29,29 @@
   pointer-events: none;
 }
 
-/* Optional 9-slice artwork frame.
-   The four corners keep their proportions; only the straight edge sections
-   stretch to fit the board. The overlay never receives input and sits below
-   the dominoes/drop zones. */
+/* Responsive SVG artwork frame.
+   Corners keep their shape while straight edge sections stretch. Challenge
+   tables provide separate tall and wide SVG compositions, so neither
+   orientation crops or squashes the artwork. */
+.board-area::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-image-source: var(--table-frame-image, none);
+  border-image-slice: var(--table-frame-slice, 120);
+  border-image-width: var(--table-frame-width, 58px 42px 64px 42px);
+  border-image-repeat: stretch;
+  pointer-events: none;
+  z-index: 0;
+}
+
 @media (orientation: landscape) {
   .board-area::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    box-sizing: border-box;
-    border: 1px solid transparent;
-    border-image-source: var(--table-frame-image, none);
-    border-image-slice: var(--table-frame-slice, 7% 10%);
-    border-image-width: var(--table-frame-width, 7% 10%);
-    border-image-repeat: stretch;
-    pointer-events: none;
-    z-index: 0;
+    border-image-source: var(--table-frame-image-wide, var(--table-frame-image, none));
+    border-image-slice: var(--table-frame-slice-wide, var(--table-frame-slice, 120));
+    border-image-width: var(--table-frame-width-wide, var(--table-frame-width, 32px 70px 40px 70px));
   }
 }
 
