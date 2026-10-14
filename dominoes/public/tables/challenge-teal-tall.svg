@@ -1,118 +1,106 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d2927"/><stop offset=".52" stop-color="#050b0b"/><stop offset="1" stop-color="#020303"/></linearGradient>
-    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4b8"/><stop offset=".28" stop-color="#c69a5d"/><stop offset=".65" stop-color="#7a5a22"/><stop offset="1" stop-color="#c69a5d"/></linearGradient>
-    <radialGradient id="halo" cx=".5" cy=".45" r=".72"><stop offset="0" stop-color="#0c7770" stop-opacity=".10"/><stop offset=".58" stop-color="#0c7770" stop-opacity=".025"/><stop offset="1" stop-color="#000" stop-opacity=".48"/></radialGradient>
-    <pattern id="grain" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".7" fill="#fff" opacity=".022"/><circle cx="13" cy="9" r=".55" fill="#fff" opacity=".015"/></pattern>
-    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".62"/></filter>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>
-  </defs>
-
-  <rect width="900" height="1350" fill="url(#bg)"/>
-  <rect width="900" height="1350" fill="url(#halo)"/>
-  <rect width="900" height="1350" fill="url(#grain)"/>
-
-  <!-- layered luxury frame -->
-  <rect x="27" y="27" width="846" height="1296" rx="14.850000000000001" fill="none" stroke="url(#metal)" stroke-width="5"/>
-  <rect x="37" y="37" width="826" height="1276" rx="11.34" fill="none" stroke="#c69a5d" stroke-opacity=".55" stroke-width="2"/>
-  <rect x="47.9" y="47.9" width="804.2" height="1254.2" rx="9.180000000000001" fill="none" stroke="#0c7770" stroke-opacity=".72" stroke-width="15.200000000000001"/>
-  <rect x="122" y="122" width="656" height="1106" rx="7.5600000000000005" fill="none" stroke="url(#metal)" stroke-width="3"/>
-
-  <!-- subtle beaded rails -->
-  <g fill="#c69a5d" opacity=".78">
-    <circle cx="140" cy="42.2" r="3.5"/><circle cx="208.88888888888889" cy="42.2" r="3.5"/><circle cx="277.77777777777777" cy="42.2" r="3.5"/><circle cx="346.66666666666663" cy="42.2" r="3.5"/><circle cx="415.55555555555554" cy="42.2" r="3.5"/><circle cx="484.44444444444446" cy="42.2" r="3.5"/><circle cx="553.3333333333333" cy="42.2" r="3.5"/><circle cx="622.2222222222222" cy="42.2" r="3.5"/><circle cx="691.1111111111111" cy="42.2" r="3.5"/><circle cx="760" cy="42.2" r="3.5"/>
-    <circle cx="140" cy="1307.8" r="3.5"/><circle cx="208.88888888888889" cy="1307.8" r="3.5"/><circle cx="277.77777777777777" cy="1307.8" r="3.5"/><circle cx="346.66666666666663" cy="1307.8" r="3.5"/><circle cx="415.55555555555554" cy="1307.8" r="3.5"/><circle cx="484.44444444444446" cy="1307.8" r="3.5"/><circle cx="553.3333333333333" cy="1307.8" r="3.5"/><circle cx="622.2222222222222" cy="1307.8" r="3.5"/><circle cx="691.1111111111111" cy="1307.8" r="3.5"/><circle cx="760" cy="1307.8" r="3.5"/>
-  </g>
-
-  <!-- deco rails -->
-  <path d="M122 79.25 H778 M122 1270.75 H778" stroke="#c69a5d" stroke-width="2.4" opacity=".65"/>
-  <path d="M79.25 122 V1228 M820.75 122 V1228" stroke="#c69a5d" stroke-width="2.4" opacity=".65"/>
-
-  <g filter="url(#shadow)"><g transform="translate(79.25 79.25) scale(0.88) rotate(45)">
-    <rect x="-28" y="-28" width="56" height="56" rx="8" fill="#0c7770" stroke="#c69a5d" stroke-width="4"/>
-    <rect x="-18" y="-18" width="36" height="36" rx="5" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="2"/>
-  </g><g transform="translate(820.75 79.25) scale(0.88) rotate(45)">
-    <rect x="-28" y="-28" width="56" height="56" rx="8" fill="#0c7770" stroke="#c69a5d" stroke-width="4"/>
-    <rect x="-18" y="-18" width="36" height="36" rx="5" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="2"/>
-  </g><g transform="translate(79.25 1270.75) scale(0.88) rotate(45)">
-    <rect x="-28" y="-28" width="56" height="56" rx="8" fill="#0c7770" stroke="#c69a5d" stroke-width="4"/>
-    <rect x="-18" y="-18" width="36" height="36" rx="5" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="2"/>
-  </g><g transform="translate(820.75 1270.75) scale(0.88) rotate(45)">
-    <rect x="-28" y="-28" width="56" height="56" rx="8" fill="#0c7770" stroke="#c69a5d" stroke-width="4"/>
-    <rect x="-18" y="-18" width="36" height="36" rx="5" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="2"/>
-  </g><g transform="translate(450 80.2) scale(0.78) rotate(45)">
-    <rect x="-28" y="-28" width="56" height="56" rx="8" fill="#2bb8aa" stroke="#c69a5d" stroke-width="4"/>
-    <rect x="-18" y="-18" width="36" height="36" rx="5" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="2"/>
-  </g><g transform="translate(450 1269.8) scale(0.78) rotate(45)">
-    <rect x="-28" y="-28" width="56" height="56" rx="8" fill="#2bb8aa" stroke="#c69a5d" stroke-width="4"/>
-    <rect x="-18" y="-18" width="36" height="36" rx="5" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="2"/>
-  </g><g transform="translate(80.2 675) rotate(0)">
-    <defs>
-      <linearGradient id="tealL-g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#2bb8aa"/>
-        <stop offset=".45" stop-color="#47d8ca"/>
-        <stop offset="1" stop-color="#090909"/>
-      </linearGradient>
-    </defs>
-    <ellipse rx="18" ry="26" fill="url(#tealL-g)" stroke="#c69a5d" stroke-width="4"/>
-    <ellipse rx="11.16" ry="16.12" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="2"/>
-    <path d="M-13.5 0 H13.5 M0 -19.5 V19.5" stroke="#fff" stroke-opacity=".13" stroke-width="1.5"/>
-  </g><g transform="translate(819.8 675) rotate(0)">
-    <defs>
-      <linearGradient id="tealR-g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#2bb8aa"/>
-        <stop offset=".45" stop-color="#47d8ca"/>
-        <stop offset="1" stop-color="#090909"/>
-      </linearGradient>
-    </defs>
-    <ellipse rx="18" ry="26" fill="url(#tealR-g)" stroke="#c69a5d" stroke-width="4"/>
-    <ellipse rx="11.16" ry="16.12" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="2"/>
-    <path d="M-13.5 0 H13.5 M0 -19.5 V19.5" stroke="#fff" stroke-opacity=".13" stroke-width="1.5"/>
-  </g></g>
-  <g opacity=".78">
-    <g transform="translate(158 55.5) scale(0.66 0.66)" fill="none" stroke="#c69a5d" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g>
-    <g transform="translate(742 55.5) scale(-0.66 0.66)" fill="none" stroke="#c69a5d" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g>
-    <g transform="translate(0 1350) scale(1 -1)">
-      <g transform="translate(158 55.5) scale(0.66 0.66)" fill="none" stroke="#c69a5d" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g>
-      <g transform="translate(742 55.5) scale(-0.66 0.66)" fill="none" stroke="#c69a5d" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g>
+<defs>
+  <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#5f421d"/>
+    <stop offset=".12" stop-color="#e8c98c"/>
+    <stop offset=".28" stop-color="#b98343"/>
+    <stop offset=".48" stop-color="#6c481f"/>
+    <stop offset=".66" stop-color="#d7ad6d"/>
+    <stop offset=".84" stop-color="#8d5d2c"/>
+    <stop offset="1" stop-color="#f3d9a1"/>
+  </linearGradient>
+  <linearGradient id="bronzeDark" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#d9b678"/>
+    <stop offset=".45" stop-color="#8f5d2a"/>
+    <stop offset="1" stop-color="#3f2811"/>
+  </linearGradient>
+  <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#16877e"/>
+    <stop offset=".30" stop-color="#0b5a55"/>
+    <stop offset=".68" stop-color="#073331"/>
+    <stop offset="1" stop-color="#031716"/>
+  </linearGradient>
+  <linearGradient id="gem" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6cf1df"/>
+    <stop offset=".30" stop-color="#22b8aa"/>
+    <stop offset=".70" stop-color="#0a6c65"/>
+    <stop offset="1" stop-color="#03322e"/>
+  </linearGradient>
+  <radialGradient id="centerGlow" cx=".5" cy=".44" r=".76">
+    <stop offset="0" stop-color="#0c6059" stop-opacity=".12"/>
+    <stop offset=".58" stop-color="#083a36" stop-opacity=".035"/>
+    <stop offset="1" stop-color="#000" stop-opacity="0"/>
+  </radialGradient>
+  <pattern id="centerLeather" width="330" height="255" patternUnits="userSpaceOnUse">
+    <path d="M-50 250 C60 190 105 135 205 92 S330 58 470 -35" fill="none" stroke="#4ea99f" stroke-opacity=".05" stroke-width="2.6"/>
+    <path d="M-25 278 C65 220 135 175 235 135 S350 92 470 18" fill="none" stroke="#d5fffa" stroke-opacity=".022" stroke-width="1.1"/>
+  </pattern>
+  <pattern id="edgeTexture" width="260" height="170" patternUnits="userSpaceOnUse">
+    <path d="M-20 145 C40 108 70 52 138 33 S215 20 280 -16" fill="none" stroke="#63c6bb" stroke-opacity=".10" stroke-width="2"/>
+    <path d="M-20 165 C46 125 91 103 160 71 S222 53 290 24" fill="none" stroke="#e5fffb" stroke-opacity=".04" stroke-width="1"/>
+  </pattern>
+  <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".48"/>
+  </filter>
+  <symbol id="tealGem" viewBox="0 0 72 86">
+    <path d="M36 3 L67 43 L36 83 L5 43 Z" fill="url(#gem)" stroke="url(#bronze)" stroke-width="6"/>
+    <path d="M36 14 L56 43 L36 72 L16 43 Z" fill="none" stroke="#d9fffa" stroke-opacity=".34" stroke-width="2"/>
+  </symbol>
+  <symbol id="decoDiamond" viewBox="0 0 120 96">
+    <g filter="url(#shadow)">
+      <rect x="28" y="16" width="64" height="64" rx="8" transform="rotate(45 60 48)" fill="url(#teal)" stroke="url(#bronze)" stroke-width="5"/>
+      <rect x="40" y="28" width="40" height="40" rx="5" transform="rotate(45 60 48)" fill="none" stroke="#e6fffb" stroke-opacity=".22" stroke-width="2"/>
+      <circle cx="60" cy="48" r="8" fill="url(#gem)" stroke="#f4e0b1" stroke-width="1.8"/>
     </g>
-    <g transform="translate(53.6 162) rotate(90)"><g transform="translate(0 0) scale(0.6 0.6)" fill="none" stroke="#c69a5d" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g></g>
-    <g transform="translate(53.6 1188) rotate(-90)"><g transform="translate(0 0) scale(0.6 0.6)" fill="none" stroke="#c69a5d" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g></g>
-    <g transform="translate(846.4 162) rotate(-90)"><g transform="translate(0 0) scale(0.6 0.6)" fill="none" stroke="#c69a5d" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g></g>
-    <g transform="translate(846.4 1188) rotate(90)"><g transform="translate(0 0) scale(0.6 0.6)" fill="none" stroke="#c69a5d" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g></g></g>
+  </symbol>
+  <symbol id="corner" viewBox="0 0 150 150">
+    <rect x="4" y="4" width="142" height="142" rx="4" fill="#07110f" stroke="url(#bronze)" stroke-width="8"/>
+    <rect x="18" y="18" width="114" height="114" rx="3" fill="none" stroke="#5c4527" stroke-width="2"/>
+    <path d="M22 52 V22 H52 M128 52 V22 H98 M22 98 V128 H52 M128 98 V128 H98" fill="none" stroke="url(#bronze)" stroke-width="8"/>
+  </symbol>
+</defs>
 
-  <!-- keep centre clean -->
-  <rect x="128" y="128" width="644" height="1094" rx="5.4" fill="none" stroke="#fff" stroke-opacity=".035" stroke-width="2"/>
+<rect width="900" height="1350" fill="#020605"/>
+<rect x="18" y="18" width="864" height="1314" rx="10" fill="#08110f" stroke="#14231f" stroke-width="4"/>
+<rect x="18" y="18" width="864" height="1314" rx="10" fill="url(#teal)"/>
+<rect x="18" y="18" width="864" height="1314" rx="10" fill="url(#edgeTexture)" opacity=".76"/>
+
+<!-- large usable play surface -->
+<rect x="66" y="90" width="768" height="1170" rx="3" fill="#06100f"/>
+<rect x="66" y="90" width="768" height="1170" rx="3" fill="url(#centerGlow)"/>
+<rect x="66" y="90" width="768" height="1170" rx="3" fill="url(#centerLeather)"/>
+
+<!-- brushed bronze rails -->
+<rect x="22" y="22" width="856" height="1306" rx="8" fill="none" stroke="url(#bronze)" stroke-width="8"/>
+<rect x="32" y="32" width="836" height="1286" rx="6" fill="none" stroke="#f4deb0" stroke-opacity=".22" stroke-width="2"/>
+<rect x="58" y="82" width="784" height="1186" rx="4" fill="none" stroke="url(#bronze)" stroke-width="5"/>
+<rect x="64" y="88" width="772" height="1174" rx="3" fill="none" stroke="#fff4d8" stroke-opacity=".12" stroke-width="1.4"/>
+
+<!-- modern deco centerpiece -->
+<g stroke="url(#bronze)" fill="none" stroke-linejoin="miter">
+  <path d="M265 72 H374 L404 40 H496 L526 72 H635" stroke-width="9"/>
+  <path d="M295 56 H378 M605 56 H522" stroke-width="6"/>
+  <path d="M265 1278 H374 L404 1310 H496 L526 1278 H635" stroke-width="9"/>
+  <path d="M295 1294 H378 M605 1294 H522" stroke-width="6"/>
+</g>
+<use href="#decoDiamond" x="418" y="27" width="64" height="52"/>
+<use href="#tealGem" x="432" y="68" width="36" height="44"/>
+<use href="#decoDiamond" x="418" y="1271" width="64" height="52"/>
+<use href="#tealGem" x="432" y="1238" width="36" height="44"/>
+
+<!-- side accents -->
+<use href="#tealGem" x="30" y="651" width="34" height="48"/>
+<use href="#tealGem" x="836" y="651" width="34" height="48"/>
+
+<!-- compact corners -->
+<use href="#corner" x="20" y="20" width="86" height="86"/>
+<use href="#decoDiamond" x="28" y="34" width="64" height="52"/>
+<use href="#corner" x="794" y="20" width="86" height="86"/>
+<use href="#decoDiamond" x="802" y="34" width="64" height="52"/>
+<use href="#corner" x="20" y="1244" width="86" height="86"/>
+<use href="#decoDiamond" x="28" y="1258" width="64" height="52"/>
+<use href="#corner" x="794" y="1244" width="86" height="86"/>
+<use href="#decoDiamond" x="802" y="1258" width="64" height="52"/>
+
+<path d="M60 36 H840" stroke="#fff2d6" stroke-opacity=".12" stroke-width="2.5" stroke-linecap="round"/>
 </svg>
