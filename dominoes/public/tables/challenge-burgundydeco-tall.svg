@@ -1,124 +1,107 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b1117"/><stop offset=".52" stop-color="#090507"/><stop offset="1" stop-color="#020303"/></linearGradient>
-    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4b8"/><stop offset=".28" stop-color="#d3ab55"/><stop offset=".65" stop-color="#7a5a22"/><stop offset="1" stop-color="#d3ab55"/></linearGradient>
-    <radialGradient id="halo" cx=".5" cy=".45" r=".72"><stop offset="0" stop-color="#6a1725" stop-opacity=".10"/><stop offset=".58" stop-color="#6a1725" stop-opacity=".025"/><stop offset="1" stop-color="#000" stop-opacity=".48"/></radialGradient>
-    <pattern id="grain" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".7" fill="#fff" opacity=".022"/><circle cx="13" cy="9" r=".55" fill="#fff" opacity=".015"/></pattern>
-    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".62"/></filter>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>
-  </defs>
-
-  <rect width="900" height="1350" fill="url(#bg)"/>
-  <rect width="900" height="1350" fill="url(#halo)"/>
-  <rect width="900" height="1350" fill="url(#grain)"/>
-
-  <!-- layered luxury frame -->
-  <rect x="27" y="27" width="846" height="1296" rx="14.850000000000001" fill="none" stroke="url(#metal)" stroke-width="5"/>
-  <rect x="37" y="37" width="826" height="1276" rx="11.34" fill="none" stroke="#d3ab55" stroke-opacity=".55" stroke-width="2"/>
-  <rect x="47.9" y="47.9" width="804.2" height="1254.2" rx="9.180000000000001" fill="none" stroke="#6a1725" stroke-opacity=".72" stroke-width="15.200000000000001"/>
-  <rect x="122" y="122" width="656" height="1106" rx="7.5600000000000005" fill="none" stroke="url(#metal)" stroke-width="3"/>
-
-  <!-- subtle beaded rails -->
-  <g fill="#d3ab55" opacity=".78">
-    <circle cx="140" cy="42.2" r="3.5"/><circle cx="208.88888888888889" cy="42.2" r="3.5"/><circle cx="277.77777777777777" cy="42.2" r="3.5"/><circle cx="346.66666666666663" cy="42.2" r="3.5"/><circle cx="415.55555555555554" cy="42.2" r="3.5"/><circle cx="484.44444444444446" cy="42.2" r="3.5"/><circle cx="553.3333333333333" cy="42.2" r="3.5"/><circle cx="622.2222222222222" cy="42.2" r="3.5"/><circle cx="691.1111111111111" cy="42.2" r="3.5"/><circle cx="760" cy="42.2" r="3.5"/>
-    <circle cx="140" cy="1307.8" r="3.5"/><circle cx="208.88888888888889" cy="1307.8" r="3.5"/><circle cx="277.77777777777777" cy="1307.8" r="3.5"/><circle cx="346.66666666666663" cy="1307.8" r="3.5"/><circle cx="415.55555555555554" cy="1307.8" r="3.5"/><circle cx="484.44444444444446" cy="1307.8" r="3.5"/><circle cx="553.3333333333333" cy="1307.8" r="3.5"/><circle cx="622.2222222222222" cy="1307.8" r="3.5"/><circle cx="691.1111111111111" cy="1307.8" r="3.5"/><circle cx="760" cy="1307.8" r="3.5"/>
-  </g>
-
-  <!-- deco rails -->
-  <path d="M122 79.25 H778 M122 1270.75 H778" stroke="#d3ab55" stroke-width="2.4" opacity=".65"/>
-  <path d="M79.25 122 V1228 M820.75 122 V1228" stroke="#d3ab55" stroke-width="2.4" opacity=".65"/>
-
-  <g filter="url(#shadow)"><g transform="translate(79.25 79.25) scale(0.88)">
-    <path d="M-56 30 Q0-48 56 30 Z" fill="#6a1725" fill-opacity=".28" stroke="#d3ab55" stroke-width="4"/>
-    <path d="M-46 30 Q0-34 46 30 M-32 30 Q0-22 32 30 M-18 30 Q0-10 18 30" fill="none" stroke="#d3ab55" stroke-width="2.4"/>
-    <path d="M0 30 V-28 M-42 30 L-18-14 M42 30 L18-14" stroke="#d3ab55" stroke-width="2.2"/>
-  </g><g transform="translate(820.75 79.25) scale(0.88)">
-    <path d="M-56 30 Q0-48 56 30 Z" fill="#6a1725" fill-opacity=".28" stroke="#d3ab55" stroke-width="4"/>
-    <path d="M-46 30 Q0-34 46 30 M-32 30 Q0-22 32 30 M-18 30 Q0-10 18 30" fill="none" stroke="#d3ab55" stroke-width="2.4"/>
-    <path d="M0 30 V-28 M-42 30 L-18-14 M42 30 L18-14" stroke="#d3ab55" stroke-width="2.2"/>
-  </g><g transform="translate(79.25 1270.75) scale(0.88)">
-    <path d="M-56 30 Q0-48 56 30 Z" fill="#6a1725" fill-opacity=".28" stroke="#d3ab55" stroke-width="4"/>
-    <path d="M-46 30 Q0-34 46 30 M-32 30 Q0-22 32 30 M-18 30 Q0-10 18 30" fill="none" stroke="#d3ab55" stroke-width="2.4"/>
-    <path d="M0 30 V-28 M-42 30 L-18-14 M42 30 L18-14" stroke="#d3ab55" stroke-width="2.2"/>
-  </g><g transform="translate(820.75 1270.75) scale(0.88)">
-    <path d="M-56 30 Q0-48 56 30 Z" fill="#6a1725" fill-opacity=".28" stroke="#d3ab55" stroke-width="4"/>
-    <path d="M-46 30 Q0-34 46 30 M-32 30 Q0-22 32 30 M-18 30 Q0-10 18 30" fill="none" stroke="#d3ab55" stroke-width="2.4"/>
-    <path d="M0 30 V-28 M-42 30 L-18-14 M42 30 L18-14" stroke="#d3ab55" stroke-width="2.2"/>
-  </g><g transform="translate(450 80.2) scale(0.75)">
-    <path d="M-56 30 Q0-48 56 30 Z" fill="#6a1725" fill-opacity=".28" stroke="#d3ab55" stroke-width="4"/>
-    <path d="M-46 30 Q0-34 46 30 M-32 30 Q0-22 32 30 M-18 30 Q0-10 18 30" fill="none" stroke="#d3ab55" stroke-width="2.4"/>
-    <path d="M0 30 V-28 M-42 30 L-18-14 M42 30 L18-14" stroke="#d3ab55" stroke-width="2.2"/>
-  </g><g transform="translate(450 1269.8) rotate(180)"><g transform="translate(0 0) scale(0.75)">
-    <path d="M-56 30 Q0-48 56 30 Z" fill="#6a1725" fill-opacity=".28" stroke="#d3ab55" stroke-width="4"/>
-    <path d="M-46 30 Q0-34 46 30 M-32 30 Q0-22 32 30 M-18 30 Q0-10 18 30" fill="none" stroke="#d3ab55" stroke-width="2.4"/>
-    <path d="M0 30 V-28 M-42 30 L-18-14 M42 30 L18-14" stroke="#d3ab55" stroke-width="2.2"/>
-  </g></g><g transform="translate(80.2 675) rotate(0)">
-    <defs>
-      <linearGradient id="burL-g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#a21e37"/>
-        <stop offset=".45" stop-color="#d63b5a"/>
-        <stop offset="1" stop-color="#090909"/>
-      </linearGradient>
-    </defs>
-    <ellipse rx="18" ry="26" fill="url(#burL-g)" stroke="#d3ab55" stroke-width="4"/>
-    <ellipse rx="11.16" ry="16.12" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="2"/>
-    <path d="M-13.5 0 H13.5 M0 -19.5 V19.5" stroke="#fff" stroke-opacity=".13" stroke-width="1.5"/>
-  </g><g transform="translate(819.8 675) rotate(0)">
-    <defs>
-      <linearGradient id="burR-g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#a21e37"/>
-        <stop offset=".45" stop-color="#d63b5a"/>
-        <stop offset="1" stop-color="#090909"/>
-      </linearGradient>
-    </defs>
-    <ellipse rx="18" ry="26" fill="url(#burR-g)" stroke="#d3ab55" stroke-width="4"/>
-    <ellipse rx="11.16" ry="16.12" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="2"/>
-    <path d="M-13.5 0 H13.5 M0 -19.5 V19.5" stroke="#fff" stroke-opacity=".13" stroke-width="1.5"/>
-  </g></g>
-  <g opacity=".78">
-    <g transform="translate(158 55.5) scale(0.66 0.66)" fill="none" stroke="#d3ab55" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g>
-    <g transform="translate(742 55.5) scale(-0.66 0.66)" fill="none" stroke="#d3ab55" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g>
-    <g transform="translate(0 1350) scale(1 -1)">
-      <g transform="translate(158 55.5) scale(0.66 0.66)" fill="none" stroke="#d3ab55" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g>
-      <g transform="translate(742 55.5) scale(-0.66 0.66)" fill="none" stroke="#d3ab55" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g>
+<defs>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#694611"/>
+    <stop offset=".12" stop-color="#f6dfa0"/>
+    <stop offset=".28" stop-color="#c59036"/>
+    <stop offset=".48" stop-color="#7b5017"/>
+    <stop offset=".66" stop-color="#ecc96c"/>
+    <stop offset=".84" stop-color="#9c681f"/>
+    <stop offset="1" stop-color="#ffefb2"/>
+  </linearGradient>
+  <linearGradient id="goldDark" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#efd486"/>
+    <stop offset=".45" stop-color="#9f6a20"/>
+    <stop offset="1" stop-color="#4b2e0b"/>
+  </linearGradient>
+  <linearGradient id="burgundy" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6d2030"/>
+    <stop offset=".30" stop-color="#42131e"/>
+    <stop offset=".68" stop-color="#240a10"/>
+    <stop offset="1" stop-color="#0f0407"/>
+  </linearGradient>
+  <linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ff6d86"/>
+    <stop offset=".30" stop-color="#b9183a"/>
+    <stop offset=".70" stop-color="#590a1c"/>
+    <stop offset="1" stop-color="#220308"/>
+  </linearGradient>
+  <radialGradient id="centerGlow" cx=".5" cy=".44" r=".76">
+    <stop offset="0" stop-color="#6a1b2d" stop-opacity=".12"/>
+    <stop offset=".58" stop-color="#35101a" stop-opacity=".035"/>
+    <stop offset="1" stop-color="#000" stop-opacity="0"/>
+  </radialGradient>
+  <pattern id="centerLacquer" width="330" height="255" patternUnits="userSpaceOnUse">
+    <path d="M-50 250 C60 190 105 135 205 92 S330 58 470 -35" fill="none" stroke="#9f4052" stroke-opacity=".055" stroke-width="2.7"/>
+    <path d="M-25 278 C65 220 135 175 235 135 S350 92 470 18" fill="none" stroke="#f0c9cf" stroke-opacity=".024" stroke-width="1.2"/>
+  </pattern>
+  <pattern id="edgeLacquer" width="260" height="170" patternUnits="userSpaceOnUse">
+    <path d="M-20 145 C40 108 70 52 138 33 S215 20 280 -16" fill="none" stroke="#b64f64" stroke-opacity=".11" stroke-width="2.1"/>
+    <path d="M-20 165 C46 125 91 103 160 71 S222 53 290 24" fill="none" stroke="#f2d9de" stroke-opacity=".045" stroke-width="1.1"/>
+  </pattern>
+  <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+    <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".5"/>
+  </filter>
+  <symbol id="rubyGem" viewBox="0 0 72 86">
+    <path d="M36 3 L67 43 L36 83 L5 43 Z" fill="url(#ruby)" stroke="url(#gold)" stroke-width="6"/>
+    <path d="M36 14 L56 43 L36 72 L16 43 Z" fill="none" stroke="#ffd9e2" stroke-opacity=".34" stroke-width="2"/>
+  </symbol>
+  <symbol id="fan" viewBox="0 0 120 96">
+    <g filter="url(#shadow)">
+      <path d="M14 72 Q60 10 106 72 Z" fill="#5b1424" fill-opacity=".72" stroke="url(#gold)" stroke-width="5"/>
+      <path d="M24 72 Q60 24 96 72 M36 72 Q60 36 84 72 M48 72 Q60 48 72 72" fill="none" stroke="url(#gold)" stroke-width="2.6"/>
+      <path d="M60 72 V24 M28 72 L46 38 M92 72 L74 38" stroke="url(#gold)" stroke-width="2.2"/>
+      <rect x="22" y="72" width="76" height="10" rx="2" fill="url(#goldDark)"/>
     </g>
-    <g transform="translate(53.6 162) rotate(90)"><g transform="translate(0 0) scale(0.6 0.6)" fill="none" stroke="#d3ab55" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g></g>
-    <g transform="translate(53.6 1188) rotate(-90)"><g transform="translate(0 0) scale(0.6 0.6)" fill="none" stroke="#d3ab55" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g></g>
-    <g transform="translate(846.4 162) rotate(-90)"><g transform="translate(0 0) scale(0.6 0.6)" fill="none" stroke="#d3ab55" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g></g>
-    <g transform="translate(846.4 1188) rotate(90)"><g transform="translate(0 0) scale(0.6 0.6)" fill="none" stroke="#d3ab55" stroke-linecap="round">
-    <path d="M0 0 C24-38 58-38 76-10 C58-24 40-12 34 10 C28 32 10 36 0 18" stroke-width="4"/>
-    <path d="M20 6 C38-8 54-6 60 8 C46 2 36 12 34 24" stroke-width="2.2" opacity=".85"/>
-    <path d="M6 14 C18 16 22 26 18 38" stroke-width="2" opacity=".7"/>
-  </g></g></g>
+  </symbol>
+  <symbol id="corner" viewBox="0 0 150 150">
+    <rect x="4" y="4" width="142" height="142" rx="4" fill="#12070a" stroke="url(#gold)" stroke-width="8"/>
+    <rect x="18" y="18" width="114" height="114" rx="3" fill="none" stroke="#65411a" stroke-width="2"/>
+    <path d="M22 52 V22 H52 M128 52 V22 H98 M22 98 V128 H52 M128 98 V128 H98" fill="none" stroke="url(#gold)" stroke-width="8"/>
+  </symbol>
+</defs>
 
-  <!-- keep centre clean -->
-  <rect x="128" y="128" width="644" height="1094" rx="5.4" fill="none" stroke="#fff" stroke-opacity=".035" stroke-width="2"/>
+<rect width="900" height="1350" fill="#050203"/>
+<rect x="18" y="18" width="864" height="1314" rx="10" fill="#18090d" stroke="#271016" stroke-width="4"/>
+<rect x="18" y="18" width="864" height="1314" rx="10" fill="url(#burgundy)"/>
+<rect x="18" y="18" width="864" height="1314" rx="10" fill="url(#edgeLacquer)" opacity=".78"/>
+
+<!-- large usable play surface -->
+<rect x="66" y="90" width="768" height="1170" rx="3" fill="#0b0708"/>
+<rect x="66" y="90" width="768" height="1170" rx="3" fill="url(#centerGlow)"/>
+<rect x="66" y="90" width="768" height="1170" rx="3" fill="url(#centerLacquer)"/>
+
+<!-- champagne-gold rails -->
+<rect x="22" y="22" width="856" height="1306" rx="8" fill="none" stroke="url(#gold)" stroke-width="8"/>
+<rect x="32" y="32" width="836" height="1286" rx="6" fill="none" stroke="#fff2bd" stroke-opacity=".24" stroke-width="2"/>
+<rect x="58" y="82" width="784" height="1186" rx="4" fill="none" stroke="url(#gold)" stroke-width="5"/>
+<rect x="64" y="88" width="772" height="1174" rx="3" fill="none" stroke="#fff0c9" stroke-opacity=".13" stroke-width="1.4"/>
+
+<!-- restrained art-deco centerpiece -->
+<g stroke="url(#gold)" fill="none" stroke-linejoin="miter">
+  <path d="M265 72 H374 L402 40 H498 L526 72 H635" stroke-width="9"/>
+  <path d="M295 56 H378 M605 56 H522" stroke-width="6"/>
+  <path d="M265 1278 H374 L402 1310 H498 L526 1278 H635" stroke-width="9"/>
+  <path d="M295 1294 H378 M605 1294 H522" stroke-width="6"/>
+</g>
+<use href="#fan" x="416" y="27" width="68" height="52"/>
+<use href="#rubyGem" x="432" y="68" width="36" height="44"/>
+<use href="#fan" x="416" y="1271" width="68" height="52"/>
+<use href="#rubyGem" x="432" y="1238" width="36" height="44"/>
+
+<!-- side accents stay in border -->
+<use href="#rubyGem" x="30" y="651" width="34" height="48"/>
+<use href="#rubyGem" x="836" y="651" width="34" height="48"/>
+
+<!-- compact corners -->
+<use href="#corner" x="20" y="20" width="86" height="86"/>
+<use href="#fan" x="27" y="36" width="68" height="52"/>
+<use href="#corner" x="794" y="20" width="86" height="86"/>
+<use href="#fan" x="801" y="36" width="68" height="52"/>
+<use href="#corner" x="20" y="1244" width="86" height="86"/>
+<use href="#fan" x="27" y="1258" width="68" height="52"/>
+<use href="#corner" x="794" y="1244" width="86" height="86"/>
+<use href="#fan" x="801" y="1258" width="68" height="52"/>
+
+<path d="M60 36 H840" stroke="#fff2d0" stroke-opacity=".13" stroke-width="2.5" stroke-linecap="round"/>
 </svg>
