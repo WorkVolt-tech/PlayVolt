@@ -54,12 +54,12 @@ export default function Watch() {
   const load = useCallback(async () => {
     const [{ data: r }, { data: ps }, { data: b }] = await Promise.all([
       db.from('domino_rooms').select('*').eq('id', roomId).maybeSingle(),
-      db.from('domino_players').select('seat, nickname, is_ai, stand_in, left_at, avatar, tile_skin, hand').eq('room_id', roomId).order('seat'),
+      db.rpc('watch_players', { p_room: roomId }),           // seats with a tile COUNT only — never the tiles
       db.from('board').select('*').eq('room_id', roomId).maybeSingle(),
     ])
     if (!r) { setGone(true); return }
     setRoom(r)
-    setPlayers((ps || []).map(p => ({ ...p, hand: (Array.isArray(p.hand) ? p.hand : []).map(() => [0, 0]) })))
+    setPlayers((Array.isArray(ps) ? ps : []).map(p => ({ ...p, hand: Array.from({ length: p.hand_count || 0 }, () => [0, 0]) })))
     setBoard(b || null)
   }, [roomId])
 
@@ -71,7 +71,6 @@ export default function Watch() {
     const ch = db.channel(`watch-data-${roomId}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_rooms', filter: `id=eq.${roomId}` },
         p => { if (p.eventType === 'DELETE') setGone(true); else reload() })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players', filter: `room_id=eq.${roomId}` }, reload)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'board', filter: `room_id=eq.${roomId}` }, reload)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'game_events', filter: `room_id=eq.${roomId}` }, p => {
         const e = p.new || {}

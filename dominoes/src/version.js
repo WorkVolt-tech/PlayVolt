@@ -1,4 +1,4 @@
 // The version shown at the bottom of the lobby. Bumped with every delivery,
 // so a glance at the lobby tells you whether the newest code is live.
-export const VERSION = 'v1.14'
-export const VERSION_NOTE = 'streak names, Challenge try timing, Story Goud'
+export const VERSION = 'v1.15'
+export const VERSION_NOTE = 'spectators see tile counts only'
