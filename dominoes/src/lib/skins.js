@@ -145,26 +145,51 @@ export const TABLE_SKINS = {
   // the figure sits where the chain goes, so the centre is gently dimmed to keep tiles readable
   negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-wide.webp', felt: "radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), url('/tables/negmaron-wide.webp') center / cover no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
   // ── Challenge Mode prize tables (your artwork): won by beating the week's challenge ──
-  emerald:  { label: 'Emerald Crown', challenge: true, thumb: '/tables/emerald-wide.webp',
-    felt: "url('/tables/emerald-wide.webp') center / cover no-repeat, #0c0d0b",
-    // Landscape: use a separate dark marble centre so the original frame is not
-    // drawn underneath the 9-slice border. This makes the frame visibly adapt
-    // instead of looking like the old full-image background.
-    // Use the real centre marble from the artwork, zoomed just enough that the
-    // original decorative frame sits outside the playable area. This keeps the
-    // wide centre visually consistent with portrait instead of looking like a
-    // flat synthetic gradient.
-    wideFelt: "url('/tables/emerald-wide.webp') center / 132% auto no-repeat, #0c0d0b",
-    frameWide: "url('/tables/emerald-wide.webp')",
-    // The bottom band in the source is slightly deeper than the top. Give it a
-    // little more source area and display height so the inner gold line is kept.
-    frameSlice: '76 192 106 192',
-    frameWidth: '32px 96px 48px 96px',
+  emerald:  { label: 'Emerald Crown', challenge: true,
+    thumb: '/tables/challenge-emerald-wide.svg',
+    felt: "radial-gradient(ellipse at 50% 42%, rgba(20,104,73,0.16) 0%, transparent 52%), linear-gradient(145deg, #101915 0%, #09110d 55%, #050806 100%)",
+    wideFelt: "radial-gradient(ellipse at 50% 42%, rgba(20,104,73,0.16) 0%, transparent 52%), linear-gradient(145deg, #101915 0%, #09110d 55%, #050806 100%)",
+    frame: "url('/tables/challenge-emerald-tall.svg')",
+    frameWide: "url('/tables/challenge-emerald-wide.svg')",
+    frameSlice: '120', frameSliceWide: '120',
+    frameWidth: '58px 42px 64px 42px', frameWidthWide: '34px 72px 42px 72px',
     rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
-  sapphire: { label: 'Sapphire & Ruby', challenge: true, thumb: '/tables/sapphire-wide.webp', felt: "url('/tables/sapphire-wide.webp') center / cover no-repeat, #0b0d16", rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
-  burgundydeco: { label: 'Burgundy Deco', challenge: true, thumb: '/tables/burgundydeco-wide.webp', felt: "url('/tables/burgundydeco-wide.webp') center / cover no-repeat, #0e0b0b", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
-  teal:     { label: 'Teal Deco', challenge: true, thumb: '/tables/teal-wide.webp', felt: "url('/tables/teal-wide.webp') center / cover no-repeat, #0c0d0d", rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
-  amethyst: { label: 'Amethyst Deco', challenge: true, thumb: '/tables/amethyst-wide.webp', felt: "url('/tables/amethyst-wide.webp') center / cover no-repeat, #0c0b0d", rail: 'linear-gradient(180deg, #2e1f48 0%, #120c1e 100%)' },
+  sapphire: { label: 'Sapphire & Ruby', challenge: true,
+    thumb: '/tables/challenge-sapphire-wide.svg',
+    felt: "radial-gradient(ellipse at 48% 40%, rgba(35,74,170,0.18) 0%, transparent 55%), linear-gradient(145deg, #111a34 0%, #090e21 56%, #050812 100%)",
+    wideFelt: "radial-gradient(ellipse at 48% 40%, rgba(35,74,170,0.18) 0%, transparent 55%), linear-gradient(145deg, #111a34 0%, #090e21 56%, #050812 100%)",
+    frame: "url('/tables/challenge-sapphire-tall.svg')",
+    frameWide: "url('/tables/challenge-sapphire-wide.svg')",
+    frameSlice: '120', frameSliceWide: '120',
+    frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
+    rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
+  burgundydeco: { label: 'Burgundy Deco', challenge: true,
+    thumb: '/tables/challenge-burgundydeco-wide.svg',
+    felt: "radial-gradient(ellipse at 50% 40%, rgba(118,28,45,0.18) 0%, transparent 55%), linear-gradient(145deg, #241014 0%, #13090b 58%, #080506 100%)",
+    wideFelt: "radial-gradient(ellipse at 50% 40%, rgba(118,28,45,0.18) 0%, transparent 55%), linear-gradient(145deg, #241014 0%, #13090b 58%, #080506 100%)",
+    frame: "url('/tables/challenge-burgundydeco-tall.svg')",
+    frameWide: "url('/tables/challenge-burgundydeco-wide.svg')",
+    frameSlice: '120', frameSliceWide: '120',
+    frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
+    rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
+  teal:     { label: 'Teal Deco', challenge: true,
+    thumb: '/tables/challenge-teal-wide.svg',
+    felt: "radial-gradient(ellipse at 50% 42%, rgba(25,130,120,0.16) 0%, transparent 54%), linear-gradient(145deg, #102322 0%, #091414 56%, #050a0a 100%)",
+    wideFelt: "radial-gradient(ellipse at 50% 42%, rgba(25,130,120,0.16) 0%, transparent 54%), linear-gradient(145deg, #102322 0%, #091414 56%, #050a0a 100%)",
+    frame: "url('/tables/challenge-teal-tall.svg')",
+    frameWide: "url('/tables/challenge-teal-wide.svg')",
+    frameSlice: '120', frameSliceWide: '120',
+    frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
+    rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
+  amethyst: { label: 'Amethyst Deco', challenge: true,
+    thumb: '/tables/challenge-amethyst-wide.svg',
+    felt: "radial-gradient(ellipse at 50% 40%, rgba(117,67,177,0.18) 0%, transparent 55%), linear-gradient(145deg, #1c1430 0%, #100a1c 57%, #08050e 100%)",
+    wideFelt: "radial-gradient(ellipse at 50% 40%, rgba(117,67,177,0.18) 0%, transparent 55%), linear-gradient(145deg, #1c1430 0%, #100a1c 57%, #08050e 100%)",
+    frame: "url('/tables/challenge-amethyst-tall.svg')",
+    frameWide: "url('/tables/challenge-amethyst-wide.svg')",
+    frameSlice: '120', frameSliceWide: '120',
+    frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
+    rail: 'linear-gradient(180deg, #2e1f48 0%, #120c1e 100%)' },
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
   jamaica:  { label: 'Jamaica', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(to top right, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), linear-gradient(to top left, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), conic-gradient(#0d5a2a 0deg ${JA}deg, #111111 ${JA}deg ${180 - JA}deg, #0d5a2a ${180 - JA}deg ${180 + JA}deg, #111111 ${180 + JA}deg ${360 - JA}deg, #0d5a2a ${360 - JA}deg)`, rail: WOOD },
   quebec:   { label: 'Québec', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.55) 47%, rgba(255,255,255,0.55) 53%, transparent 53%), linear-gradient(0deg, transparent 45%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.55) 55%, transparent 55%), #12357a`, rail: WOOD },
@@ -301,14 +326,20 @@ export function applyTableSkin(id) {
   root.style.setProperty('--table-felt-wide', t.wideFelt || t.felt)
   root.style.setProperty('--table-rail', t.rail)
 
-  if (t.frameWide) {
-    root.style.setProperty('--table-frame-image', t.frameWide)
-    root.style.setProperty('--table-frame-slice', t.frameSlice || '7% 10%')
-    root.style.setProperty('--table-frame-width', t.frameWidth || '7% 10%')
+  if (t.frame || t.frameWide) {
+    root.style.setProperty('--table-frame-image', t.frame || t.frameWide)
+    root.style.setProperty('--table-frame-image-wide', t.frameWide || t.frame)
+    root.style.setProperty('--table-frame-slice', t.frameSlice || '120')
+    root.style.setProperty('--table-frame-slice-wide', t.frameSliceWide || t.frameSlice || '120')
+    root.style.setProperty('--table-frame-width', t.frameWidth || '58px 42px 64px 42px')
+    root.style.setProperty('--table-frame-width-wide', t.frameWidthWide || t.frameWidth || '32px 70px 40px 70px')
   } else {
     root.style.removeProperty('--table-frame-image')
+    root.style.removeProperty('--table-frame-image-wide')
     root.style.removeProperty('--table-frame-slice')
+    root.style.removeProperty('--table-frame-slice-wide')
     root.style.removeProperty('--table-frame-width')
+    root.style.removeProperty('--table-frame-width-wide')
   }
 }
 
