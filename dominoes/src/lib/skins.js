@@ -152,7 +152,9 @@ export const TABLE_SKINS = {
     frame: "url('/tables/challenge-emerald-tall.svg')",
     frameWide: "url('/tables/challenge-emerald-wide.svg')",
     frameSlice: '120', frameSliceWide: '120',
-    frameWidth: '58px 42px 64px 42px', frameWidthWide: '34px 72px 42px 72px',
+    // Desktop landscape gets a heavier destination frame so the polished
+    // ornaments stay visually substantial instead of shrinking into a thin rail.
+    frameWidth: '58px 42px 64px 42px', frameWidthWide: '52px 110px 58px 110px',
     rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
   sapphire: { label: 'Sapphire & Ruby', challenge: true,
     thumb: '/tables/challenge-sapphire-wide.svg',
@@ -161,7 +163,7 @@ export const TABLE_SKINS = {
     frame: "url('/tables/challenge-sapphire-tall.svg')",
     frameWide: "url('/tables/challenge-sapphire-wide.svg')",
     frameSlice: '120', frameSliceWide: '120',
-    frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
+    frameWidth: '58px 42px 64px 42px', frameWidthWide: '50px 108px 56px 108px',
     rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
   burgundydeco: { label: 'Burgundy Deco', challenge: true,
     thumb: '/tables/challenge-burgundydeco-wide.svg',
