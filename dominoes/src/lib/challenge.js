@@ -1,13 +1,14 @@
-// ── Challenge Mode: the weekly schedule ──────────────────────────────────────
-// One challenge a week, against expert bots. The format rotates
+// ── Challenge Mode: a new challenge every 3 days ─────────────────────────────
+// (Wa Tab La stays weekly.) A period is 3 days from midnight UTC, counted from
+// 2026-01-05 — the same as the database's challenge_period_start(). Each
+// period: one challenge against expert bots, 3 tries. The format rotates
 // Solo → 3-player → 1-on-1 → Team; 1-on-1 alternates with and without the
 // draw pile. Opponents are hand-picked expert line-ups that play well
-// together. The prize tables rotate on their own five-week cycle — the same
+// together. The prize tables rotate on their own five-period cycle — the same
 // rotation the database uses to award them (challenge_table).
-import { weekStartUTC } from './skins'
 
 export const CHALLENGE_TABLES = ['sapphire', 'burgundydeco', 'teal', 'amethyst', 'emerald']
-const FORMATS = ['trio', 'duel', 'team', 'solo']          // week 0 (from 2026-01-05) is a 3-player week
+const FORMATS = ['trio', 'duel', 'team', 'solo']          // period 0 (from 2026-01-05) is a 3-player challenge
 
 // expert line-ups that complement each other, per format
 const LINEUPS = {
@@ -34,19 +35,31 @@ const BLURB = {
 }
 const NAME = { solo: 'Solo — you vs 3 experts', trio: '3-player — you vs 2 experts', duel: '1-on-1 — you vs 1 expert', team: 'Team — you and a friend vs 2 experts' }
 
-export function weeksSince(weekStart = weekStartUTC()) {
-  return Math.round((weekStart - Date.UTC(2026, 0, 5)) / (7 * 86400000))
+export const PERIOD_DAYS = 3
+const DAY = 86400000, ANCHOR = Date.UTC(2026, 0, 5)
+
+// The start (midnight UTC) of the 3-day period a moment falls in
+export function periodStartUTC(d = new Date()) {
+  const day = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+  return new Date(ANCHOR + Math.floor((day - ANCHOR) / (PERIOD_DAYS * DAY)) * PERIOD_DAYS * DAY)
+}
+export function periodsSince(start = periodStartUTC()) {
+  return Math.round((start - ANCHOR) / (PERIOD_DAYS * DAY))
+}
+// When the current challenge ends (the next one starts)
+export function challengeEnds(d = new Date()) {
+  return new Date(periodStartUTC(d).getTime() + PERIOD_DAYS * DAY)
 }
 
-export function challengeFor(weekStart = weekStartUTC()) {
-  const w = weeksSince(weekStart)
+export function challengeFor(start = periodStartUTC()) {
+  const w = periodsSince(start)
   const m = (x, n) => ((x % n) + n) % n
   const format = FORMATS[m(w, 4)]
   const cycle = Math.floor(w / 4)
   const opponents = LINEUPS[format][m(cycle, 4)]
   const pile = format === 'duel' && m(cycle, 2) === 1
   return {
-    week: weekStart.toISOString().slice(0, 10),
+    week: start.toISOString().slice(0, 10),        // the period's start date (named 'week' for saved games and the database)
     format, pile, opponents,
     title: NAME[format] + (format === 'duel' ? (pile ? ', with the draw pile' : ', every tile dealt') : ''),
     blurb: BLURB[opponents.join(',')] || '',

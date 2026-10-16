@@ -68,7 +68,7 @@ export default function GoudBadge() {
 
 // ── Goud on the Profile page: balance and recent earnings ───────────────────
 const LABEL = { start: 'Welcome bonus', daily: 'Daily bonus', round: 'Round won', match: 'Match won (Vyèj)',
-  trophy: 'Trophy', challenge: 'Weekly Challenge beaten', wa_tab_la: 'Wa Tab La — King of the week' }
+  trophy: 'Trophy', challenge: 'Challenge beaten', wa_tab_la: 'Wa Tab La — King of the week' }
 
 export function GoudPanel() {
   const [balance, setBalance] = useState(null)
@@ -84,7 +84,7 @@ export function GoudPanel() {
         <span>Goud</span>
         <strong><span className="goud-coin" aria-hidden="true">G</span>{fmtGoud(balance)}</strong>
       </div>
-      <p className="goud-panel-how">Earned by playing: rounds and matches won against people or expert AIs, trophies, the weekly Challenge and Wa Tab La — plus a daily bonus.</p>
+      <p className="goud-panel-how">Earned by playing: rounds and matches won against people or expert AIs, trophies, the Challenge and Wa Tab La — plus a daily bonus.</p>
       {rows.map((r, i) => (
         <div key={i} className="goud-row">
           <span>{LABEL[r.reason] || r.reason}{r.reason === 'trophy' && r.ref ? ` — ${TROPHIES.find(t => t.id === r.ref)?.kreyol || r.ref}` : ''}</span>

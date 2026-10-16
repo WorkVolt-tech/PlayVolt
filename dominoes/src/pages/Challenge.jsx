@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
-import { TABLE_SKINS, weekStartUTC } from '../lib/skins'
+import { TABLE_SKINS } from '../lib/skins'
 import { BotAvatar } from '../lib/avatars'
-import { challengeFor } from '../lib/challenge'
+import { challengeFor, challengeEnds } from '../lib/challenge'
 import './Challenge.css'
 import { InfoButton } from '../components/GameGuide'
 
 // ── Challenge Mode ───────────────────────────────────────────────────────────
-// One challenge a week against expert bots, three tries. Beat it — take the
-// match to a Vyèj — and that week's table is yours.
+// A new challenge every 3 days against expert bots, three tries. Beat it —
+// take the match to a Vyèj — and that challenge's table is yours.
 
 export default function Challenge() {
   const navigate = useNavigate()
@@ -20,10 +20,16 @@ export default function Challenge() {
   const [busy, setBusy] = useState(false)          // Start pressed, waiting for the server
   const [loadProblem, setLoadProblem] = useState('')
   const c = challengeFor()
-  const next = challengeFor(new Date(weekStartUTC().getTime() + 7 * 86400000))
+  const ends = challengeEnds()
+  const next = challengeFor(ends)
+  // "2 days 5 h", "7 h", "40 min" until the next challenge starts
+  const untilNext = (() => {
+    const ms = Math.max(0, ends - Date.now()), h = Math.floor(ms / 3600000), d = Math.floor(h / 24)
+    return d ? `${d} day${d > 1 ? 's' : ''} ${h % 24} h` : h ? `${h} h` : `${Math.max(1, Math.floor(ms / 60000))} min`
+  })()
   const prize = TABLE_SKINS[c.table]
 
-  // a match already under way this week can be continued without a new try
+  // a match already under way in this challenge can be continued without a new try
   const saved = (() => { try { return JSON.parse(localStorage.getItem('challenge_game') || 'null') } catch { return null } })()
   const inProgress = saved?.challenge?.week === c.week && saved?.st?.status
 
@@ -35,7 +41,7 @@ export default function Challenge() {
     }, e => setLoadProblem(`Couldn’t reach the server — ${e?.message || 'check your connection'}`))
   }, [user])
 
-  // Team weeks: the server creates the room (line-up fixed), then you wait
+  // Team challenges: the server creates the room (line-up fixed), then you wait
   // for your partner there
   async function createTeam() {
     if (busy) return
@@ -78,10 +84,10 @@ export default function Challenge() {
     <div className="ch-page">
       <button className="ch-back" onClick={() => navigate('/')}>← Back</button>
       <h1 className="ch-title">Challenge <InfoButton section="challenge" label="How the Challenge works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
-      <p className="ch-sub">A new challenge every week against expert players. Three tries — beat it and the table is yours.</p>
+      <p className="ch-sub">A new challenge every 3 days against expert players. Three tries — beat it and the table is yours.</p>
 
       <div className="ch-card ch-main">
-        <div className="ch-label">This week</div>
+        <div className="ch-label">This challenge · ends in {untilNext}</div>
         <div className="ch-format">{c.title}</div>
         <div className="ch-opponents">
           {c.opponents.map(n => (
@@ -105,25 +111,25 @@ export default function Challenge() {
         {loadProblem && <div className="ch-msg">{loadProblem}</div>}
         {msg && <div className="ch-msg">{msg}</div>}
         {c.format === 'team' ? (
-          won ? <div className="ch-msg ok">You beat this week’s challenge. A new one starts on Monday.</div>
-          : left <= 0 ? <div className="ch-msg soft">No tries left this week — but you can still help a friend: open their invite link.</div>
+          won ? <div className="ch-msg ok">You beat this challenge. The next one starts in {untilNext}.</div>
+          : left <= 0 ? <div className="ch-msg soft">No tries left for this challenge — but you can still help a friend: open their invite link.</div>
           : <>
               <button className="ch-btn" disabled={busy} onClick={createTeam}>{busy ? 'Creating…' : 'Create your team room'}</button>
               <div className="ch-msg soft">Invite your partner with the room’s link — anyone can join. Each player with a try left spends one when the game starts.</div>
             </>
         ) : won ? (
-          <div className="ch-msg ok">You beat this week’s challenge. A new one starts on Monday.</div>
+          <div className="ch-msg ok">You beat this challenge. The next one starts in {untilNext}.</div>
         ) : inProgress ? (
           <button className="ch-btn" onClick={() => navigate('/challenge/play')}>Continue your match</button>
         ) : (
           <button className="ch-btn" disabled={left <= 0 || busy} onClick={start}>
-            {busy ? 'Starting…' : left > 0 ? 'Start — uses 1 try' : 'No tries left this week'}
+            {busy ? 'Starting…' : left > 0 ? 'Start — uses 1 try' : 'No tries left for this challenge'}
           </button>
         )}
       </div>
 
       <div className="ch-card ch-next">
-        <div className="ch-label">Next week</div>
+        <div className="ch-label">Next challenge · in {untilNext}</div>
         <div className="ch-next-row">
           <span>{next.title}</span>
           <img src={TABLE_SKINS[next.table]?.thumb} alt="" />

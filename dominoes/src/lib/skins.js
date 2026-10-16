@@ -144,7 +144,7 @@ export const TABLE_SKINS = {
   jazz:     { label: 'Art Deco Jazz', wtl: true, thumb: '/tables/jazz-wide.webp', felt: "url('/tables/jazz-wide.webp') center / cover no-repeat, #3a0a12", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
   // the figure sits where the chain goes, so the centre is gently dimmed to keep tiles readable
   negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-wide.webp', felt: "radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), url('/tables/negmaron-wide.webp') center / cover no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
-  // ── Challenge Mode prize tables (your artwork): won by beating the week's challenge ──
+  // ── Challenge Mode prize tables (your artwork): won by beating a challenge (every 3 days) ──
   emerald:  { label: 'Emerald Crown', challenge: true,
     thumb: '/tables/emerald-crown-thumb.webp',
     // Your artwork, tall (2:3) for upright screens and wide (16:9) for wide ones.
@@ -247,7 +247,7 @@ function unlocksFor(kind, free, ids) {
   return ids.map(id => {
     if (free.includes(id)) return { id, free: true }
     if (kind === 'tables' && ['emerald', 'sapphire', 'burgundydeco', 'teal', 'amethyst'].includes(id)) {
-      return { id, challenge: true, need: 'Challenge Mode prize — beat the challenge the week it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
+      return { id, challenge: true, need: 'Challenge Mode prize — beat the challenge while it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
     }
     if (kind === 'tiles' && TILE_SKINS[id]?.shop) {
       return { id, shop: TILE_SKINS[id].shop, need: `Shop — ${TILE_SKINS[id].shop.toLocaleString('en-US')} Goud`, test: s => (s.tileUnlocks || []).includes(id) }

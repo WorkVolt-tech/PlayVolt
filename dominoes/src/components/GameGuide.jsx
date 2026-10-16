@@ -34,14 +34,14 @@ export const GUIDE = [
     ['What counts', 'Stats, trophies and Goud count for games against people or expert AIs — not against regular bots.'],
   ] },
   { id: 'goud', title: 'Goud', body: [
-    ['Earning', 'Start with 500, plus 50 every day. Win a round against people or expert AIs: 25 (100 with a Dekabess), plus 50 for winning the match. Trophies pay 100 to 1,000. The weekly Challenge pays 500 and Wa Tab La 1,000.'],
+    ['Earning', 'Start with 500, plus 50 every day. Win a round against people or expert AIs: 25 (100 with a Dekabess), plus 50 for winning the match. Trophies pay 100 to 1,000. Each Challenge you beat pays 500, and Wa Tab La 1,000.'],
     ['Spending', 'Buy tiles and tables in the shop on the Skins page. Goud is earned only — it can never be bought or cashed out.'],
   ] },
-  { id: 'challenge', title: 'Weekly Challenge', body: [
-    ['Every week', 'A new challenge against expert AIs, in a different format each week: Solo, 3-player, 1-on-1 or Team.'],
-    ['Three tries', 'You get 3 tries a week. A try is used when the game opens; leaving counts as a used try.'],
-    ['Winning', 'Win the match to a Vyèj. The prize is that week’s table, plus 500 Goud.'],
-    ['Team weeks', 'You and a partner vs two experts. Create the room and send the link to anyone. Everyone with a try left uses one; anyone else helps.'],
+  { id: 'challenge', title: 'The Challenge', body: [
+    ['Every 3 days', 'A new challenge against expert AIs every 3 days, in a rotating format: 3-player, 1-on-1, Team or Solo. The Challenge page shows when the next one starts.'],
+    ['Three tries', 'You get 3 tries per challenge. A try is used when the game opens; leaving counts as a used try.'],
+    ['Winning', 'Win the match to a Vyèj. The prize is that challenge’s table, plus 500 Goud.'],
+    ['Team challenges', 'You and a partner vs two experts. Create the room and send the link to anyone. Everyone with a try left uses one; anyone else helps.'],
   ] },
   { id: 'watabla', title: 'Wa Tab La', body: [
     ['King of the table', 'Each week, players are ranked by matches won — on a Solo board and a Teams board. Games against people or expert AIs count.'],
@@ -57,7 +57,7 @@ export const GUIDE = [
     ['Experts', 'Beating chapters unlocks expert AIs to play with elsewhere. From chapter 10 on, the matches are against experts — and pay Goud.'],
   ] },
   { id: 'skins', title: 'Skins & the shop', body: [
-    ['Tiles and tables', 'Change how your dominoes and table look. Many unlock by earning trophies; prize tables come from the weekly Challenge and Wa Tab La.'],
+    ['Tiles and tables', 'Change how your dominoes and table look. Many unlock by earning trophies; prize tables come from the Challenge and Wa Tab La.'],
     ['The shop', 'The Zodiac collection is sold for Goud: tables 5,000, tile sets 2,500. Gemini and Libra tables have a Female / Male switch.'],
     ['In multiplayer', 'Everyone at a room sees the host’s table.'],
   ] },

@@ -108,7 +108,7 @@ export default function SoloGame({ challengeMode = false }) {
       paying.current = false
       if (res?.timedOut) return setTryState({ error: 'The server didn’t answer — check your connection and try again.', maybeUsed: true })
       if (res?.error) return setTryState({ error: `Couldn’t start — ${res.error.message || 'server error'}`, maybeUsed: true })
-      if (res?.data == null || res.data < 0) return setTryState({ error: 'No tries left this week.' })
+      if (res?.data == null || res.data < 0) return setTryState({ error: 'No tries left for this challenge.' })
       try { sessionStorage.setItem(SETUP_KEY, JSON.stringify({ ...setup, payTry: false })) } catch { /* ignore */ }
       setTryState('ok')
     })()
@@ -267,7 +267,7 @@ export default function SoloGame({ challengeMode = false }) {
         p_results: [{ user_id: uid, won, vyej, dekabess: isDek, match_over: matchOver, trophy: botsCountForTrophies(bots) }],
       })
       // Expert free-play matches qualify for Wa Tab La, including a partner's
-      // Asosyé win. Story/weekly challenge rewards have their own progression.
+      // Asosyé win. Story/Challenge rewards have their own progression.
       if (!challengeMode && vyej && botsCountForTrophies(bots)) {
         let playerId = localStorage.getItem('dekabess_player_id')
         if (!playerId) {
@@ -483,9 +483,9 @@ export default function SoloGame({ challengeMode = false }) {
                 <img src={TABLE_SKINS[challengeResult.prize].thumb} alt="" style={{ width: '100%', maxWidth: 260, borderRadius: 10, border: '1px solid var(--gold)' }} />
               </>
             ) : challengeResult.won ? (
-              <p>You beat this week’s challenge.</p>
+              <p>You beat this challenge.</p>
             ) : (
-              <p>{challengeResult.left > 0 ? `You have ${challengeResult.left} ${challengeResult.left === 1 ? 'try' : 'tries'} left this week.` : 'That was your last try this week — a new challenge starts on Monday.'}</p>
+              <p>{challengeResult.left > 0 ? `You have ${challengeResult.left} ${challengeResult.left === 1 ? 'try' : 'tries'} left for this challenge.` : 'That was your last try for this challenge — a new one starts every 3 days.'}</p>
             )}
             <div className="sc-actions">
               <button className="sc-btn" onClick={leave}>Back to Challenge</button>
