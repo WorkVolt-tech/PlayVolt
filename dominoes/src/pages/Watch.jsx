@@ -5,6 +5,7 @@ import Board from '../components/Board'
 import OpponentHands from '../components/OpponentHands'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import TileBack from '../components/TileBack'
+import HandsReveal from '../components/HandsReveal'
 import { SeatAvatar, hasSeatAvatar } from '../lib/avatars'
 import { setRoomSkins } from '../lib/skins'
 import './Game.css'
@@ -59,7 +60,9 @@ export default function Watch() {
     ])
     if (!r) { setGone(true); return }
     setRoom(r)
-    setPlayers((Array.isArray(ps) ? ps : []).map(p => ({ ...p, hand: Array.from({ length: p.hand_count || 0 }, () => [0, 0]) })))
+    // during play: backs from the count; once a round is over the server also
+    // sends the tiles (shown in the panel below, never on the table)
+    setPlayers((Array.isArray(ps) ? ps : []).map(p => ({ ...p, shown: Array.isArray(p.hand) ? p.hand : null, hand: Array.from({ length: p.hand_count || 0 }, () => [0, 0]) })))
     setBoard(b || null)
   }, [roomId])
 
@@ -183,6 +186,11 @@ export default function Watch() {
               : room.blocked
                 ? <>The table is jammed — <strong>{winner?.nickname || '—'}</strong> takes the round</>
                 : <><strong>{winner?.nickname || '—'}</strong> wins the round{room.pending_point ? ' with a Dekabess!' : ''}</>}
+          </div>
+        )}
+        {roundOver && !dekKey && players.some(p => p.shown) && (
+          <div className="watch-reveal">
+            <HandsReveal rows={players.map(p => ({ seat: p.seat, name: p.nickname, hand: p.shown || [] }))} winnerSeat={winner?.seat} />
           </div>
         )}
       </div>

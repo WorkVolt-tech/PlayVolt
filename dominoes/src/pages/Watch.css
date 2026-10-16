@@ -35,3 +35,10 @@
   height: 40px; padding: 0 1.6rem; border-radius: 4px; border: none; cursor: pointer;
   background: var(--gold, #c9a84c); color: #0f0e0c; font-family: inherit; font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase;
 }
+
+/* After a round: what everyone was holding */
+.watch-reveal {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 90;
+  width: min(92%, 420px); max-height: 46%; overflow-y: auto; border-radius: 12px;
+  background: rgba(15, 14, 12, 0.92); border: 1px solid var(--border, #3a3528); box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+}
