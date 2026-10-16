@@ -189,16 +189,19 @@ export const TABLE_SKINS = {
     frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
     rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
   amethyst: { label: 'Amethyst Deco', challenge: true,
-    thumb: '/tables/challenge-amethyst-wide.svg',
-    felt: "radial-gradient(ellipse at 50% 40%, rgba(117,67,177,0.18) 0%, transparent 55%), linear-gradient(145deg, #1c1430 0%, #100a1c 57%, #08050e 100%)",
-    wideFelt: "radial-gradient(ellipse at 50% 40%, rgba(117,67,177,0.18) 0%, transparent 55%), linear-gradient(145deg, #1c1430 0%, #100a1c 57%, #08050e 100%)",
-    frame: "url('/tables/challenge-amethyst-tall.svg')",
-    frameWide: "url('/tables/challenge-amethyst-wide.svg')",
-    frameOverlay: "url('/tables/challenge-amethyst-tall.svg')",
-    frameOverlayWide: "url('/tables/challenge-amethyst-wide.svg')",
-    frameSlice: '120', frameSliceWide: '120',
-    frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
-    rail: 'linear-gradient(180deg, #2e1f48 0%, #120c1e 100%)' },
+    thumb: '/tables/amethyst-deco-thumb.webp',
+    // Your artwork, tall and wide, drawn as a 9-slice like the other prize
+    // tables. The cuts are set per side for this artwork so they only cross
+    // plain gold bars: tall 240 top/sides and 310 at the bottom (its bottom
+    // corner fans sit higher), wide 215 top/bottom and 320 at the sides (so
+    // the small round gems stay in the corners). The widths keep the same
+    // scale per side, so nothing is squashed.
+    felt: '#07060a', wideFelt: '#07060a',
+    frame: "url('/tables/amethyst-deco-tall.webp')",
+    frameWide: "url('/tables/amethyst-deco-wide.webp')",
+    frameSlice: '240 240 310 240 fill', frameSliceWide: '215 320 fill',
+    frameWidth: '22vw 22vw 28.4vw 22vw', frameWidthWide: 'min(12.6vw, 23vh) min(18.8vw, 34.2vh)',
+    rail: '#07060a' },
   haiti:    { label: 'Haïti', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(180deg, #14307e 0%, #14307e 50%, #8c1229 50%, #8c1229 100%)`, rail: WOOD },
   jamaica:  { label: 'Jamaica', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(to top right, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), linear-gradient(to top left, transparent 48%, #b89a12 48%, #b89a12 52%, transparent 52%), conic-gradient(#0d5a2a 0deg ${JA}deg, #111111 ${JA}deg ${180 - JA}deg, #0d5a2a ${180 - JA}deg ${180 + JA}deg, #111111 ${180 + JA}deg ${360 - JA}deg, #0d5a2a ${360 - JA}deg)`, rail: WOOD },
   quebec:   { label: 'Québec', felt: `${VIGNETTE}, ${GRAIN}, linear-gradient(90deg, transparent 47%, rgba(255,255,255,0.55) 47%, rgba(255,255,255,0.55) 53%, transparent 53%), linear-gradient(0deg, transparent 45%, rgba(255,255,255,0.55) 45%, rgba(255,255,255,0.55) 55%, transparent 55%), #12357a`, rail: WOOD },
