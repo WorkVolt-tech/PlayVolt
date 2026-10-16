@@ -168,9 +168,14 @@ export const TABLE_SKINS = {
     frameWidth: '22vw', frameWidthWide: 'min(17vw, 31vh)',
     rail: 'linear-gradient(180deg, #24305a 0%, #0e1226 100%)' },
   burgundydeco: { label: 'Burgundy Deco', challenge: true,
-    thumb: '/tables/burgundydeco-wide.webp',
-    felt: "url('/tables/burgundydeco-tall.webp') center / 100% 100% no-repeat, #080506",
-    wideFelt: "url('/tables/burgundydeco-wide.webp') center / 100% 100% no-repeat, #080506",
+    thumb: '/tables/burgundy-deco-thumb.webp',
+    // Your artwork, tall and wide, drawn as a 9-slice like Emerald Crown and
+    // Sapphire & Ruby: the ruby corner medallions stay exactly as painted.
+    felt: '#080506', wideFelt: '#080506',
+    frame: "url('/tables/burgundy-deco-tall.webp')",
+    frameWide: "url('/tables/burgundy-deco-wide.webp')",
+    frameSlice: '240 fill', frameSliceWide: '290 fill',
+    frameWidth: '22vw', frameWidthWide: 'min(17vw, 31vh)',
     rail: '#080506' },
   teal:     { label: 'Teal Deco', challenge: true,
     thumb: '/tables/challenge-teal-wide.svg',
