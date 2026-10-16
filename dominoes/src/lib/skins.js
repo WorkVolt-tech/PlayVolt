@@ -138,7 +138,15 @@ export const TABLE_SKINS = {
   lakou:    { label: 'Lakou', felt: `${VIGNETTE}, linear-gradient(rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(90deg, rgba(0,0,0,0.16) 1.5px, transparent 1.5px) 0 0 / 44px 44px, linear-gradient(180deg, #a85a34 0%, #8a4424 100%)`, rail: WOOD },
   // ── Wa Tab La prize tables (your artwork): won by being #1 the week each is offered ──
   // (tiger / viking / marron keep their ids, so earlier winners get the new art)
-  tiger:    { label: 'Tiger Jungle', wtl: true, thumb: '/tables/tiger-wide.webp', felt: "url('/tables/tiger-wide.webp') center / cover no-repeat, #0f0d0b", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
+  // Tiger Jungle uses its art as a 9-slice frame (like the Challenge prize tables) so the
+  // four tigers are never cropped: tall art on upright screens, wide art sideways. Cuts
+  // keep each tiger with its leaves and claw marks: tall 300 top, 360 sides, 380 bottom;
+  // wide 250 top, 420 sides, 405 bottom. Widths follow the picture's own scale.
+  tiger:    { label: 'Tiger Jungle', wtl: true, thumb: '/tables/tiger-wide.webp', felt: '#0f0d0b', wideFelt: '#0f0d0b',
+    frame: "url('/tables/tiger-tall.webp')", frameWide: "url('/tables/tiger-wide.webp')",
+    frameSlice: '300 360 380 fill', frameSliceWide: '250 420 405 fill',
+    frameWidth: '29.3vw 35.2vw 37.1vw', frameWidthWide: '27.8vh 46.7vh 45vh',
+    rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
   viking:   { label: 'Norse', wtl: true, thumb: '/tables/norse-wide.webp', felt: "url('/tables/norse-wide.webp') center / cover no-repeat, #121417", rail: 'linear-gradient(180deg, #2e3640 0%, #12161b 100%)' },
   marron:   { label: 'Maroon Resistance', wtl: true, thumb: '/tables/maroon-wide.webp', felt: "url('/tables/maroon-wide.webp') center / cover no-repeat, #15110c", rail: 'linear-gradient(180deg, #3a2a16 0%, #1a120a 100%)' },
   jazz:     { label: 'Art Deco Jazz', wtl: true, thumb: '/tables/jazz-wide.webp', felt: "url('/tables/jazz-wide.webp') center / cover no-repeat, #3a0a12", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
