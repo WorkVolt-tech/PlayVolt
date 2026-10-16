@@ -178,16 +178,18 @@ export const TABLE_SKINS = {
     frameWidth: '22vw', frameWidthWide: 'min(17vw, 31vh)',
     rail: '#080506' },
   teal:     { label: 'Teal Deco', challenge: true,
-    thumb: '/tables/challenge-teal-wide.svg',
-    felt: "radial-gradient(ellipse at 50% 42%, rgba(25,130,120,0.16) 0%, transparent 54%), linear-gradient(145deg, #102322 0%, #091414 56%, #050a0a 100%)",
-    wideFelt: "radial-gradient(ellipse at 50% 42%, rgba(25,130,120,0.16) 0%, transparent 54%), linear-gradient(145deg, #102322 0%, #091414 56%, #050a0a 100%)",
-    frame: "url('/tables/challenge-teal-tall.svg')",
-    frameWide: "url('/tables/challenge-teal-wide.svg')",
-    frameOverlay: "url('/tables/challenge-teal-tall.svg')",
-    frameOverlayWide: "url('/tables/challenge-teal-wide.svg')",
-    frameSlice: '120', frameSliceWide: '120',
-    frameWidth: '58px 42px 64px 42px', frameWidthWide: '32px 70px 40px 70px',
-    rail: 'linear-gradient(180deg, #1c3a3a 0%, #0a1a1a 100%)' },
+    thumb: '/tables/teal-deco-thumb.webp',
+    // Your artwork, tall and wide, drawn as a 9-slice like the other prize
+    // tables, with the cuts set per side so they only cross plain gold bars:
+    // tall 240 top/sides and 280 at the bottom, wide 235 top, 290 sides and
+    // 260 bottom (between the corner flourishes and the round side gems).
+    // The widths keep the same scale per side, so nothing is squashed.
+    felt: '#060808', wideFelt: '#060808',
+    frame: "url('/tables/teal-deco-tall.webp')",
+    frameWide: "url('/tables/teal-deco-wide.webp')",
+    frameSlice: '240 240 280 240 fill', frameSliceWide: '235 290 260 fill',
+    frameWidth: '22vw 22vw 25.7vw 22vw', frameWidthWide: 'min(13.8vw, 25.1vh) min(17vw, 31vh) min(15.2vw, 27.8vh)',
+    rail: '#060808' },
   amethyst: { label: 'Amethyst Deco', challenge: true,
     thumb: '/tables/amethyst-deco-thumb.webp',
     // Your artwork, tall and wide, drawn as a 9-slice like the other prize
