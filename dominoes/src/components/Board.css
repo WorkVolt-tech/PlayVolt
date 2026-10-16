@@ -67,6 +67,10 @@
 .board-area::after {
   border-image-source: var(--table-frame-image-effective, none);
 }
+@media (orientation: landscape) {
+  /* wide screens use the wide picture frame (tables drawn as pictures) */
+  .board-area::after { border-image-source: var(--table-frame-image-effective-wide, var(--table-frame-image-effective, none)); }
+}
 
 .board-hint {
   position: absolute;

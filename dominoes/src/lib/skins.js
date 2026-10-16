@@ -146,17 +146,16 @@ export const TABLE_SKINS = {
   negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-wide.webp', felt: "radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), url('/tables/negmaron-wide.webp') center / cover no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
   // ── Challenge Mode prize tables (your artwork): won by beating the week's challenge ──
   emerald:  { label: 'Emerald Crown', challenge: true,
-    thumb: '/tables/challenge-emerald-wide.svg',
-    felt: "radial-gradient(ellipse at 50% 42%, rgba(20,104,73,0.16) 0%, transparent 52%), linear-gradient(145deg, #101915 0%, #09110d 55%, #050806 100%)",
-    wideFelt: "radial-gradient(ellipse at 50% 42%, rgba(20,104,73,0.16) 0%, transparent 52%), linear-gradient(145deg, #101915 0%, #09110d 55%, #050806 100%)",
-    frame: "url('/tables/challenge-emerald-tall.svg')",
-    frameWide: "url('/tables/challenge-emerald-wide.svg')",
-    frameOverlay: "url('/tables/challenge-emerald-tall.svg')",
-    frameOverlayWide: "url('/tables/challenge-emerald-wide.svg')",
-    frameSlice: '120', frameSliceWide: '120',
-    // Desktop landscape gets a heavier destination frame so the polished
-    // ornaments stay visually substantial instead of shrinking into a thin rail.
-    frameWidth: '58px 42px 64px 42px', frameWidthWide: '52px 110px 58px 110px',
+    thumb: '/tables/emerald-crown-thumb.webp',
+    // Your artwork, tall (2:3) for upright screens and wide (16:9) for wide ones.
+    // Drawn as a 9-slice: each crowned corner medallion is kept exactly as
+    // painted (cut 250 px / 270 px in), only the straight runs of frame and the
+    // marble centre stretch — so it fits any screen shape without squashing.
+    felt: '#070a08', wideFelt: '#070a08',
+    frame: "url('/tables/emerald-crown-tall.webp')",
+    frameWide: "url('/tables/emerald-crown-wide.webp')",
+    frameSlice: '250 fill', frameSliceWide: '270 fill',
+    frameWidth: '23vw', frameWidthWide: 'min(16vw, 30vh)',
     rail: 'linear-gradient(180deg, #1f3a2a 0%, #0c1a12 100%)' },
   sapphire: { label: 'Sapphire & Ruby', challenge: true,
     thumb: '/tables/challenge-sapphire-wide.svg',
@@ -338,6 +337,7 @@ export function applyTableSkin(id) {
   root.style.setProperty('--table-felt-wide', t.wideFelt || t.felt)
   root.style.setProperty('--table-rail', t.rail)
   root.style.setProperty('--table-frame-image-effective', t.frameOverlay ? 'none' : (t.frame || t.frameWide || 'none'))
+  root.style.setProperty('--table-frame-image-effective-wide', t.frameOverlay ? 'none' : (t.frameWide || t.frame || 'none'))
 
   if (t.frame || t.frameWide) {
     root.style.setProperty('--table-frame-image', t.frame || t.frameWide)
