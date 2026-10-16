@@ -4,6 +4,7 @@ import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
 import { CHAPTERS } from '../story/chapters'
 import './StoryMap.css'
+import { InfoButton } from '../components/GameGuide'
 
 // ── Story Mode map ───────────────────────────────────────────────────────────
 // Shows every chapter — the ones you've beaten, the one you're on, and the
@@ -52,7 +53,7 @@ export default function StoryMap() {
       <div className="story-page">
         <div className="story-header">
           <button className="story-back" onClick={() => navigate('/')}>← Back</button>
-          <h1 className="story-title">Story Mode</h1>
+          <h1 className="story-title">Story Mode <InfoButton section="story" label="How Story Mode works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
           <span style={{ width: 60 }} />
         </div>
         <div className="story-gate">
@@ -74,7 +75,7 @@ export default function StoryMap() {
     <div className="story-page">
       <div className="story-header">
         <button className="story-back" onClick={() => navigate('/')}>← Back</button>
-        <h1 className="story-title">Story Mode</h1>
+        <h1 className="story-title">Story Mode <InfoButton section="story" label="How Story Mode works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
         <span className="story-count">{completed.length}/{CHAPTERS.length}</span>
       </div>
 

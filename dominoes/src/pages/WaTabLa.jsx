@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import { TABLE_SKINS, wtlPrize, weekStartUTC } from '../lib/skins'
 import './WaTabLa.css'
+import { InfoButton } from '../components/GameGuide'
 
 // One row per player: a signed-in player's wins from every device are added
 // together (guests, with no account, count per device). The name shown is the
@@ -65,7 +66,7 @@ export default function WaTabLa() {
       <div className="wtl-header">
         <button className="wtl-back" onClick={() => navigate('/')}>← Back</button>
         <div className="wtl-title-block">
-          <h1 className="wtl-title">Wa Tab La 👑</h1>
+          <h1 className="wtl-title">Wa Tab La 👑 <InfoButton section="watabla" label="How Wa Tab La works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
           <p className="wtl-sub">King of the Table</p>
         </div>
         <div className="wtl-timer">

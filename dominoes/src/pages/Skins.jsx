@@ -7,6 +7,7 @@ import {
 } from '../lib/skins'
 import TileFace from '../components/TileFace'
 import './Skins.css'
+import { InfoButton } from '../components/GameGuide'
 
 // ── Skins ────────────────────────────────────────────────────────────────────
 // Every tile and table skin. What you own comes from your account's stats
@@ -70,7 +71,7 @@ export default function Skins() {
       <div className="skins-head">
         <div>
           <button className="skins-back" onClick={() => navigate('/')}>← Lobby</button>
-          <h1>Skins</h1>
+          <h1>Skins <InfoButton section="skins" label="About skins and the shop" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
           <p>Earn new tiles and tables by playing. Equip one of each.</p>
         </div>
         <div className="skins-count">

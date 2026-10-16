@@ -5,6 +5,7 @@ import { useAuth } from '../lib/useAuth'
 import { NORMAL_CIRCUIT, EXPERT_CIRCUIT } from '../story/chapters'
 import Practice from './Practice'
 import './Tournament.css'
+import { InfoButton } from '../components/GameGuide'
 
 // ── Tournaments ──────────────────────────────────────────────────────────────
 // Mostly human: you register a team of two (or alone, in a solo cup) and play
@@ -820,7 +821,7 @@ function Header({ navigate, onBack, title }) {
   return (
     <div className="tp-header">
       <button className="tp-back" onClick={() => (onBack ? onBack() : navigate('/'))}>← Back</button>
-      <h1 className="tp-title">{title || 'Tournaments'}</h1>
+      <h1 className="tp-title">{title || 'Tournaments'} <InfoButton section="tournament" label="How tournaments work" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
       <span style={{ width: 54 }} />
     </div>
   )

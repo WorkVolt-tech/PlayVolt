@@ -6,6 +6,7 @@ import { TABLE_SKINS, weekStartUTC } from '../lib/skins'
 import { BotAvatar } from '../lib/avatars'
 import { challengeFor } from '../lib/challenge'
 import './Challenge.css'
+import { InfoButton } from '../components/GameGuide'
 
 // ── Challenge Mode ───────────────────────────────────────────────────────────
 // One challenge a week against expert bots, three tries. Beat it — take the
@@ -64,7 +65,7 @@ export default function Challenge() {
     return (
       <div className="ch-page">
         <button className="ch-back" onClick={() => navigate('/')}>← Back</button>
-        <h1 className="ch-title">Challenge</h1>
+        <h1 className="ch-title">Challenge <InfoButton section="challenge" label="How the Challenge works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
         <div className="ch-card"><p>Challenge Mode needs an account, so your tries and prizes are kept.</p>
           <button className="ch-btn" onClick={() => navigate('/auth')}>Sign in</button></div>
       </div>
@@ -76,7 +77,7 @@ export default function Challenge() {
   return (
     <div className="ch-page">
       <button className="ch-back" onClick={() => navigate('/')}>← Back</button>
-      <h1 className="ch-title">Challenge</h1>
+      <h1 className="ch-title">Challenge <InfoButton section="challenge" label="How the Challenge works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
       <p className="ch-sub">A new challenge every week against expert players. Three tries — beat it and the table is yours.</p>
 
       <div className="ch-card ch-main">
