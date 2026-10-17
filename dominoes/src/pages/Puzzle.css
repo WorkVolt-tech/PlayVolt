@@ -4,7 +4,10 @@
     radial-gradient(circle at 50% 10%, rgba(201,168,76,0.10), transparent 34%),
     linear-gradient(180deg, #12110e 0%, #090907 100%);
   color: var(--text, #f2ead7);
-  padding: 16px clamp(12px, 3vw, 28px) 40px;
+  /* Installed as an app, the page is drawn under the phone's status bar (time,
+     battery) and, sideways, the camera. Leave room for them (0 in a browser). */
+  padding: calc(16px + env(safe-area-inset-top, 0px)) calc(clamp(12px, 3vw, 28px) + env(safe-area-inset-right, 0px))
+           calc(40px + env(safe-area-inset-bottom, 0px)) calc(clamp(12px, 3vw, 28px) + env(safe-area-inset-left, 0px));
   font-family: 'DM Mono', monospace;
 }
 .puzzle-topbar {
@@ -212,7 +215,7 @@
 .puzzle-path small { margin-top: 4px; color: #aaa293; font-size: .64rem; line-height: 1.3; }
 
 @media (max-width: 600px) {
-  .puzzle-page { padding-left: 10px; padding-right: 10px; }
+  .puzzle-page { padding-left: calc(10px + env(safe-area-inset-left, 0px)); padding-right: calc(10px + env(safe-area-inset-right, 0px)); }
   .puzzle-topbar { grid-template-columns: auto 1fr auto; }
   .puzzle-back { padding: 8px 10px; }
   .puzzle-hand { gap: 8px; }
