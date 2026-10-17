@@ -405,6 +405,119 @@ const FINISH_HAND = [
   },
 ]
 
+const TABLE_RULES = [
+  {
+    id: 'rules-1',
+    title: 'Who Opens the First Round?',
+    lesson: 'The first deal has a special opening rule.',
+    clue: 'It is round 1 and the 6-6 is in a player’s hand.',
+    question: 'Who must open, and with what?',
+    options: [
+      'The player holding 6-6 must open with 6-6',
+      'Seat 0 may open with any tile',
+      'The player with the fewest pips opens',
+      'Anyone may open with any double',
+    ],
+    best: 'The player holding 6-6 must open with 6-6',
+    feedback: 'Correct. On the first round, the 6-6 holder opens and must lead the 6-6.',
+  },
+  {
+    id: 'rules-2',
+    title: 'What If 6-6 Is in the Pile?',
+    lesson: 'Pile games use the highest double that was actually dealt.',
+    clue: 'It is the first round of a pile game. The 6-6 is face down in the pile. The highest double in any hand is 5-5.',
+    question: 'Which tile opens the round?',
+    options: ['5-5', '6-6 after someone draws it', 'Any tile from seat 0', 'The highest non-double'],
+    best: '5-5',
+    feedback: 'Correct. If 6-6 is in the pile, the highest double in a player’s hand opens, and that double is the required opening tile.',
+  },
+  {
+    id: 'rules-3',
+    title: 'Who Opens the Next Round?',
+    lesson: 'After the first round, the previous round’s winner controls the next lead.',
+    clue: 'The first round is over. Seat 2 won it.',
+    question: 'Who starts the next round, and what may they lead?',
+    options: [
+      'Seat 2, with any tile in their hand',
+      'Whoever has 6-6, with 6-6',
+      'Seat 0, with any tile',
+      'The player with the lowest pip total',
+    ],
+    best: 'Seat 2, with any tile in their hand',
+    feedback: 'Correct. Later rounds are opened by the previous round’s winner, and they may choose any tile from their hand.',
+  },
+  {
+    id: 'rules-4',
+    title: 'Draw, Knock, or Play?',
+    lesson: 'A pile changes what happens when you have no legal move.',
+    clue: 'You cannot match either open end, but there are still face-down tiles in the pile.',
+    question: 'What must happen next?',
+    options: [
+      'Draw one tile',
+      'Knock immediately',
+      'Skip the rest of the round',
+      'Take the lowest-pip tile from another player',
+    ],
+    best: 'Draw one tile',
+    feedback: 'Correct. In a pile game, you draw one tile at a time while you have no playable tile. You only knock after the pile is empty and you still cannot play.',
+  },
+  {
+    id: 'rules-5',
+    title: 'Who Wins a Blocked Round?',
+    lesson: 'When nobody can play either end and the pile is empty, pip count decides the round.',
+    clue: 'The table is blocked. Remaining pip totals are: You 11, Player 2 has 8, Player 3 has 15, Player 4 has 19.',
+    question: 'Who wins the round?',
+    options: ['You with 11', 'Player 2 with 8', 'Player 3 with 15', 'Player 4 with 19'],
+    best: 'Player 2 with 8',
+    feedback: 'Correct. A blocked round goes to the player with the fewest pips left in hand. If pip totals tie, the earlier seat wins the tie.',
+  },
+  {
+    id: 'rules-6',
+    title: 'Five Doubles',
+    lesson: 'A very double-heavy opening hand can be reshuffled in non-partner games.',
+    clue: 'Before the first tile is played, you hold 5 doubles in Chien Manjé Chien.',
+    question: 'What option does Dekabess give you?',
+    options: [
+      'Call a reshuffle or choose to play on',
+      'Automatically win the round',
+      'Trade one double with each opponent',
+      'Score a Dekabess immediately',
+    ],
+    best: 'Call a reshuffle or choose to play on',
+    feedback: 'Correct. With 5 or more doubles, you may call a reshuffle before the first tile or keep the hand. This offer is not used in partner games.',
+  },
+  {
+    id: 'rules-7',
+    title: 'Dekabess and the Streak',
+    lesson: 'A true Dekabess is a last-tile finish that matches both open ends at once.',
+    clue: 'Your final tile is 6-3. The open ends are 6 and 3.',
+    question: 'What does that finish count as?',
+    options: [
+      'A Dekabess worth 2 wins toward the streak',
+      'A normal round win worth 1',
+      'An automatic Vyèj no matter the streak',
+      'A blocked-round win',
+    ],
+    best: 'A Dekabess worth 2 wins toward the streak',
+    feedback: 'Correct. Because the last non-double tile matches both open ends at once, it is a Dekabess and adds 2 to the current streak.',
+  },
+  {
+    id: 'rules-8',
+    title: 'How a Vyèj Is Reached',
+    lesson: 'Matches are won by building a round-winning streak.',
+    clue: 'Your current streak is 3. You win the next round normally.',
+    question: 'What happens?',
+    options: [
+      'Your streak reaches 4 and you win by Vyèj',
+      'Your streak resets to 1',
+      'You need one more Dekabess specifically',
+      'Only the pip total matters now',
+    ],
+    best: 'Your streak reaches 4 and you win by Vyèj',
+    feedback: 'Correct. A normal round adds 1 to your streak. Reaching 4 wins the match by Vyèj. In Asosyé, partners share the same team streak.',
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -447,6 +560,13 @@ const TRACKS = {
     storage: 'dekabess_puzzle_finish',
     puzzles: FINISH_HAND,
     mode: 'strategy',
+  },
+  rules: {
+    label: 'Règ Tab la',
+    subtitle: 'Opening, piles, blocks & Vyèj',
+    storage: 'dekabess_puzzle_rules',
+    puzzles: TABLE_RULES,
+    mode: 'inference',
   },
 }
 
@@ -499,6 +619,7 @@ export default function Puzzle() {
     memory: readProgress(TRACKS.memory.storage),
     read: readProgress(TRACKS.read.storage),
     finish: readProgress(TRACKS.finish.storage),
+    rules: readProgress(TRACKS.rules.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -513,6 +634,7 @@ export default function Puzzle() {
   const memoryUnlocked = blockingUnlocked && (completedByTrack.blocking || []).length >= BLOCKING.length
   const readUnlocked = memoryUnlocked && (completedByTrack.memory || []).length >= MEMORY.length
   const finishUnlocked = readUnlocked && (completedByTrack.read || []).length >= READ_PLAYER.length
+  const rulesUnlocked = finishUnlocked && (completedByTrack.finish || []).length >= FINISH_HAND.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -612,6 +734,7 @@ export default function Puzzle() {
     if (id === 'memory' && !memoryUnlocked) return
     if (id === 'read' && !readUnlocked) return
     if (id === 'finish' && !finishUnlocked) return
+    if (id === 'rules' && !rulesUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -698,6 +821,15 @@ export default function Puzzle() {
           title={finishUnlocked ? 'Plan the end of your hand' : 'Complete Li Jwè a first'}
         >
           <span>6</span> {finishUnlocked ? 'Fini Men an' : '🔒 Fini Men an'}
+        </button>
+        <button
+          type="button"
+          className={trackId === 'rules' ? 'active' : ''}
+          onClick={() => chooseTrack('rules')}
+          disabled={!rulesUnlocked}
+          title={rulesUnlocked ? 'Learn Dekabess table rules' : 'Complete Fini Men an first'}
+        >
+          <span>7</span> {rulesUnlocked ? 'Règ Tab la' : '🔒 Règ Tab la'}
         </button>
       </section>
 
@@ -878,6 +1010,9 @@ export default function Puzzle() {
           </button>
           <button type="button" className={finishUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('finish')} disabled={!finishUnlocked}>
             <b>6</b><span>{finishUnlocked ? 'Fini Men an' : '🔒 Fini Men an'}</span><small>{finishUnlocked ? 'Plan the end of your hand' : 'Finish Li Jwè a first'}</small>
+          </button>
+          <button type="button" className={rulesUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('rules')} disabled={!rulesUnlocked}>
+            <b>7</b><span>{rulesUnlocked ? 'Règ Tab la' : '🔒 Règ Tab la'}</span><small>{rulesUnlocked ? 'Opening, piles, blocks & Vyèj' : 'Finish Fini Men an first'}</small>
           </button>
         </div>
       </section>
