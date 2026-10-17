@@ -1113,17 +1113,10 @@ export function useGameState(myInfo, navigate) {
     return () => clearInterval(t)
   }, [presentSeats, players, myInfo?.seat])
 
-  // Safety net: if it's an away player's turn and nobody has put a bot in
-  // for them after a minute, the table's runner does — so a dead phone can
-  // never freeze the game for everyone else.
-  useEffect(() => {
-    if (!roomData || roomData.status !== 'playing' || !amRunner) return
-    const turn = roomData.current_turn
-    if (!awaySeats.includes(turn)) return
-    const t = setTimeout(() => standIn(turn, { auto: true }), 60000)
-    return () => clearTimeout(t)
-  }, [roomData?.current_turn, roomData?.status, awaySeats, amRunner, standIn])
-
+  // Do NOT automatically turn an "away" seat into a bot just because realtime
+  // presence disappeared. Mobile browsers often drop presence while the player
+  // simply checks another app or page. The normal 2-minute turn clock is the
+  // only automatic fallback; a partner/host can still choose a stand-in manually.
   // AI turns
   useEffect(() => {
     if (!roomData || !players.length || roomData.status !== 'playing') return
@@ -1142,10 +1135,35 @@ export function useGameState(myInfo, navigate) {
     const timer = setTimeout(async () => {
       if (botRunningRef.current) return
       botRunningRef.current = true
-      // Read the board and hand NOW, after the sync and the think time —
-      // not when the turn changed, when they could have been a tile behind.
-      const board = boardRef.current
-      const freshBot = (playersRef.current || []).find(p => p.seat === currentPlayer.seat) || currentPlayer
+      // Always re-read the authoritative room, hands and board immediately
+      // before an automated turn. This is especially important for a timed-out
+      // human: their runner may have missed realtime updates while that player's
+      // phone was backgrounded. Never decide to pass from stale refs.
+      const [roomResult, playersResult, boardResult] = await Promise.all([
+        db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
+        db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
+        db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle(),
+      ])
+      const activeRoom = roomResult.data
+      const activePlayers = playersResult.data
+      const board = boardResult.data
+      if (roomResult.error || playersResult.error || boardResult.error ||
+          !activeRoom || !Array.isArray(activePlayers) ||
+          activeRoom.status !== 'playing' ||
+          activeRoom.current_turn !== currentPlayer.seat) {
+        botRunningRef.current = false
+        return
+      }
+
+      roomData && setRoomData(activeRoom)
+      setPlayers(activePlayers)
+      if (board !== undefined) setBoardData(board)
+      playersRef.current = activePlayers
+      boardRef.current = board
+
+      const freshBot = activePlayers.find(p => p.seat === currentPlayer.seat)
+      if (!freshBot) { botRunningRef.current = false; return }
+
       // The player took their seat back while the bot was thinking: stand down.
       // (Unless this is their timed-out turn being played for them.)
       const playingForTimeout = timedOutRef.current === currentPlayer.seat
@@ -1156,7 +1174,7 @@ export function useGameState(myInfo, navigate) {
           : `Time's up — the game played for ${freshBot.nickname}`)
       }
       const botHand     = freshBot.hand || []
-      const botPlayable = getPlayableTiles(botHand, board, roomData)
+      const botPlayable = getPlayableTiles(botHand, board, activeRoom)
 
       // Bot moves are written through play_move — the exact function human
       // moves use — so every mode shares one move path: one request, one
@@ -1177,13 +1195,20 @@ export function useGameState(myInfo, navigate) {
 
       // With a pile: draw instead of knocking. The draw shrinks the pile, which
       // re-runs this turn — play the drawn tile, or draw again.
-      if (botPlayable.length === 0 && pileRef.current > 0) {
+      if (botPlayable.length === 0 && (Array.isArray(activeRoom.pile) ? activeRoom.pile.length : 0) > 0) {
         await drawForSeat(currentPlayer.seat)
         botRunningRef.current = false
         return
       }
 
       if (botPlayable.length === 0) {
+        // One last local guard: an automated pass is only allowed after the
+        // fresh authoritative hand was checked against the fresh board.
+        const verifiedPlayable = getPlayableTiles(freshBot.hand || [], board, activeRoom)
+        if (verifiedPlayable.length > 0) {
+          botRunningRef.current = false
+          return
+        }
         const res = await commitBot({
           action: 'pass', tile: null, board: null, hand: null,
           advance: true,
@@ -1207,16 +1232,16 @@ export function useGameState(myInfo, navigate) {
         return
       }
       // Use personality-based AI engine
-      const personality = getPersonality(currentPlayer.nickname)
+      const personality = getPersonality(freshBot.nickname)
       // Public info only: how many tiles each opponent holds (shown on every
       // screen). Lets the bot block harder when someone is about to go out.
       // In asosyé the partner across the table (seat + 2) is not an opponent.
-      const partnerSeat = roomData.game_mode === 'asosye' ? (currentPlayer.seat + 2) % 4 : null
+      const partnerSeat = activeRoom.game_mode === 'asosye' ? (currentPlayer.seat + 2) % 4 : null
       // When Ti-Jòj, Ti-Tid AND Ti-Roro are all at the table they play as one
       // bloc: each counts the other two's win as its own. Only when all three
       // are present — any other line-up and they play for themselves.
       const UNISON = ['tijoj', 'titid', 'tiroro']
-      const seatPersonalities = players
+      const seatPersonalities = activePlayers
         .filter(p => p.is_ai)
         .map(p => ({ seat: p.seat, pers: getPersonality(p.nickname) }))
       const unisonPresent = UNISON.every(u => seatPersonalities.some(x => x.pers === u))
@@ -1224,20 +1249,20 @@ export function useGameState(myInfo, navigate) {
         ? seatPersonalities.filter(x => UNISON.includes(x.pers)).map(x => x.seat)
         : []
       // "Danger" means an OPPONENT is about to go out — never our own side.
-      const opponentTileCounts = players
+      const opponentTileCounts = activePlayers
         .filter(p => p.seat !== currentPlayer.seat && p.seat !== partnerSeat && !allySeats.includes(p.seat))
         .map(p => (p.hand || []).length)
-      const tileCountsBySeat = [0, 1, 2, 3].map(s => (players.find(p => p.seat === s)?.hand || []).length)
+      const tileCountsBySeat = [0, 1, 2, 3].map(s => (activePlayers.find(p => p.seat === s)?.hand || []).length)
       const botCtx = {
         seat: currentPlayer.seat,
-        mode: roomData.game_mode || 'chien',
+        mode: activeRoom.game_mode || 'chien',
         opponentTileCounts,
         tileCountsBySeat,
         allySeats,
       }
       // Expert personalities get the full table state; ordinary ones don't.
       if (isExpertBot(personality)) {
-        botCtx.hands = [0, 1, 2, 3].map(s => players.find(p => p.seat === s)?.hand || [])
+        botCtx.hands = [0, 1, 2, 3].map(s => activePlayers.find(p => p.seat === s)?.hand || [])
       }
       const move = chooseTile(personality, botPlayable, botHand, board, botCtx)
       let tile = move?.tile || botPlayable[0]
