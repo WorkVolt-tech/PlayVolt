@@ -322,8 +322,22 @@ function Domino({ tile, onClick, disabled = false, selected = false }) {
 export default function Puzzle() {
   const navigate = useNavigate()
   const basicsDone = readProgress(TRACKS.basics.storage).length >= BASICS.length
-  const [trackId, setTrackId] = useState(() => basicsDone ? 'control' : 'basics')
-  const [index, setIndex] = useState(0)
+  const [trackId, setTrackId] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dekabess_puzzle_active_track')
+      return saved && TRACKS[saved] ? saved : (basicsDone ? 'control' : 'basics')
+    } catch {
+      return basicsDone ? 'control' : 'basics'
+    }
+  })
+  const [index, setIndex] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem('dekabess_puzzle_active_index') || 0)
+      return Number.isInteger(saved) && saved >= 0 ? saved : 0
+    } catch {
+      return 0
+    }
+  })
   const [choice, setChoice] = useState(null)
   const [result, setResult] = useState(null)
   const [memoryHidden, setMemoryHidden] = useState(false)
@@ -336,7 +350,8 @@ export default function Puzzle() {
 
   const track = TRACKS[trackId]
   const puzzles = track.puzzles
-  const puzzle = puzzles[index]
+  const safeIndex = Math.min(index, Math.max(0, puzzles.length - 1))
+  const puzzle = puzzles[safeIndex]
   const completed = completedByTrack[trackId] || []
   const doneCount = completed.length
   const progress = Math.round((doneCount / puzzles.length) * 100)
@@ -349,6 +364,17 @@ export default function Puzzle() {
       try { localStorage.setItem(info.storage, JSON.stringify(completedByTrack[id] || [])) } catch { /* ignore */ }
     })
   }, [completedByTrack])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dekabess_puzzle_active_track', trackId)
+      localStorage.setItem('dekabess_puzzle_active_index', String(safeIndex))
+    } catch { /* ignore */ }
+  }, [trackId, safeIndex])
+
+  useEffect(() => {
+    if (index !== safeIndex) setIndex(safeIndex)
+  }, [index, safeIndex])
 
   const explanation = useMemo(() => {
     if (!result) return ''
@@ -408,8 +434,8 @@ export default function Puzzle() {
   }
 
   function next() {
-    if (index < puzzles.length - 1) {
-      setIndex(i => i + 1)
+    if (safeIndex < puzzles.length - 1) {
+      setIndex(safeIndex + 1)
       resetAnswer()
     } else {
       setIndex(0)
@@ -490,7 +516,7 @@ export default function Puzzle() {
           <button
             type="button"
             key={p.id}
-            className={`puzzle-dot ${i === index ? 'active' : ''} ${completed.includes(p.id) ? 'done' : ''}`}
+            className={`puzzle-dot ${i === safeIndex ? 'active' : ''} ${completed.includes(p.id) ? 'done' : ''}`}
             onClick={() => selectPuzzle(i)}
             aria-label={`Puzzle ${i + 1}: ${p.title}`}
           >
@@ -500,7 +526,7 @@ export default function Puzzle() {
       </nav>
 
       <section className="puzzle-card">
-        <div className="puzzle-number">PUZZLE {index + 1} · {track.label.toUpperCase()}</div>
+        <div className="puzzle-number">PUZZLE {safeIndex + 1} · {track.label.toUpperCase()}</div>
         <h2>{puzzle.title}</h2>
         <p className="puzzle-lesson">{puzzle.lesson}</p>
 
@@ -539,20 +565,24 @@ export default function Puzzle() {
               )}
             </div>
 
-            <div className="puzzle-question">{puzzle.question}</div>
-            <div className="puzzle-memory-options">
-              {puzzle.options.map(option => (
-                <button
-                  type="button"
-                  key={option}
-                  onClick={() => answer(option)}
-                  disabled={!memoryHidden || !!result}
-                  className={choice === option ? 'selected' : ''}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+            {memoryHidden && (
+              <>
+                <div className="puzzle-question">{puzzle.question}</div>
+                <div className="puzzle-memory-options">
+                  {puzzle.options.map(option => (
+                    <button
+                      type="button"
+                      key={option}
+                      onClick={() => answer(option)}
+                      disabled={!!result}
+                      className={choice === option ? 'selected' : ''}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         ) : (
           <>
@@ -604,7 +634,7 @@ export default function Puzzle() {
                 <button type="button" onClick={resetAnswer}>Try for ★★★</button>
               )}
               {result.correct && (
-                <button type="button" onClick={next}>{index === puzzles.length - 1 ? `Restart ${track.label}` : 'Next Puzzle →'}</button>
+                <button type="button" onClick={next}>{safeIndex === puzzles.length - 1 ? `Restart ${track.label}` : 'Next Puzzle →'}</button>
               )}
             </div>
           </div>
