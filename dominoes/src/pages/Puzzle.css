@@ -222,3 +222,86 @@
   .puzzle-domino { width: 84px; height: 42px; }
   .puzzle-path { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Training section selector ────────────────────────────────────────────── */
+.puzzle-track-switch {
+  max-width: 920px;
+  margin: 14px auto 8px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.puzzle-track-switch button {
+  min-height: 42px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: #171612;
+  color: #aaa293;
+  font-family: inherit;
+  cursor: pointer;
+}
+.puzzle-track-switch button span {
+  color: #d8b25a;
+  margin-right: 6px;
+}
+.puzzle-track-switch button.active {
+  color: #f3dfaa;
+  border-color: rgba(216,178,90,.55);
+  background: rgba(216,178,90,.10);
+}
+.puzzle-track-switch button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.puzzle-tip {
+  margin: -4px 0 16px;
+  padding: 10px 12px;
+  border-left: 3px solid #d8b25a;
+  background: rgba(216,178,90,.07);
+  color: #bdb5a5;
+  font-size: .75rem;
+  line-height: 1.45;
+}
+.puzzle-tip strong { color: #ead39a; }
+
+.puzzle-feedback.best {
+  background: rgba(134,103,38,.22);
+  border: 1px solid rgba(232,201,106,.52);
+}
+.puzzle-best-hint {
+  color: #b9ad93 !important;
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding-top: 10px;
+}
+.puzzle-best-hint strong { color: #ead39a; }
+
+.puzzle-feedback-actions {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Training path entries become buttons once a section is playable. */
+.puzzle-path button,
+.puzzle-path > div {
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 12px;
+  padding: 12px;
+  opacity: .52;
+}
+.puzzle-path button {
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+.puzzle-path button.unlocked {
+  opacity: 1;
+  border-color: rgba(216,178,90,.36);
+}
+.puzzle-path button:disabled {
+  cursor: not-allowed;
+}
