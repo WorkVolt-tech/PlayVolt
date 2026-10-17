@@ -42,6 +42,21 @@ root `index.html`, `auth.js`) are separate games. Do not touch them.
    rules (`.dek-slam-wrap` etc.) are still there, and that the file still ends
    with the landscape rule using `--table-felt-wide`.
 
+## Phone screens (every new page or full-screen view)
+
+The site is installed as an app on phones, where pages are drawn under the
+status bar (clock, battery), the camera when the phone is sideways, and the
+home bar. Every new page's outer container must leave room for them, like
+the existing pages do (`.lobby-page`, `.story-page`, `.puzzle-page`):
+
+```css
+padding: calc(1rem + env(safe-area-inset-top, 0px)) calc(1rem + env(safe-area-inset-right, 0px))
+         calc(1rem + env(safe-area-inset-bottom, 0px)) calc(1rem + env(safe-area-inset-left, 0px));
+```
+
+Check that any phone-only `@media` rule doesn't reset that padding.
+Back buttons must never sit under the clock.
+
 ## Database (Supabase)
 
 - Project ref `eybzbtyfafmqbkulyvog`, shared with the other PlayVolt games.
