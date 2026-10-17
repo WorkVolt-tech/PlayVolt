@@ -608,6 +608,99 @@ const PARTNER_PLAY = [
   },
 ]
 
+const MASTERY = [
+  {
+    id: 'master-1',
+    title: 'Pressure Without Losing Control',
+    lesson: 'Strong play often combines a table read with keeping your own hand connected.',
+    clue: 'The pile is empty. Seat 1 previously knocked on 4. Current ends are 6 and 2.',
+    ends: [6, 2],
+    hand: [[6, 4], [6, 1], [2, 5], [4, 5], [4, 0]],
+    best: '6-4',
+    valid: ['6-4', '6-1', '2-5'],
+    feedback: {
+      '6-4': 'Best move. It opens 4 against a known weakness, and you still hold two more 4s. You pressure the opponent without disconnecting your own hand.',
+      '6-1': 'Legal, but it opens an unsupported 1 and ignores the information from the earlier knock.',
+      '2-5': 'Legal, but it opens 5 and gives up the chance to attack the known weakness on 4.',
+    },
+  },
+  {
+    id: 'master-2',
+    title: 'Play for the Block',
+    lesson: 'When a jam is close, pip weight can matter more than keeping the prettiest-looking chain.',
+    clue: 'The pile is empty and two players have already knocked during this stretch. A block looks likely.',
+    ends: [6, 2],
+    hand: [[6, 5], [2, 1], [5, 0], [1, 0]],
+    best: '6-5',
+    valid: ['6-5', '2-1'],
+    feedback: {
+      '6-5': 'Best move. You shed 11 pips immediately. If the table jams soon, that can be the difference between winning and losing the blocked round.',
+      '2-1': 'Legal, but it removes only 3 pips. With a block close, the heavy tile is the greater liability.',
+    },
+  },
+  {
+    id: 'master-3',
+    title: 'Protect the Dekabess Route',
+    lesson: 'A strong endgame plan can be worth more than taking the most obvious tile now.',
+    clue: 'Open ends are 6 and 3. You have three tiles left and want to preserve a possible 6-3 Dekabess finish.',
+    ends: [6, 3],
+    hand: [[6, 6], [3, 2], [6, 3]],
+    best: '6-6',
+    valid: ['6-6', '3-2', '6-3'],
+    feedback: {
+      '6-6': 'Best move. It keeps the 6 end at 6 and leaves the 3 end untouched, preserving 6-3 as a possible last-tile Dekabess.',
+      '3-2': 'Legal, but it changes the 3 end to 2 and removes the exact two-ended setup 6-3 needs.',
+      '6-3': 'Legal, but it spends the tile that could have produced the Dekabess finish.',
+    },
+  },
+  {
+    id: 'master-4',
+    title: 'Team Before Self',
+    lesson: 'In Asosyé, your move should sometimes favor the partner who is closest to ending the round.',
+    clue: 'Asosyé. Your partner has 1 tile left and has shown strength on 4. Current ends are 6 and 2.',
+    ends: [6, 2],
+    hand: [[6, 4], [6, 1], [2, 5], [1, 5]],
+    best: '6-4',
+    valid: ['6-4', '6-1', '2-5'],
+    feedback: {
+      '6-4': 'Best team move. It opens 4, the number your one-tile partner has been showing strength on. If they can go out, your team wins the round.',
+      '6-1': 'Legal, but it improves only your own path and does not help the partner who is one tile from finishing.',
+      '2-5': 'Legal, but it steers away from the strongest clue you have about your partner’s last tile.',
+    },
+  },
+  {
+    id: 'master-5',
+    title: 'Do Not Waste the Double',
+    lesson: 'A double is strongest when the number it controls is useful now and still supported afterward.',
+    clue: 'Current ends are 5 and 1. You control several 5s, but only one move keeps that control while preserving follow-up tiles.',
+    ends: [5, 1],
+    hand: [[5, 5], [5, 3], [5, 0], [1, 6], [3, 2]],
+    best: '5-5',
+    valid: ['5-5', '5-3', '5-0', '1-6'],
+    feedback: {
+      '5-5': 'Best move. It keeps 5 open while you still hold 5-3 and 5-0, so the double strengthens a number you can continue to control.',
+      '5-3': 'Legal, but it spends one of your 5s and moves the end to 3 before using the double that can hold the suit in place.',
+      '5-0': 'Legal, but it moves away from your strongest connected suit.',
+      '1-6': 'Legal, but it abandons the 5 control entirely.',
+    },
+  },
+  {
+    id: 'master-6',
+    title: 'Read the Whole Table',
+    lesson: 'Master play combines opponent weakness, your own connectivity, and the danger of helping someone else.',
+    clue: 'The pile is empty. Seat 1 knocked on 3 earlier. Seat 3 is down to 1 tile. Current ends are 5 and 6.',
+    ends: [5, 6],
+    hand: [[5, 3], [5, 1], [6, 4], [3, 4], [1, 0]],
+    best: '5-3',
+    valid: ['5-3', '5-1', '6-4'],
+    feedback: {
+      '5-3': 'Best move. It opens 3 against Seat 1’s known weakness, and you still keep 3-4 as a follow-up. You use real information while keeping your hand connected.',
+      '5-1': 'Legal, but it opens 1 with no table-read advantage and gives up the chance to pressure Seat 1.',
+      '6-4': 'Legal and connected, but it ignores the strongest known weakness at the table while Seat 3 is close to going out.',
+    },
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -665,6 +758,13 @@ const TRACKS = {
     puzzles: PARTNER_PLAY,
     mode: 'inference',
   },
+  mastery: {
+    label: 'Mèt Tab la',
+    subtitle: 'Combine everything you learned',
+    storage: 'dekabess_puzzle_mastery',
+    puzzles: MASTERY,
+    mode: 'strategy',
+  },
 }
 
 const keyOf = tile => tile.join('-')
@@ -718,6 +818,7 @@ export default function Puzzle() {
     finish: readProgress(TRACKS.finish.storage),
     rules: readProgress(TRACKS.rules.storage),
     partner: readProgress(TRACKS.partner.storage),
+    mastery: readProgress(TRACKS.mastery.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -734,6 +835,7 @@ export default function Puzzle() {
   const finishUnlocked = readUnlocked && (completedByTrack.read || []).length >= READ_PLAYER.length
   const rulesUnlocked = finishUnlocked && (completedByTrack.finish || []).length >= FINISH_HAND.length
   const partnerUnlocked = rulesUnlocked && (completedByTrack.rules || []).length >= TABLE_RULES.length
+  const masteryUnlocked = partnerUnlocked && (completedByTrack.partner || []).length >= PARTNER_PLAY.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -835,6 +937,7 @@ export default function Puzzle() {
     if (id === 'finish' && !finishUnlocked) return
     if (id === 'rules' && !rulesUnlocked) return
     if (id === 'partner' && !partnerUnlocked) return
+    if (id === 'mastery' && !masteryUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -939,6 +1042,15 @@ export default function Puzzle() {
           title={partnerUnlocked ? 'Learn Asosyé partner play' : 'Complete Règ Tab la first'}
         >
           <span>8</span> {partnerUnlocked ? 'Asosyé' : '🔒 Asosyé'}
+        </button>
+        <button
+          type="button"
+          className={trackId === 'mastery' ? 'active' : ''}
+          onClick={() => chooseTrack('mastery')}
+          disabled={!masteryUnlocked}
+          title={masteryUnlocked ? 'Combine all advanced skills' : 'Complete Asosyé first'}
+        >
+          <span>9</span> {masteryUnlocked ? 'Mèt Tab la' : '🔒 Mèt Tab la'}
         </button>
       </section>
 
@@ -1056,7 +1168,9 @@ export default function Puzzle() {
                 ? 'Which move puts the most pressure on your opponent?'
                 : trackId === 'finish'
                   ? 'Which move gives you the strongest endgame plan?'
-                  : (track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?')}
+                  : trackId === 'mastery'
+                    ? 'Which move is strongest for the whole position?'
+                    : (track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?')}
             </div>
 
             <div className="puzzle-hand">
@@ -1125,6 +1239,9 @@ export default function Puzzle() {
           </button>
           <button type="button" className={partnerUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('partner')} disabled={!partnerUnlocked}>
             <b>8</b><span>{partnerUnlocked ? 'Asosyé' : '🔒 Asosyé'}</span><small>{partnerUnlocked ? 'Read and play for your partner' : 'Finish Règ Tab la first'}</small>
+          </button>
+          <button type="button" className={masteryUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('mastery')} disabled={!masteryUnlocked}>
+            <b>9</b><span>{masteryUnlocked ? 'Mèt Tab la' : '🔒 Mèt Tab la'}</span><small>{masteryUnlocked ? 'Combine everything you learned' : 'Finish Asosyé first'}</small>
           </button>
         </div>
       </section>
