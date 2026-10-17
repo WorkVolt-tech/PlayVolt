@@ -701,6 +701,106 @@ const MASTERY = [
   },
 ]
 
+const REVIEW = [
+  {
+    id: 'review-1',
+    title: 'Why Was That Move Weak?',
+    lesson: 'Reviewing a move means looking at what it left behind, not only whether it was legal.',
+    clueLabel: 'MOVE REVIEW',
+    clue: 'Open ends were 6 and 3. Your hand was 6-4, 6-1, 4-5, 4-0. You played 6-1.',
+    question: 'What was the main problem with that choice?',
+    options: [
+      'It opened an unsupported 1 instead of using your strong 4 connection',
+      '6-1 was illegal',
+      'You should always play the highest pip tile',
+      'You should have knocked',
+    ],
+    best: 'It opened an unsupported 1 instead of using your strong 4 connection',
+    feedback: 'Correct. The move was legal, but 6-4 would have opened 4 while you still held two more 4s. The review is about hand structure, not legality.',
+    wrong: 'The move was legal. The weakness was what it left open and how poorly that number connected to the rest of your hand.',
+  },
+  {
+    id: 'review-2',
+    title: 'Did You Really Attack the Weak Number?',
+    lesson: 'The number you match is consumed. The other half becomes the new open end.',
+    clueLabel: 'MOVE REVIEW',
+    clue: 'An opponent had knocked on 5 earlier. Later the open end was 5, and you played 5-2 onto it because you wanted to “keep pressure on 5.”',
+    question: 'What actually happened?',
+    options: [
+      'You removed 5 from that end and opened 2',
+      'You kept 5 open',
+      'You forced an automatic block',
+      'You created a Dekabess',
+    ],
+    best: 'You removed 5 from that end and opened 2',
+    feedback: 'Correct. Matching the 5 consumes it. To pressure 5, you usually want to OPEN 5 from the other end with a tile such as 3-5.',
+    wrong: 'Remember the open-end rule: the matched half connects to the chain, and the tile’s other half becomes the new open number.',
+  },
+  {
+    id: 'review-3',
+    title: 'You Knocked Too Early',
+    lesson: 'In a pile game, a knock is not available while there are still tiles to draw.',
+    clueLabel: 'MOVE REVIEW',
+    clue: 'You could not match either open end. The pile still had 4 face-down tiles, but you knocked.',
+    question: 'What should you have done?',
+    options: ['Draw one tile', 'Knock anyway', 'End the round', 'Take a tile from an opponent'],
+    best: 'Draw one tile',
+    feedback: 'Correct. In Dekabess pile games, you draw one tile at a time while you have no legal move. Knocking comes only after the pile is empty.',
+    wrong: 'The remaining pile changes the action. No legal move + tiles still in the pile means draw, not knock.',
+  },
+  {
+    id: 'review-4',
+    title: 'You Forgot Your Partner',
+    lesson: 'A move can be fine for your hand and still be weak for the team.',
+    clueLabel: 'TEAM REVIEW',
+    clue: 'Asosyé. Your partner had 1 tile left and had repeatedly kept 3 alive. You had a legal way to open 3, but instead changed the board to 1 to improve your own hand.',
+    question: 'What should you reconsider?',
+    options: [
+      'Helping your one-tile partner stay playable may be worth more than improving only your hand',
+      'Your partner does not affect your strategy',
+      'You should always chase the highest number',
+      'Asosyé uses separate individual streaks',
+    ],
+    best: 'Helping your one-tile partner stay playable may be worth more than improving only your hand',
+    feedback: 'Correct. Your partner going out wins the round for the team. When they are one tile away, supporting their likely number can be the stronger team decision.',
+    wrong: 'Asosyé is evaluated as a team. Your partner’s chance to go out can matter more than a small improvement to your own hand.',
+  },
+  {
+    id: 'review-5',
+    title: 'You Kept the Heavy Tile',
+    lesson: 'When a block is likely, your remaining pip total becomes part of the decision.',
+    clueLabel: 'MOVE REVIEW',
+    clue: 'The pile was empty and several players were knocking. You could shed 6-5 or 2-1, but you played 2-1.',
+    question: 'Why might that be a mistake?',
+    options: [
+      'You kept 11 pips in 6-5 instead of shedding them before a possible block',
+      '2-1 was illegal',
+      'Low tiles can never be played late',
+      '6-5 automatically wins a blocked round',
+    ],
+    best: 'You kept 11 pips in 6-5 instead of shedding them before a possible block',
+    feedback: 'Correct. A blocked round goes to the lowest remaining pip total. When a jam is close, getting a heavy tile out can be more important than saving it.',
+    wrong: 'The key is not that 2-1 was illegal. The issue is the pip weight you chose to keep in your hand.',
+  },
+  {
+    id: 'review-6',
+    title: 'You Spent the Dekabess Tile Too Soon',
+    lesson: 'Endgame review should check whether a valuable last-tile route was available.',
+    clueLabel: 'MOVE REVIEW',
+    clue: 'Open ends were 6 and 3. Your last two tiles were 6-6 and 6-3. You played 6-3 first.',
+    question: 'What opportunity did you give up?',
+    options: [
+      'Playing 6-6 first could have left 6-3 as a last-tile Dekabess',
+      '6-3 should never be played',
+      '6-6 would have ended the match immediately',
+      'A double can itself be a Dekabess',
+    ],
+    best: 'Playing 6-6 first could have left 6-3 as a last-tile Dekabess',
+    feedback: 'Correct. 6-6 can keep the 6 end at 6 while the other end remains 3, preserving 6-3 as a final tile that matches both ends.',
+    wrong: 'The missed idea is the order of your last two tiles. The double can preserve the ends so the non-double finishes as a Dekabess.',
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -765,6 +865,13 @@ const TRACKS = {
     puzzles: MASTERY,
     mode: 'strategy',
   },
+  review: {
+    label: 'Revizyon',
+    subtitle: 'Learn from moves after the hand',
+    storage: 'dekabess_puzzle_review',
+    puzzles: REVIEW,
+    mode: 'inference',
+  },
 }
 
 const keyOf = tile => tile.join('-')
@@ -819,6 +926,7 @@ export default function Puzzle() {
     rules: readProgress(TRACKS.rules.storage),
     partner: readProgress(TRACKS.partner.storage),
     mastery: readProgress(TRACKS.mastery.storage),
+    review: readProgress(TRACKS.review.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -836,6 +944,7 @@ export default function Puzzle() {
   const rulesUnlocked = finishUnlocked && (completedByTrack.finish || []).length >= FINISH_HAND.length
   const partnerUnlocked = rulesUnlocked && (completedByTrack.rules || []).length >= TABLE_RULES.length
   const masteryUnlocked = partnerUnlocked && (completedByTrack.partner || []).length >= PARTNER_PLAY.length
+  const reviewUnlocked = masteryUnlocked && (completedByTrack.mastery || []).length >= MASTERY.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -938,6 +1047,7 @@ export default function Puzzle() {
     if (id === 'rules' && !rulesUnlocked) return
     if (id === 'partner' && !partnerUnlocked) return
     if (id === 'mastery' && !masteryUnlocked) return
+    if (id === 'review' && !reviewUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -1051,6 +1161,15 @@ export default function Puzzle() {
           title={masteryUnlocked ? 'Combine all advanced skills' : 'Complete Asosyé first'}
         >
           <span>9</span> {masteryUnlocked ? 'Mèt Tab la' : '🔒 Mèt Tab la'}
+        </button>
+        <button
+          type="button"
+          className={trackId === 'review' ? 'active' : ''}
+          onClick={() => chooseTrack('review')}
+          disabled={!reviewUnlocked}
+          title={reviewUnlocked ? 'Review decisions and learn from mistakes' : 'Complete Mèt Tab la first'}
+        >
+          <span>10</span> {reviewUnlocked ? 'Revizyon' : '🔒 Revizyon'}
         </button>
       </section>
 
@@ -1242,6 +1361,9 @@ export default function Puzzle() {
           </button>
           <button type="button" className={masteryUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('mastery')} disabled={!masteryUnlocked}>
             <b>9</b><span>{masteryUnlocked ? 'Mèt Tab la' : '🔒 Mèt Tab la'}</span><small>{masteryUnlocked ? 'Combine everything you learned' : 'Finish Asosyé first'}</small>
+          </button>
+          <button type="button" className={reviewUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('review')} disabled={!reviewUnlocked}>
+            <b>10</b><span>{reviewUnlocked ? 'Revizyon' : '🔒 Revizyon'}</span><small>{reviewUnlocked ? 'Learn from moves after the hand' : 'Finish Mèt Tab la first'}</small>
           </button>
         </div>
       </section>
