@@ -334,11 +334,11 @@ export default function Tournament() {
   // ── guests ────────────────────────────────────────────────────────────────
   if (!isLoading && !user) {
     return (
-      <div className="tp-page">
+      <div className="tp-page ui-page">
         <Header navigate={navigate} />
         <div className="tp-gate">
           <p>Tournaments are played against other people, so you need an account.</p>
-          <button className="tp-btn" onClick={() => navigate('/auth')}>Sign in</button>
+          <button className="tp-btn ui-primary" onClick={() => navigate('/auth')}>Sign in</button>
         </div>
       </div>
     )
@@ -348,7 +348,7 @@ export default function Tournament() {
   if (open) {
     const canStart = open.created_by === user?.id && open.status === 'registration'
     return (
-      <div className="tp-page">
+      <div className="tp-page ui-page">
         <Header navigate={navigate} onBack={() => setOpen(null)} title={open.name} />
         <div className="tp-sub">
           {open.format === 'duo' ? 'Teams of two' : 'Solo — one on one on one on one'} · {open.status}
@@ -376,7 +376,7 @@ export default function Tournament() {
             <div className="tp-todo-label">What to do now</div>
             <div className="tp-todo-title">{todo.title}</div>
             <p>{todo.text}</p>
-            {todo.action && <button className="tp-btn" onClick={todo.action[1]}>{todo.action[0]}</button>}
+            {todo.action && <button className="tp-btn ui-primary" onClick={todo.action[1]}>{todo.action[0]}</button>}
           </div>
         )}
 
@@ -405,20 +405,20 @@ export default function Tournament() {
                       : 'your opponents have been drawn. Open the table when you are.'}
                   </span>
                 </div>
-                <button className="tp-btn" disabled={busy} onClick={() => playMatch(myNextMatch)}>
+                <button className="tp-btn ui-primary" disabled={busy} onClick={() => playMatch(myNextMatch)}>
                   {liveMatch ? 'Join now' : 'Open the table'}
                 </button>
               </div>
             )}
     
             {open.status === 'registration' && !mySide && (
-              <div className="tp-panel">
+              <div className="tp-panel ui-card">
                 <div className="tp-label">Register</div>
                 {open.format === 'duo' ? (
                   <>
                     <div className="tp-row">
                       <input className="tp-input" placeholder="Team name" value={teamName} onChange={e => setTeamName(e.target.value)} maxLength={20} />
-                      <button className="tp-btn" disabled={busy || !teamName.trim()}
+                      <button className="tp-btn ui-primary" disabled={busy || !teamName.trim()}
                         onClick={() => call('create_side', { p_tournament: open.id, p_name: teamName.trim(), p_nickname: nickname }, () => loadOne(open.id))}>
                         Create team
                       </button>
@@ -427,7 +427,7 @@ export default function Tournament() {
                     <div className="tp-row">
                       <input className="tp-input" placeholder="Team code" value={joinCode}
                         onChange={e => setJoinCode(e.target.value.toUpperCase())} maxLength={6} />
-                      <button className="tp-btn" disabled={busy || joinCode.length !== 6}
+                      <button className="tp-btn ui-primary" disabled={busy || joinCode.length !== 6}
                         onClick={() => call('join_side', { p_code: joinCode, p_nickname: nickname }, () => loadOne(open.id))}>
                         Join
                       </button>
@@ -435,7 +435,7 @@ export default function Tournament() {
                   </>
                 ) : (
                   <div className="tp-row">
-                    <button className="tp-btn" disabled={busy}
+                    <button className="tp-btn ui-primary" disabled={busy}
                       onClick={() => call('create_side', { p_tournament: open.id, p_name: nickname, p_nickname: nickname }, () => loadOne(open.id))}>
                       Enter the cup
                     </button>
@@ -445,7 +445,7 @@ export default function Tournament() {
             )}
     
             {mySide && (
-              <div className="tp-panel">
+              <div className="tp-panel ui-card">
                 <div className="tp-label">Your {open.format === 'duo' ? 'team' : 'entry'}</div>
                 <div className="tp-team">
                   <strong>{mySide.name}</strong>
@@ -453,10 +453,10 @@ export default function Tournament() {
                 </div>
                 {mySide.code && (
                   <div className="tp-share">
-                    <button className="tp-btn small" onClick={() => copy(mySide.code, 'code')}>
+                    <button className="tp-btn small ui-secondary" onClick={() => copy(mySide.code, 'code')}>
                       {copied === 'code' ? 'Copied' : 'Copy code'}
                     </button>
-                    <button className="tp-btn small" onClick={() =>
+                    <button className="tp-btn small ui-secondary" onClick={() =>
                       copy(`${window.location.origin}/tournament?join=${mySide.code}`, 'link')}>
                       {copied === 'link' ? 'Copied' : 'Copy invite link'}
                     </button>
@@ -496,7 +496,7 @@ export default function Tournament() {
                           })}
                         </optgroup>
                       </select>
-                      <button className="tp-btn" disabled={busy}
+                      <button className="tp-btn ui-primary" disabled={busy}
                         onClick={() => call('fill_missing_partner', { p_side: mySide.id, p_bot: aiPartner }, () => loadOne(open.id))}>
                         Add AI partner
                       </button>
@@ -520,7 +520,7 @@ export default function Tournament() {
         </details>
             {open.created_by === user?.id && <div className="tp-organiser-head">Organiser</div>}
             {open.status === 'registration' && open.created_by === user?.id && (
-              <div className="tp-panel">
+              <div className="tp-panel ui-card">
                 <div className="tp-label">Add an AI {open.format === 'duo' ? 'team' : 'player'}</div>
                 <div className="tp-row">
                   <select className="tp-select" value={botA} onChange={e => setBotA(e.target.value)}>
@@ -555,7 +555,7 @@ export default function Tournament() {
                       </optgroup>
                     </select>
                   )}
-                  <button className="tp-btn" disabled={busy}
+                  <button className="tp-btn ui-primary" disabled={busy}
                     onClick={() => call('add_bot_side', {
                       p_tournament: open.id,
                       p_bot_a: botA,
@@ -573,7 +573,7 @@ export default function Tournament() {
             )}
             {open.created_by === user?.id && (
               <div className="tp-organiser">
-                <button className="tp-btn small danger" disabled={busy} onClick={async () => {
+                <button className="tp-btn small danger ui-secondary" disabled={busy} onClick={async () => {
                   if (!window.confirm(`Delete "${open.name}"? Everyone in it loses their place, and any match in progress ends.`)) return
                   const ok = await call('delete_tournament', { p_tournament: open.id })
                   if (ok !== null) { setOpen(null); loadList() }
@@ -585,7 +585,7 @@ export default function Tournament() {
           </>
         )}
         {tab === 'teams' && (
-          <div className="tp-panel">
+          <div className="tp-panel ui-card">
             <div className="tp-label">Entries ({sides.length})</div>
             <div className="tp-sides">
               {sides.map(s => (
@@ -603,7 +603,7 @@ export default function Tournament() {
               {!sides.length && <div className="tp-empty">Nobody has entered yet.</div>}
             </div>
             {canStart && (
-              <button className="tp-btn wide" disabled={busy}
+              <button className="tp-btn wide ui-primary" disabled={busy}
                 onClick={() => call('start_tournament', { p_tournament: open.id }, async () => {
                   await loadOne(open.id); setOpen({ ...open, status: 'running' })
                 })}>
@@ -616,14 +616,14 @@ export default function Tournament() {
         {practising && (
         <div className="tp-practice">
           <div className="tp-practice-bar">
-            <button className="tp-btn small" onClick={() => setPractising(false)}>← Back to the bracket</button>
+            <button className="tp-btn small ui-secondary" onClick={() => setPractising(false)}>← Back to the bracket</button>
             {myNextMatch && (
               <span className={liveMatch ? 'tp-practice-live' : 'tp-practice-wait'}>
                 {liveMatch ? 'Your match is live — finish this round and go' : 'Waiting for your next match'}
               </span>
             )}
             {liveMatch && (
-              <button className="tp-btn small gold" onClick={() => { setPractising(false); playMatch(liveMatch) }}>
+              <button className="tp-btn small gold ui-primary" onClick={() => { setPractising(false); playMatch(liveMatch) }}>
                 Join now
               </button>
             )}
@@ -639,11 +639,11 @@ export default function Tournament() {
             <p>They take your missing partner’s seat for this tournament.</p>
             <div className="tp-botlist">
               {unlocked.map(b => (
-                <button key={b} className="tp-btn small" onClick={() => addBot(picking, b)}>{b}</button>
+                <button key={b} className="tp-btn small ui-secondary" onClick={() => addBot(picking, b)}>{b}</button>
               ))}
               {!unlocked.length && <div className="tp-empty">You haven’t unlocked any bots yet — play Story Mode.</div>}
             </div>
-            <button className="tp-btn small" onClick={() => setPicking(null)}>Cancel</button>
+            <button className="tp-btn small ui-secondary" onClick={() => setPicking(null)}>Cancel</button>
           </div>
         </div>
       )}
@@ -697,28 +697,28 @@ export default function Tournament() {
                       {/* anyone can watch a match that's being played (backs only) */}
                       {!mine && !over && m.room_id && (
                         <div className="tp-match-actions">
-                          <button className="tp-btn small" onClick={() => navigate(`/watch/${m.room_id}`)}>👁 Watch</button>
+                          <button className="tp-btn small ui-secondary" onClick={() => navigate(`/watch/${m.room_id}`)}>👁 Watch</button>
                         </div>
                       )}
                       {mine && !over && (
                         <div className="tp-match-actions">
                           <Countdown until={m.no_show_at} />
-                          <button className="tp-btn small gold" disabled={busy} onClick={() => playMatch(m)}>
+                          <button className="tp-btn small gold ui-primary" disabled={busy} onClick={() => playMatch(m)}>
                             {Object.values(m.wins || {}).reduce((x, y) => x + y, 0) === 0
                               ? 'Play'
                               : m.room_id ? 'Back to the table' : 'Play next round'}
                           </button>
                           {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length < 2 && (
-                            <button className="tp-btn small" onClick={() => setPicking(mySide.id)}>Partner didn’t show</button>
+                            <button className="tp-btn small ui-secondary" onClick={() => setPicking(mySide.id)}>Partner didn’t show</button>
                           )}
                           {open.format === 'duo' && myMembers.filter(x => !x.bot_name).length === 2 && (
-                            <button className="tp-btn small" disabled={busy} onClick={practiseWithPartner}>Practice with partner</button>
+                            <button className="tp-btn small ui-secondary" disabled={busy} onClick={practiseWithPartner}>Practice with partner</button>
                           )}
-                          <button className="tp-btn small" onClick={() => setPractising(true)}>Practice alone</button>
+                          <button className="tp-btn small ui-secondary" onClick={() => setPractising(true)}>Practice alone</button>
                           {/* Only when the opponents never turned up at all. Once the
                               table has been opened, the match is played, not awarded. */}
                           {!m.room_id && m.no_show_at && new Date(m.no_show_at) < new Date() && (
-                            <button className="tp-btn small" disabled={busy} onClick={() => claimForfeit(m)}>Claim the walkover</button>
+                            <button className="tp-btn small ui-secondary" disabled={busy} onClick={() => claimForfeit(m)}>Claim the walkover</button>
                           )}
                         </div>
                       )}
@@ -766,11 +766,25 @@ export default function Tournament() {
 
   // ── the list ──────────────────────────────────────────────────────────────
   return (
-    <div className="tp-page">
+    <div className="tp-page ui-page">
       <Header navigate={navigate} />
       {msg && <div className={`tp-msg ${msg.type}`}>{msg.text}</div>}
 
-      <div className="tp-panel">
+      <section className="tp-intro ui-intro">
+        <div className="tp-intro-icon" aria-hidden="true">🏆</div>
+        <div className="tp-intro-copy">
+          <div className="tp-intro-kicker">COMPETE · ADVANCE · WIN</div>
+          <h2>Build a bracket and play it out</h2>
+          <p>Create a cup, invite real players or fill empty spots with AI, then fight through the bracket until one side remains.</p>
+          <div className="tp-intro-facts">
+            <span><b>2v2</b> team cups</span>
+            <span><b>Solo</b> four-player cups</span>
+            <span><b>Vyèj</b> decides the match</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="tp-panel ui-card">
         <div className="tp-label">Start a tournament</div>
         <div className="tp-row">
           <input className="tp-input" placeholder="Name it" value={newName} onChange={e => setNewName(e.target.value)} maxLength={30} />
@@ -779,7 +793,7 @@ export default function Tournament() {
             <option value="solo">Solo (1v1v1v1)</option>
           </select>
         </div>
-        <button className="tp-btn wide" disabled={busy || !newName.trim()}
+        <button className="tp-btn wide ui-primary" disabled={busy || !newName.trim()}
           onClick={() => call('create_tournament', { p_name: newName.trim(), p_format: newFormat }, async (t) => {
             setNewName(''); await loadList(); setOpen(Array.isArray(t) ? t[0] : t)
           })}>
@@ -787,7 +801,7 @@ export default function Tournament() {
         </button>
       </div>
 
-      <div className="tp-panel">
+      <div className="tp-panel ui-card">
         <div className="tp-label">Tournaments</div>
         {list.map(t => (
           <button key={t.id} className="tp-item" onClick={() => setOpen(t)}>
@@ -820,8 +834,8 @@ function bracketLabel(round, total) {
 function Header({ navigate, onBack, title }) {
   return (
     <div className="tp-header">
-      <button className="tp-back" onClick={() => (onBack ? onBack() : navigate('/'))}>← Back</button>
-      <h1 className="tp-title">{title || 'Tournaments'} <InfoButton section="tournament" label="How tournaments work" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
+      <button className="tp-back ui-back" onClick={() => (onBack ? onBack() : navigate('/'))}>← Back</button>
+      <h1 className="tp-title ui-title">{title || 'Tournaments'} <InfoButton section="tournament" label="How tournaments work" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
       <span style={{ width: 54 }} />
     </div>
   )
