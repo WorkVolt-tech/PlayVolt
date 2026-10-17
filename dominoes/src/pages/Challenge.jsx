@@ -5,6 +5,7 @@ import { useAuth } from '../lib/useAuth'
 import { TABLE_SKINS } from '../lib/skins'
 import { BotAvatar } from '../lib/avatars'
 import { challengeFor, challengeEnds } from '../lib/challenge'
+import { CHAPTERS } from '../story/chapters'
 import './Challenge.css'
 import { InfoButton } from '../components/GameGuide'
 
@@ -19,6 +20,8 @@ export default function Challenge() {
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)          // Start pressed, waiting for the server
   const [loadProblem, setLoadProblem] = useState('')
+  const [storyProgress, setStoryProgress] = useState(null)
+  const [storyProblem, setStoryProblem] = useState('')
   const c = challengeFor()
   const ends = challengeEnds()
   const next = challengeFor(ends)
@@ -39,6 +42,11 @@ export default function Challenge() {
       if (error) { setLoadProblem(`Couldn’t load your tries — ${error.message || 'server error'}`); return }
       setStatus(Array.isArray(data) ? data[0] : data)
     }, e => setLoadProblem(`Couldn’t reach the server — ${e?.message || 'check your connection'}`))
+
+    db.rpc('ensure_story_progress').then(({ data, error }) => {
+      if (error) { setStoryProblem(error.message || 'Couldn’t load Story progress'); return }
+      setStoryProgress(Array.isArray(data) ? data[0] : data)
+    }, e => setStoryProblem(e?.message || 'Couldn’t load Story progress'))
   }, [user])
 
   // Team challenges: the server creates the room (line-up fixed), then you wait
@@ -74,6 +82,37 @@ export default function Challenge() {
         <h1 className="ch-title ui-title">Challenge <InfoButton section="challenge" label="How the Challenge works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
         <div className="ch-card ui-card"><p>Challenge Mode needs an account, so your tries and prizes are kept.</p>
           <button className="ch-btn ui-primary" onClick={() => navigate('/auth')}>Sign in</button></div>
+      </div>
+    )
+  }
+
+  const completedStory = storyProgress?.completed_chapters || []
+  const storyComplete = CHAPTERS.every(ch => completedStory.includes(ch.id))
+
+  if (user && !storyProgress && !storyProblem) {
+    return (
+      <div className="ch-page ui-page">
+        <button className="ch-back ui-back" onClick={() => navigate('/')}>← Back</button>
+        <h1 className="ch-title ui-title">Challenge</h1>
+        <div className="ch-card ui-card"><p>Checking your Story Mode progress…</p></div>
+      </div>
+    )
+  }
+
+  if (user && !storyComplete) {
+    return (
+      <div className="ch-page ui-page">
+        <button className="ch-back ui-back" onClick={() => navigate('/')}>← Back</button>
+        <h1 className="ch-title ui-title">Challenge 🔒</h1>
+        <p className="ch-sub">Challenge Mode unlocks after you complete Story Mode.</p>
+        <div className="ch-card ch-main ui-card">
+          <div className="ch-label">Story progress</div>
+          <div className="ch-format">{completedStory.length}/{CHAPTERS.length} chapters complete</div>
+          {storyProblem
+            ? <div className="ch-msg">Couldn’t verify Story progress — {storyProblem}</div>
+            : <p>Finish every Story chapter, including the Championship, to unlock Challenge Mode and face the rotating expert challenges.</p>}
+          <button className="ch-btn ui-primary" onClick={() => navigate('/story')}>Go to Story Mode</button>
+        </div>
       </div>
     )
   }
