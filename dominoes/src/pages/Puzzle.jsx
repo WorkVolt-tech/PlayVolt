@@ -518,6 +518,96 @@ const TABLE_RULES = [
   },
 ]
 
+const PARTNER_PLAY = [
+  {
+    id: 'partner-1',
+    title: 'Know Your Partner',
+    lesson: 'Asosyé is played by two teams of two, with partners sitting across from each other.',
+    clueLabel: 'TEAM BASICS',
+    clue: 'You are sitting in seat 0.',
+    question: 'Which seat is your partner?',
+    options: ['Seat 1', 'Seat 2', 'Seat 3', 'There is no fixed partner seat'],
+    best: 'Seat 2',
+    feedback: 'Correct. In Asosyé, seats 0 and 2 are partners, while seats 1 and 3 form the other team.',
+    wrong: 'In Asosyé your partner is always the player directly across from you.',
+  },
+  {
+    id: 'partner-2',
+    title: 'One Team, One Streak',
+    lesson: 'Partners share the same streak toward the Vyèj.',
+    clueLabel: 'TEAM SCORE',
+    clue: 'Your team has a streak of 2. Your partner wins the next round normally.',
+    question: 'What happens to your team streak?',
+    options: ['It becomes 3', 'It stays 2', 'Your partner starts a separate streak at 1', 'It resets to 0'],
+    best: 'It becomes 3',
+    feedback: 'Correct. A normal round win by either partner adds 1 to the same team streak.',
+    wrong: 'In Asosyé, you and your partner do not build separate streaks. The team shares one.',
+  },
+  {
+    id: 'partner-3',
+    title: 'A Partner Dekabess Counts for Both',
+    lesson: 'A Dekabess won by either partner adds 2 to the shared team streak.',
+    clueLabel: 'TEAM SCORE',
+    clue: 'Your team streak is 2. Your partner goes out with a valid Dekabess.',
+    question: 'What is the team streak now?',
+    options: ['2', '3', '4 — Vyèj', 'The streak belongs only to your partner'],
+    best: '4 — Vyèj',
+    feedback: 'Correct. The partner’s Dekabess adds 2 to the shared streak, taking the team from 2 to 4 and winning the match by Vyèj.',
+    wrong: 'A Dekabess is worth 2 toward the shared team streak, no matter which partner makes it.',
+  },
+  {
+    id: 'partner-4',
+    title: 'Read Your Partner’s Knock',
+    lesson: 'A partner’s pass is useful information too. It tells you which open numbers they could not answer at that moment.',
+    clueLabel: 'TEAM READ',
+    clue: 'The pile is empty. Your partner knocks when the open ends are 2 and 6.',
+    question: 'What should you remember?',
+    options: [
+      'Your partner could not play a 2 or 6 at that moment',
+      'Your partner has no doubles',
+      'Your partner must be holding only blanks',
+      'Your partner is out of the round',
+    ],
+    best: 'Your partner could not play a 2 or 6 at that moment',
+    feedback: 'Correct. Just like an opponent’s knock, your partner’s knock tells you they had no playable 2 or 6 at that moment.',
+    wrong: 'A knock only tells you about the open ends at that moment. It does not reveal the rest of the hand.',
+  },
+  {
+    id: 'partner-5',
+    title: 'Help the Partner Who Is Close',
+    lesson: 'In team play, the best move is not always the one that improves your own hand most. A partner going out wins the round for your team.',
+    clueLabel: 'TEAM DECISION',
+    clue: 'Your partner has only 1 tile left. You have 5. The current ends are 4 and 6. From earlier play, your partner has repeatedly kept 4 alive and has never knocked on 4.',
+    question: 'What is the stronger team idea?',
+    options: [
+      'Try to keep or reopen 4 for your partner',
+      'Ignore your partner and only reduce your own pip count',
+      'Always force the board away from 4',
+      'Knock even if you have a legal move',
+    ],
+    best: 'Try to keep or reopen 4 for your partner',
+    feedback: 'Correct. You cannot see your partner’s hand, but their play pattern and one remaining tile make 4 a useful team clue. Helping a partner go out wins the round for both of you.',
+    wrong: 'Asosyé rewards team position. When your partner is one tile from going out, their likely playable number can matter more than improving only your own hand.',
+  },
+  {
+    id: 'partner-6',
+    title: 'Do Not Feed the Opponent',
+    lesson: 'Team reading means tracking both your partner and the two opponents.',
+    clueLabel: 'TEAM READ',
+    clue: 'Opponent in seat 1 knocked earlier on 5. Your partner in seat 2 has shown strength on 3. You can steer the table toward either 5 or 3.',
+    question: 'Which direction usually gives your team the better position?',
+    options: [
+      'Toward 3, supporting your partner',
+      'Toward 5, because the opponent knocked on it',
+      'Either is always identical',
+      'You should pass instead',
+    ],
+    best: 'Toward 3, supporting your partner',
+    feedback: 'Correct. An opponent weakness can be useful, but Asosyé also rewards keeping your partner playable. With your partner showing strength on 3, supporting that route can help your team finish the round.',
+    wrong: 'In partner play, do not evaluate only the opponent. Your partner’s ability to keep playing is part of the position too.',
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -566,6 +656,13 @@ const TRACKS = {
     subtitle: 'Opening, piles, blocks & Vyèj',
     storage: 'dekabess_puzzle_rules',
     puzzles: TABLE_RULES,
+    mode: 'inference',
+  },
+  partner: {
+    label: 'Asosyé',
+    subtitle: 'Read and play for your partner',
+    storage: 'dekabess_puzzle_partner',
+    puzzles: PARTNER_PLAY,
     mode: 'inference',
   },
 }
@@ -620,6 +717,7 @@ export default function Puzzle() {
     read: readProgress(TRACKS.read.storage),
     finish: readProgress(TRACKS.finish.storage),
     rules: readProgress(TRACKS.rules.storage),
+    partner: readProgress(TRACKS.partner.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -635,6 +733,7 @@ export default function Puzzle() {
   const readUnlocked = memoryUnlocked && (completedByTrack.memory || []).length >= MEMORY.length
   const finishUnlocked = readUnlocked && (completedByTrack.read || []).length >= READ_PLAYER.length
   const rulesUnlocked = finishUnlocked && (completedByTrack.finish || []).length >= FINISH_HAND.length
+  const partnerUnlocked = rulesUnlocked && (completedByTrack.rules || []).length >= TABLE_RULES.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -659,7 +758,7 @@ export default function Puzzle() {
       return result.correct ? puzzle.feedback : `Not quite. Study the sequence again and try to remember the details.`
     }
     if (track.mode === 'inference') {
-      return result.correct ? puzzle.feedback : 'Not quite. Focus only on what the opponent’s pass or pattern actually tells you.'
+      return result.correct ? puzzle.feedback : (puzzle.wrong || 'Not quite. Re-read the table clue and use only what the situation actually tells you.')
     }
     if (track.mode === 'strategy') {
       if (!result.legal) {
@@ -735,6 +834,7 @@ export default function Puzzle() {
     if (id === 'read' && !readUnlocked) return
     if (id === 'finish' && !finishUnlocked) return
     if (id === 'rules' && !rulesUnlocked) return
+    if (id === 'partner' && !partnerUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -831,6 +931,15 @@ export default function Puzzle() {
         >
           <span>7</span> {rulesUnlocked ? 'Règ Tab la' : '🔒 Règ Tab la'}
         </button>
+        <button
+          type="button"
+          className={trackId === 'partner' ? 'active' : ''}
+          onClick={() => chooseTrack('partner')}
+          disabled={!partnerUnlocked}
+          title={partnerUnlocked ? 'Learn Asosyé partner play' : 'Complete Règ Tab la first'}
+        >
+          <span>8</span> {partnerUnlocked ? 'Asosyé' : '🔒 Asosyé'}
+        </button>
       </section>
 
       <section className="puzzle-progress" aria-label={`${track.label} progress`}>
@@ -913,7 +1022,7 @@ export default function Puzzle() {
         ) : track.mode === 'inference' ? (
           <>
             <div className="puzzle-read-card">
-              <span>READ THE TABLE</span>
+              <span>{puzzle.clueLabel || 'READ THE TABLE'}</span>
               {puzzle.clue}
             </div>
             <div className="puzzle-question">{puzzle.question}</div>
@@ -1013,6 +1122,9 @@ export default function Puzzle() {
           </button>
           <button type="button" className={rulesUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('rules')} disabled={!rulesUnlocked}>
             <b>7</b><span>{rulesUnlocked ? 'Règ Tab la' : '🔒 Règ Tab la'}</span><small>{rulesUnlocked ? 'Opening, piles, blocks & Vyèj' : 'Finish Fini Men an first'}</small>
+          </button>
+          <button type="button" className={partnerUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('partner')} disabled={!partnerUnlocked}>
+            <b>8</b><span>{partnerUnlocked ? 'Asosyé' : '🔒 Asosyé'}</span><small>{partnerUnlocked ? 'Read and play for your partner' : 'Finish Règ Tab la first'}</small>
           </button>
         </div>
       </section>
