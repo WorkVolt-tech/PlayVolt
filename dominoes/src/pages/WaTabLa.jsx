@@ -62,9 +62,9 @@ export default function WaTabLa() {
   const data = tab === 'solo' ? solo : teams
 
   return (
-    <div className="wtl-page">
+    <div className="wtl-page ui-page">
       <div className="wtl-header">
-        <button className="wtl-back" onClick={() => navigate('/')}>← Back</button>
+        <button className="wtl-back ui-back" onClick={() => navigate('/')}>← Back</button>
         <div className="wtl-title-block">
           <h1 className="wtl-title">Wa Tab La 👑 <InfoButton section="watabla" label="How Wa Tab La works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
           <p className="wtl-sub">King of the Table</p>
