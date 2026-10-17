@@ -944,6 +944,97 @@ const FINAL_EXAM = [
   },
 ]
 
+const MASTER_CHALLENGE = [
+  {
+    id: 'challenge-1',
+    title: 'Three Clues, One Move',
+    lesson: 'Advanced play means weighing several clues at once.',
+    clue: 'The pile is empty. Seat 1 previously knocked on 4. Seat 3 has only 2 tiles left. Your hand is strongest in 4s. Current ends: 6 and 2.',
+    ends: [6, 2],
+    hand: [[6, 4], [6, 1], [2, 5], [4, 5], [4, 0]],
+    best: '6-4',
+    valid: ['6-4', '6-1', '2-5'],
+    feedback: {
+      '6-4': 'Best move. It reopens 4 against Seat 1’s known weakness while keeping your own 4-heavy hand connected. It also avoids giving Seat 3 a fresh number with no read.',
+      '6-1': 'Legal, but 1 is unsupported and ignores the strongest table information.',
+      '2-5': 'Legal, but 5 gives the short-handed Seat 3 a fresh chance with no known weakness attached.',
+    },
+  },
+  {
+    id: 'challenge-2',
+    title: 'Control or Shed Pips?',
+    lesson: 'The best priority changes when the table is close to blocking.',
+    clue: 'The pile is empty. Two players have just knocked. You can keep your strong 4 suit alive or dump a very heavy tile.',
+    ends: [6, 2],
+    hand: [[6, 5], [2, 4], [4, 4], [4, 1], [1, 0]],
+    best: '6-5',
+    valid: ['6-5', '2-4'],
+    feedback: {
+      '6-5': 'Best move here. With a jam close, shedding 11 pips is more urgent than preserving ideal suit control.',
+      '2-4': 'Legal and normally attractive because it opens your strong 4 suit, but the repeated knocks make pip weight the bigger immediate risk.',
+    },
+  },
+  {
+    id: 'challenge-3',
+    title: 'Save the Winning Route',
+    lesson: 'Sometimes the strongest move is the one that preserves a future two-step finish.',
+    clue: 'Open ends: 6 and 3. You have three tiles left and a possible Dekabess route.',
+    ends: [6, 3],
+    hand: [[6, 6], [3, 2], [6, 3]],
+    best: '6-6',
+    valid: ['6-6', '3-2', '6-3'],
+    feedback: {
+      '6-6': 'Best move. It preserves the 6 and 3 ends, keeping 6-3 available as a possible last-tile Dekabess.',
+      '3-2': 'Legal, but it destroys the 3 end needed for the Dekabess setup.',
+      '6-3': 'Legal, but it spends the exact tile you want to save for the finish.',
+    },
+  },
+  {
+    id: 'challenge-4',
+    title: 'Partner or Pressure?',
+    lesson: 'In Asosyé, decide whether supporting your partner is stronger than attacking an opponent.',
+    clue: 'Asosyé. Your partner has 1 tile left and has shown strength on 3. Seat 1 once knocked on 5. Current ends: 6 and 2.',
+    ends: [6, 2],
+    hand: [[6, 3], [6, 5], [2, 1], [3, 4]],
+    best: '6-3',
+    valid: ['6-3', '6-5', '2-1'],
+    feedback: {
+      '6-3': 'Best team move. Your partner is one tile from going out, so reopening the number they have shown strength on is the strongest immediate team play.',
+      '6-5': 'Legal and it attacks an opponent weakness, but your one-tile partner is the more urgent winning opportunity.',
+      '2-1': 'Legal, but it helps neither the partner read nor the opponent weakness you already know.',
+    },
+  },
+  {
+    id: 'challenge-5',
+    title: 'Do Not Follow One Rule Blindly',
+    lesson: 'Expert decisions depend on the position, not slogans like “always keep your strong suit.”',
+    clue: 'You control several 5s, but the opponent to your left is down to 1 tile and has never knocked on 5. Another legal move opens 2, which that opponent knocked on earlier.',
+    ends: [6, 4],
+    hand: [[6, 5], [4, 2], [5, 5], [5, 1], [2, 0]],
+    best: '4-2',
+    valid: ['6-5', '4-2'],
+    feedback: {
+      '4-2': 'Best move. Even though 5 is your strongest suit, the opponent with one tile is the immediate danger, and 2 is the number they already failed to answer.',
+      '6-5': 'Legal and good for your own hand, but it may feed the one-tile opponent a number they have never shown weakness on.',
+    },
+  },
+  {
+    id: 'challenge-6',
+    title: 'Master Table Read',
+    lesson: 'The hardest decisions combine memory, knocks, hand structure and endgame danger.',
+    clue: 'The pile is empty. Seat 1 knocked on 4 earlier. Seat 3 has one tile left. You still hold two 4s after this move. Current ends: 5 and 6.',
+    ends: [5, 6],
+    hand: [[5, 4], [5, 1], [6, 2], [4, 3], [4, 0]],
+    best: '5-4',
+    valid: ['5-4', '5-1', '6-2'],
+    feedback: {
+      '5-4': 'Best move. It opens 4 against a known weakness, keeps your own hand connected through 4, and avoids giving the one-tile Seat 3 an untested number.',
+      '5-1': 'Legal, but it opens an unsupported 1 and throws away the useful 4 read.',
+      '6-2': 'Legal, but it ignores both the known weakness and your strongest remaining connection.',
+    },
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -1022,6 +1113,13 @@ const TRACKS = {
     puzzles: FINAL_EXAM,
     mode: 'inference',
   },
+  challenge: {
+    label: 'Defi Mèt',
+    subtitle: 'Advanced mixed table decisions',
+    storage: 'dekabess_puzzle_challenge',
+    puzzles: MASTER_CHALLENGE,
+    mode: 'strategy',
+  },
 }
 
 const keyOf = tile => tile.join('-')
@@ -1078,6 +1176,7 @@ export default function Puzzle() {
     mastery: readProgress(TRACKS.mastery.storage),
     review: readProgress(TRACKS.review.storage),
     exam: readProgress(TRACKS.exam.storage),
+    challenge: readProgress(TRACKS.challenge.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -1097,6 +1196,7 @@ export default function Puzzle() {
   const masteryUnlocked = partnerUnlocked && (completedByTrack.partner || []).length >= PARTNER_PLAY.length
   const reviewUnlocked = masteryUnlocked && (completedByTrack.mastery || []).length >= MASTERY.length
   const examUnlocked = reviewUnlocked && (completedByTrack.review || []).length >= REVIEW.length
+  const challengeUnlocked = examUnlocked && (completedByTrack.exam || []).length >= FINAL_EXAM.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -1201,6 +1301,7 @@ export default function Puzzle() {
     if (id === 'mastery' && !masteryUnlocked) return
     if (id === 'review' && !reviewUnlocked) return
     if (id === 'exam' && !examUnlocked) return
+    if (id === 'challenge' && !challengeUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -1333,6 +1434,15 @@ export default function Puzzle() {
         >
           <span>11</span> {examUnlocked ? 'Egzamen Final' : '🔒 Egzamen Final'}
         </button>
+        <button
+          type="button"
+          className={trackId === 'challenge' ? 'active' : ''}
+          onClick={() => chooseTrack('challenge')}
+          disabled={!challengeUnlocked}
+          title={challengeUnlocked ? 'Take advanced mixed table challenges' : 'Complete Egzamen Final first'}
+        >
+          <span>12</span> {challengeUnlocked ? 'Defi Mèt' : '🔒 Defi Mèt'}
+        </button>
       </section>
 
       <section className="puzzle-progress" aria-label={`${track.label} progress`}>
@@ -1449,7 +1559,7 @@ export default function Puzzle() {
                 ? 'Which move puts the most pressure on your opponent?'
                 : trackId === 'finish'
                   ? 'Which move gives you the strongest endgame plan?'
-                  : trackId === 'mastery'
+                  : trackId === 'mastery' || trackId === 'challenge'
                     ? 'Which move is strongest for the whole position?'
                     : (track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?')}
             </div>
@@ -1529,6 +1639,9 @@ export default function Puzzle() {
           </button>
           <button type="button" className={examUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('exam')} disabled={!examUnlocked}>
             <b>11</b><span>{examUnlocked ? 'Egzamen Final' : '🔒 Egzamen Final'}</span><small>{examUnlocked ? 'Prove your full-table knowledge' : 'Finish Revizyon first'}</small>
+          </button>
+          <button type="button" className={challengeUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('challenge')} disabled={!challengeUnlocked}>
+            <b>12</b><span>{challengeUnlocked ? 'Defi Mèt' : '🔒 Defi Mèt'}</span><small>{challengeUnlocked ? 'Advanced mixed table decisions' : 'Finish Egzamen Final first'}</small>
           </button>
         </div>
       </section>
