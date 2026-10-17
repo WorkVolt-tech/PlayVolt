@@ -1035,6 +1035,111 @@ const MASTER_CHALLENGE = [
   },
 ]
 
+const PLAN_AHEAD = [
+  {
+    id: 'ahead-1',
+    title: 'Think Two Moves Ahead',
+    lesson: 'Do not judge only the tile you can play now. Picture what your next move is likely to be.',
+    clueLabel: 'PLAN AHEAD',
+    clue: 'Open ends: 6 and 2. Your hand is 6-4, 4-3, 3-1, 2-5.',
+    question: 'Which opening gives you the clearest connected route for the next two moves?',
+    options: [
+      '6-4, then 4-3',
+      '2-5, then hope a 5 stays open',
+      '6-4, then 3-1 immediately',
+      'Pass',
+    ],
+    best: '6-4, then 4-3',
+    feedback: 'Correct. 6-4 opens 4, and 4-3 gives you a natural second move if 4 remains available. You are planning a connected route, not just the current play.',
+    wrong: 'Trace the number that becomes open after your first move, then ask which tile in your remaining hand can answer it.',
+  },
+  {
+    id: 'ahead-2',
+    title: 'Preserve a Three-Tile Route',
+    lesson: 'A good sequence keeps your remaining tiles linked instead of creating isolated numbers.',
+    clueLabel: 'PLAN AHEAD',
+    clue: 'Open ends: 5 and 1. Your hand is 5-4, 4-2, 2-6, 1-0.',
+    question: 'Which route keeps three tiles connected?',
+    options: [
+      '5-4 → 4-2 → 2-6',
+      '1-0 → then wait for 0 again',
+      '5-4 → 2-6 immediately',
+      '1-0 → 5-4',
+    ],
+    best: '5-4 → 4-2 → 2-6',
+    feedback: 'Correct. That chain walks through 4 and then 2, keeping a clear path through three of your tiles.',
+    wrong: 'Look for a sequence where the open number created by one tile is carried by the next tile.',
+  },
+  {
+    id: 'ahead-3',
+    title: 'Plan Around the Double',
+    lesson: 'A double can either hold a number in place or become stranded. Sequence matters.',
+    clueLabel: 'PLAN AHEAD',
+    clue: 'Open ends: 4 and 1. Your hand is 1-4, 4-4, 4-2, 2-6.',
+    question: 'Which sequence best keeps the 4-4 useful?',
+    options: [
+      '1-4 → 4-4 → 4-2',
+      '4-2 → 2-6 → hope 4 returns',
+      '4-4 → 2-6',
+      '1-4 → 2-6',
+    ],
+    best: '1-4 → 4-4 → 4-2',
+    feedback: 'Correct. 1-4 turns the 1 end into 4, 4-4 keeps 4 alive, and 4-2 gives you the next exit. The double is used inside a connected sequence.',
+    wrong: 'Try to keep the double’s number open before and after you play it.',
+  },
+  {
+    id: 'ahead-4',
+    title: 'Build Toward the Finish',
+    lesson: 'Late in the hand, plan the order that leaves your easiest final tile.',
+    clueLabel: 'PLAN AHEAD',
+    clue: 'Open ends: 6 and 3. Your final three tiles are 6-6, 6-3 and 3-2.',
+    question: 'Which first move best preserves a possible Dekabess finish?',
+    options: [
+      '6-6 first',
+      '6-3 first',
+      '3-2 first',
+      'The order never matters',
+    ],
+    best: '6-6 first',
+    feedback: 'Correct. 6-6 can keep the 6 end at 6 while the 3 end remains available, preserving 6-3 as the valuable two-ended finishing tile.',
+    wrong: 'The goal is to avoid spending or destroying the 6-and-3 setup before 6-3 becomes your last tile.',
+  },
+  {
+    id: 'ahead-5',
+    title: 'Plan With a Known Weakness',
+    lesson: 'Future planning can include what another player already showed they cannot answer.',
+    clueLabel: 'PLAN AHEAD',
+    clue: 'Seat 1 knocked on 4 earlier. Current ends are 6 and 2. Your hand is 6-5, 5-4, 2-1, 4-0.',
+    question: 'Which two-move route can bring 4 back as pressure?',
+    options: [
+      '6-5 → 5-4',
+      '2-1 → hope 4 appears',
+      '6-5 → 2-1',
+      'Pass',
+    ],
+    best: '6-5 → 5-4',
+    feedback: 'Correct. The first move opens 5; if that route remains available, 5-4 can then open 4 and reintroduce the known weakness.',
+    wrong: 'Look for a sequence whose second tile leaves 4 as the new open end.',
+  },
+  {
+    id: 'ahead-6',
+    title: 'Team Sequence',
+    lesson: 'In Asosyé, your multi-move plan should consider where you are trying to leave the table for your partner.',
+    clueLabel: 'TEAM PLAN',
+    clue: 'Asosyé. Your partner is down to 1 tile and has repeatedly shown strength on 3. Current ends: 6 and 2. Your hand is 6-5, 5-3, 2-1.',
+    question: 'Which planned route best supports your partner if the table comes back to you?',
+    options: [
+      '6-5 → 5-3',
+      '2-1 → keep chasing 1',
+      '6-5 → 2-1',
+      'Ignore the partner and only shed highest pips',
+    ],
+    best: '6-5 → 5-3',
+    feedback: 'Correct. The route can eventually open 3, the number your one-tile partner has repeatedly supported. It is a team-oriented sequence, not just a personal one.',
+    wrong: 'In Asosyé, plan not only how your tiles connect but also what number you hope to leave available for your partner.',
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -1120,6 +1225,13 @@ const TRACKS = {
     puzzles: MASTER_CHALLENGE,
     mode: 'strategy',
   },
+  ahead: {
+    label: 'Plan Davans',
+    subtitle: 'Think two and three moves ahead',
+    storage: 'dekabess_puzzle_ahead',
+    puzzles: PLAN_AHEAD,
+    mode: 'inference',
+  },
 }
 
 const keyOf = tile => tile.join('-')
@@ -1177,6 +1289,7 @@ export default function Puzzle() {
     review: readProgress(TRACKS.review.storage),
     exam: readProgress(TRACKS.exam.storage),
     challenge: readProgress(TRACKS.challenge.storage),
+    ahead: readProgress(TRACKS.ahead.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -1197,6 +1310,7 @@ export default function Puzzle() {
   const reviewUnlocked = masteryUnlocked && (completedByTrack.mastery || []).length >= MASTERY.length
   const examUnlocked = reviewUnlocked && (completedByTrack.review || []).length >= REVIEW.length
   const challengeUnlocked = examUnlocked && (completedByTrack.exam || []).length >= FINAL_EXAM.length
+  const aheadUnlocked = challengeUnlocked && (completedByTrack.challenge || []).length >= MASTER_CHALLENGE.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -1302,6 +1416,7 @@ export default function Puzzle() {
     if (id === 'review' && !reviewUnlocked) return
     if (id === 'exam' && !examUnlocked) return
     if (id === 'challenge' && !challengeUnlocked) return
+    if (id === 'ahead' && !aheadUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -1442,6 +1557,15 @@ export default function Puzzle() {
           title={challengeUnlocked ? 'Take advanced mixed table challenges' : 'Complete Egzamen Final first'}
         >
           <span>12</span> {challengeUnlocked ? 'Defi Mèt' : '🔒 Defi Mèt'}
+        </button>
+        <button
+          type="button"
+          className={trackId === 'ahead' ? 'active' : ''}
+          onClick={() => chooseTrack('ahead')}
+          disabled={!aheadUnlocked}
+          title={aheadUnlocked ? 'Think multiple moves ahead' : 'Complete Defi Mèt first'}
+        >
+          <span>13</span> {aheadUnlocked ? 'Plan Davans' : '🔒 Plan Davans'}
         </button>
       </section>
 
@@ -1642,6 +1766,9 @@ export default function Puzzle() {
           </button>
           <button type="button" className={challengeUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('challenge')} disabled={!challengeUnlocked}>
             <b>12</b><span>{challengeUnlocked ? 'Defi Mèt' : '🔒 Defi Mèt'}</span><small>{challengeUnlocked ? 'Advanced mixed table decisions' : 'Finish Egzamen Final first'}</small>
+          </button>
+          <button type="button" className={aheadUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('ahead')} disabled={!aheadUnlocked}>
+            <b>13</b><span>{aheadUnlocked ? 'Plan Davans' : '🔒 Plan Davans'}</span><small>{aheadUnlocked ? 'Think two and three moves ahead' : 'Finish Defi Mèt first'}</small>
           </button>
         </div>
       </section>
