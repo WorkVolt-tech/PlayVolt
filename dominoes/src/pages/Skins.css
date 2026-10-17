@@ -2,7 +2,10 @@
 .skins-page {
   min-height: 100dvh;
   box-sizing: border-box;
-  padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1.25rem calc(2.5rem + env(safe-area-inset-bottom, 0px));
+  /* the pinned bar below carries the room for the status bar / camera */
+  padding: 0 1.25rem calc(2.5rem + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(1.25rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1.25rem + env(safe-area-inset-right, 0px));
   max-width: 1180px;
   margin: 0 auto;
   background: var(--bg);
@@ -10,7 +13,7 @@
   font-family: 'DM Mono', ui-monospace, monospace;
 }
 .skins-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.6rem; }
-.skins-head h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 2.3rem; color: var(--gold); margin: 0.6rem 0 0.2rem; }
+.skins-head h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 2.3rem; color: var(--gold); margin: 0.2rem 0 0.2rem; }
 .skins-head p { margin: 0; font-size: 0.72rem; color: var(--ivory-dim); }
 .skins-back {
   height: 32px; padding: 0 14px; border-radius: 16px;
@@ -112,3 +115,20 @@
 .skins-shop-msg { margin: 0 0 0.8rem; padding: 0.55rem 0.8rem; border-radius: 8px; font-size: 0.68rem; border: 1px solid #8a3a3a; color: #e07a7a; background: rgba(138,58,58,0.12); }
 .skins-shop-msg.ok { border-color: rgba(76,170,110,0.5); color: #8fe0aa; background: rgba(76,170,110,0.1); }
 .skin-buy.wide { width: 100%; justify-content: center; margin-top: 8px; height: 34px; }
+
+/* Back button + Tiles / Tables tabs, pinned to the top while scrolling.
+   Its top padding keeps it clear of the status bar / camera in the app. */
+.skins-bar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+  margin: 0 -1.25rem 1.1rem; padding: calc(0.75rem + env(safe-area-inset-top, 0px)) 1.25rem 0.75rem;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.skins-tabs { display: flex; gap: 0.4rem; }
+.skins-tabs button {
+  height: 32px; padding: 0 14px; border-radius: 16px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--ivory-dim);
+  font-family: inherit; font-size: 0.66rem; letter-spacing: 0.08em;
+}
+.skins-tabs button span { margin-left: 4px; opacity: 0.75; }
+.skins-tabs button.on { border-color: var(--gold); background: rgba(201,168,76,0.15); color: var(--gold-glow); }

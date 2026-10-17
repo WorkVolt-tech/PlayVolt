@@ -34,6 +34,15 @@ export default function Skins() {
 
   const owned = ownedSkins(stats)
 
+  // Tiles and Tables are separate tabs (remembered while you're on the site), and
+  // the bar holding them and the back button stays pinned to the top as you scroll.
+  const [tab, setTab] = useState(() => { try { return sessionStorage.getItem('dekabess_skins_tab') || 'tiles' } catch { return 'tiles' } })
+  function openTab(t) {
+    setTab(t)
+    try { sessionStorage.setItem('dekabess_skins_tab', t) } catch { /* ignore */ }
+    window.scrollTo({ top: 0 })
+  }
+
   // Gemini / Libra: which version each card shows (the equipped one first)
   const [picks, setPicks] = useState({})
   const pickOf = id => picks[id] || (tableBase(equipped.table) === id && tableVariant(equipped.table)) || Object.keys(TABLE_SKINS[id].variants || {})[0] || null
@@ -68,21 +77,27 @@ export default function Skins() {
 
   return (
     <div className="skins-page">
+      <div className="skins-bar">
+        <button className="skins-back" onClick={() => navigate('/')}>← Lobby</button>
+        <div className="skins-tabs" role="tablist" aria-label="Skins">
+          <button role="tab" aria-selected={tab === 'tiles'} className={tab === 'tiles' ? 'on' : ''} onClick={() => openTab('tiles')}>
+            Tiles <span>{owned.tiles.size}/{TILE_UNLOCKS.length}</span>
+          </button>
+          <button role="tab" aria-selected={tab === 'tables'} className={tab === 'tables' ? 'on' : ''} onClick={() => openTab('tables')}>
+            Tables <span>{owned.tables.size}/{TABLE_UNLOCKS.length}</span>
+          </button>
+        </div>
+      </div>
+
       <div className="skins-head">
         <div>
-          <button className="skins-back" onClick={() => navigate('/')}>← Lobby</button>
           <h1>Skins <InfoButton section="skins" label="About skins and the shop" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
           <p>Earn new tiles and tables by playing. Equip one of each.</p>
-        </div>
-        <div className="skins-count">
-          <span><strong>{owned.tiles.size}</strong> / {TILE_UNLOCKS.length} tiles</span>
-          <span><strong>{owned.tables.size}</strong> / {TABLE_UNLOCKS.length} tables</span>
         </div>
       </div>
 
       {shopMsg && <div className={`skins-shop-msg ${shopMsg.ok ? 'ok' : ''}`}>{shopMsg.text}</div>}
-      <h2 className="skins-section">Tiles</h2>
-      {groupCards(tileCards, TILE_GROUPS).map(g => (
+      {tab === 'tiles' && groupCards(tileCards, TILE_GROUPS).map(g => (
         <section key={g.label} className="skins-group">
           <h3 className="skins-group-title">{g.label}</h3>
           <div className="skins-grid tiles">
@@ -111,8 +126,7 @@ export default function Skins() {
         </section>
       ))}
 
-      <h2 className="skins-section">Tables</h2>
-      {groupCards(tableCards, TABLE_GROUPS).map(g => (
+      {tab === 'tables' && groupCards(tableCards, TABLE_GROUPS).map(g => (
         <section key={g.label} className="skins-group">
           <h3 className="skins-group-title">{g.label}</h3>
           <div className="skins-grid tables">

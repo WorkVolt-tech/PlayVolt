@@ -5,8 +5,10 @@
   background: var(--bg);
   color: var(--ivory);
   font-family: 'DM Mono', monospace;
-  padding: 1rem 1rem 3rem;
-  padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+  /* Installed as an app, the page is drawn under the phone's status bar (time,
+     battery) and, sideways, the camera. Leave room for them (0 in a browser). */
+  padding: calc(1rem + env(safe-area-inset-top, 0px)) calc(1rem + env(safe-area-inset-right, 0px))
+           calc(3rem + env(safe-area-inset-bottom, 0px)) calc(1rem + env(safe-area-inset-left, 0px));
 }
 
 .tp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; }

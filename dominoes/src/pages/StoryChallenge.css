@@ -88,7 +88,8 @@
 .sc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .sc-btn.ghost { background: transparent; color: var(--ivory-dim); border: 1px solid var(--border); }
 
-.sc-empty { padding: 3rem 1.5rem; text-align: center; color: var(--ivory-dim); font-family: 'DM Mono', monospace; font-size: 0.72rem; }
+/* Practice's setup screen: clear of the status bar / camera when installed as an app */
+.sc-empty { padding: calc(3rem + env(safe-area-inset-top, 0px)) calc(1.5rem + env(safe-area-inset-right, 0px)) 3rem calc(1.5rem + env(safe-area-inset-left, 0px)); text-align: center; color: var(--ivory-dim); font-family: 'DM Mono', monospace; font-size: 0.72rem; }
 .sc-empty p { margin-bottom: 1.2rem; }
 
 .sc-picks { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1rem 0 1.4rem; }
