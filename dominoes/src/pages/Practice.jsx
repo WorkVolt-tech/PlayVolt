@@ -243,7 +243,7 @@ export default function Practice({ embedded = false, onExit }) {
             <button key={o.id} className="sc-btn" onClick={() => setSetup(o)}>{o.label}</button>
           ))}
         </div>
-        <button className="sc-btn ghost" onClick={leave}>Back</button>
+        <button className="sc-btn ghost ui-secondary" onClick={leave}>Back</button>
       </div>
     )
   }
@@ -274,7 +274,7 @@ export default function Practice({ embedded = false, onExit }) {
     <div className="game-layout">
       <div className="top-bar">
         <div className="top-bar-left">
-          <button className="sc-back" onClick={leave}>← Back</button>
+          <button className="sc-back ui-back" onClick={leave}>← Back</button>
           <span className="sc-chapter">Practice</span>
         </div>
         <div className="player-tags">
