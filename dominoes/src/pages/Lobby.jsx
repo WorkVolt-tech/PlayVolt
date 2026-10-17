@@ -1093,6 +1093,7 @@ export default function Lobby() {
             {friendRequests > 0 && <span className="menu-badge">{friendRequests}</span>}
           </button>
           <button className="menu-btn" onClick={() => navigate('/practice')}>🎲 Practice</button>
+          <button className="menu-btn" onClick={() => navigate('/puzzle')}>🧩 Learn & Puzzle</button>
         </div>
         <div className="menu-row">
           <button className="menu-btn" onClick={() => navigate('/tracker')}>📊 Dekabess Tracker</button>
