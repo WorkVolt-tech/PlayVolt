@@ -137,6 +137,84 @@ const CONTROL = [
   },
 ]
 
+const BLOCKING = [
+  {
+    id: 'block-1',
+    title: 'Punish the Pass',
+    lesson: 'A pass gives you information. If an opponent could not play on either open end, remember those numbers.',
+    clue: 'Your opponent passed when the open ends were 2 and 5. The board is now 2 and 6.',
+    ends: [2, 6],
+    hand: [[2, 4], [6, 1], [6, 3], [4, 5]],
+    best: '2-4',
+    valid: ['2-4', '6-1', '6-3'],
+    feedback: {
+      '2-4': 'Best move. Your opponent already showed they likely have no 2. Keeping 2 open gives you a strong chance to make them pass again.',
+      '6-1': 'Legal, but it lets the game escape from the number your opponent already failed to answer.',
+      '6-3': 'Legal, but it wastes useful information. You know more about their weakness on 2 than on 3.',
+    },
+  },
+  {
+    id: 'block-2',
+    title: 'Close the Door',
+    lesson: 'When you know an opponent is weak in a suit, try to steer the table back to it.',
+    clue: 'Earlier, your opponent passed on 4 and 1. Current ends: 6 and 4.',
+    ends: [6, 4],
+    hand: [[6, 1], [6, 5], [4, 2], [2, 1]],
+    best: '6-1',
+    valid: ['6-1', '6-5', '4-2'],
+    feedback: {
+      '6-1': 'Best move. It opens 1, another number the opponent already failed to answer. That keeps pressure on them.',
+      '6-5': 'Legal, but 5 gives your opponent a fresh number with no known weakness.',
+      '4-2': 'Legal, but it moves away from both numbers you already saw the opponent miss.',
+    },
+  },
+  {
+    id: 'block-3',
+    title: 'Do Not Free Them',
+    lesson: 'A blocking move is often about what you refuse to open.',
+    clue: 'Your opponent passed when 3 was open. You currently control both ends: 3 and 5.',
+    ends: [3, 5],
+    hand: [[3, 6], [3, 1], [5, 2], [2, 6]],
+    best: '3-6',
+    valid: ['3-6', '3-1', '5-2'],
+    feedback: {
+      '3-6': 'Best move. It uses the opponent’s known weakness on 3 while opening 6, a number you can still answer with 2-6.',
+      '3-1': 'Good pressure on 3, but opening 1 leaves you with no backup 1.',
+      '5-2': 'Legal, but it abandons the 3 that already made your opponent pass.',
+    },
+  },
+  {
+    id: 'block-4',
+    title: 'Read Two Passes',
+    lesson: 'Repeated passes are even stronger clues. Use them to narrow what the opponent may be holding.',
+    clue: 'The opponent passed once on 0/4 and later on 4/6. Current ends: 4 and 2.',
+    ends: [4, 2],
+    hand: [[4, 5], [4, 1], [2, 6], [5, 6]],
+    best: '4-5',
+    valid: ['4-5', '4-1', '2-6'],
+    feedback: {
+      '4-5': 'Best move. Two separate passes strongly suggest they are short on 4s. You also keep 5-6 as a follow-up route.',
+      '4-1': 'Still a good blocking idea, but 1 is isolated in your hand.',
+      '2-6': 'Legal, but it gives up the strongest clue you have: the opponent has twice failed around 4.',
+    },
+  },
+  {
+    id: 'block-5',
+    title: 'Block Without Trapping Yourself',
+    lesson: 'The best block pressures the opponent while still leaving you a way to continue.',
+    clue: 'Your opponent passed on 5. Current ends: 5 and 3.',
+    ends: [5, 3],
+    hand: [[5, 2], [5, 0], [3, 6], [2, 6], [2, 4]],
+    best: '5-2',
+    valid: ['5-2', '5-0', '3-6'],
+    feedback: {
+      '5-2': 'Best move. You attack the opponent’s known weakness on 5 and open 2, a suit you still control with two more tiles.',
+      '5-0': 'It keeps pressure on 5, but blank gives you no follow-up connection in this hand.',
+      '3-6': 'Legal, but it lets the opponent escape the 5 suit you know they struggled with.',
+    },
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -150,6 +228,13 @@ const TRACKS = {
     subtitle: 'Choose the strongest move',
     storage: 'dekabess_puzzle_control',
     puzzles: CONTROL,
+    mode: 'strategy',
+  },
+  blocking: {
+    label: 'Blokaj',
+    subtitle: 'Read passes & trap opponents',
+    storage: 'dekabess_puzzle_blocking',
+    puzzles: BLOCKING,
     mode: 'strategy',
   },
 }
@@ -184,6 +269,7 @@ export default function Puzzle() {
   const [completedByTrack, setCompletedByTrack] = useState(() => ({
     basics: readProgress(TRACKS.basics.storage),
     control: readProgress(TRACKS.control.storage),
+    blocking: readProgress(TRACKS.blocking.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -193,6 +279,7 @@ export default function Puzzle() {
   const doneCount = completed.length
   const progress = Math.round((doneCount / puzzles.length) * 100)
   const controlUnlocked = (completedByTrack.basics || []).length >= BASICS.length
+  const blockingUnlocked = controlUnlocked && (completedByTrack.control || []).length >= CONTROL.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -257,6 +344,7 @@ export default function Puzzle() {
 
   function chooseTrack(id) {
     if (id === 'control' && !controlUnlocked) return
+    if (id === 'blocking' && !blockingUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -290,6 +378,15 @@ export default function Puzzle() {
         >
           <span>2</span> {controlUnlocked ? 'Kontwòl' : '🔒 Kontwòl'}
         </button>
+        <button
+          type="button"
+          className={trackId === 'blocking' ? 'active' : ''}
+          onClick={() => chooseTrack('blocking')}
+          disabled={!blockingUnlocked}
+          title={blockingUnlocked ? 'Read passes and trap opponents' : 'Complete Kontwòl first'}
+        >
+          <span>3</span> {blockingUnlocked ? 'Blokaj' : '🔒 Blokaj'}
+        </button>
       </section>
 
       <section className="puzzle-progress" aria-label={`${track.label} progress`}>
@@ -321,6 +418,13 @@ export default function Puzzle() {
           </div>
         )}
 
+        {puzzle.clue && (
+          <div className="puzzle-clue">
+            <span>TABLE READ</span>
+            {puzzle.clue}
+          </div>
+        )}
+
         <div className="puzzle-board">
           <div className="puzzle-board-label">OPEN ENDS</div>
           <div className="puzzle-ends" aria-label={`Open ends ${puzzle.ends[0]} and ${puzzle.ends[1]}`}>
@@ -331,7 +435,9 @@ export default function Puzzle() {
         </div>
 
         <div className="puzzle-question">
-          {track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?'}
+          {trackId === 'blocking'
+            ? 'Which move puts the most pressure on your opponent?'
+            : (track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?')}
         </div>
 
         <div className="puzzle-hand">
@@ -381,7 +487,9 @@ export default function Puzzle() {
           <button type="button" className={controlUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('control')} disabled={!controlUnlocked}>
             <b>2</b><span>{controlUnlocked ? 'Kontwòl' : '🔒 Kontwòl'}</span><small>{controlUnlocked ? 'Choosing the strongest move' : 'Finish Premye Pa first'}</small>
           </button>
-          <div><b>3</b><span>Blokaj</span><small>Coming next</small></div>
+          <button type="button" className={blockingUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('blocking')} disabled={!blockingUnlocked}>
+            <b>3</b><span>{blockingUnlocked ? 'Blokaj' : '🔒 Blokaj'}</span><small>{blockingUnlocked ? 'Read passes & trap opponents' : 'Finish Kontwòl first'}</small>
+          </button>
           <div><b>4</b><span>Memwa</span><small>Coming next</small></div>
         </div>
       </section>
