@@ -396,3 +396,51 @@
   .puzzle-memory-tile { width: 74px; height: 37px; }
   .puzzle-memory-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ── Li Jwè a: infer from passes and patterns ───────────────────────────── */
+.puzzle-read-card {
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid rgba(174,143,79,.30);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(80,64,34,.18), rgba(30,25,18,.10));
+  color: #d1c7b4;
+  font-size: .82rem;
+  line-height: 1.55;
+}
+.puzzle-read-card span {
+  display: block;
+  margin-bottom: 6px;
+  color: #e2c77e;
+  font-size: .58rem;
+  letter-spacing: .15em;
+}
+.puzzle-read-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.puzzle-read-options button {
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid rgba(216,178,90,.28);
+  border-radius: 10px;
+  background: #171612;
+  color: #e6dcc6;
+  font-family: inherit;
+  line-height: 1.35;
+  cursor: pointer;
+}
+.puzzle-read-options button.selected {
+  border-color: #e8c96a;
+  color: #fff0b8;
+}
+.puzzle-read-options button:disabled {
+  opacity: .72;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .puzzle-read-options { grid-template-columns: 1fr; }
+}
