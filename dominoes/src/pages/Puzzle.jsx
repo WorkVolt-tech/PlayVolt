@@ -542,15 +542,29 @@ export default function Puzzle() {
         : (result?.correct ? '✓ Correct' : '✕ Not a legal move')))
 
   return (
-    <main className="puzzle-page">
+    <main className="puzzle-page ui-page">
       <header className="puzzle-topbar">
-        <button type="button" className="puzzle-back" onClick={() => navigate('/')}>← Back</button>
+        <button type="button" className="puzzle-back ui-back" onClick={() => navigate('/')}>← Back</button>
         <div>
           <div className="puzzle-kicker">DOMINO TRAINING</div>
           <h1>{track.label}</h1>
         </div>
         <div className="puzzle-progress-text">{doneCount}/{puzzles.length}</div>
       </header>
+
+      <section className="puzzle-intro ui-intro">
+        <div className="puzzle-intro-icon" aria-hidden="true">🧠</div>
+        <div className="puzzle-intro-copy">
+          <div className="puzzle-intro-kicker">LEARN BY PLAYING</div>
+          <h2>Train the decisions real domino players make</h2>
+          <p>Start with legal moves, then build control, blocking, memory and table-reading skills. Each section unlocks after you finish the one before it.</p>
+          <div className="puzzle-intro-steps">
+            <span><b>1</b> Study the situation</span>
+            <span><b>2</b> Make your choice</span>
+            <span><b>3</b> Learn why</span>
+          </div>
+        </div>
+      </section>
 
       <section className="puzzle-track-switch" aria-label="Training section">
         <button type="button" className={trackId === 'basics' ? 'active' : ''} onClick={() => chooseTrack('basics')}>
