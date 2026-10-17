@@ -69,11 +69,11 @@ export default function Challenge() {
 
   if (!isLoading && !user) {
     return (
-      <div className="ch-page">
-        <button className="ch-back" onClick={() => navigate('/')}>← Back</button>
-        <h1 className="ch-title">Challenge <InfoButton section="challenge" label="How the Challenge works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
-        <div className="ch-card"><p>Challenge Mode needs an account, so your tries and prizes are kept.</p>
-          <button className="ch-btn" onClick={() => navigate('/auth')}>Sign in</button></div>
+      <div className="ch-page ui-page">
+        <button className="ch-back ui-back" onClick={() => navigate('/')}>← Back</button>
+        <h1 className="ch-title ui-title">Challenge <InfoButton section="challenge" label="How the Challenge works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
+        <div className="ch-card ui-card"><p>Challenge Mode needs an account, so your tries and prizes are kept.</p>
+          <button className="ch-btn ui-primary" onClick={() => navigate('/auth')}>Sign in</button></div>
       </div>
     )
   }
@@ -81,12 +81,12 @@ export default function Challenge() {
   const left = status?.tries_left ?? 3
   const won = !!status?.won
   return (
-    <div className="ch-page">
-      <button className="ch-back" onClick={() => navigate('/')}>← Back</button>
-      <h1 className="ch-title">Challenge <InfoButton section="challenge" label="How the Challenge works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
+    <div className="ch-page ui-page">
+      <button className="ch-back ui-back" onClick={() => navigate('/')}>← Back</button>
+      <h1 className="ch-title ui-title">Challenge <InfoButton section="challenge" label="How the Challenge works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
       <p className="ch-sub">A new challenge every 3 days against expert players. Three tries — beat it and the table is yours.</p>
 
-      <div className="ch-card ch-main">
+      <div className="ch-card ch-main ui-card">
         <div className="ch-label">This challenge · ends in {untilNext}</div>
         <div className="ch-format">{c.title}</div>
         <div className="ch-opponents">
@@ -114,21 +114,21 @@ export default function Challenge() {
           won ? <div className="ch-msg ok">You beat this challenge. The next one starts in {untilNext}.</div>
           : left <= 0 ? <div className="ch-msg soft">No tries left for this challenge — but you can still help a friend: open their invite link.</div>
           : <>
-              <button className="ch-btn" disabled={busy} onClick={createTeam}>{busy ? 'Creating…' : 'Create your team room'}</button>
+              <button className="ch-btn ui-primary" disabled={busy} onClick={createTeam}>{busy ? 'Creating…' : 'Create your team room'}</button>
               <div className="ch-msg soft">Invite your partner with the room’s link — anyone can join. Each player with a try left spends one when the game starts.</div>
             </>
         ) : won ? (
           <div className="ch-msg ok">You beat this challenge. The next one starts in {untilNext}.</div>
         ) : inProgress ? (
-          <button className="ch-btn" onClick={() => navigate('/challenge/play')}>Continue your match</button>
+          <button className="ch-btn ui-primary" onClick={() => navigate('/challenge/play')}>Continue your match</button>
         ) : (
-          <button className="ch-btn" disabled={left <= 0 || busy} onClick={start}>
+          <button className="ch-btn ui-primary" disabled={left <= 0 || busy} onClick={start}>
             {busy ? 'Starting…' : left > 0 ? 'Start — uses 1 try' : 'No tries left for this challenge'}
           </button>
         )}
       </div>
 
-      <div className="ch-card ch-next">
+      <div className="ch-card ch-next ui-card">
         <div className="ch-label">Next challenge · in {untilNext}</div>
         <div className="ch-next-row">
           <span>{next.title}</span>
