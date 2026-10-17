@@ -801,6 +801,149 @@ const REVIEW = [
   },
 ]
 
+const FINAL_EXAM = [
+  {
+    id: 'exam-1',
+    title: 'Opening Rule',
+    lesson: 'Final check: apply the real opening rule without a hint.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'Round 1. The 6-6 is in a player’s hand.',
+    question: 'What must happen?',
+    options: [
+      'That player opens with 6-6',
+      'Seat 0 opens with any tile',
+      'The lowest-pip player opens',
+      'Any double may open',
+    ],
+    best: 'That player opens with 6-6',
+    feedback: 'Correct. The first round is opened by the 6-6 holder, with 6-6.',
+    wrong: 'Review the first-round opening rule.',
+  },
+  {
+    id: 'exam-2',
+    title: 'Pile Decision',
+    lesson: 'Know when a knock is legal.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'You cannot match either open end. The pile still has tiles.',
+    question: 'What do you do?',
+    options: ['Draw one tile', 'Knock', 'End the round', 'Skip two turns'],
+    best: 'Draw one tile',
+    feedback: 'Correct. You draw while the pile remains and you have no legal play.',
+    wrong: 'A knock only comes after the pile is empty and you still cannot play.',
+  },
+  {
+    id: 'exam-3',
+    title: 'Read the Knock',
+    lesson: 'Use only what the table actually proved.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'The pile is empty. An opponent knocks while the ends are 2 and 5.',
+    question: 'What do you know?',
+    options: [
+      'They could not play a 2 or 5 at that moment',
+      'They have no doubles',
+      'They have no 6s',
+      'They have exactly three tiles left',
+    ],
+    best: 'They could not play a 2 or 5 at that moment',
+    feedback: 'Correct. The knock tells you about the two open numbers at that moment, and nothing more.',
+    wrong: 'Do not infer hidden information the knock did not reveal.',
+  },
+  {
+    id: 'exam-4',
+    title: 'Pressure the Weak Number',
+    lesson: 'Remember which half becomes the new open end.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'An opponent previously knocked on 4. The current ends are 6 and 2. You can play 6-4 or 2-5.',
+    question: 'Which move directly reopens the known weak number?',
+    options: ['6-4', '2-5', 'Knock', 'Neither'],
+    best: '6-4',
+    feedback: 'Correct. Matching the 6 leaves 4 open, bringing the opponent’s known weakness back onto the table.',
+    wrong: 'To pressure 4, you want 4 to become the new open half.',
+  },
+  {
+    id: 'exam-5',
+    title: 'Blocked Round',
+    lesson: 'Know what decides a jammed table.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'The pile is empty and nobody can play. Pip totals are 9, 13, 7 and 16.',
+    question: 'Who wins the round?',
+    options: ['The player with 9', 'The player with 13', 'The player with 7', 'The player with 16'],
+    best: 'The player with 7',
+    feedback: 'Correct. The fewest remaining pips wins a blocked round.',
+    wrong: 'Blocked rounds are decided by the lowest remaining pip total.',
+  },
+  {
+    id: 'exam-6',
+    title: 'Dekabess Finish',
+    lesson: 'Recognize the exact last-tile condition.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'Your final tile is 6-3. The open ends are 6 and 3.',
+    question: 'What kind of finish is this?',
+    options: ['Dekabess', 'Normal win only', 'Blocked win', 'Automatic reshuffle'],
+    best: 'Dekabess',
+    feedback: 'Correct. A last non-double matching both open ends at once is a Dekabess.',
+    wrong: 'Check the last tile against both open ends.',
+  },
+  {
+    id: 'exam-7',
+    title: 'Vyèj Math',
+    lesson: 'Track the streak correctly.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'Your streak is 2. You win the next round with a Dekabess.',
+    question: 'What is the result?',
+    options: ['Streak 4 — Vyèj', 'Streak 3', 'Streak resets to 1', 'No streak change'],
+    best: 'Streak 4 — Vyèj',
+    feedback: 'Correct. A Dekabess adds 2 to the streak, taking 2 to 4 for the Vyèj.',
+    wrong: 'A normal win adds 1; a Dekabess adds 2.',
+  },
+  {
+    id: 'exam-8',
+    title: 'Asosyé Read',
+    lesson: 'Think as a team, not as two separate players.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'Asosyé. Your partner has one tile left and has shown strength on 3. You can keep 3 alive or turn the table to 1.',
+    question: 'What is usually the stronger team idea?',
+    options: [
+      'Keep 3 available for your partner',
+      'Always switch to 1',
+      'Ignore your partner’s position',
+      'Knock even with a legal move',
+    ],
+    best: 'Keep 3 available for your partner',
+    feedback: 'Correct. Helping a one-tile partner go out can win the round for your team.',
+    wrong: 'In Asosyé, your partner’s ability to finish is part of your decision.',
+  },
+  {
+    id: 'exam-9',
+    title: 'Late-Game Pips',
+    lesson: 'Know when pip weight becomes urgent.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'A block looks likely. You may shed 6-5 or 2-1.',
+    question: 'Which tile is usually more urgent to get out?',
+    options: ['6-5', '2-1', 'They are equal', 'Neither'],
+    best: '6-5',
+    feedback: 'Correct. Shedding 11 pips can matter much more than shedding 3 if the table jams.',
+    wrong: 'When a block is close, compare the pip weight you would be left holding.',
+  },
+  {
+    id: 'exam-10',
+    title: 'Whole-Table Decision',
+    lesson: 'The final skill is combining information instead of following one rule blindly.',
+    clueLabel: 'FINAL EXAM',
+    clue: 'Seat 1 knocked on 4 earlier. Your hand is strongest in 4s, and you have a legal move that opens 4. Another legal move opens an unsupported 1.',
+    question: 'Which idea is strongest?',
+    options: [
+      'Open 4: it pressures a known weakness and supports your hand',
+      'Open 1 because changing numbers is always better',
+      'Choose randomly because both are legal',
+      'Knock instead',
+    ],
+    best: 'Open 4: it pressures a known weakness and supports your hand',
+    feedback: 'Correct. That move combines table reading with control of your own hand — exactly what the advanced sections were building toward.',
+    wrong: 'The stronger move is the one that uses both the opponent read and your own hand structure.',
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -872,6 +1015,13 @@ const TRACKS = {
     puzzles: REVIEW,
     mode: 'inference',
   },
+  exam: {
+    label: 'Egzamen Final',
+    subtitle: 'Prove your full-table knowledge',
+    storage: 'dekabess_puzzle_exam',
+    puzzles: FINAL_EXAM,
+    mode: 'inference',
+  },
 }
 
 const keyOf = tile => tile.join('-')
@@ -927,6 +1077,7 @@ export default function Puzzle() {
     partner: readProgress(TRACKS.partner.storage),
     mastery: readProgress(TRACKS.mastery.storage),
     review: readProgress(TRACKS.review.storage),
+    exam: readProgress(TRACKS.exam.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -945,6 +1096,7 @@ export default function Puzzle() {
   const partnerUnlocked = rulesUnlocked && (completedByTrack.rules || []).length >= TABLE_RULES.length
   const masteryUnlocked = partnerUnlocked && (completedByTrack.partner || []).length >= PARTNER_PLAY.length
   const reviewUnlocked = masteryUnlocked && (completedByTrack.mastery || []).length >= MASTERY.length
+  const examUnlocked = reviewUnlocked && (completedByTrack.review || []).length >= REVIEW.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -1048,6 +1200,7 @@ export default function Puzzle() {
     if (id === 'partner' && !partnerUnlocked) return
     if (id === 'mastery' && !masteryUnlocked) return
     if (id === 'review' && !reviewUnlocked) return
+    if (id === 'exam' && !examUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -1170,6 +1323,15 @@ export default function Puzzle() {
           title={reviewUnlocked ? 'Review decisions and learn from mistakes' : 'Complete Mèt Tab la first'}
         >
           <span>10</span> {reviewUnlocked ? 'Revizyon' : '🔒 Revizyon'}
+        </button>
+        <button
+          type="button"
+          className={trackId === 'exam' ? 'active' : ''}
+          onClick={() => chooseTrack('exam')}
+          disabled={!examUnlocked}
+          title={examUnlocked ? 'Take the final Dekabess exam' : 'Complete Revizyon first'}
+        >
+          <span>11</span> {examUnlocked ? 'Egzamen Final' : '🔒 Egzamen Final'}
         </button>
       </section>
 
@@ -1364,6 +1526,9 @@ export default function Puzzle() {
           </button>
           <button type="button" className={reviewUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('review')} disabled={!reviewUnlocked}>
             <b>10</b><span>{reviewUnlocked ? 'Revizyon' : '🔒 Revizyon'}</span><small>{reviewUnlocked ? 'Learn from moves after the hand' : 'Finish Mèt Tab la first'}</small>
+          </button>
+          <button type="button" className={examUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('exam')} disabled={!examUnlocked}>
+            <b>11</b><span>{examUnlocked ? 'Egzamen Final' : '🔒 Egzamen Final'}</span><small>{examUnlocked ? 'Prove your full-table knowledge' : 'Finish Revizyon first'}</small>
           </button>
         </div>
       </section>
