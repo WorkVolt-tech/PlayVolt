@@ -10,6 +10,7 @@ import StoryMap from './pages/StoryMap'
 import StoryChallenge from './pages/StoryChallenge'
 import Tournament from './pages/Tournament'
 import Practice from './pages/Practice'
+import Puzzle from './pages/Puzzle'
 import SoloGame from './pages/SoloGame'
 import Skins from './pages/Skins'
 import Trophies from './pages/Trophies'
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/story/:chapterId" element={<StoryChallenge />} />
         <Route path="/tournament" element={<Tournament />} />
         <Route path="/practice" element={<Practice />} />
+        <Route path="/puzzle" element={<Puzzle />} />
         <Route path="/solo" element={<SoloGame />} />
         <Route path="/skins" element={<Skins />} />
         <Route path="/trophies" element={<Trophies />} />
