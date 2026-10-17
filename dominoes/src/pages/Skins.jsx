@@ -76,9 +76,9 @@ export default function Skins() {
   }))
 
   return (
-    <div className="skins-page">
+    <div className="skins-page ui-page">
       <div className="skins-bar">
-        <button className="skins-back" onClick={() => navigate('/')}>← Lobby</button>
+        <button className="skins-back ui-back" onClick={() => navigate('/')}>← Lobby</button>
         <div className="skins-tabs" role="tablist" aria-label="Skins">
           <button role="tab" aria-selected={tab === 'tiles'} className={tab === 'tiles' ? 'on' : ''} onClick={() => openTab('tiles')}>
             Tiles <span>{owned.tiles.size}/{TILE_UNLOCKS.length}</span>
