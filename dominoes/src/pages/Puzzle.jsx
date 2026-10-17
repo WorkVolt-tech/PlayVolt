@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import TileFace from '../components/TileFace'
 import './Puzzle.css'
 
-const PUZZLES = [
+const BASICS = [
   {
     id: 'legal-1',
     title: 'Find the Legal Move',
@@ -12,9 +12,7 @@ const PUZZLES = [
     hand: [[6, 2], [5, 1], [4, 4], [0, 2]],
     best: '6-2',
     valid: ['6-2'],
-    feedback: {
-      '6-2': 'Correct. The board has an open 6, so 6-2 can connect to it.',
-    },
+    feedback: { '6-2': 'Correct. The board has an open 6, so 6-2 can connect to it.' },
   },
   {
     id: 'legal-2',
@@ -37,9 +35,7 @@ const PUZZLES = [
     hand: [[4, 4], [6, 2], [3, 5], [0, 0]],
     best: '4-4',
     valid: ['4-4'],
-    feedback: {
-      '4-4': 'Correct. 4-4 is a double and it connects to the open 4.',
-    },
+    feedback: { '4-4': 'Correct. 4-4 is a double and it connects to the open 4.' },
   },
   {
     id: 'legal-3',
@@ -62,13 +58,107 @@ const PUZZLES = [
     hand: [[6, 6], [5, 2], [1, 0], [2, 2]],
     best: 'PASS',
     valid: ['PASS'],
+    feedback: { PASS: 'Correct. None of your tiles contain a 3 or a 4, so you must pass.' },
+  },
+]
+
+const CONTROL = [
+  {
+    id: 'control-1',
+    title: 'Keep Your Strong Number',
+    lesson: 'When you hold several tiles from the same suit, try to keep that number available.',
+    ends: [5, 2],
+    hand: [[5, 5], [5, 4], [5, 1], [2, 6], [3, 0]],
+    best: '5-5',
+    valid: ['5-5', '5-4', '5-1', '2-6'],
     feedback: {
-      PASS: 'Correct. None of your tiles contain a 3 or a 4, so you must pass.',
+      '5-5': 'Best move. The double keeps 5 alive, and you still hold two more 5s. You are controlling that suit.',
+      '5-4': 'Legal, but weaker. You keep a 5 in your hand, yet you give up some of your control instead of establishing the double.',
+      '5-1': 'Legal, but weaker. You are spending one of the 5s that gives your hand its strength.',
+      '2-6': 'Legal, but it abandons your strongest suit. You hold three 5s, so the 5 side is where your leverage is.',
+    },
+  },
+  {
+    id: 'control-2',
+    title: 'Do Not Open Your Weak Suit',
+    lesson: 'A legal move can still be dangerous if it leaves a number you cannot answer later.',
+    ends: [6, 3],
+    hand: [[6, 4], [6, 1], [3, 2], [4, 5], [4, 0]],
+    best: '6-4',
+    valid: ['6-4', '6-1', '3-2'],
+    feedback: {
+      '6-4': 'Best move. It turns the 6 into a 4, and you still own two more 4s. That gives you a better chance to answer the board again.',
+      '6-1': 'Legal, but risky. You open a 1 and have no other 1 in your hand.',
+      '3-2': 'Legal, but risky. You open a 2 and have no backup 2.',
+    },
+  },
+  {
+    id: 'control-3',
+    title: 'Preserve Your Escape',
+    lesson: 'Try not to spend the only tile that can rescue a difficult part of your hand.',
+    ends: [4, 6],
+    hand: [[4, 2], [4, 1], [6, 3], [2, 5], [2, 0]],
+    best: '4-2',
+    valid: ['4-2', '4-1', '6-3'],
+    feedback: {
+      '4-2': 'Best move. It opens 2, and you still have two tiles that can answer a 2 later. Your hand stays connected.',
+      '4-1': 'Legal, but the 1 is isolated. If the table stays on 1, you have no second tile to continue with.',
+      '6-3': 'Legal, but it opens 3 with no backup 3 in your hand.',
+    },
+  },
+  {
+    id: 'control-4',
+    title: 'Use the Double at the Right Time',
+    lesson: 'Doubles are powerful when they reinforce a number you already control.',
+    ends: [3, 1],
+    hand: [[3, 3], [3, 5], [3, 0], [1, 6], [5, 2]],
+    best: '3-3',
+    valid: ['3-3', '3-5', '3-0', '1-6'],
+    feedback: {
+      '3-3': 'Best move. You establish the 3 double while still holding two more 3s, making it harder for the table to get away from your suit.',
+      '3-5': 'Legal, but you are spending a 3 without using your strongest control piece.',
+      '3-0': 'Legal, but the blank side gives you no backup path in this hand.',
+      '1-6': 'Legal, but it moves away from the suit you dominate.',
+    },
+  },
+  {
+    id: 'control-5',
+    title: 'Control Without Getting Stuck',
+    lesson: 'Good control also means keeping your remaining tiles connected to one another.',
+    ends: [2, 5],
+    hand: [[2, 4], [2, 1], [5, 4], [4, 4], [4, 6]],
+    best: '2-4',
+    valid: ['2-4', '2-1', '5-4'],
+    feedback: {
+      '2-4': 'Best move. It opens 4, the number that connects three of your remaining tiles. That gives your hand several follow-up routes.',
+      '2-1': 'Legal, but it leaves 1 open with no other 1 to support it.',
+      '5-4': 'Good move, but 2-4 is stronger because it preserves 5-4 while still opening the 4 suit you dominate.',
     },
   },
 ]
 
+const TRACKS = {
+  basics: {
+    label: 'Premye Pa',
+    subtitle: 'Legal moves & passing',
+    storage: 'dekabess_puzzle_basics',
+    puzzles: BASICS,
+    mode: 'basic',
+  },
+  control: {
+    label: 'Kontwòl',
+    subtitle: 'Choose the strongest move',
+    storage: 'dekabess_puzzle_control',
+    puzzles: CONTROL,
+    mode: 'strategy',
+  },
+}
+
 const keyOf = tile => tile.join('-')
+
+function readProgress(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '[]') } catch { return [] }
+}
 
 function Domino({ tile, onClick, disabled = false, selected = false }) {
   return (
@@ -86,55 +176,95 @@ function Domino({ tile, onClick, disabled = false, selected = false }) {
 
 export default function Puzzle() {
   const navigate = useNavigate()
+  const basicsDone = readProgress(TRACKS.basics.storage).length >= BASICS.length
+  const [trackId, setTrackId] = useState(() => basicsDone ? 'control' : 'basics')
   const [index, setIndex] = useState(0)
   const [choice, setChoice] = useState(null)
   const [result, setResult] = useState(null)
-  const [completed, setCompleted] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('dekabess_puzzle_basics') || '[]') } catch { return [] }
-  })
+  const [completedByTrack, setCompletedByTrack] = useState(() => ({
+    basics: readProgress(TRACKS.basics.storage),
+    control: readProgress(TRACKS.control.storage),
+  }))
 
-  const puzzle = PUZZLES[index]
+  const track = TRACKS[trackId]
+  const puzzles = track.puzzles
+  const puzzle = puzzles[index]
+  const completed = completedByTrack[trackId] || []
   const doneCount = completed.length
-  const progress = Math.round((doneCount / PUZZLES.length) * 100)
+  const progress = Math.round((doneCount / puzzles.length) * 100)
+  const controlUnlocked = (completedByTrack.basics || []).length >= BASICS.length
 
   useEffect(() => {
-    try { localStorage.setItem('dekabess_puzzle_basics', JSON.stringify(completed)) } catch { /* ignore */ }
-  }, [completed])
+    Object.entries(TRACKS).forEach(([id, info]) => {
+      try { localStorage.setItem(info.storage, JSON.stringify(completedByTrack[id] || [])) } catch { /* ignore */ }
+    })
+  }, [completedByTrack])
 
   const explanation = useMemo(() => {
     if (!result) return ''
+    if (track.mode === 'strategy') {
+      if (!result.legal) {
+        if (result.key === 'PASS') return `You still have legal moves: ${puzzle.valid.join(', ')}.`
+        return `${result.key} cannot connect to either open end (${puzzle.ends[0]} or ${puzzle.ends[1]}).`
+      }
+      return puzzle.feedback[result.key] || 'That move is legal.'
+    }
+
     if (result.correct) return puzzle.feedback[result.key] || 'Correct.'
     if (result.key === 'PASS') return `Not yet. You still have a legal play: ${puzzle.valid.join(' or ')}.`
     return `${result.key} cannot connect to either open end (${puzzle.ends[0]} or ${puzzle.ends[1]}).`
-  }, [result, puzzle])
+  }, [result, puzzle, track.mode])
 
   function answer(key) {
     if (result) return
     setChoice(key)
-    const correct = puzzle.valid.includes(key)
-    setResult({ key, correct })
+
+    const legal = puzzle.valid.includes(key)
+    const best = key === puzzle.best
+    const correct = track.mode === 'strategy' ? legal : legal
+    const stars = !legal ? 0 : (best ? 3 : 2)
+
+    setResult({ key, correct, legal, best, stars })
+
     if (correct) {
-      setCompleted(prev => prev.includes(puzzle.id) ? prev : [...prev, puzzle.id])
+      setCompletedByTrack(prev => {
+        const list = prev[trackId] || []
+        if (list.includes(puzzle.id)) return prev
+        return { ...prev, [trackId]: [...list, puzzle.id] }
+      })
     }
   }
 
+  function resetAnswer() {
+    setChoice(null)
+    setResult(null)
+  }
+
   function next() {
-    if (index < PUZZLES.length - 1) {
+    if (index < puzzles.length - 1) {
       setIndex(i => i + 1)
-      setChoice(null)
-      setResult(null)
+      resetAnswer()
     } else {
       setIndex(0)
-      setChoice(null)
-      setResult(null)
+      resetAnswer()
     }
   }
 
   function selectPuzzle(i) {
     setIndex(i)
-    setChoice(null)
-    setResult(null)
+    resetAnswer()
   }
+
+  function chooseTrack(id) {
+    if (id === 'control' && !controlUnlocked) return
+    setTrackId(id)
+    setIndex(0)
+    resetAnswer()
+  }
+
+  const resultTitle = track.mode === 'strategy' && result?.legal
+    ? (result.best ? '★★★ Best Move' : '★★ Good Move')
+    : (result?.correct ? '✓ Correct' : '✕ Not a legal move')
 
   return (
     <main className="puzzle-page">
@@ -142,17 +272,32 @@ export default function Puzzle() {
         <button type="button" className="puzzle-back" onClick={() => navigate('/')}>← Back</button>
         <div>
           <div className="puzzle-kicker">DOMINO TRAINING</div>
-          <h1>Premye Pa</h1>
+          <h1>{track.label}</h1>
         </div>
-        <div className="puzzle-progress-text">{doneCount}/{PUZZLES.length}</div>
+        <div className="puzzle-progress-text">{doneCount}/{puzzles.length}</div>
       </header>
 
-      <section className="puzzle-progress" aria-label="Basics progress">
+      <section className="puzzle-track-switch" aria-label="Training section">
+        <button type="button" className={trackId === 'basics' ? 'active' : ''} onClick={() => chooseTrack('basics')}>
+          <span>1</span> Premye Pa
+        </button>
+        <button
+          type="button"
+          className={trackId === 'control' ? 'active' : ''}
+          onClick={() => chooseTrack('control')}
+          disabled={!controlUnlocked}
+          title={controlUnlocked ? 'Choose the strongest move' : 'Complete Premye Pa first'}
+        >
+          <span>2</span> {controlUnlocked ? 'Kontwòl' : '🔒 Kontwòl'}
+        </button>
+      </section>
+
+      <section className="puzzle-progress" aria-label={`${track.label} progress`}>
         <div style={{ width: `${progress}%` }} />
       </section>
 
       <nav className="puzzle-dots" aria-label="Choose puzzle">
-        {PUZZLES.map((p, i) => (
+        {puzzles.map((p, i) => (
           <button
             type="button"
             key={p.id}
@@ -166,9 +311,15 @@ export default function Puzzle() {
       </nav>
 
       <section className="puzzle-card">
-        <div className="puzzle-number">PUZZLE {index + 1}</div>
+        <div className="puzzle-number">PUZZLE {index + 1} · {track.label.toUpperCase()}</div>
         <h2>{puzzle.title}</h2>
         <p className="puzzle-lesson">{puzzle.lesson}</p>
+
+        {track.mode === 'strategy' && (
+          <div className="puzzle-tip">
+            More than one answer may be legal. Your goal is to find the <strong>strongest</strong> move.
+          </div>
+        )}
 
         <div className="puzzle-board">
           <div className="puzzle-board-label">OPEN ENDS</div>
@@ -179,7 +330,9 @@ export default function Puzzle() {
           </div>
         </div>
 
-        <div className="puzzle-question">What would you play?</div>
+        <div className="puzzle-question">
+          {track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?'}
+        </div>
 
         <div className="puzzle-hand">
           {puzzle.hand.map(tile => {
@@ -198,15 +351,21 @@ export default function Puzzle() {
         </button>
 
         {result && (
-          <div className={`puzzle-feedback ${result.correct ? 'correct' : 'wrong'}`} aria-live="polite">
-            <strong>{result.correct ? '✓ Correct' : '✕ Try again next time'}</strong>
+          <div className={`puzzle-feedback ${result.correct ? (result.best ? 'best' : 'correct') : 'wrong'}`} aria-live="polite">
+            <strong>{resultTitle}</strong>
             <p>{explanation}</p>
+            {track.mode === 'strategy' && result.legal && !result.best && (
+              <p className="puzzle-best-hint">Best answer: <strong>{puzzle.best}</strong>. Try the puzzle again if you want the 3-star solution.</p>
+            )}
             <div className="puzzle-feedback-actions">
               {!result.correct && (
-                <button type="button" onClick={() => { setChoice(null); setResult(null) }}>Try Again</button>
+                <button type="button" onClick={resetAnswer}>Try Again</button>
+              )}
+              {result.correct && !result.best && track.mode === 'strategy' && (
+                <button type="button" onClick={resetAnswer}>Try for ★★★</button>
               )}
               {result.correct && (
-                <button type="button" onClick={next}>{index === PUZZLES.length - 1 ? 'Restart Basics' : 'Next Puzzle →'}</button>
+                <button type="button" onClick={next}>{index === puzzles.length - 1 ? `Restart ${track.label}` : 'Next Puzzle →'}</button>
               )}
             </div>
           </div>
@@ -216,8 +375,12 @@ export default function Puzzle() {
       <section className="puzzle-coming">
         <h3>Training path</h3>
         <div className="puzzle-path">
-          <div className="unlocked"><b>1</b><span>Premye Pa</span><small>Legal moves & passing</small></div>
-          <div><b>2</b><span>Kontwòl</span><small>Coming next</small></div>
+          <button type="button" className="unlocked" onClick={() => chooseTrack('basics')}>
+            <b>1</b><span>Premye Pa</span><small>Legal moves & passing</small>
+          </button>
+          <button type="button" className={controlUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('control')} disabled={!controlUnlocked}>
+            <b>2</b><span>{controlUnlocked ? 'Kontwòl' : '🔒 Kontwòl'}</span><small>{controlUnlocked ? 'Choosing the strongest move' : 'Finish Premye Pa first'}</small>
+          </button>
           <div><b>3</b><span>Blokaj</span><small>Coming next</small></div>
           <div><b>4</b><span>Memwa</span><small>Coming next</small></div>
         </div>
