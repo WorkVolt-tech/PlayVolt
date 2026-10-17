@@ -215,6 +215,59 @@ const BLOCKING = [
   },
 ]
 
+const MEMORY = [
+  {
+    id: 'memory-1',
+    title: 'Count the Suit',
+    lesson: 'Strong players remember which numbers have already appeared.',
+    sequence: [[6,4], [4,2], [2,5], [5,1]],
+    question: 'How many tiles in the sequence contained a 4?',
+    options: ['1', '2', '3', '4'],
+    best: '2',
+    feedback: 'Correct. The 6-4 and 4-2 both contained a 4, so two 4-tiles were played.',
+  },
+  {
+    id: 'memory-2',
+    title: 'Remember the Double',
+    lesson: 'Doubles are easy landmarks. Remembering them helps you track what is still unseen.',
+    sequence: [[3,6], [6,6], [6,1], [1,5], [5,2]],
+    question: 'Which double was played?',
+    options: ['3-3', '5-5', '6-6', '2-2'],
+    best: '6-6',
+    feedback: 'Correct. 6-6 appeared second in the sequence.',
+  },
+  {
+    id: 'memory-3',
+    title: 'What Came Before?',
+    lesson: 'Remember the order of play, not only the numbers.',
+    sequence: [[1,4], [4,4], [4,6], [6,2], [2,0]],
+    question: 'Which tile was played immediately before 6-2?',
+    options: ['1-4', '4-4', '4-6', '2-0'],
+    best: '4-6',
+    feedback: 'Correct. The order was 1-4, 4-4, 4-6, 6-2, then 2-0.',
+  },
+  {
+    id: 'memory-4',
+    title: 'Track the Sixes',
+    lesson: 'Counting a suit helps you judge how many of that number may still be hidden in other hands.',
+    sequence: [[6,3], [3,1], [1,6], [6,5], [5,0], [0,2]],
+    question: 'How many played tiles contained a 6?',
+    options: ['1', '2', '3', '4'],
+    best: '3',
+    feedback: 'Correct. 6-3, 1-6 and 6-5 each contained a 6.',
+  },
+  {
+    id: 'memory-5',
+    title: 'Missing From the Table',
+    lesson: 'Notice what has not appeared. Missing numbers can be just as useful as played numbers.',
+    sequence: [[0,1], [1,3], [3,5], [5,6], [6,2]],
+    question: 'Which number never appeared anywhere in the sequence?',
+    options: ['2', '3', '4', '6'],
+    best: '4',
+    feedback: 'Correct. Every number except 4 appeared at least once.',
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -236,6 +289,13 @@ const TRACKS = {
     storage: 'dekabess_puzzle_blocking',
     puzzles: BLOCKING,
     mode: 'strategy',
+  },
+  memory: {
+    label: 'Memwa',
+    subtitle: 'Remember what has been played',
+    storage: 'dekabess_puzzle_memory',
+    puzzles: MEMORY,
+    mode: 'memory',
   },
 }
 
@@ -266,10 +326,12 @@ export default function Puzzle() {
   const [index, setIndex] = useState(0)
   const [choice, setChoice] = useState(null)
   const [result, setResult] = useState(null)
+  const [memoryHidden, setMemoryHidden] = useState(false)
   const [completedByTrack, setCompletedByTrack] = useState(() => ({
     basics: readProgress(TRACKS.basics.storage),
     control: readProgress(TRACKS.control.storage),
     blocking: readProgress(TRACKS.blocking.storage),
+    memory: readProgress(TRACKS.memory.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -280,6 +342,7 @@ export default function Puzzle() {
   const progress = Math.round((doneCount / puzzles.length) * 100)
   const controlUnlocked = (completedByTrack.basics || []).length >= BASICS.length
   const blockingUnlocked = controlUnlocked && (completedByTrack.control || []).length >= CONTROL.length
+  const memoryUnlocked = blockingUnlocked && (completedByTrack.blocking || []).length >= BLOCKING.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -289,6 +352,9 @@ export default function Puzzle() {
 
   const explanation = useMemo(() => {
     if (!result) return ''
+    if (track.mode === 'memory') {
+      return result.correct ? puzzle.feedback : `Not quite. Study the sequence again and try to remember the details.`
+    }
     if (track.mode === 'strategy') {
       if (!result.legal) {
         if (result.key === 'PASS') return `You still have legal moves: ${puzzle.valid.join(', ')}.`
@@ -306,9 +372,22 @@ export default function Puzzle() {
     if (result) return
     setChoice(key)
 
+    if (track.mode === 'memory') {
+      const correct = key === puzzle.best
+      setResult({ key, correct, legal: true, best: correct, stars: correct ? 3 : 0 })
+      if (correct) {
+        setCompletedByTrack(prev => {
+          const list = prev[trackId] || []
+          if (list.includes(puzzle.id)) return prev
+          return { ...prev, [trackId]: [...list, puzzle.id] }
+        })
+      }
+      return
+    }
+
     const legal = puzzle.valid.includes(key)
     const best = key === puzzle.best
-    const correct = track.mode === 'strategy' ? legal : legal
+    const correct = legal
     const stars = !legal ? 0 : (best ? 3 : 2)
 
     setResult({ key, correct, legal, best, stars })
@@ -325,6 +404,7 @@ export default function Puzzle() {
   function resetAnswer() {
     setChoice(null)
     setResult(null)
+    setMemoryHidden(false)
   }
 
   function next() {
@@ -345,14 +425,17 @@ export default function Puzzle() {
   function chooseTrack(id) {
     if (id === 'control' && !controlUnlocked) return
     if (id === 'blocking' && !blockingUnlocked) return
+    if (id === 'memory' && !memoryUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
   }
 
-  const resultTitle = track.mode === 'strategy' && result?.legal
-    ? (result.best ? '★★★ Best Move' : '★★ Good Move')
-    : (result?.correct ? '✓ Correct' : '✕ Not a legal move')
+  const resultTitle = track.mode === 'memory'
+    ? (result?.correct ? '✓ Remembered' : '✕ Not quite')
+    : (track.mode === 'strategy' && result?.legal
+      ? (result.best ? '★★★ Best Move' : '★★ Good Move')
+      : (result?.correct ? '✓ Correct' : '✕ Not a legal move'))
 
   return (
     <main className="puzzle-page">
@@ -386,6 +469,15 @@ export default function Puzzle() {
           title={blockingUnlocked ? 'Read passes and trap opponents' : 'Complete Kontwòl first'}
         >
           <span>3</span> {blockingUnlocked ? 'Blokaj' : '🔒 Blokaj'}
+        </button>
+        <button
+          type="button"
+          className={trackId === 'memory' ? 'active' : ''}
+          onClick={() => chooseTrack('memory')}
+          disabled={!memoryUnlocked}
+          title={memoryUnlocked ? 'Remember what has been played' : 'Complete Blokaj first'}
+        >
+          <span>4</span> {memoryUnlocked ? 'Memwa' : '🔒 Memwa'}
         </button>
       </section>
 
@@ -425,36 +517,77 @@ export default function Puzzle() {
           </div>
         )}
 
-        <div className="puzzle-board">
-          <div className="puzzle-board-label">OPEN ENDS</div>
-          <div className="puzzle-ends" aria-label={`Open ends ${puzzle.ends[0]} and ${puzzle.ends[1]}`}>
-            <span>{puzzle.ends[0]}</span>
-            <div className="puzzle-chain-line" />
-            <span>{puzzle.ends[1]}</span>
-          </div>
-        </div>
+        {track.mode === 'memory' ? (
+          <>
+            <div className="puzzle-memory-board">
+              <div className="puzzle-board-label">PLAYED TILES</div>
+              {!memoryHidden ? (
+                <div className="puzzle-memory-sequence">
+                  {puzzle.sequence.map((tile, i) => (
+                    <div className="puzzle-memory-tile" key={`${keyOf(tile)}-${i}`}>
+                      <TileFace a={tile[0]} b={tile[1]} vertical={false} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="puzzle-memory-hidden">Tiles hidden — answer from memory.</div>
+              )}
+              {!result && (
+                <button type="button" className="puzzle-memory-toggle" onClick={() => setMemoryHidden(v => !v)}>
+                  {memoryHidden ? 'Show Tiles Again' : 'Hide Tiles & Answer'}
+                </button>
+              )}
+            </div>
 
-        <div className="puzzle-question">
-          {trackId === 'blocking'
-            ? 'Which move puts the most pressure on your opponent?'
-            : (track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?')}
-        </div>
+            <div className="puzzle-question">{puzzle.question}</div>
+            <div className="puzzle-memory-options">
+              {puzzle.options.map(option => (
+                <button
+                  type="button"
+                  key={option}
+                  onClick={() => answer(option)}
+                  disabled={!memoryHidden || !!result}
+                  className={choice === option ? 'selected' : ''}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="puzzle-board">
+              <div className="puzzle-board-label">OPEN ENDS</div>
+              <div className="puzzle-ends" aria-label={`Open ends ${puzzle.ends[0]} and ${puzzle.ends[1]}`}>
+                <span>{puzzle.ends[0]}</span>
+                <div className="puzzle-chain-line" />
+                <span>{puzzle.ends[1]}</span>
+              </div>
+            </div>
 
-        <div className="puzzle-hand">
-          {puzzle.hand.map(tile => {
-            const key = keyOf(tile)
-            return <Domino key={key} tile={tile} onClick={() => answer(key)} disabled={!!result} selected={choice === key} />
-          })}
-        </div>
+            <div className="puzzle-question">
+              {trackId === 'blocking'
+                ? 'Which move puts the most pressure on your opponent?'
+                : (track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?')}
+            </div>
 
-        <button
-          type="button"
-          className={`puzzle-pass ${choice === 'PASS' ? 'selected' : ''}`}
-          onClick={() => answer('PASS')}
-          disabled={!!result}
-        >
-          PASS
-        </button>
+            <div className="puzzle-hand">
+              {puzzle.hand.map(tile => {
+                const key = keyOf(tile)
+                return <Domino key={key} tile={tile} onClick={() => answer(key)} disabled={!!result} selected={choice === key} />
+              })}
+            </div>
+
+            <button
+              type="button"
+              className={`puzzle-pass ${choice === 'PASS' ? 'selected' : ''}`}
+              onClick={() => answer('PASS')}
+              disabled={!!result}
+            >
+              PASS
+            </button>
+          </>
+        )}
 
         {result && (
           <div className={`puzzle-feedback ${result.correct ? (result.best ? 'best' : 'correct') : 'wrong'}`} aria-live="polite">
@@ -490,7 +623,9 @@ export default function Puzzle() {
           <button type="button" className={blockingUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('blocking')} disabled={!blockingUnlocked}>
             <b>3</b><span>{blockingUnlocked ? 'Blokaj' : '🔒 Blokaj'}</span><small>{blockingUnlocked ? 'Read passes & trap opponents' : 'Finish Kontwòl first'}</small>
           </button>
-          <div><b>4</b><span>Memwa</span><small>Coming next</small></div>
+          <button type="button" className={memoryUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('memory')} disabled={!memoryUnlocked}>
+            <b>4</b><span>{memoryUnlocked ? 'Memwa' : '🔒 Memwa'}</span><small>{memoryUnlocked ? 'Remember played tiles' : 'Finish Blokaj first'}</small>
+          </button>
         </div>
       </section>
     </main>
