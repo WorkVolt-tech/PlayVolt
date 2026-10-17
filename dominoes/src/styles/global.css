@@ -78,3 +78,69 @@ input {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.7); }
 }
+
+/* ── Shared app UI system ──────────────────────────────────────────────────
+   Non-game screens use the same visual language: safe-area aware headers,
+   rounded gold controls, softly layered cards, and consistent spacing. */
+.ui-page {
+  color: var(--ivory);
+  background:
+    radial-gradient(circle at 50% -10%, rgba(201,168,76,.10), transparent 34rem),
+    var(--bg);
+}
+.ui-back {
+  min-height: 38px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(201,168,76,.34) !important;
+  background: linear-gradient(180deg, rgba(45,40,28,.96), rgba(28,25,19,.96)) !important;
+  color: var(--gold-glow) !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: .64rem !important;
+  letter-spacing: .08em !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+}
+.ui-back:active { transform: translateY(1px); }
+
+.ui-title {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  color: var(--gold-glow) !important;
+  letter-spacing: -.02em;
+}
+.ui-card {
+  background:
+    linear-gradient(180deg, rgba(35,32,25,.96), rgba(24,22,18,.96)) !important;
+  border: 1px solid rgba(201,168,76,.18) !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.ui-primary {
+  min-height: 44px !important;
+  border: 1px solid #d3b45e !important;
+  border-radius: 10px !important;
+  background: linear-gradient(180deg, #dec36f, #b99438) !important;
+  color: #11100d !important;
+  font-family: 'DM Mono', monospace !important;
+  font-weight: 600 !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 4px 14px rgba(0,0,0,.22);
+}
+.ui-primary:disabled { opacity: .42 !important; box-shadow: none; }
+.ui-primary:active:not(:disabled) { transform: translateY(1px); }
+
+.ui-secondary {
+  min-height: 40px !important;
+  border: 1px solid rgba(201,168,76,.28) !important;
+  border-radius: 10px !important;
+  background: rgba(201,168,76,.06) !important;
+  color: var(--gold-glow) !important;
+}
+.ui-intro {
+  border: 1px solid rgba(201,168,76,.22);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(201,168,76,.12), transparent 44%),
+    linear-gradient(180deg, rgba(31,28,22,.98), rgba(22,20,17,.98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
