@@ -157,10 +157,13 @@ export const TABLE_SKINS = {
     frameSlice: '430 175 680 fill', frameSliceWide: '150 280 195 fill',
     frameWidth: '41.99vw 17.09vw 66.41vw', frameWidthWide: '16.67vh 31.11vh 21.67vh',
     rail: 'linear-gradient(180deg, #2e3640 0%, #12161b 100%)' },
-  marron:   { label: 'Maroon Resistance', wtl: true, thumb: '/tables/maroon-wide.webp', felt: "url('/tables/maroon-wide.webp') center / cover no-repeat, #15110c", rail: 'linear-gradient(180deg, #3a2a16 0%, #1a120a 100%)' },
-  jazz:     { label: 'Art Deco Jazz', wtl: true, thumb: '/tables/jazz-wide.webp', felt: "url('/tables/jazz-wide.webp') center / cover no-repeat, #3a0a12", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
+  // Maroon Resistance, Art Deco Jazz and Neg Maron: their sides are full of figures and two
+  // have artwork in the middle, so instead of a 9-slice frame the whole picture is stretched
+  // evenly to the board (tall art upright, wide art sideways). Nothing is cropped.
+  marron:   { label: 'Maroon Resistance', wtl: true, thumb: '/tables/maroon-wide.webp', felt: "url('/tables/maroon-tall.webp') center / 100% 100% no-repeat, #15110c", wideFelt: "url('/tables/maroon-wide.webp') center / 100% 100% no-repeat, #15110c", rail: 'linear-gradient(180deg, #3a2a16 0%, #1a120a 100%)' },
+  jazz:     { label: 'Art Deco Jazz', wtl: true, thumb: '/tables/jazz-wide.webp', felt: "url('/tables/jazz-tall.webp') center / 100% 100% no-repeat, #3a0a12", wideFelt: "url('/tables/jazz-wide.webp') center / 100% 100% no-repeat, #3a0a12", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
   // the figure sits where the chain goes, so the centre is gently dimmed to keep tiles readable
-  negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-wide.webp', felt: "radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), url('/tables/negmaron-wide.webp') center / cover no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
+  negmaron: { label: 'Neg Maron', wtl: true, thumb: '/tables/negmaron-wide.webp', felt: "radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), url('/tables/negmaron-tall.webp') center / 100% 100% no-repeat, #0d0b09", wideFelt: "radial-gradient(ellipse 40% 45% at 50% 50%, rgba(8,7,6,0.45) 0%, rgba(8,7,6,0.3) 60%, transparent 100%), url('/tables/negmaron-wide.webp') center / 100% 100% no-repeat, #0d0b09", rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
   // ── Challenge Mode prize tables (your artwork): won by beating a challenge (every 3 days) ──
   emerald:  { label: 'Emerald Crown', challenge: true,
     thumb: '/tables/emerald-crown-thumb.webp',
