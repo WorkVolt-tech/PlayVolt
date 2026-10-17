@@ -147,7 +147,16 @@ export const TABLE_SKINS = {
     frameSlice: '300 360 380 fill', frameSliceWide: '250 420 405 fill',
     frameWidth: '29.3vw 35.2vw 37.1vw', frameWidthWide: '27.8vh 46.7vh 45vh',
     rail: 'linear-gradient(180deg, #3a2a14 0%, #160f08 100%)' },
-  viking:   { label: 'Norse', wtl: true, thumb: '/tables/norse-wide.webp', felt: "url('/tables/norse-wide.webp') center / cover no-repeat, #121417", rail: 'linear-gradient(180deg, #2e3640 0%, #12161b 100%)' },
+  // Norse uses its art as a 9-slice frame too (like Tiger Jungle), so nothing is cropped.
+  // Tall: the shields and axe heads sit in the corners and keep their real shape; only the
+  // axe handles, rune columns and stone stretch (cuts 430 top, 175 sides, 680 bottom).
+  // Wide: the side columns are drawn at their own scale; only the raven band and the
+  // longship scene widen on very wide screens (cuts 150 top, 280 sides, 195 bottom).
+  viking:   { label: 'Norse', wtl: true, thumb: '/tables/norse-wide.webp', felt: '#121417', wideFelt: '#121417',
+    frame: "url('/tables/norse-tall.webp')", frameWide: "url('/tables/norse-wide.webp')",
+    frameSlice: '430 175 680 fill', frameSliceWide: '150 280 195 fill',
+    frameWidth: '41.99vw 17.09vw 66.41vw', frameWidthWide: '16.67vh 31.11vh 21.67vh',
+    rail: 'linear-gradient(180deg, #2e3640 0%, #12161b 100%)' },
   marron:   { label: 'Maroon Resistance', wtl: true, thumb: '/tables/maroon-wide.webp', felt: "url('/tables/maroon-wide.webp') center / cover no-repeat, #15110c", rail: 'linear-gradient(180deg, #3a2a16 0%, #1a120a 100%)' },
   jazz:     { label: 'Art Deco Jazz', wtl: true, thumb: '/tables/jazz-wide.webp', felt: "url('/tables/jazz-wide.webp') center / cover no-repeat, #3a0a12", rail: 'linear-gradient(180deg, #4a1420 0%, #1e060b 100%)' },
   // the figure sits where the chain goes, so the centre is gently dimmed to keep tiles readable
