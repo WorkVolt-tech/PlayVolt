@@ -637,7 +637,7 @@ export default function Puzzle() {
           </div>
         )}
 
-        {puzzle.clue && (
+        {puzzle.clue && track.mode !== 'inference' && (
           <div className="puzzle-clue">
             <span>TABLE READ</span>
             {puzzle.clue}
