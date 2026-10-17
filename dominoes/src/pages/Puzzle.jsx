@@ -268,6 +268,69 @@ const MEMORY = [
   },
 ]
 
+const READ_PLAYER = [
+  {
+    id: 'read-1',
+    title: 'What Did the Pass Tell You?',
+    lesson: 'A pass removes possibilities from an opponent’s hand.',
+    clue: 'The open ends were 2 and 5. Your opponent passed.',
+    question: 'What is the strongest conclusion?',
+    options: [
+      'They probably have no 2 and no 5',
+      'They definitely have a double',
+      'They have only high tiles left',
+      'They must be holding 6-6',
+    ],
+    best: 'They probably have no 2 and no 5',
+    feedback: 'Correct. A pass means they could not match either open end, so 2s and 5s become the strongest known weaknesses.',
+  },
+  {
+    id: 'read-2',
+    title: 'Which Side Should You Attack?',
+    lesson: 'Use known weaknesses instead of guessing.',
+    clue: 'Your opponent passed earlier on 3. Current open ends are 3 and 6.',
+    question: 'Which open end should you try to preserve?',
+    options: ['3', '6', 'Either one — the pass means nothing', 'Neither — always change both'],
+    best: '3',
+    feedback: 'Correct. The earlier pass makes 3 the more valuable pressure point.',
+  },
+  {
+    id: 'read-3',
+    title: 'Separate Fact From Guess',
+    lesson: 'Good table reading means knowing what you truly learned and what is only speculation.',
+    clue: 'An opponent passed when the ends were 1 and 4.',
+    question: 'Which statement is actually supported by that pass?',
+    options: [
+      'They could not play a 1 or a 4 at that moment',
+      'They have no doubles at all',
+      'Their highest tile is a 5',
+      'They are saving a 6 for later',
+    ],
+    best: 'They could not play a 1 or a 4 at that moment',
+    feedback: 'Correct. The pass tells you about the open suits at that moment. It does not reveal the rest of their hand.',
+  },
+  {
+    id: 'read-4',
+    title: 'Read the Pattern',
+    lesson: 'Repeated behavior can make a clue stronger.',
+    clue: 'The same opponent passed once on 4/0 and later on 4/6.',
+    question: 'Which number looks like their clearest weakness?',
+    options: ['0', '4', '6', 'There is no useful clue'],
+    best: '4',
+    feedback: 'Correct. 4 is the shared number across both passes, so it is the clearest repeated weakness.',
+  },
+  {
+    id: 'read-5',
+    title: 'Plan From the Read',
+    lesson: 'The goal is not just noticing a weakness — it is using it on your next move.',
+    clue: 'Your opponent passed on 5. You can play either 5-2 or 3-6 on the current board.',
+    question: 'Which play better uses what you learned?',
+    options: ['5-2', '3-6', 'Pass', 'Either move is identical'],
+    best: '5-2',
+    feedback: 'Correct. 5-2 keeps pressure on the suit the opponent already failed to answer.',
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -296,6 +359,13 @@ const TRACKS = {
     storage: 'dekabess_puzzle_memory',
     puzzles: MEMORY,
     mode: 'memory',
+  },
+  read: {
+    label: 'Li Jwè a',
+    subtitle: 'Read opponents from passes and patterns',
+    storage: 'dekabess_puzzle_read',
+    puzzles: READ_PLAYER,
+    mode: 'inference',
   },
 }
 
@@ -346,6 +416,7 @@ export default function Puzzle() {
     control: readProgress(TRACKS.control.storage),
     blocking: readProgress(TRACKS.blocking.storage),
     memory: readProgress(TRACKS.memory.storage),
+    read: readProgress(TRACKS.read.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -358,6 +429,7 @@ export default function Puzzle() {
   const controlUnlocked = (completedByTrack.basics || []).length >= BASICS.length
   const blockingUnlocked = controlUnlocked && (completedByTrack.control || []).length >= CONTROL.length
   const memoryUnlocked = blockingUnlocked && (completedByTrack.blocking || []).length >= BLOCKING.length
+  const readUnlocked = memoryUnlocked && (completedByTrack.memory || []).length >= MEMORY.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -381,6 +453,9 @@ export default function Puzzle() {
     if (track.mode === 'memory') {
       return result.correct ? puzzle.feedback : `Not quite. Study the sequence again and try to remember the details.`
     }
+    if (track.mode === 'inference') {
+      return result.correct ? puzzle.feedback : 'Not quite. Focus only on what the opponent’s pass or pattern actually tells you.'
+    }
     if (track.mode === 'strategy') {
       if (!result.legal) {
         if (result.key === 'PASS') return `You still have legal moves: ${puzzle.valid.join(', ')}.`
@@ -398,7 +473,7 @@ export default function Puzzle() {
     if (result) return
     setChoice(key)
 
-    if (track.mode === 'memory') {
+    if (track.mode === 'memory' || track.mode === 'inference') {
       const correct = key === puzzle.best
       setResult({ key, correct, legal: true, best: correct, stars: correct ? 3 : 0 })
       if (correct) {
@@ -452,6 +527,7 @@ export default function Puzzle() {
     if (id === 'control' && !controlUnlocked) return
     if (id === 'blocking' && !blockingUnlocked) return
     if (id === 'memory' && !memoryUnlocked) return
+    if (id === 'read' && !readUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -459,9 +535,11 @@ export default function Puzzle() {
 
   const resultTitle = track.mode === 'memory'
     ? (result?.correct ? '✓ Remembered' : '✕ Not quite')
-    : (track.mode === 'strategy' && result?.legal
-      ? (result.best ? '★★★ Best Move' : '★★ Good Move')
-      : (result?.correct ? '✓ Correct' : '✕ Not a legal move'))
+    : (track.mode === 'inference'
+      ? (result?.correct ? '✓ Good Read' : '✕ Not quite')
+      : (track.mode === 'strategy' && result?.legal
+        ? (result.best ? '★★★ Best Move' : '★★ Good Move')
+        : (result?.correct ? '✓ Correct' : '✕ Not a legal move')))
 
   return (
     <main className="puzzle-page">
@@ -504,6 +582,15 @@ export default function Puzzle() {
           title={memoryUnlocked ? 'Remember what has been played' : 'Complete Blokaj first'}
         >
           <span>4</span> {memoryUnlocked ? 'Memwa' : '🔒 Memwa'}
+        </button>
+        <button
+          type="button"
+          className={trackId === 'read' ? 'active' : ''}
+          onClick={() => chooseTrack('read')}
+          disabled={!readUnlocked}
+          title={readUnlocked ? 'Read opponents from passes and patterns' : 'Complete Memwa first'}
+        >
+          <span>5</span> {readUnlocked ? 'Li Jwè a' : '🔒 Li Jwè a'}
         </button>
       </section>
 
@@ -584,6 +671,27 @@ export default function Puzzle() {
               </>
             )}
           </>
+        ) : track.mode === 'inference' ? (
+          <>
+            <div className="puzzle-read-card">
+              <span>READ THE TABLE</span>
+              {puzzle.clue}
+            </div>
+            <div className="puzzle-question">{puzzle.question}</div>
+            <div className="puzzle-read-options">
+              {puzzle.options.map(option => (
+                <button
+                  type="button"
+                  key={option}
+                  onClick={() => answer(option)}
+                  disabled={!!result}
+                  className={choice === option ? 'selected' : ''}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </>
         ) : (
           <>
             <div className="puzzle-board">
@@ -655,6 +763,9 @@ export default function Puzzle() {
           </button>
           <button type="button" className={memoryUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('memory')} disabled={!memoryUnlocked}>
             <b>4</b><span>{memoryUnlocked ? 'Memwa' : '🔒 Memwa'}</span><small>{memoryUnlocked ? 'Remember played tiles' : 'Finish Blokaj first'}</small>
+          </button>
+          <button type="button" className={readUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('read')} disabled={!readUnlocked}>
+            <b>5</b><span>{readUnlocked ? 'Li Jwè a' : '🔒 Li Jwè a'}</span><small>{readUnlocked ? 'Read opponents from clues' : 'Finish Memwa first'}</small>
           </button>
         </div>
       </section>
