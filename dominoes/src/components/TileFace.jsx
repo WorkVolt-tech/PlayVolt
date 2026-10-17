@@ -1,5 +1,6 @@
 import { TILE_SKINS, useEquippedSkins } from '../lib/skins'
 import { GlyphPath } from '../lib/zodiacGlyphs'
+import ShapedTile from './ShapedTile'
 
 // ── TileFace ─────────────────────────────────────────────────────────────────
 // Draws a domino's face to fill whatever box it's placed in.
@@ -24,6 +25,8 @@ export default function TileFace({ a, b, vertical = true, skin }) {
   const equipped = useEquippedSkins()
   const skinId = TILE_SKINS[skin || equipped.tile] ? (skin || equipped.tile) : 'classic'
   const S = TILE_SKINS[skinId]
+  // shaped skins (Kapsil, Zo) draw their own outline instead of a rectangle
+  if (S.shape) return <ShapedTile shape={S.shape} a={a} b={b} sideways={!vertical} />
   // luxury options (only skins that set them use them): jewel/metal pips
   // (pipGrad), a highlight on each pip (pipShine), a gilded bezel (bezel),
   // an engraved corner glyph (glyph), and a heavier centre line (dividerW)

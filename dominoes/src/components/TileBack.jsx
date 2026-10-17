@@ -1,5 +1,6 @@
 import { TILE_SKINS, useEquippedSkins } from '../lib/skins'
 import { GlyphPath } from '../lib/zodiacGlyphs'
+import ShapedTile from './ShapedTile'
 
 // ── TileBack ─────────────────────────────────────────────────────────────────
 // The back of a domino, in the equipped skin — used wherever a tile is face
@@ -107,6 +108,8 @@ const EMBLEMS = {
 export default function TileBack({ skin, turn = 0 }) {
   const equipped = useEquippedSkins()
   const S = TILE_SKINS[skin || equipped.tile] || TILE_SKINS.classic
+  // shaped skins (Kapsil, Zo): the back keeps the tile's outline too
+  if (S.shape) return <ShapedTile shape={S.shape} back sideways={!!turn} />
 
   const texture = 'repeating-linear-gradient(135deg, rgba(255,255,255,0.07) 0px, rgba(255,255,255,0.07) 2px, transparent 2px, transparent 5px)'
   const shade = 'linear-gradient(160deg, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.28) 100%)'

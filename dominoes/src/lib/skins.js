@@ -47,6 +47,9 @@ export const TILE_SKINS = {
   // ── logo themes ──
   dekabess: { label: 'Dekabess', face: () => 'linear-gradient(160deg, #24211b 0%, #141310 60%, #0a0908 100%)', edge: '#c9a84c', pip: '#e8c96a', ring: 'none', divider: 'rgba(201,168,76,0.55)' },
   playvolt: { label: 'PlayVolt', face: () => 'linear-gradient(160deg, #9c84ff 0%, #7c5cfc 55%, #4b2fc9 100%)', edge: '#22106e', pip: '#ffffff', ring: 'none', divider: 'rgba(255,255,255,0.3)' },
+  // ── shapes (drawn in components/ShapedTile.jsx; locked until their unlock is decided) ──
+  kapsil:   { label: 'Kapsil', shape: 'oval', face: () => 'linear-gradient(160deg, #24211b 0%, #121110 60%, #070707 100%)', edge: '#c9a84c', pip: '#efe3c6', ring: 'none', divider: 'rgba(201,168,76,0.6)' },
+  zo:       { label: 'Zo',     shape: 'bone', face: () => 'linear-gradient(160deg, #24211b 0%, #121110 60%, #070707 100%)', edge: '#c9a84c', pip: '#efe3c6', ring: 'none', divider: 'rgba(201,168,76,0.6)' },
   // ── trophy rewards ──
   kafe:     { label: 'Kafe', face: () => 'linear-gradient(160deg, #a77b55 0%, #7a5233 55%, #4e3220 100%)', edge: '#2e1c10', pip: '#f6ead8', ring: 'none', divider: 'rgba(246,234,216,0.25)' },
   kanaval:  { label: 'Kanaval', face: () => 'radial-gradient(circle at 18% 22%, #ff4f7b 0 4%, transparent 4.6%), radial-gradient(circle at 78% 14%, #ffd23f 0 3.6%, transparent 4.2%), radial-gradient(circle at 34% 58%, #3fb7ff 0 3.4%, transparent 4%), radial-gradient(circle at 84% 52%, #3ddc84 0 3.6%, transparent 4.2%), radial-gradient(circle at 14% 88%, #b06cff 0 3.8%, transparent 4.4%), radial-gradient(circle at 66% 90%, #ff8c42 0 3.4%, transparent 4%), linear-gradient(160deg, #fffaf0 0%, #f6edd8 100%)', edge: '#cdbf98', pip: '#1c1a16', ring: 'none', divider: 'rgba(60,45,15,0.30)' },
@@ -453,6 +456,7 @@ export const TILE_GROUPS = [
   { label: 'Neon', ids: ['neonGreen', 'neonPink', 'neonOrange', 'neonYellow', 'neonBlue', 'glow'] },
   { label: 'Flags', ids: ['haiti', 'quebec', 'jamaica', 'trinidad', 'dominican', 'usa', 'france'] },
   { label: 'Culture & Dekabess', ids: ['kafe', 'kanaval', 'phoenix', 'dekabess', 'playvolt'] },
+  { label: 'Shapes', ids: ['kapsil', 'zo'] },
   { label: 'Zodiac — Shop', ids: ['zodiac-aries', 'zodiac-taurus', 'zodiac-gemini', 'zodiac-cancer', 'zodiac-leo', 'zodiac-virgo', 'zodiac-libra', 'zodiac-scorpio', 'zodiac-sagittarius', 'zodiac-capricorn', 'zodiac-aquarius', 'zodiac-pisces'] },
 ]
 export const TABLE_GROUPS = [
