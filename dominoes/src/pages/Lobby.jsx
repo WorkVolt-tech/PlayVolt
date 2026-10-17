@@ -105,6 +105,7 @@ export default function Lobby() {
   // Solo: which bot sits in each of the 3 AI seats (defaults = the original trio)
   const [botPicks, setBotPicks]     = useState(['Ti-Djo', 'Ti-Cam', 'Ti-Jean'])
   const [unlockedBots, setUnlockedBots] = useState([])
+  const [storyCompletedChapters, setStoryCompletedChapters] = useState([])
   const [selectedPartner, setPartner] = useState(null)
   // A Team Challenge room: the line-up is fixed, so the mode, bots and
   // partner can't be changed here (the server set the room up)
@@ -159,9 +160,12 @@ export default function Lobby() {
       if (off) return
       const row = Array.isArray(data) ? data[0] : data
       setUnlockedBots(row?.unlocked_bots || [])
+      setStoryCompletedChapters(row?.completed_chapters || [])
     })
     return () => { off = true }
   }, [myUserId])
+
+  const storyComplete = CHAPTERS.every(ch => storyCompletedChapters.includes(ch.id))
 
   const canPickBot = name => {
     const b = BOT_ROSTER.find(x => x.name === name)
@@ -1079,7 +1083,13 @@ export default function Lobby() {
       <nav className="lobby-menu">
         <div className="menu-row">
           <button className="menu-btn gold" onClick={() => navigate('/story')}>📖 Story Mode</button>
-          <button className="menu-btn gold" onClick={() => navigate('/challenge')}>⚔️ Challenge</button>
+          <button
+            className="menu-btn gold"
+            onClick={() => navigate(storyComplete ? '/challenge' : '/story')}
+            title={storyComplete ? 'Challenge Mode' : 'Complete Story Mode to unlock Challenge Mode'}
+          >
+            {storyComplete ? '⚔️ Challenge' : '🔒 Challenge'}
+          </button>
           <button className="menu-btn gold" onClick={() => navigate('/tournament')}>🏆 Tournament</button>
         </div>
         <div className="menu-row">
