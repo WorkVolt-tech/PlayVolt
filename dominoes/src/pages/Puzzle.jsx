@@ -331,6 +331,80 @@ const READ_PLAYER = [
   },
 ]
 
+const FINISH_HAND = [
+  {
+    id: 'finish-1',
+    title: 'Keep the Chain Connected',
+    lesson: 'Near the end, think about whether today’s move leaves a path for the tiles still in your hand.',
+    clue: 'Open ends: 6 and 3. You have four tiles left. One move keeps three of your remaining tiles linked together.',
+    ends: [6, 3],
+    hand: [[6, 4], [6, 1], [4, 2], [2, 5]],
+    best: '6-4',
+    valid: ['6-4', '6-1'],
+    feedback: {
+      '6-4': 'Best move. It opens 4, which connects directly to 4-2, and that can lead into 2-5. Your remaining hand has a clear route.',
+      '6-1': 'Legal, but it opens an isolated 1. None of your other tiles contain a 1, so your hand becomes harder to unload.',
+    },
+  },
+  {
+    id: 'finish-2',
+    title: 'Do Not Strand the Double',
+    lesson: 'A double can become dead weight if you remove the number it needs from the open ends.',
+    clue: 'Open ends: 4 and 1. You still hold the 4-4 double.',
+    ends: [4, 1],
+    hand: [[4, 2], [1, 4], [4, 4], [2, 6]],
+    best: '1-4',
+    valid: ['4-2', '1-4', '4-4'],
+    feedback: {
+      '1-4': 'Best move. Playing on 1 opens 4, so your 4-4 stays immediately playable while the 4 suit remains alive.',
+      '4-2': 'Legal, but it removes the 4 from that end and opens 2. The other end is still 1, so your 4-4 may become difficult to release.',
+      '4-4': 'Legal, but using the double now is not as flexible as first turning the 1 end into another 4.',
+    },
+  },
+  {
+    id: 'finish-3',
+    title: 'Set Up Your Last Tile',
+    lesson: 'With only a few tiles left, try to leave an end that matches the tile you want to finish with.',
+    clue: 'Open ends: 5 and 2. Your goal is to make 6-3 easier to unload after the rest of your hand.',
+    ends: [5, 2],
+    hand: [[5, 6], [2, 4], [4, 3], [6, 3]],
+    best: '5-6',
+    valid: ['5-6', '2-4'],
+    feedback: {
+      '5-6': 'Best move. It opens 6, giving your 6-3 a live connection while you still have a separate 2-4 → 4-3 route on the other side.',
+      '2-4': 'Legal, but it opens 4 first and leaves the 6-3 with no immediate connection to either open end.',
+    },
+  },
+  {
+    id: 'finish-4',
+    title: 'Watch Your Pips',
+    lesson: 'If the table jams, Dekabess awards the blocked round to the player with the fewest pips left.',
+    clue: 'The pile is empty and the table looks close to blocking. You can shed either 6-5 or 2-1 right now.',
+    ends: [6, 2],
+    hand: [[6, 5], [2, 1], [5, 4], [1, 0]],
+    best: '6-5',
+    valid: ['6-5', '2-1'],
+    feedback: {
+      '6-5': 'Best move for a possible block. It removes 11 pips from your hand instead of only 3, lowering the total you would be stuck holding if the table jams.',
+      '2-1': 'Legal, but it sheds only 3 pips. When a block looks possible, getting heavy tiles out can decide the round.',
+    },
+  },
+  {
+    id: 'finish-5',
+    title: 'Spot the Dekabess Finish',
+    lesson: 'A Dekabess happens when your LAST non-double tile matches both open ends at once. It counts as 2 wins toward the streak.',
+    clue: 'Open ends: 6 and 3. You have two tiles left, and one of them can be a Dekabess if you save it for last.',
+    ends: [6, 3],
+    hand: [[6, 2], [6, 3]],
+    best: '6-2',
+    valid: ['6-2', '6-3'],
+    feedback: {
+      '6-2': 'Best move. It gets 6-2 out first and saves 6-3. If the ends are still 6 and 3 when 6-3 is your last tile, that final tile matches BOTH ends and can score a Dekabess.',
+      '6-3': 'Legal, but playing 6-3 now throws away your chance to use it as the last-tile Dekabess in this position.',
+    },
+  },
+]
+
 const TRACKS = {
   basics: {
     label: 'Premye Pa',
@@ -366,6 +440,13 @@ const TRACKS = {
     storage: 'dekabess_puzzle_read',
     puzzles: READ_PLAYER,
     mode: 'inference',
+  },
+  finish: {
+    label: 'Fini Men an',
+    subtitle: 'Plan the end of your hand',
+    storage: 'dekabess_puzzle_finish',
+    puzzles: FINISH_HAND,
+    mode: 'strategy',
   },
 }
 
@@ -417,6 +498,7 @@ export default function Puzzle() {
     blocking: readProgress(TRACKS.blocking.storage),
     memory: readProgress(TRACKS.memory.storage),
     read: readProgress(TRACKS.read.storage),
+    finish: readProgress(TRACKS.finish.storage),
   }))
 
   const track = TRACKS[trackId]
@@ -430,6 +512,7 @@ export default function Puzzle() {
   const blockingUnlocked = controlUnlocked && (completedByTrack.control || []).length >= CONTROL.length
   const memoryUnlocked = blockingUnlocked && (completedByTrack.blocking || []).length >= BLOCKING.length
   const readUnlocked = memoryUnlocked && (completedByTrack.memory || []).length >= MEMORY.length
+  const finishUnlocked = readUnlocked && (completedByTrack.read || []).length >= READ_PLAYER.length
 
   useEffect(() => {
     Object.entries(TRACKS).forEach(([id, info]) => {
@@ -528,6 +611,7 @@ export default function Puzzle() {
     if (id === 'blocking' && !blockingUnlocked) return
     if (id === 'memory' && !memoryUnlocked) return
     if (id === 'read' && !readUnlocked) return
+    if (id === 'finish' && !finishUnlocked) return
     setTrackId(id)
     setIndex(0)
     resetAnswer()
@@ -605,6 +689,15 @@ export default function Puzzle() {
           title={readUnlocked ? 'Read opponents from passes and patterns' : 'Complete Memwa first'}
         >
           <span>5</span> {readUnlocked ? 'Li Jwè a' : '🔒 Li Jwè a'}
+        </button>
+        <button
+          type="button"
+          className={trackId === 'finish' ? 'active' : ''}
+          onClick={() => chooseTrack('finish')}
+          disabled={!finishUnlocked}
+          title={finishUnlocked ? 'Plan the end of your hand' : 'Complete Li Jwè a first'}
+        >
+          <span>6</span> {finishUnlocked ? 'Fini Men an' : '🔒 Fini Men an'}
         </button>
       </section>
 
@@ -720,7 +813,9 @@ export default function Puzzle() {
             <div className="puzzle-question">
               {trackId === 'blocking'
                 ? 'Which move puts the most pressure on your opponent?'
-                : (track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?')}
+                : trackId === 'finish'
+                  ? 'Which move gives you the strongest endgame plan?'
+                  : (track.mode === 'strategy' ? 'Which move gives you the best control?' : 'What would you play?')}
             </div>
 
             <div className="puzzle-hand">
@@ -780,6 +875,9 @@ export default function Puzzle() {
           </button>
           <button type="button" className={readUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('read')} disabled={!readUnlocked}>
             <b>5</b><span>{readUnlocked ? 'Li Jwè a' : '🔒 Li Jwè a'}</span><small>{readUnlocked ? 'Read opponents from clues' : 'Finish Memwa first'}</small>
+          </button>
+          <button type="button" className={finishUnlocked ? 'unlocked' : ''} onClick={() => chooseTrack('finish')} disabled={!finishUnlocked}>
+            <b>6</b><span>{finishUnlocked ? 'Fini Men an' : '🔒 Fini Men an'}</span><small>{finishUnlocked ? 'Plan the end of your hand' : 'Finish Li Jwè a first'}</small>
           </button>
         </div>
       </section>
