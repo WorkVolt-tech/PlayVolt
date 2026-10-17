@@ -323,3 +323,76 @@
   font-size: .58rem;
   letter-spacing: .14em;
 }
+
+/* ── Memwa: study the sequence, hide it, then answer ─────────────────────── */
+.puzzle-memory-board {
+  background:
+    radial-gradient(ellipse at center, rgba(45,78,94,.30), transparent 72%),
+    #101c22;
+  border: 1px solid rgba(159,182,210,.22);
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+}
+.puzzle-memory-sequence {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 9px;
+  min-height: 52px;
+}
+.puzzle-memory-tile {
+  position: relative;
+  width: 86px;
+  height: 43px;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.puzzle-memory-hidden {
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  color: #aeb9c5;
+  font-size: .76rem;
+  letter-spacing: .03em;
+}
+.puzzle-memory-toggle {
+  margin-top: 14px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid rgba(159,182,210,.36);
+  border-radius: 10px;
+  background: rgba(20,28,34,.9);
+  color: #cbd9e7;
+  font-family: inherit;
+  cursor: pointer;
+}
+.puzzle-memory-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 180px));
+  justify-content: center;
+  gap: 10px;
+}
+.puzzle-memory-options button {
+  min-height: 48px;
+  border: 1px solid rgba(216,178,90,.34);
+  border-radius: 10px;
+  background: #171612;
+  color: #e7dcc2;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.puzzle-memory-options button:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+}
+.puzzle-memory-options button.selected {
+  border-color: #e8c96a;
+  color: #fff0b8;
+}
+
+@media (max-width: 600px) {
+  .puzzle-memory-tile { width: 74px; height: 37px; }
+  .puzzle-memory-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
