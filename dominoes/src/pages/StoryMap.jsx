@@ -50,15 +50,15 @@ export default function StoryMap() {
   // ── guests ────────────────────────────────────────────────────────────────
   if (!isLoading && !user) {
     return (
-      <div className="story-page">
+      <div className="story-page ui-page">
         <div className="story-header">
-          <button className="story-back" onClick={() => navigate('/')}>← Back</button>
-          <h1 className="story-title">Story Mode <InfoButton section="story" label="How Story Mode works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
+          <button className="story-back ui-back" onClick={() => navigate('/')}>← Back</button>
+          <h1 className="story-title ui-title">Story Mode <InfoButton section="story" label="How Story Mode works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
           <span style={{ width: 60 }} />
         </div>
         <div className="story-gate">
           <p>Story Mode keeps your progress on your account, so it follows you between devices.</p>
-          <button className="story-btn" onClick={() => navigate('/auth')}>Sign in to play</button>
+          <button className="story-btn ui-primary" onClick={() => navigate('/auth')}>Sign in to play</button>
         </div>
       </div>
     )
@@ -72,10 +72,10 @@ export default function StoryMap() {
   ]
 
   return (
-    <div className="story-page">
+    <div className="story-page ui-page">
       <div className="story-header">
-        <button className="story-back" onClick={() => navigate('/')}>← Back</button>
-        <h1 className="story-title">Story Mode <InfoButton section="story" label="How Story Mode works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
+        <button className="story-back ui-back" onClick={() => navigate('/')}>← Back</button>
+        <h1 className="story-title ui-title">Story Mode <InfoButton section="story" label="How Story Mode works" style={{ marginLeft: 10, verticalAlign: 'middle' }} /></h1>
         <span className="story-count">{completed.length}/{CHAPTERS.length}</span>
       </div>
 
