@@ -305,3 +305,21 @@
 .puzzle-path button:disabled {
   cursor: not-allowed;
 }
+
+.puzzle-clue {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(120,160,210,.24);
+  border-radius: 10px;
+  background: rgba(54,82,112,.12);
+  color: #c7c4ba;
+  font-size: .78rem;
+  line-height: 1.5;
+}
+.puzzle-clue span {
+  display: block;
+  margin-bottom: 5px;
+  color: #9fb6d2;
+  font-size: .58rem;
+  letter-spacing: .14em;
+}
