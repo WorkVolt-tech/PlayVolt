@@ -29,10 +29,10 @@ export default function Trophies() {
   const earned = earnedTrophies(stats)
 
   return (
-    <div className="trophies-page">
+    <div className="trophies-page ui-page">
       <div className="trophies-head">
         <div>
-          <button className="trophies-back" onClick={() => navigate(-1)}>← Back</button>
+          <button className="trophies-back ui-back" onClick={() => navigate(-1)}>← Back</button>
           <h1>Trophies</h1>
           <p>Earn them by playing. Each one unlocks something — and its avatar, which you can wear on your profile and at the table.</p>
         </div>
