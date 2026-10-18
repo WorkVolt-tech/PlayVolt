@@ -283,16 +283,18 @@ export default function StoryChallenge() {
     if (!state || state.status !== 'over') return null
     const w = state.winner
     if (w === -1) return { title: 'Dead end', how: 'Nothing left to play — try the puzzle again.', mine: false }
+    const mate = challenge?.partner === 'pick' ? partner : challenge?.partner
+    const mine = w === 0 || (!!mate && (state.seats ?? 4) === 4 && w === 2)
     const who = nameAt(w)
-    const title = w === 0 ? 'You win the round' : `${who} wins the round`
+    const title = w === 0 ? 'You win the round' : mine ? `${who} wins for your team` : `${who} wins the round`
     let how
     if (state.dekabess) how = `Dekabess — ${w === 0 ? 'you' : who} went out on a tile matching both ends.`
     else if (state.blocked) {
       const pips = state.hands.map((h, seat) => `${nameAt(seat)} ${pipCount(h)}`).join(' · ')
       how = `The table jammed — nobody could play. Fewest pips wins: ${pips}.`
     } else how = `${w === 0 ? 'You' : who} went out first.`
-    return { title, how, mine: w === 0 }
-  }, [seatBot])
+    return { title, how, mine }
+  }, [seatBot, challenge?.partner, partner])
 
   // A new deal: say who opens, and give it a moment before anyone moves.
   useEffect(() => {
@@ -309,7 +311,9 @@ export default function StoryChallenge() {
   useEffect(() => {
     if (!st || st.status !== 'over' || result) return
     const best = challenge?.rounds === 3
-    const outcome = { ...Engine.evaluateObjective(st), round: describeRound(st) }
+    const mate = challenge?.partner === 'pick' ? partner : challenge?.partner
+    const playerSeats = mate && (st.seats ?? 4) === 4 ? [0, 2] : [0]
+    const outcome = { ...Engine.evaluateObjective(st, playerSeats), round: describeRound(st) }
     if (st.dekabess && st.winner >= 0) setBoardDek(`story-${st.dealId || Date.now()}`)   // board first, then the celebration
     if (!best) { setResult(outcome); return }
 
