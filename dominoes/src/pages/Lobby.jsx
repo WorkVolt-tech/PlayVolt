@@ -19,6 +19,7 @@ import { CHAPTERS } from '../story/chapters'
 import { VERSION, VERSION_NOTE } from '../version'
 import GoudBadge from '../components/GoudBadge'
 import { InfoButton } from '../components/GameGuide'
+import { StakeCreate, StakeJoinCard, openStakeRoom } from '../components/StakeLobby'
 
 // Experts are earned in Story Mode: beat a bot's chapter and they're yours.
 // Ordinary bots are always available.
@@ -98,6 +99,9 @@ export default function Lobby() {
   const myRoomCodeRef = useRef(null)
   const [players, setPlayers]       = useState([])
   const [selectedMode, setMode]     = useState('chien')
+  // Goud stakes: off unless the player turns it on when creating a room
+  const [playForGoud, setPlayForGoud] = useState(false)
+  const [stakePreview, setStakePreview] = useState(null)
   // The mode stored ON THE ROOM — drives how many seats the table shows, for
   // the host and for anyone who joined by code alike.
   const [roomMode, setRoomMode]     = useState('chien')
@@ -413,9 +417,15 @@ export default function Lobby() {
     // who's signed in, asked now: on a link that joins as the page opens,
     // the page's own copy of this may not have loaded yet
     const uid = myUserId ?? (await db.auth.getUser()).data?.user?.id ?? null
-    const nick = getNickname(); if (!nick) return
     const code = (codeOverride || joinCode).toUpperCase()
     if (code.length !== 6) { setMsg({ text: 'Enter a 6-character room code.', type: 'error' }); return }
+
+    // A stake room: show its stake first; nobody joins a bet by surprise.
+    // (Stake seats use the account's name, so no nickname is needed for this.)
+    const { data: sp, error: spErr } = await db.rpc('stake_preview', { p_code: code })
+    if (!spErr && sp?.ok) { setStakePreview(sp); setTab('join'); return }
+
+    const nick = getNickname(); if (!nick) return
 
     // A game already in progress: if you had a seat at it, take it back.
     // (Phone died, lost signal, closed the app — a bot has been holding your
@@ -839,12 +849,20 @@ export default function Lobby() {
         {/* Create */}
         {tab === 'create' && (
           <div className="panel">
-            <button className="btn btn-primary" onClick={() => createRoom()}>Create New Room</button>
+            {!playForGoud && <button className="btn btn-primary" onClick={() => createRoom()}>Create New Room</button>}
+            <StakeCreate on={playForGoud} setOn={setPlayForGoud} signedIn={!!myUserId}
+              onCreated={id => openStakeRoom(id, navigate)} />
           </div>
         )}
 
         {/* Join */}
-        {tab === 'join' && (
+        {tab === 'join' && stakePreview && (
+          <div className="panel">
+            <StakeJoinCard preview={stakePreview} signedIn={!!myUserId}
+              onJoined={id => openStakeRoom(id, navigate)} onCancel={() => setStakePreview(null)} />
+          </div>
+        )}
+        {tab === 'join' && !stakePreview && (
           <div className="panel">
             <div className="input-group">
               <label>Room Code</label>
@@ -1104,7 +1122,6 @@ export default function Lobby() {
           </button>
           <button className="menu-btn" onClick={() => navigate('/practice')}>🎲 Practice</button>
           <button className="menu-btn" onClick={() => navigate('/puzzle')}>🧩 Learn & Puzzle</button>
-          <button className="menu-btn" onClick={() => navigate('/stakes')}>🪙 Goud Stakes</button>
         </div>
         <div className="menu-row">
           <button className="menu-btn" onClick={() => navigate('/tracker')}>📊 Dekabess Tracker</button>

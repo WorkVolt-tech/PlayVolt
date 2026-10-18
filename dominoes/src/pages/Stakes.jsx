@@ -4,16 +4,15 @@ import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
 import './Stakes.css'
 
-// ── Goud stake tables ────────────────────────────────────────────────────────
-// Open a table for a stake, or check one by its code before joining. In the
-// waiting room everyone accepts the stake; anyone can propose another amount
+// ── The stake waiting room ───────────────────────────────────────────────────
+// Reached from the Lobby: "Play for Goud" when creating a room, or a room code
+// that belongs to a stake room (components/StakeLobby.jsx). In the waiting room everyone accepts the stake; anyone can propose another amount
 // and the table votes (more than half saying yes changes it, and then everyone
 // accepts the new amount). The host starts once every seat is filled and
 // accepted. The server holds the stakes at the start, runs the game and pays
 // the pot at the Vyèj (stake_* in dekabess_database.sql). No Goud is held
 // before the start, so leaving the waiting room costs nothing.
 
-const PRESETS = [25, 50, 100, 250]
 const KEY = 'dekabess_stake_room'
 const cap = s => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
@@ -24,23 +23,10 @@ export default function Stakes() {
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // open a table
-  const [amount, setAmount] = useState(50)
-  const [custom, setCustom] = useState('')
-  const [mode, setMode] = useState('chien')
-  const [seats, setSeats] = useState(4)
-  const [pile, setPile] = useState(false)
-
-  // join a table
-  const [code, setCode] = useState('')
-  const [preview, setPreview] = useState(null)
-
   // the waiting room
   const [roomId, setRoomId] = useState(() => { try { return JSON.parse(sessionStorage.getItem(KEY) || 'null')?.roomId || null } catch { return null } })
   const [info, setInfo] = useState(null)
   const [propose, setPropose] = useState('')
-
-  const stakeNow = custom !== '' ? Number(custom) : amount
 
   const loadBalance = useCallback(() => {
     db.rpc('goud_status').then(({ data }) => { const r = Array.isArray(data) ? data[0] : data; if (r) setBalance(Number(r.balance)) })
@@ -88,12 +74,6 @@ export default function Stakes() {
     return () => { db.removeChannel(ch); clearInterval(t) }
   }, [roomId, loadInfo])
 
-  function enter(id) {
-    try { sessionStorage.setItem(KEY, JSON.stringify({ roomId: id })) } catch { /* ignore */ }
-    setPreview(null); setCode(''); setMsg('')
-    setRoomId(id)
-  }
-
   async function call(fn, args, then) {
     setBusy(true); setMsg('')
     const { data, error } = await db.rpc(fn, args)
@@ -104,18 +84,13 @@ export default function Stakes() {
     return data
   }
 
-  const create = () => call('stake_create', {
-    p_stake: Math.floor(stakeNow), p_mode: mode, p_seats: mode === 'asosye' ? 4 : seats, p_variant: pile && seats < 4 && mode === 'chien' ? 'pile' : 'all',
-  }, d => enter(d.room_id))
-  const check = () => call('stake_preview', { p_code: code.trim().toUpperCase() }, d => setPreview(d))
-  const join = () => call('stake_join', { p_code: preview.code }, d => enter(d.room_id))
   const accept = () => call('stake_accept', { p_room: roomId }, loadInfo)
   const vote = yes => call('stake_vote', { p_room: roomId, p_yes: yes }, loadInfo)
   const sendProposal = () => call('stake_propose', { p_room: roomId, p_amount: Math.floor(Number(propose)) }, () => { setPropose(''); loadInfo() })
   const start = () => call('stake_start', { p_room: roomId }, loadInfo)
   const leave = () => call('stake_leave', { p_room: roomId }, () => {
     try { sessionStorage.removeItem(KEY) } catch { /* ignore */ }
-    setRoomId(null); setInfo(null); loadBalance()
+    navigate('/')
   })
 
   const modeName = m => (m === 'asosye' ? 'Partners' : 'Every man')
@@ -199,70 +174,12 @@ export default function Stakes() {
     )
   }
 
-  // ── open or join ──
-  const maxBal = balance ?? 0
-  const okAmount = Number.isFinite(stakeNow) && stakeNow >= 10 && stakeNow <= maxBal
+  // not at a stake table (closed, left, or opened directly)
   return (
     <div className="stakes-page">
-      <button className="ui-back stakes-back" onClick={() => navigate('/')}>← Lobby</button>
       <h1 className="stakes-title">Goud Stakes</h1>
-      <p className="stakes-note">You have <strong>🪙 {balance ?? '…'}</strong> Goud. Play people for Goud: the server deals, checks every move and pays the winner.</p>
-
-      <div className="stakes-card">
-        <div className="stakes-label">Join a table</div>
-        <div className="stakes-row">
-          <input className="stakes-input code" placeholder="CODE" maxLength={6} value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase()); setPreview(null) }} />
-          <button className="stakes-btn" onClick={check} disabled={busy || code.trim().length < 6}>Check</button>
-        </div>
-        {preview && (
-          <div className="stakes-preview">
-            <div><strong>{preview.host}</strong>’s table · {modeName(preview.mode)}</div>
-            <div className="stakes-amount">🪙 {preview.stake} <span>Goud each · pot {preview.pot}</span></div>
-            <div className="stakes-sub">{preview.seated}/{preview.seat_count} seated{preview.vote_open ? ' · a stake vote is open' : ''}</div>
-            {preview.my_seat !== null && preview.my_seat !== undefined && !['finished', 'cancelled'].includes(preview.status)
-              ? <div className="stakes-row"><button className="stakes-btn gold" onClick={join} disabled={busy}>Back to your table</button></div>
-              : preview.status !== 'waiting'
-              ? <div className="stakes-sub">This game has {preview.status === 'finished' || preview.status === 'cancelled' ? 'ended' : 'already started'}.</div>
-              : preview.can_afford
-                ? <div className="stakes-row">
-                    <button className="stakes-btn gold" onClick={join} disabled={busy}>Join for {preview.stake} Goud</button>
-                    <button className="stakes-btn" onClick={() => setPreview(null)}>Cancel</button>
-                  </div>
-                : <div className="stakes-sub">You need {preview.stake} Goud to join.</div>}
-          </div>
-        )}
-      </div>
-
-      <div className="stakes-card">
-        <div className="stakes-label">Open a table</div>
-        <div className="stakes-chips">
-          {PRESETS.map(v => (
-            <button key={v} className={`stakes-chip ${custom === '' && amount === v ? 'on' : ''}`} disabled={v > maxBal}
-              onClick={() => { setAmount(v); setCustom('') }}>{v}</button>
-          ))}
-          <input className="stakes-input small" inputMode="numeric" placeholder="Other"
-            value={custom} onChange={e => setCustom(e.target.value.replace(/\D/g, ''))} />
-        </div>
-        <div className="stakes-chips">
-          <button className={`stakes-chip ${mode === 'chien' ? 'on' : ''}`} onClick={() => setMode('chien')}>Every man</button>
-          <button className={`stakes-chip ${mode === 'asosye' ? 'on' : ''}`} onClick={() => { setMode('asosye'); setSeats(4) }}>Partners (4)</button>
-        </div>
-        {mode === 'chien' && (
-          <div className="stakes-chips">
-            {[2, 3, 4].map(n => (
-              <button key={n} className={`stakes-chip ${seats === n ? 'on' : ''}`} onClick={() => setSeats(n)}>{n} players</button>
-            ))}
-            {seats < 4 && (
-              <button className={`stakes-chip ${pile ? 'on' : ''}`} onClick={() => setPile(x => !x)}>Draw pile {pile ? 'on' : 'off'}</button>
-            )}
-          </div>
-        )}
-        <button className="stakes-btn gold big" onClick={create} disabled={busy || !okAmount}>
-          {okAmount ? `Open a table for ${Math.floor(stakeNow)} Goud each` : stakeNow > maxBal ? 'More than you have' : 'At least 10 Goud'}
-        </button>
-      </div>
-      {msg && <p className="stakes-msg">{msg}</p>}
+      <p className="stakes-note">{msg || 'You’re not at a stake table. Create one from the Lobby with “Play for Goud”, or join one with its code.'}</p>
+      <button className="stakes-btn gold" onClick={() => navigate('/')}>Back to the lobby</button>
     </div>
   )
 }
