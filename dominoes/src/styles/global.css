@@ -181,3 +181,69 @@ input {
 @media (prefers-reduced-motion: reduce) {
   .tile-fresh:has(> [data-tile-shape]), .tile-fresh.tile-slide:has(> [data-tile-shape]) { animation: tileGlowShape 0.01ms both; }
 }
+
+/* ── App version alert ──────────────────────────────────────────────────── */
+.version-alert {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100000;
+  width: min(720px, calc(100vw - 20px));
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(232, 201, 106, .62);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(201,168,76,.16), transparent 42%),
+    rgba(20, 18, 14, .98);
+  color: var(--ivory);
+  box-shadow: 0 12px 34px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter: blur(10px);
+}
+.version-alert__copy {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 3px;
+}
+.version-alert__copy strong {
+  color: var(--gold-glow);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: .98rem;
+  letter-spacing: .01em;
+}
+.version-alert__copy span {
+  color: #d8d0bd;
+  font-size: .68rem;
+  line-height: 1.45;
+}
+.version-alert button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #d3b45e;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #dec36f, #b99438);
+  color: #11100d;
+  font-weight: 700;
+  font-size: .67rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.version-alert button:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+@media (max-width: 600px) {
+  .version-alert {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .version-alert button {
+    width: 100%;
+  }
+}
