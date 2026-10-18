@@ -245,12 +245,12 @@ export function settleTurn(st) {
 }
 
 // ── Objectives ───────────────────────────────────────────────────────────────
-// Judged for seat 0 — the player.
-
-export function evaluateObjective(st) {
+// Judged for the player's side. Solo defaults to seat 0; partner Story
+// challenges explicitly pass [0, 2] so an AI teammate's win counts too.
+export function evaluateObjective(st, playerSeats = [0]) {
   if (st.status !== 'over') return { done: false }
   const o = st.objective
-  const won = st.winner === 0
+  const won = playerSeats.includes(st.winner)
   const withinMoves = !st.moveLimit || st.moves <= st.moveLimit
 
   let met = false
