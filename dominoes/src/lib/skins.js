@@ -245,7 +245,9 @@ export const TABLE_SKINS = {
   'zodiac-scorpio': { label: 'Scorpio', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-scorpio-thumb.webp', felt: "url('/tables/zodiac-scorpio-wide.webp') center / cover no-repeat, #0e0c10" },
   'zodiac-sagittarius': { label: 'Sagittarius', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-sagittarius-thumb.webp', felt: "url('/tables/zodiac-sagittarius-wide.webp') center / cover no-repeat, #0e0c10" },
   'zodiac-capricorn': { label: 'Capricorn', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-capricorn-thumb.webp', felt: "url('/tables/zodiac-capricorn-wide.webp') center / cover no-repeat, #0e0c10" },
-  'zodiac-aquarius': { label: 'Aquarius', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-aquarius-thumb.webp', felt: "url('/tables/zodiac-aquarius-wide.webp') center / cover no-repeat, #0e0c10" },
+  // Aquarius has a tall version: the whole picture is stretched evenly to the board
+  // (tall art upright, wide art sideways), like Jazz and Neg Maron — nothing cropped.
+  'zodiac-aquarius': { label: 'Aquarius', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-aquarius-thumb.webp', felt: "url('/tables/zodiac-aquarius-tall.webp') center / 100% 100% no-repeat, #0e0c10", wideFelt: "url('/tables/zodiac-aquarius-wide.webp') center / 100% 100% no-repeat, #0e0c10" },
   'zodiac-pisces': { label: 'Pisces', shop: 5000, rail: 'linear-gradient(180deg, #2a2038 0%, #120c18 100%)', thumb: '/tables/zodiac-pisces-thumb.webp', felt: "url('/tables/zodiac-pisces-wide.webp') center / cover no-repeat, #0e0c10" },
 }
 
