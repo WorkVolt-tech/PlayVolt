@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { DECO_KINDS, decoSvg } from '../lib/decoShapes'
 
 // ── ShapedTile ───────────────────────────────────────────────────────────────
 // The art for the shaped tile skins: Kapsil (an oval) and Zo (a bone).
@@ -135,6 +136,18 @@ function BoneBack({ u }) {
 // shape: 'oval' | 'bone'. sideways: lie along a 2:1 box (else upright, 1:2).
 export default function ShapedTile({ shape, a = 0, b = 0, back = false, sideways = false }) {
   const u = 'st' + useId().replace(/[^a-zA-Z0-9]/g, '') + '-'
+  // the black-marble deco family (Hexa, Oktav, Fle, Lozanj, Dyaman, Konkav)
+  if (DECO_KINDS.includes(shape)) {
+    const html = { __html: decoSvg(shape, a, b, back, u) }
+    return (
+      <div data-tile-shape={shape} aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <svg viewBox={sideways ? '0 0 200 100' : '0 0 100 200'} preserveAspectRatio="xMidYMid meet"
+          width="100%" height="100%" style={{ position: 'absolute', inset: 0, display: 'block', overflow: 'visible' }}>
+          {sideways ? <g dangerouslySetInnerHTML={html} /> : <g transform="translate(100 0) rotate(90)" dangerouslySetInnerHTML={html} />}
+        </svg>
+      </div>
+    )
+  }
   const art = shape === 'bone'
     ? (back ? <BoneBack u={u} /> : <BoneFace a={a} b={b} u={u} />)
     : <Oval a={a} b={b} back={back} u={u} />

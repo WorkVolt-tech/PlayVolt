@@ -1,4 +1,4 @@
 // The version shown at the bottom of the lobby. Bumped with every delivery,
 // so a glance at the lobby tells you whether the newest code is live.
-export const VERSION = 'v1.34'
-export const VERSION_NOTE = 'Leo, Libra, Pisces, Sagittarius tall'
+export const VERSION = 'v1.35'
+export const VERSION_NOTE = 'Six deco tile shapes, last 3 zodiac tall'
