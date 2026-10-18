@@ -311,10 +311,14 @@ export function useGameState(myInfo, navigate) {
 
   // Safety net: an occasional full re-read, and one whenever the tab comes
   // back into view, so a missed message can never leave a device out of sync.
+  // Coming back to the app also bumps resumeTick, which re-runs the sync gate
+  // below: while the table is re-read, your hand and Pass stay locked, so you
+  // can't act on a screen that's out of date.
+  const [resumeTick, setResumeTick] = useState(0)
   useEffect(() => {
     if (!myInfo?.roomId) return
     const t = setInterval(() => { if (document.visibilityState === 'visible') loadGameState() }, 20000)
-    const onShow = () => { if (document.visibilityState === 'visible') loadGameState() }
+    const onShow = () => { if (document.visibilityState === 'visible') { setResumeTick(x => x + 1); loadGameState() } }
     document.addEventListener('visibilitychange', onShow)
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', onShow) }
   }, [myInfo?.roomId, loadGameState])
@@ -336,7 +340,9 @@ export function useGameState(myInfo, navigate) {
   const seatAtTurnNow = players.find(p => p.seat === roomData?.current_turn)
   const iActNow = !!roomData && roomData.status === 'playing' && !!myInfo
     && (roomData.current_turn === myInfo.seat || (amRunner && !!seatAtTurnNow?.is_ai))
-  const syncKey = `${roomData?.round}:${roomData?.current_turn}:${roomData?.status}`
+  const turnKey = `${roomData?.round}:${roomData?.current_turn}:${roomData?.status}`
+  const syncKey = `${turnKey}:${resumeTick}`
+  const clockSetFor = useRef(null)      // the turn whose clock was last started here
   useEffect(() => {
     if (!iActNow) { syncingRef.current = false; setSyncing(false); return }
     let cancelled = false
@@ -355,8 +361,10 @@ export function useGameState(myInfo, navigate) {
       if (cancelled) return
       syncingRef.current = false
       setSyncing(false)
-      // your own clock starts when you can actually play, not when the turn arrived
-      if (roomData?.current_turn === myInfo?.seat) setTurnStart(Date.now())
+      // your own clock starts when you can actually play, not when the turn arrived —
+      // once per turn: coming back from another app doesn't restart it
+      if (roomData?.current_turn === myInfo?.seat && clockSetFor.current !== turnKey) setTurnStart(Date.now())
+      clockSetFor.current = turnKey
       tlog(`synced before acting: ${(performance.now() - began).toFixed(0)}ms`)
     })()
     return () => { cancelled = true }
@@ -722,6 +730,13 @@ export function useGameState(myInfo, navigate) {
     })
     tlog(`play_move (${action}, seat ${seat ?? myInfo.seat}) took ${(performance.now() - t0).toFixed(0)}ms`)
     if (error) {
+      // The server refused a pass because this seat has a tile that fits
+      // (see dekabess_guard_pass): nothing was written. Don't retry — re-read
+      // the table so the screen shows what's really playable.
+      if (/pass refused/i.test(error.message || '')) {
+        loadGameState()
+        return 'refused'
+      }
       const missing =
         error.code === 'PGRST202' ||
         error.code === '42883' ||
@@ -744,6 +759,7 @@ export function useGameState(myInfo, navigate) {
         p_check_block: checkBlock,
       })
       if (retry.error) {
+        if (/pass refused/i.test(retry.error.message || '')) { loadGameState(); return 'refused' }
         console.error('[play_move] failed twice, resyncing:', retry.error.message)
         loadGameState()
         return 'error'
@@ -909,6 +925,7 @@ export function useGameState(myInfo, navigate) {
           checkBlock: boardRef.current?.tiles?.length > 0,
         })
         if (res === 'error') return
+        if (res === 'refused') { showToastMsg('You have a tile that fits — play it'); return }
         if (res !== 'missing') {
           if (res.stale) loadGameState()          // duplicate tap — nothing written
           else if (res.blocked) await endRound(null, false)
@@ -917,7 +934,8 @@ export function useGameState(myInfo, navigate) {
         }
       }
       // Original path (play_move not installed) — unchanged.
-      await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null })
+      const { error: passErr } = await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: myInfo.seat, action: 'pass', tile: null })
+      if (passErr) { loadGameState(); if (/pass refused/i.test(passErr.message || '')) showToastMsg('You have a tile that fits — play it'); return }
       await advanceTurn(hand, null)
     } finally {
       processingRef.current = false
@@ -1185,7 +1203,7 @@ export function useGameState(myInfo, navigate) {
       const commitBot = async (args) => {
         for (let attempt = 0; attempt < 3; attempt++) {
           const res = await commitMove({ ...args, seat: currentPlayer.seat })
-          if (res !== 'error') return res
+          if (res !== 'error') return res          // includes 'refused': never retried
           await new Promise(r => setTimeout(r, 800))
         }
         return 'error'
@@ -1216,7 +1234,8 @@ export function useGameState(myInfo, navigate) {
         })
         if (res === 'missing') {
           // Original path (play_move not installed) — unchanged.
-          await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'pass', tile: null })
+          const { error: passErr } = await db.from('game_events').insert({ room_id: myInfo.roomId, player_seat: currentPlayer.seat, action: 'pass', tile: null })
+          if (passErr) { botRunningRef.current = false; loadGameState(); return }   // refused: the seat can play
           if (board?.tiles?.length > 0) {
             const { data: events } = await db.from('game_events').select('*').eq('room_id', myInfo.roomId).order('created_at', { ascending: false }).limit(seatCountRef.current)
             if (events?.length === seatCountRef.current && events.every(e => e.action === 'pass')) { botRunningRef.current = false; await endRound(null, false); return }
@@ -1226,7 +1245,7 @@ export function useGameState(myInfo, navigate) {
           return
         }
         botRunningRef.current = false
-        if (res === 'error' || res.stale) return
+        if (res === 'error' || res === 'refused' || res.stale) return
         if (res.blocked) { await endRound(null, false); return }
         loadGameState()
         return
