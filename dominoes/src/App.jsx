@@ -20,6 +20,7 @@ import Challenge from './pages/Challenge'
 import Stakes from './pages/Stakes'
 import Heartbeat from './components/Heartbeat'
 import ChallengeBanner from './components/ChallengeBanner'
+import VersionAlert from './components/VersionAlert'
 import './styles/global.css'
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
     <BrowserRouter>
       <Heartbeat />
       <ChallengeBanner />
+      <VersionAlert />
       <DragProvider>
       <Routes>
         <Route path="/" element={<Lobby />} />
