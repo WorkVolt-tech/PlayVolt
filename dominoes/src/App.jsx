@@ -17,6 +17,7 @@ import Trophies from './pages/Trophies'
 import Watch from './pages/Watch'
 import Friends from './pages/Friends'
 import Challenge from './pages/Challenge'
+import Stakes from './pages/Stakes'
 import Heartbeat from './components/Heartbeat'
 import ChallengeBanner from './components/ChallengeBanner'
 import './styles/global.css'
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/watch/:roomId" element={<Watch />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/challenge" element={<Challenge />} />
+        <Route path="/stakes" element={<Stakes />} />
         <Route path="/challenge/play" element={<SoloGame challengeMode />} />
         <Route path="/tracker" element={<Tracker />} />
         <Route path="/wa-tab-la" element={<WaTabLa />} />

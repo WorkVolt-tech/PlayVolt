@@ -447,7 +447,10 @@ export default function Game() {
       <div className="top-bar">
         <div className="top-bar-left">
           <span className="game-title">Dekabess!</span>
-          <span className="room-code-badge">{myInfo.roomCode || '——'}</span>
+          {myInfo.stake
+            // a stake table shows what's at stake instead of its code
+            ? <span className="room-code-badge" title={`${myInfo.stake} Goud each`}>🪙 pot {myInfo.stake * (roomData?.seat_count || players.length || 4)}</span>
+            : <span className="room-code-badge">{myInfo.roomCode || '——'}</span>}
           {watchers > 0 && <span className="room-code-badge" title="People watching this game">👁 {watchers}</span>}
         </div>
         <div className="player-tags">
@@ -473,6 +476,14 @@ export default function Game() {
         <button className="btn-leave" onClick={leaveTable}>Leave</button>
       </div>
 
+      {myInfo?.stake && roomData?.status === 'finished' && roomData.match_winner != null && (() => {
+        // the server has already paid the pot; this just tells you how it went
+        const pot = myInfo.stake * (roomData.seat_count || players.length || 4)
+        const team = myInfo.seat === 0 || myInfo.seat === 2 ? 'A' : 'B'
+        const won = roomData.game_mode === 'asosye' ? roomData.match_winner === team : String(roomData.match_winner) === String(myInfo.seat)
+        const gain = roomData.game_mode === 'asosye' ? myInfo.stake * 2 : pot
+        return <div className={`stake-result ${won ? '' : 'lost'}`}>{won ? `🪙 You won ${gain} Goud` : `You lost your ${myInfo.stake} Goud stake`}</div>
+      })()}
       <div className="board-container">
         {unlockHints.length > 0 && (
           <div className="unlock-hint" title="The host's skins — earn them by playing">

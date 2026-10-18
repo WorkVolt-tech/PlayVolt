@@ -1,0 +1,73 @@
+.stakes-page {
+  min-height: 100vh;
+  max-width: 560px;
+  margin: 0 auto;
+  /* Installed as an app, the page is drawn under the phone's status bar (time,
+     battery) and, sideways, the camera. Leave room for them (0 in a browser). */
+  padding: calc(1rem + env(safe-area-inset-top, 0px)) calc(1rem + env(safe-area-inset-right, 0px))
+           calc(2.5rem + env(safe-area-inset-bottom, 0px)) calc(1rem + env(safe-area-inset-left, 0px));
+  color: var(--ivory);
+  font-family: 'DM Mono', monospace;
+}
+.stakes-back { margin-bottom: 0.4rem; }
+.stakes-title { font-family: 'Playfair Display', Georgia, serif; color: var(--gold); font-size: 2rem; margin: 0.3rem 0 0.4rem; }
+.stakes-note { color: var(--ivory-dim); font-size: 0.78rem; line-height: 1.5; margin: 0 0 1rem; }
+.stakes-note strong { color: var(--gold-glow); }
+.stakes-card {
+  background: var(--surface, rgba(255,255,255,0.03)); border: 1px solid var(--border);
+  border-radius: 14px; padding: 0.9rem; margin-bottom: 0.9rem;
+}
+.stakes-label { font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.6rem; }
+.stakes-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem; }
+.stakes-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; align-items: center; }
+.stakes-chip {
+  height: 34px; padding: 0 14px; border-radius: 17px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--ivory-dim);
+  font-family: inherit; font-size: 0.75rem;
+}
+.stakes-chip.on { border-color: var(--gold); background: rgba(201,168,76,0.15); color: var(--gold-glow); }
+.stakes-chip:disabled { opacity: 0.35; cursor: default; }
+.stakes-input {
+  flex: 1; min-width: 0; height: 38px; padding: 0 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: rgba(0,0,0,0.25); color: var(--ivory);
+  font-family: inherit; font-size: 0.85rem;
+}
+.stakes-input.small { flex: 0 0 90px; height: 34px; }
+.stakes-input.code { letter-spacing: 0.3em; text-transform: uppercase; }
+.stakes-btn {
+  height: 38px; padding: 0 16px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--ivory);
+  font-family: inherit; font-size: 0.78rem; letter-spacing: 0.04em;
+}
+.stakes-btn.gold { border-color: var(--gold); background: var(--gold); color: #17130a; font-weight: 600; }
+.stakes-btn.big { width: 100%; height: 46px; font-size: 0.85rem; margin-top: 0.2rem; }
+.stakes-btn:disabled { opacity: 0.45; cursor: default; }
+.stakes-preview { margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--border); font-size: 0.82rem; }
+.stakes-amount { font-size: 1.6rem; color: var(--gold-glow); margin: 0.3rem 0 0.1rem; }
+.stakes-amount span { font-size: 0.75rem; color: var(--ivory-dim); }
+.stakes-sub { color: var(--ivory-dim); font-size: 0.72rem; margin-top: 0.25rem; }
+.stakes-code { font-size: 0.75rem; color: var(--ivory-dim); }
+.stakes-code strong { color: var(--ivory); letter-spacing: 0.25em; font-size: 1rem; }
+.stakes-seats { list-style: none; margin: 0.8rem 0 0.4rem; padding: 0; }
+.stakes-seats li {
+  display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.82rem;
+}
+.stakes-seats li em { font-style: normal; font-size: 0.7rem; color: var(--ivory-dim); }
+.stakes-seats li.ok em { color: #8fd19e; }
+.stakes-seats li.empty span { color: var(--ivory-dim); }
+.stakes-vote { border-color: var(--gold); }
+.stakes-vote-title { font-size: 0.92rem; }
+.stakes-vote-title strong { color: var(--gold-glow); }
+.stakes-fine { color: var(--ivory-dim); font-size: 0.66rem; line-height: 1.5; margin-top: 0.8rem; }
+.stakes-msg { color: #e8a07a; font-size: 0.78rem; margin-top: 0.6rem; }
+
+/* the result of a stake match, on the game screen */
+.stake-result {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  top: calc(64px + env(safe-area-inset-top, 0px)); z-index: 2000;
+  padding: 8px 16px; border-radius: 14px; pointer-events: none;
+  background: rgba(10,9,7,0.92); border: 1px solid var(--gold);
+  color: var(--gold-glow); font: 0.85rem/1.3 'DM Mono', monospace; text-align: center;
+}
+.stake-result.lost { border-color: rgba(255,255,255,0.25); color: var(--ivory-dim); }

@@ -104,6 +104,13 @@ function computeNewStreak(streak, resolvedSeat, isDek, mode) {
 
 // ── Main hook ───────────────────────────────────────────────────────────────
 export function useGameState(myInfo, navigate) {
+  // Goud stake room (set by the Stakes page): the SERVER runs it — deals, keeps
+  // the hands private, checks every move, ends rounds and pays the pot (see
+  // stake_* in dekabess_database.sql). This device shows the table, sends its
+  // own moves to the server, and reads its own hand with stake_my_hand. No
+  // runner, no bots, no dealing or round-ending here.
+  const stake = !!myInfo?.stake
+  const stakeRef = useRef(stake)
   const [roomData, setRoomData]         = useState(null)
   const [players, setPlayers]           = useState([])
   const [boardData, setBoardData]       = useState(null)
@@ -141,7 +148,7 @@ export function useGameState(myInfo, navigate) {
       .sort((a, b) => a - b)
     return here.length ? here[0] : 0
   })()
-  const amRunner = !!myInfo && runnerSeat === myInfo.seat
+  const amRunner = !stake && !!myInfo && runnerSeat === myInfo.seat
   // how many seats are in play at this table (2, 3 or 4)
   const seatCountRef = useRef(4)
   seatCountRef.current = roomData?.seat_count || 4
@@ -151,7 +158,7 @@ export function useGameState(myInfo, navigate) {
   // seeing the deal. While it's open nobody plays and bots wait.
   const dealKey = roomData ? `${roomData.round || 1}:${roomData.deal_no || 0}` : ''
   const countDbl = h => (h || []).filter(t => Array.isArray(t) && t[0] === t[1]).length
-  const offerHolders = (roomData?.status === 'playing' && !(boardData?.tiles?.length)
+  const offerHolders = (!stake && roomData?.status === 'playing' && !(boardData?.tiles?.length)
       && !['asosye', 'duo'].includes(roomData?.game_mode) && roomData?.deal_decided !== dealKey)
     ? (players || []).filter(p => !p.is_ai && countDbl(p.hand) >= 5) : []
   const offerSeen = useRef({ key: '', at: 0 })
@@ -288,12 +295,17 @@ export function useGameState(myInfo, navigate) {
   }, [roomData, myInfo])
 
   const loadGameState = useCallback(async () => {
-    const [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
+    let [{ data: room }, { data: pData }, { data: bData }] = await Promise.all([
       db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single(),
       db.from('domino_players').select('*').eq('room_id', myInfo.roomId).order('seat'),
       db.from('board').select('*').eq('room_id', myInfo.roomId).maybeSingle(),
     ])
     if (room)  setRoomData(room)
+    if (pData && stakeRef.current) {
+      // the shared table only shows blanks: fill in my own hand from the server
+      const { data: mine } = await db.rpc('stake_my_hand', { p_room: myInfo.roomId })
+      if (Array.isArray(mine)) pData = pData.map(p => (p.seat === myInfo.seat ? { ...p, hand: mine } : p))
+    }
     if (pData) setPlayers(pData)
     if (bData !== undefined) setBoardData(bData)
     // Overlay is triggered by useEffect watching roomData.status
@@ -387,6 +399,7 @@ export function useGameState(myInfo, navigate) {
         setPresentSeats(new Set(Object.keys(state).map(Number).filter(n => !Number.isNaN(n))))
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_players', filter: `room_id=eq.${myInfo.roomId}` }, (payload) => {
+        if (stakeRef.current) { scheduleReload(); return }      // stake room: my hand comes from the server
         if (payload.eventType === 'DELETE') {
           const id = payload.old?.id
           if (!id) { scheduleReload(); return }
@@ -463,6 +476,7 @@ export function useGameState(myInfo, navigate) {
   const hasTilesOnBoard = !!boardData?.tiles?.length
 
   const endRound = useCallback(async (winningSeat, isDek) => {
+    if (stakeRef.current) { await loadGameState(); return }      // the server ends stake rounds
     try {
       const { data: room, error: roomErr } = await db.from('domino_rooms').select('*').eq('id', myInfo.roomId).single()
       if (!room) return
@@ -773,6 +787,21 @@ export function useGameState(myInfo, navigate) {
     if (processingRef.current) return
     processingRef.current = true
     setProcessing(true)
+    if (stakeRef.current) {
+      try {
+        const { data, error } = await db.rpc('stake_play', {
+          p_room: myInfo.roomId, p_tile: tile, p_side: side === 'left' || side === 'right' ? side : null,
+        })
+        if (error || !data?.ok) showToastMsg(data?.reason ? data.reason[0].toUpperCase() + data.reason.slice(1) : 'That move didn’t go through')
+        await loadGameState()
+      } finally {
+        setSelectedTile(null)
+        setShowPicker(false)
+        processingRef.current = false
+        setProcessing(false)
+      }
+      return
+    }
     const currentBoard = boardRef.current
     const currentHand  = playersRef.current.find(p => p.seat === myInfo.seat)?.hand || []
     const newHand = currentHand.filter((_, i) => i !== idx)
@@ -899,6 +928,12 @@ export function useGameState(myInfo, navigate) {
     processingRef.current = true
     setProcessing(true)
     try {
+      if (stakeRef.current) {
+        const { data, error } = await db.rpc('stake_draw', { p_room: myInfo.roomId })
+        if (error || !data?.ok) showToastMsg(data?.reason ? data.reason[0].toUpperCase() + data.reason.slice(1) : 'Couldn’t draw')
+        await loadGameState()
+        return
+      }
       await drawForSeat(myInfo.seat)
     } finally {
       processingRef.current = false
@@ -914,6 +949,12 @@ export function useGameState(myInfo, navigate) {
     processingRef.current = true
     setProcessing(true)
     try {
+      if (stakeRef.current) {
+        const { data, error } = await db.rpc('stake_pass', { p_room: myInfo.roomId })
+        if (error || !data?.ok) showToastMsg(data?.reason === 'you have a tile that fits' ? 'You have a tile that fits — play it' : (data?.reason || 'Couldn’t pass'))
+        await loadGameState()
+        return
+      }
       // An empty hand can't legally pass; keep the original handling for it.
       if (hand.length > 0) {
         const res = await commitMove({
@@ -946,6 +987,11 @@ export function useGameState(myInfo, navigate) {
   const startNextRound = useCallback(async () => {
     overlayShownRef.current = false
     setShowOverlay(false)
+    if (stakeRef.current) {                       // the server deals; the winner opens
+      await db.rpc('stake_next_round', { p_room: myInfo.roomId })
+      await loadGameState()
+      return
+    }
 
     // Get current room
     const { data: room } = await db.from('domino_rooms').select('current_turn, round, game_mode, status').eq('id', myInfo.roomId).single()
@@ -1026,6 +1072,16 @@ export function useGameState(myInfo, navigate) {
   }, [myInfo, deciderSeat])
 
   const leaveTable = useCallback(async () => {
+    if (stakeRef.current) {
+      // A stake game carries on without you: your stake stays in, and the server
+      // plays your turns when your time runs out. Your seat is kept — enter the
+      // table code on the Goud Stakes page to come back.
+      const over = roomData?.status === 'finished'
+      if (!over && !confirm(`Leave this stake game?\n\nYour ${myInfo.stake} Goud stays in play and the server plays your turns when your time runs out. To come back, enter code ${myInfo.roomCode} on the Goud Stakes page.`)) return
+      sessionStorage.removeItem('domino_player')
+      navigate('/')
+      return
+    }
     if (!confirm('Leave this table?')) return
     const status = roomData?.status
     const gameOn = status === 'playing' || status === 'round_end'
@@ -1090,12 +1146,24 @@ export function useGameState(myInfo, navigate) {
   }, [roomData?.current_turn, roomData?.round, roomData?.status, amRunner, turnStart])
 
   const standIn = useCallback(async (seat, { auto = false } = {}) => {
-    if (!myInfo) return
+    if (!myInfo || stakeRef.current) return      // no bots at a stake table: the server moves for a player out of time
     if (!auto && deciderSeat(seat) !== myInfo.seat) return   // partner or host decides
     await db.from('domino_players')
       .update({ is_ai: true, stand_in: true })
       .eq('room_id', myInfo.roomId).eq('seat', seat).eq('is_ai', false)
   }, [myInfo, deciderSeat])
+
+  // Stake room: when the player due has run out of time (2 minutes), any device
+  // asks the server to move for them (it checks the time itself).
+  useEffect(() => {
+    if (!stake || roomData?.status !== 'playing') return
+    const t = setInterval(() => {
+      if (turnStart && Date.now() - turnStart > 125000) {
+        db.rpc('stake_timeout', { p_room: myInfo.roomId }).then(({ data }) => { if (data?.ok) scheduleReload() })
+      }
+    }, 5000)
+    return () => clearInterval(t)
+  }, [stake, roomData?.status, roomData?.current_turn, turnStart])   // eslint-disable-line react-hooks/exhaustive-deps
 
   // Back at the table: if a bot has been standing in for you, take your seat back.
   useEffect(() => {
