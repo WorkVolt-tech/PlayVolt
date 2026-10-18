@@ -731,17 +731,18 @@ export default function Lobby() {
       db.rpc('my_friends').then(({ data: rows }) => setFriendRequests((rows || []).filter(r => r.kind === 'incoming').length))
     })
   }, [])
-  // ── Inviting friends from the waiting room (host) ──
+  // ── Inviting friends from the waiting room ──
+  // Anyone signed in at the table can invite (not only the host).
   const [friendsHere, setFriendsHere] = useState([])
   const [invited, setInvited] = useState({})
   useEffect(() => {
-    if (tab !== 'waiting' || !amHost) return
+    if (tab !== 'waiting' || !myUserId) return
     let off = false
     const load = () => db.rpc('my_friends').then(({ data }) => { if (!off) setFriendsHere((data || []).filter(r => r.kind === 'friend')) })
     load()
     const t = setInterval(load, 30000)
     return () => { off = true; clearInterval(t) }
-  }, [tab, amHost])
+  }, [tab, myUserId])
   // hear when a friend declines your challenge
   useEffect(() => {
     const uid = authUser?.id
@@ -965,19 +966,26 @@ export default function Lobby() {
                   A table with a regular bot doesn't count toward trophies — expert bots (★) do.
                 </div>
               )}
-              {amHost && friendsHere.some(f => statusOf(f).live && !statusOf(f).game) && players.length < 4 && (
-                <div className="invite-friends">
-                  <div className="invite-friends-label">Invite a friend</div>
-                  {friendsHere.filter(f => statusOf(f).live && !statusOf(f).game).map(f => (
-                    <div key={f.user_id} className="invite-friend">
-                      <span>🟢 {f.nickname}</span>
-                      <button className="partner-btn" disabled={!!invited[f.user_id]} onClick={() => inviteFriend(f)}>
-                        {invited[f.user_id] || 'Invite'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {(() => {
+                // friends who are online or in another game, and not already at this table
+                const seatedIds = new Set(players.map(p => p.user_id).filter(Boolean))
+                const invitable = friendsHere.filter(f => statusOf(f).live && !seatedIds.has(f.user_id))
+                  .sort((a, b) => statusOf(a).game - statusOf(b).game)
+                if (!myUserId || !invitable.length || players.length >= 4) return null
+                return (
+                  <div className="invite-friends">
+                    <div className="invite-friends-label">Invite a friend to the table</div>
+                    {invitable.map(f => (
+                      <div key={f.user_id} className="invite-friend">
+                        <span>{statusOf(f).game ? '🎲' : '🟢'} {f.nickname}{statusOf(f).game ? <small> · in a game</small> : null}</span>
+                        <button className="partner-btn" disabled={!!invited[f.user_id]} onClick={() => inviteFriend(f)}>
+                          {invited[f.user_id] || 'Invite'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
               {amHost && !locked && selectedMode === 'asosye' && players.some(p => p.is_ai) && (
                 <div style={{ fontSize: '0.6rem', color: 'var(--ivory-dim)', margin: '2px 2px 0' }}>
                   Tap Pick Partner on a bot to team up with it.

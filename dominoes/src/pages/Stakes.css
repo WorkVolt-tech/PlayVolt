@@ -86,3 +86,6 @@
 .stake-setup .stakes-sub strong { color: var(--gold-glow); }
 .stake-setup .btn { width: 100%; }
 .stakes-preview-card { text-align: left; }
+.stakes-invite { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.35rem 0; font-size: 0.82rem; }
+.stakes-invite small { color: var(--ivory-dim); }
+.stakes-invite .stakes-btn { height: 32px; }

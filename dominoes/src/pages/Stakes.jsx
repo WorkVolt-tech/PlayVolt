@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
+import { statusOf } from './Friends'
 import './Stakes.css'
 
 // ── The stake waiting room ───────────────────────────────────────────────────
@@ -27,6 +28,17 @@ export default function Stakes() {
   const [roomId, setRoomId] = useState(() => { try { return JSON.parse(sessionStorage.getItem(KEY) || 'null')?.roomId || null } catch { return null } })
   const [info, setInfo] = useState(null)
   const [propose, setPropose] = useState('')
+  // friends to invite to this table
+  const [friends, setFriends] = useState([])
+  const [invited, setInvited] = useState({})
+  useEffect(() => {
+    if (!roomId || !user) return
+    let off = false
+    const load = () => db.rpc('my_friends').then(({ data }) => { if (!off) setFriends((data || []).filter(r => r.kind === 'friend')) })
+    load()
+    const t = setInterval(load, 30000)
+    return () => { off = true; clearInterval(t) }
+  }, [roomId, user])
 
   const loadBalance = useCallback(() => {
     db.rpc('goud_status').then(({ data }) => { const r = Array.isArray(data) ? data[0] : data; if (r) setBalance(Number(r.balance)) })
@@ -88,6 +100,11 @@ export default function Stakes() {
   const vote = yes => call('stake_vote', { p_room: roomId, p_yes: yes }, loadInfo)
   const sendProposal = () => call('stake_propose', { p_room: roomId, p_amount: Math.floor(Number(propose)) }, () => { setPropose(''); loadInfo() })
   const start = () => call('stake_start', { p_room: roomId }, loadInfo)
+  async function invite(f) {
+    setInvited(v => ({ ...v, [f.user_id]: '…' }))
+    await db.rpc('challenge_friend', { p_friend: f.user_id, p_room: roomId, p_code: info.code, p_mode: 'stake' })
+    setInvited(v => ({ ...v, [f.user_id]: 'Invited ✓' }))
+  }
   const leave = () => call('stake_leave', { p_room: roomId }, () => {
     try { sessionStorage.removeItem(KEY) } catch { /* ignore */ }
     navigate('/')
@@ -140,6 +157,25 @@ export default function Stakes() {
             <button className="stakes-btn gold" onClick={accept} disabled={busy}>Accept {info.stake} Goud</button>
           )}
         </div>
+
+        {(() => {
+          // friends online or in another game, not already at this table; they see the stake before joining
+          const seatedIds = new Set((info.seats || []).map(s => s.user_id).filter(Boolean))
+          const invitable = friends.filter(f => statusOf(f).live && !seatedIds.has(f.user_id))
+            .sort((a, b) => statusOf(a).game - statusOf(b).game)
+          if (!invitable.length || seated >= info.seat_count) return null
+          return (
+            <div className="stakes-card">
+              <div className="stakes-label">Invite a friend to the table</div>
+              {invitable.map(f => (
+                <div key={f.user_id} className="stakes-invite">
+                  <span>{statusOf(f).game ? '🎲' : '🟢'} {f.nickname}{statusOf(f).game ? <small> · in a game</small> : null}</span>
+                  <button className="stakes-btn" disabled={!!invited[f.user_id]} onClick={() => invite(f)}>{invited[f.user_id] || 'Invite'}</button>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
 
         {p ? (
           <div className="stakes-card stakes-vote">
