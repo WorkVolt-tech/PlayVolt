@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TileFace from '../components/TileFace'
+import { db } from '../lib/supabase'
+import { useAuth } from '../lib/useAuth'
 import './Puzzle.css'
 
 const BASICS = [
@@ -1240,6 +1242,31 @@ function readProgress(key) {
   try { return JSON.parse(localStorage.getItem(key) || '[]') } catch { return [] }
 }
 
+// ── Progress that follows the account ──
+// Signed in, progress is also kept in the puzzle_progress table, so a player
+// continues on any device. Opening the page merges the account's progress with
+// this device's: every puzzle done on either counts, and you land on whichever
+// of the two places is further along. Signed out, it stays on this device.
+const TRACK_ORDER = () => Object.keys(TRACKS)
+function mergeCompleted(a = {}, b = {}) {
+  const out = {}
+  for (const id of Object.keys(TRACKS)) {
+    const seen = new Set()
+    out[id] = [...(a[id] || []), ...(b[id] || [])].filter(x => {
+      const k = JSON.stringify(x)
+      if (seen.has(k)) return false
+      seen.add(k)
+      return true
+    })
+  }
+  return out
+}
+function furtherOf(p, q) {          // p, q = { track, index }; returns the one further along
+  const order = TRACK_ORDER()
+  const rank = x => (TRACKS[x?.track] ? order.indexOf(x.track) : -1) * 100000 + (Number(x?.index) || 0)
+  return rank(q) > rank(p) ? q : p
+}
+
 function Domino({ tile, onClick, disabled = false, selected = false }) {
   return (
     <button
@@ -1256,6 +1283,9 @@ function Domino({ tile, onClick, disabled = false, selected = false }) {
 
 export default function Puzzle() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const accountReady = useRef(null)   // the user id whose account progress has been merged in
+  const [saveTick, setSaveTick] = useState(0)
   const basicsDone = readProgress(TRACKS.basics.storage).length >= BASICS.length
   const [trackId, setTrackId] = useState(() => {
     try {
@@ -1328,6 +1358,47 @@ export default function Puzzle() {
   useEffect(() => {
     if (index !== safeIndex) setIndex(safeIndex)
   }, [index, safeIndex])
+
+  // Signed in: bring in the account's progress once, merged with this device's.
+  useEffect(() => {
+    const uid = user?.id
+    if (!uid) { accountReady.current = null; return }
+    let gone = false
+    ;(async () => {
+      const { data, error } = await db.from('puzzle_progress')
+        .select('completed, active_track, active_index').eq('user_id', uid).maybeSingle()
+      if (gone || error) return            // no table yet or offline: keep this device's progress
+      setCompletedByTrack(prev => mergeCompleted(prev, data?.completed || {}))
+      if (data?.active_track && TRACKS[data.active_track]) {
+        const here = { track: trackId, index: safeIndex }
+        const there = { track: data.active_track, index: data.active_index }
+        const pick = furtherOf(here, there)
+        if (pick !== here) { setTrackId(pick.track); setIndex(Number(pick.index) || 0) }
+      }
+      accountReady.current = uid            // from now on, changes are saved to the account
+      setSaveTick(t => t + 1)               // and save the merged result right away
+    })()
+    return () => { gone = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
+  // Save to the account as the player goes (a moment after the last change).
+  useEffect(() => {
+    const uid = user?.id
+    if (!uid || accountReady.current !== uid) return
+    const t = setTimeout(() => {
+      db.from('puzzle_progress').upsert({
+        user_id: uid,
+        completed: completedByTrack,
+        active_track: trackId,
+        active_index: safeIndex,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' }).then(({ error }) => {
+        if (error) console.warn('puzzle progress not saved to the account', error.message)
+      })
+    }, 600)
+    return () => clearTimeout(t)
+  }, [user?.id, completedByTrack, trackId, safeIndex, saveTick])
 
   const explanation = useMemo(() => {
     if (!result) return ''
