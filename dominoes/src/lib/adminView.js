@@ -6,7 +6,7 @@ import { db } from './supabase'
 //
 // The hidden switch: tap the name at the top left of a game screen
 // ("Dekabess!", "Solo", "Practice" or the Story chapter) 5 times within
-// 2 seconds. It does nothing for anyone the database doesn't list as an admin
+// 2 seconds to turn it on, and twice within 1 second to turn it off. It does nothing for anyone the database doesn't list as an admin
 // (am_i_admin / admin_room_hands in dekabess_database.sql), so finding this
 // code in the public repo gives nobody else anything. The view stays on for
 // this browser tab until switched off the same way, or on signing out.
@@ -57,13 +57,20 @@ function install() {
   if (installed || typeof document === 'undefined') return
   installed = true
   let taps = []
+  let quietUntil = 0      // right after a switch, extra taps from the same burst are ignored
   document.addEventListener('click', async e => {
     if (!e.target?.closest?.(TARGET)) return
     const now = Date.now()
-    taps = taps.filter(t => now - t < 2000)
+    if (now < quietUntil) { taps = []; return }
+    const on = viewOn()
+    // on: a quick double tap turns it off; off: five quick taps turn it on
+    const need = on ? 2 : 5
+    const within = on ? 1000 : 2000
+    taps = taps.filter(t => now - t < within)
     taps.push(now)
-    if (taps.length < 5) return
+    if (taps.length < need) return
     taps = []
+    quietUntil = now + 1200
     if (!(await checkAdmin())) return          // not an admin: nothing happens, nothing shows
     const next = !viewOn()
     setView(next)
