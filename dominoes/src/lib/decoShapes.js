@@ -1,6 +1,7 @@
 // ── Deco tile shapes ─────────────────────────────────────────────────────────
 // The six shaped skins in the black-marble-and-gold family: Hexa (notched hex),
-// Oktav (long octagon), Fle (fleur), Lozanj (lozenge), Dyaman (twin diamonds)
+// Oktav (long octagon), Fle (fleur), Lozanj (lozenge), Dyaman (twin diamonds),
+// Triyang (two triangles meeting point to point)
 // and Konkav (concave). Drawn sideways in a 200 × 100 grid, like Kapsil and Zo;
 // components/ShapedTile.jsx turns them upright and handles the box.
 //
@@ -35,27 +36,43 @@ const OUT={
   fleur:'M100 4 Q60 14 22 12 Q26 40 2 50 Q26 60 22 88 Q60 86 100 96 Q140 86 178 88 Q174 60 198 50 Q174 40 178 12 Q140 14 100 4 Z',
   lozenge:'M100 4 L172 12 L198 50 L172 88 L100 96 L28 88 L2 50 L28 12 Z',
   diamonds:'M50 2 L98 50 L50 98 L2 50 Z M150 2 L198 50 L150 98 L102 50 Z',
+  triangles:'M3 3 L97 50 L3 97 Z M197 3 L103 50 L197 97 Z',
   concave:'M4 4 Q100 22 196 4 Q182 50 196 96 Q100 78 4 96 Q18 50 4 4 Z',
 }
 // pip centres (cx for each half) and spacing / radius per shape
-const PIP={hex:[52,148,19,7.8],oct:[54,146,19,7.8],fleur:[64,136,16.5,7],lozenge:[62,138,17,7.2],diamonds:[50,150,15,6.8],concave:[56,144,17.5,7.4]}
+const PIP={hex:[52,148,19,7.8],oct:[54,146,19,7.8],fleur:[64,136,16.5,7],lozenge:[62,138,17,7.2],diamonds:[50,150,15,6.8],concave:[56,144,17.5,7.4],triangles:[28,172,11,4.6,12.5]}   // triangles: [cx1, cx2, across, radius, up-down]
 // divider extent (y1,y2)
-const BAR={hex:[22,78],oct:[16,84],fleur:[16,84],lozenge:[14,86],diamonds:null,concave:[22,78]}
+const BAR={hex:[22,78],oct:[16,84],fleur:[16,84],lozenge:[14,86],diamonds:null,concave:[22,78],triangles:null}
 
 // pull a shape in by `t` units (non-uniform scale about its centre so the rim is even)
 function inset(d,t,cx=100,cy=50,w=200,h=100){
   const sx=(w-2*t)/w, sy=(h-2*t)/h
   return `transform="translate(${cx} ${cy}) scale(${sx} ${sy}) translate(${-cx} ${-cy})"`
 }
+// a triangle pulled in evenly by t on every side (so the rim is the same width at the points)
+const TRI_L=[[3,3],[97,50],[3,97]], TRI_R=[[197,3],[103,50],[197,97]]
+function insetTri(P,t){
+  // centroid tells us which way is "in"
+  const cx=(P[0][0]+P[1][0]+P[2][0])/3, cy=(P[0][1]+P[1][1]+P[2][1])/3
+  const lines=P.map((a,i)=>{const b=P[(i+1)%3]; let nx=b[1]-a[1], ny=a[0]-b[0]; const L=Math.hypot(nx,ny); nx/=L; ny/=L
+    if((cx-a[0])*nx+(cy-a[1])*ny<0){nx=-nx;ny=-ny}
+    return {p:[a[0]+nx*t,a[1]+ny*t], d:[b[0]-a[0],b[1]-a[1]]}})
+  const cross=(l1,l2)=>{const den=l1.d[0]*l2.d[1]-l1.d[1]*l2.d[0]
+    const u=((l2.p[0]-l1.p[0])*l2.d[1]-(l2.p[1]-l1.p[1])*l2.d[0])/den
+    return [l1.p[0]+u*l1.d[0], l1.p[1]+u*l1.d[1]]}
+  const q=[cross(lines[2],lines[0]),cross(lines[0],lines[1]),cross(lines[1],lines[2])]
+  return 'M'+q.map(v=>v[0].toFixed(2)+' '+v[1].toFixed(2)).join(' L')+' Z'
+}
 function layer(kind,t,attrs){
+  if(kind==='triangles') return `<path d="${insetTri(TRI_L,t)} ${insetTri(TRI_R,t)}" ${attrs}/>`
   if(kind==='diamonds'){ // scale each diamond about its own centre
     const L='M50 2 L98 50 L50 98 L2 50 Z', R='M150 2 L198 50 L150 98 L102 50 Z'
     return `<path d="${L}" ${inset(L,t,50,50,100,100)} ${attrs}/><path d="${R}" ${inset(R,t,150,50,100,100)} ${attrs}/>`
   }
   return `<path d="${OUT[kind]}" ${inset(OUT[kind],t)} ${attrs}/>`
 }
-function pips(n,cx,cy,d,r){
-  return (SIDE[n]||[]).map(i=>{const x=cx+((i%3)-1)*d,y=cy+(Math.floor(i/3)-1)*d
+function pips(n,cx,cy,d,r,dy=d){
+  return (SIDE[n]||[]).map(i=>{const x=cx+((i%3)-1)*d,y=cy+(Math.floor(i/3)-1)*dy
     return `<circle cx="${x}" cy="${y}" r="${r+.9}" fill="#9c7430"/><circle cx="${x}" cy="${y}" r="${r}" fill="url(#ivory)"/>`+
            `<circle cx="${x-r*.3}" cy="${y-r*.35}" r="${r*.3}" fill="rgba(255,255,255,.7)"/>`}).join('')
 }
@@ -78,27 +95,30 @@ function medallion(k,cx=100){const cy=50
   <circle cx="${cx}" cy="${cy}" r="${k*.3}" fill="url(#ivory)"/>`
 }
 function art(kind,a,b,back){
+  // rim, dark edge, face, fine inner line (the triangles get a slimmer rim: they narrow to a point)
+  const [e1,e2,e3] = kind==='triangles' ? [4,5,7.5] : [5,6,9]
   let s=layer(kind,0,'fill="url(#gold)" stroke="#4a3410" stroke-width="1"')
-     + layer(kind,5,'fill="#0a0907"') + layer(kind,6,'fill="url(#face)"') + layer(kind,6,`fill="url(#${back?'quilt':'veins'})"`)
-     + layer(kind,9,'fill="none" stroke="#c9a14a" stroke-width=".9" opacity=".8"')
+     + layer(kind,e1,'fill="#0a0907"') + layer(kind,e2,'fill="url(#face)"') + layer(kind,e2,`fill="url(#${back?'quilt':'veins'})"`)
+     + layer(kind,e3,'fill="none" stroke="#c9a14a" stroke-width=".9" opacity=".8"')
   if(kind==='fleur'){ s+=fleurMark(30,-1)+fleurMark(170,1) }
   if(kind==='lozenge'){ s+=fanMark(24,-1)+fanMark(176,1) }
   if(back){
     if(kind==='diamonds') s+=`<circle cx="100" cy="50" r="5" fill="url(#stud)"/>`+medallion(13,50)+medallion(13,150)
+    else if(kind==='triangles') s+=`<circle cx="100" cy="50" r="5" fill="url(#stud)"/>`+medallion(9,32)+medallion(9,168)
     else s+=medallion(kind==='oct'?20:17)
     return s
   }
-  const [c1,c2,d,r]=PIP[kind]
+  const [c1,c2,d,r,dy]=PIP[kind]
   if(BAR[kind]) s+=`<rect x="97.6" y="${BAR[kind][0]}" width="4.8" height="${BAR[kind][1]-BAR[kind][0]}" rx="2.2" fill="url(#bar)"/>`
   s+=`<circle cx="100" cy="50" r="5.2" fill="url(#stud)"/>`
   if(kind==='diamonds'){
     // pips sit square-on inside each diamond, like the reference
     s+=pips(a,c1,50,d,r)+pips(b,c2,50,d,r)
-  } else s+=pips(a,c1,50,d,r)+pips(b,c2,50,d,r)
+  } else s+=pips(a,c1,50,d,r,dy)+pips(b,c2,50,d,r,dy)
   return s
 }
 
-export const DECO_KINDS = ['hex', 'oct', 'fleur', 'lozenge', 'diamonds', 'concave']
+export const DECO_KINDS = ['hex', 'oct', 'fleur', 'lozenge', 'diamonds', 'concave', 'triangles']
 
 export function decoSvg(kind, a, b, back, u) {
   const markup = DEFS + art(kind, a || 0, b || 0, !!back)
