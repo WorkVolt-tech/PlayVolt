@@ -43,6 +43,9 @@ export default function Game() {
   const [boardDek, setBoardDek] = useState(null)     // the board's Dekabess, while it plays
   const [dekabessPlayer, setDekabessPlayer] = useState('')
   const [knockPlayer, setKnockPlayer] = useState(null)
+  const [friendStates, setFriendStates] = useState({})
+  const [friendNotice, setFriendNotice] = useState(null)
+  const friendNoticeTimer = useRef(null)
 
   const {
     roomData, players, boardData, selectedTile, showPicker,
@@ -53,6 +56,42 @@ export default function Game() {
     reshuffleOffer, callReshuffle, keepDeal,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
+
+  const addFriendFromTable = useCallback(async (player) => {
+    if (!player || player.is_ai || !player.user_id) return
+    const key = player.user_id
+    setFriendStates(prev => ({ ...prev, [key]: 'working' }))
+
+    const { data, error } = await db.rpc('friend_request_by_nickname', { p_nickname: player.nickname })
+    let state = 'error'
+    let text = 'Could not send friend request.'
+
+    if (!error) {
+      if (data === 'sent') {
+        state = 'sent'
+        text = `Friend request sent to ${player.nickname}.`
+      } else if (data === 'already sent') {
+        state = 'sent'
+        text = `You already sent ${player.nickname} a request.`
+      } else if (data === 'already friends' || data === 'now friends') {
+        state = 'friends'
+        text = `${player.nickname} is now in your friends list.`
+      } else if (data === 'sign in first') {
+        text = 'Sign in to add friends.'
+      } else if (typeof data === 'string' && data) {
+        text = data
+      }
+    }
+
+    setFriendStates(prev => ({ ...prev, [key]: state }))
+    setFriendNotice(text)
+    if (friendNoticeTimer.current) clearTimeout(friendNoticeTimer.current)
+    friendNoticeTimer.current = setTimeout(() => setFriendNotice(null), 2600)
+  }, [])
+
+  useEffect(() => () => {
+    if (friendNoticeTimer.current) clearTimeout(friendNoticeTimer.current)
+  }, [])
 
   // ── Team Challenge: at the Vyèj, the server decides your result ──────────
   const [teamResult, setTeamResult] = useState(null)
@@ -495,6 +534,8 @@ export default function Game() {
           myInfo={myInfo}
           roomData={roomData}
           turnClock={roomData?.status === 'playing' && turnStart ? { start: turnStart, limit: turnLimitMs } : null}
+          onAddFriend={addFriendFromTable}
+          friendStates={friendStates}
         />
         <Board
           dekabessKey={boardDek}
@@ -553,6 +594,7 @@ export default function Game() {
 
       {/* Toast */}
       {toast && <div className="turn-toast">{toast}</div>}
+      {friendNotice && <div className="turn-toast friend-toast">{friendNotice}</div>}
 
       {isMyTurn && secondsLeft !== null && (
         <div className={`my-clock ${secondsLeft <= 15 ? 'urgent' : ''}`}>
