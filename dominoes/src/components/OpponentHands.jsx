@@ -14,7 +14,7 @@ function initials(name = '') {
 
 // turnClock (optional, multiplayer): { start, limit } in ms. When given, the
 // active player's plate shows the time left as a gold ring that drains.
-export default function OpponentHands({ players, myInfo, roomData, turnClock }) {
+export default function OpponentHands({ players, myInfo, roomData, turnClock, onAddFriend, friendStates = {} }) {
   // Admin view (lib/adminView.js): opponents' tiles face-up. Online, the hands
   // come from the database (admin_room_hands, which answers only an admin);
   // in Solo / Practice / Story the bots' hands are already on this device.
@@ -90,6 +90,25 @@ export default function OpponentHands({ players, myInfo, roomData, turnClock }) 
                       {pic || <div className="seat-initials">{initials(p.nickname)}</div>}
                     </div>
                     <div className="opponent-name">{p.nickname}</div>
+                    {onAddFriend && !p.is_ai && p.user_id && (() => {
+                      const state = friendStates[p.user_id]
+                      const label = state === 'working' ? '…'
+                        : state === 'sent' ? 'Sent ✓'
+                          : state === 'friends' ? 'Friends ✓'
+                            : state === 'error' ? 'Retry'
+                              : '+ Friend'
+                      return (
+                        <button
+                          type="button"
+                          className="opponent-friend-btn"
+                          disabled={state === 'working' || state === 'sent' || state === 'friends'}
+                          onClick={e => { e.stopPropagation(); onAddFriend(p) }}
+                          aria-label={`Add ${p.nickname} as a friend`}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })()}
                   </div>
                 )
               })()}
