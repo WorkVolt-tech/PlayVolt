@@ -429,3 +429,11 @@
   background: var(--surface, #1a1814); border: 1px solid var(--border, #3a3528); color: var(--ivory, #f0ead8); box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
 .team-ch-result.won { border-color: var(--gold, #c9a84c); color: var(--gold-glow, #e8c96a); }
+
+.friend-toast {
+  top: calc(82px + env(safe-area-inset-top, 0px));
+  border-color: rgba(76,170,110,.7);
+  color: #8fd19e;
+  text-transform: none;
+  letter-spacing: .04em;
+}
