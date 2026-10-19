@@ -103,3 +103,29 @@
 .opponent-tile.horizontal { width: calc(var(--opp-w, 14px) * 2); height: var(--opp-w, 14px); }
 /* a picture (bot or trophy avatar) sits inside the plate's ring */
 .seat-ring.has-pic { padding: 3px; display: flex; align-items: center; justify-content: center; }
+
+/* Add a real player directly from the table. The opponent area itself ignores
+   pointer input so it never blocks domino play; only this tiny control is live. */
+.opponent-friend-btn {
+  pointer-events: auto;
+  min-height: 22px;
+  padding: 2px 6px;
+  border: 1px solid rgba(201,168,76,.55);
+  border-radius: 999px;
+  background: rgba(18,17,14,.86);
+  color: var(--gold-glow, #e8c96a);
+  font-family: 'DM Mono', ui-monospace, monospace;
+  font-size: 0.42rem;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.opponent-friend-btn:disabled {
+  opacity: .65;
+  cursor: default;
+}
+.opponent-friend-btn:not(:disabled):active { transform: translateY(1px); }
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .opponent-friend-btn { min-height: 19px; padding: 1px 5px; font-size: 0.38rem; }
+}
