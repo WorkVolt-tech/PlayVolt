@@ -47,14 +47,6 @@ export default function Friends() {
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
   const [challenging, setChallenging] = useState(null)   // a friend's user_id while picking a mode
-  // "Players to meet": up to 10 players who aren't friends yet, online ones first
-  const [suggestions, setSuggestions] = useState(null)    // null = not available (yet)
-  const [asked, setAsked] = useState({})                  // user_id -> request sent
-
-  const loadSuggestions = useCallback(async () => {
-    const { data, error } = await db.rpc('friend_suggestions')
-    setSuggestions(error ? null : (data || []))
-  }, [])
 
   const load = useCallback(async () => {
     const [{ data }, { data: c }] = await Promise.all([db.rpc('my_friends'), db.rpc('my_friend_code')])
@@ -73,9 +65,8 @@ export default function Friends() {
         window.history.replaceState(null, '', '/friends')
       }
       load()
-      loadSuggestions()
     })()
-  }, [user, load, loadSuggestions])
+  }, [user, load])
   // keep statuses fresh while the page is open
   useEffect(() => {
     if (!user) return
@@ -88,20 +79,6 @@ export default function Friends() {
     setBusy(true)
     const { data } = await db.rpc(fn, args)
     if (typeof data === 'string') setMsg({ ok: data === 'sent' || data === 'now friends', text: MESSAGES[data] || data })
-    await load()
-    setBusy(false)
-  }
-
-  // ask a suggested player to be friends (by their friend code, or their unique nickname)
-  async function addSuggested(r) {
-    setBusy(true)
-    const { data } = r.friend_code
-      ? await db.rpc('friend_request_by_code', { p_code: r.friend_code })
-      : await db.rpc('friend_request_by_nickname', { p_nickname: r.nickname })
-    if (typeof data === 'string') {
-      setMsg({ ok: data === 'sent' || data === 'now friends', text: MESSAGES[data] || data })
-      if (data === 'sent' || data === 'now friends' || data === 'already sent' || data === 'already friends') setAsked(a => ({ ...a, [r.user_id]: data }))
-    }
     await load()
     setBusy(false)
   }
@@ -150,30 +127,6 @@ export default function Friends() {
           </div>
         )}
       </div>
-
-      {suggestions && suggestions.length > 0 && (
-        <div className="fr-card">
-          <div className="fr-label fr-label-row">
-            <span>Players to meet</span>
-            <button className="fr-btn ghost small" disabled={busy} onClick={() => { setAsked({}); loadSuggestions() }}>Show others</button>
-          </div>
-          {suggestions.map(r => {
-            const st = statusOf(r)
-            const done = asked[r.user_id]
-            return (
-              <div key={r.user_id} className="fr-person">
-                <Face p={r} />
-                <span className="fr-name">{r.nickname}
-                  <small className={st.live ? (st.game ? 'fr-game' : 'fr-online') : ''}>{st.text}</small>
-                </span>
-                {done
-                  ? <span className="fr-sent">{done === 'now friends' || done === 'already friends' ? 'Friends ✓' : 'Request sent ✓'}</span>
-                  : <button className="fr-btn small" disabled={busy} onClick={() => addSuggested(r)}>Add friend</button>}
-              </div>
-            )
-          })}
-        </div>
-      )}
 
       {(incoming.length > 0 || outgoing.length > 0) && (
         <div className="fr-card">
