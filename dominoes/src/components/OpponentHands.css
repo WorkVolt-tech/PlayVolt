@@ -129,3 +129,16 @@
 @media (orientation: landscape) and (max-height: 500px) {
   .opponent-friend-btn { min-height: 19px; padding: 1px 5px; font-size: 0.38rem; }
 }
+
+/* The side players' hands stay clear of the camera on a phone held sideways,
+   and stop above your hand instead of running underneath it. */
+.opponent-area.opponent-left {
+  left: calc(var(--rail, 10px) + 6px + env(safe-area-inset-left, 0px));
+  bottom: calc(var(--hand-h, 0px) + var(--rail, 10px) + 6px);
+}
+.opponent-area.opponent-right {
+  right: calc(var(--rail, 10px) + 6px + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--hand-h, 0px) + var(--rail, 10px) + 6px);
+}
+.game-layout.watching .opponent-area.opponent-left,
+.game-layout.watching .opponent-area.opponent-right { bottom: calc(var(--rail, 10px) + 6px + env(safe-area-inset-bottom, 0px)); }

@@ -68,6 +68,7 @@ export default function Skins() {
 
   const tileCards = TILE_UNLOCKS.map(u => ({
     ...u, label: TILE_SKINS[u.id].label,
+    need: u.progress && stats ? `${u.need} · ${u.progress(stats)}` : u.need,
     owned: owned.tiles.has(u.id), on: equipped.tile === u.id,
   }))
   const tableCards = TABLE_UNLOCKS.map(u => ({

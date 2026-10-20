@@ -15,6 +15,7 @@ import { TABLE_SKINS, weekStartUTC } from '../lib/skins'
 import './StoryChallenge.css'      // the result card's styles
 import { botsCountForTrophies } from '../lib/trophies'
 import './Game.css'
+import { recordShapeWin } from '../lib/shapeUnlocks'
 
 // ── Solo vs AI, on the device ────────────────────────────────────────────────
 //
@@ -282,6 +283,11 @@ export default function SoloGame({ challengeMode = false }) {
         })
         if (error) console.error('[solo] leaderboard win could not be saved:', error.message)
       }
+      // shaped tiles: a match won, or a Dekabess of your own, against expert bots only
+      // (partners: your partner sits at seat 2 = bots[1] and isn't an opponent)
+      const opponents = teams ? [bots[0], bots[2]] : bots
+      if (vyej) await recordShapeWin('match', opponents, teams)
+      if (isDek && won && !teams) await recordShapeWin('dekabess', opponents, false)
       // the feats are trophies only: they count against expert bots only
       if (!botsCountForTrophies(bots)) return
       if (clean) await db.rpc('record_feat', { p_kind: 'clean_round' })

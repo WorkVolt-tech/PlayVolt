@@ -4,6 +4,7 @@ import { weekStartUTC } from '../lib/skins'
 import { isTableBlocked } from '../lib/blockedGame'
 import { tableCountsForLeaderboard } from '../lib/trophies'
 import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
+import { recordShapeWin } from '../lib/shapeUnlocks'
 
 // Turn timing. Off by default; switch it on from the console with
 //   localStorage.setItem('domino_timing','1')   (then reload)
@@ -228,6 +229,28 @@ export function useGameState(myInfo, navigate) {
   //   current_turn  = winning seat
   //   status 'finished' = Vyèj (streak reached 4)
   //   pending_point = Dekabess
+  // Shaped tiles: when I win a match (or a round with my own Dekabess) at a table
+  // where every opponent is an expert bot, tell the server — for myself only.
+  useEffect(() => {
+    const room = roomData
+    if (!room || stake || room.practice || !myInfo) return
+    if (room.status !== 'round_end' && room.status !== 'finished') return
+    const key = `dekabess_shape:${myInfo.roomId}:${room.round ?? 1}`
+    try { if (localStorage.getItem(key)) return } catch { return }
+    if (!(playersRef.current || []).length) return                 // players not loaded yet: try again when they are
+    try { localStorage.setItem(key, '1') } catch { /* ignore */ }
+    const partners = room.game_mode === 'asosye'
+    const mine = s => (partners ? (s % 2) === (myInfo.seat % 2) : s === myInfo.seat)
+    const won = room.status === 'finished'
+      ? (partners ? room.match_winner === (myInfo.seat % 2 === 0 ? 'A' : 'B') : String(room.match_winner) === String(myInfo.seat))
+      : false
+    const opp = (playersRef.current || []).filter(p => !mine(p.seat))
+    if (!opp.length || !opp.every(p => p.is_ai && !p.stand_in)) return
+    const names = opp.map(p => p.nickname)
+    if (won) recordShapeWin('match', names, partners)
+    if (room.pending_point && room.current_turn === myInfo.seat && !partners) recordShapeWin('dekabess', names, false)
+  }, [roomData?.status, roomData?.round, players.length])          // eslint-disable-line react-hooks/exhaustive-deps
+
   const statsInFlightRef = useRef(new Set())
   useEffect(() => {
     const room = roomData

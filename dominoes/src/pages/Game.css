@@ -437,3 +437,19 @@
   text-transform: none;
   letter-spacing: .04em;
 }
+
+/* ── The table fits between the top bar and your hand ────────────────────
+   The felt and the table's picture (corners included) are drawn in the space
+   you can actually see: below the top bar, above your hand, and — on a phone
+   on its side — clear of the camera. Before, the table ran underneath both
+   bars, so the corners of framed tables were hidden. Board.jsx measures how
+   much the bars still overlap the board (now nothing) when it lays out the
+   chain, so gameplay is unchanged. Watching has no hand: it runs to the bottom. */
+.game-layout { --top-h: calc(44px + env(safe-area-inset-top, 0px)); }
+.game-layout .board-area {
+  top: var(--top-h);
+  bottom: var(--hand-h);
+  left: env(safe-area-inset-left, 0px);
+  right: env(safe-area-inset-right, 0px);
+}
+.game-layout.watching .board-area { bottom: env(safe-area-inset-bottom, 0px); }

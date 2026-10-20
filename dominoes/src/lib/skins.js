@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react'
 import { db } from './supabase'
 import { TROPHIES } from './trophies'
+import { SHAPE_RULES, SHAPE_PROGRESS, PUZZLE_COUNT } from './shapeUnlocks'
 
 const INK   = '#1c1a16'
 const WHITE = '#ffffff'
@@ -295,6 +296,9 @@ function unlocksFor(kind, free, ids) {
     if (kind === 'tables' && WTL_TABLES.includes(id)) {
       return { id, wtl: true, need: 'Wa Tab La prize — be #1 the week it’s offered', test: s => (s.tableUnlocks || []).includes(id) }
     }
+    if (kind === 'tiles' && SHAPE_RULES[id]) {
+      return { id, need: SHAPE_RULES[id], progress: SHAPE_PROGRESS[id], test: s => (s.tileUnlocks || []).includes(id) }
+    }
     const t = TROPHIES.find(tr => (tr.rewards?.[kind] || []).includes(id))
     return t
       ? { id, trophy: t.id, need: `${t.kreyol} trophy — ${t.desc}`, test: t.test }
@@ -411,15 +415,17 @@ export function useEquippedSkins() {
 // ── A player's stats, as trophies and skins read them ──────────────────────
 // Guests (no account) get all zeros.
 export async function loadPlayerStats() {
-  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0, fiveDoubles: 0, fiveDoublesWon: 0, tableUnlocks: [], tileUnlocks: [] }
+  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0, fiveDoubles: 0, fiveDoublesWon: 0, tableUnlocks: [], tileUnlocks: [], expertsBeaten: [], puzzlesDone: 0 }
   const { data: auth } = await db.auth.getUser()
   const uid = auth?.user?.id
   if (!uid) return zero
-  const [{ data: prof }, { data: sp }, { data: won }, { data: tilesOwned }] = await Promise.all([
+  await db.rpc('shape_check_puzzles', { p_total: PUZZLE_COUNT }).then(() => {}, () => {})    // catch up: Kapsil for puzzles already finished
+  const [{ data: prof }, { data: sp }, { data: won }, { data: tilesOwned }, { data: shapes }] = await Promise.all([
     db.from('profiles').select('*').eq('id', uid).maybeSingle(),
     db.rpc('ensure_story_progress'),
     db.from('table_unlocks').select('skin').eq('user_id', uid),
-    db.from('tile_unlocks').select('skin').eq('user_id', uid),          // tiles bought in the shop
+    db.from('tile_unlocks').select('skin').eq('user_id', uid),          // tiles bought in the shop or unlocked
+    db.rpc('shape_progress'),                                           // experts beaten, puzzles done
   ])
   const row = Array.isArray(sp) ? sp[0] : sp
   return {
@@ -436,6 +442,8 @@ export async function loadPlayerStats() {
     fiveDoublesWon: prof?.total_five_double_wins ?? 0,
     tableUnlocks: (won || []).map(r => r.skin),
     tileUnlocks: (tilesOwned || []).map(r => r.skin),
+    expertsBeaten: shapes?.beaten || [],
+    puzzlesDone: Number(shapes?.puzzles || 0),
     uid,
   }
 }

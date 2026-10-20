@@ -18,6 +18,7 @@ import HandsReveal from '../components/HandsReveal'
 import { canPlayOnSide, pipCount } from '../hooks/useGameState'
 import '../pages/Game.css'
 import './StoryChallenge.css'
+import { recordShapeWin } from '../lib/shapeUnlocks'
 
 // ── Story challenge screen ───────────────────────────────────────────────────
 // Plays one chapter, challenge by challenge, using the story engine. The board
@@ -340,6 +341,9 @@ export default function StoryChallenge() {
       if (outcome.won && user && rivals.length && rivals.every(n => n && isExpertBot(getPersonality(n)))) {
         db.rpc('goud_story_round', { p_won: true, p_dekabess: !!st.dekabess, p_match: w >= 2 }).then(() => {})
       }
+      // shaped tiles (against expert bots only — checked by the server too)
+      if (user && w >= 2 && l < 2) recordShapeWin('match', rivals, !!mate && (st.seats ?? 4) === 4)
+      if (user && st.dekabess && st.winner === 0 && !mate) recordShapeWin('dekabess', rivals, false)
     }
     if (w >= 2 || l >= 2) setResult({ ...outcome, met: w >= 2, stars: w >= 2 ? (l === 0 ? 3 : 2) : 0 })
     else setRoundPanel({ ...outcome.round, wins: w, losses: l, winner: st.winner })
