@@ -292,3 +292,36 @@
 .sc-partner-swap-label { font-size: 0.56rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ivory-dim); margin-bottom: 0.45rem; }
 .sc-partner-swap .sc-picks { justify-content: center; }
 .sc-partner-swap .sc-btn { padding: 0.35rem 0.75rem; font-size: 0.6rem; }
+
+/* ── End-of-round panels never get cut off ────────────────────────────────
+   (Story, Solo and Practice.) When a panel is taller than the screen — a phone
+   on its side — the overlay scrolls instead of cutting off the top and bottom.
+   margin: auto keeps it centred when it fits and starts it at the top when it
+   doesn't, and it stays clear of the camera, the status bar and the home bar. */
+.sc-overlay {
+  align-items: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px))
+           calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+}
+.sc-overlay > .sc-card { margin: auto; max-width: 100%; box-sizing: border-box; }
+
+/* On a short screen (a phone on its side): a little more compact, and the
+   buttons stay at the bottom of the screen while you scroll — Next round is
+   always one tap away. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .sc-overlay > .sc-card { padding: 1rem 1.2rem 0; }
+  .sc-overlay .sc-card h2 { font-size: 1.1rem; }
+  .sc-overlay .sc-card p { margin-bottom: 0.6rem; }
+  .sc-overlay .sc-actions {
+    position: sticky;
+    bottom: calc(-12px - env(safe-area-inset-bottom, 0px));
+    margin: 0 -1.2rem;
+    padding: 0.7rem 1.2rem calc(0.8rem + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--surface) 30%);
+    z-index: 1;
+  }
+}
