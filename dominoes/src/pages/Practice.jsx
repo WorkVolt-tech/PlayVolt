@@ -148,9 +148,14 @@ export default function Practice({ embedded = false, onExit }) {
 
   const knockName = seat => (seat === 0 ? 'You'
     : (setup?.seats === 2 ? setup.opponents[0] : setup?.opponents?.[seat - 1]) || 'Player')
+  // where a knock comes from: the same layout as the hands —
+  // 2 players across, 3 players right and left, 4 around
   const knockPos = seat => {
-    if ((st?.seats ?? 4) === 2) return seat === 0 ? 'bottom' : 'top'
-    return ({ 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' })[seat]
+    const n = st?.seats ?? 4
+    if (seat === 0) return 'bottom'
+    if (n === 2) return 'top'
+    if (n === 3) return seat === 1 ? 'right' : 'left'
+    return ({ 1: 'right', 2: 'top', 3: 'left' })[seat]
   }
 
   // Watch the move log: every pass gets its knock, and a seat stops showing

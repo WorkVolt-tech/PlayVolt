@@ -381,10 +381,10 @@ export default function Game() {
             }
             setPassingSeats(prev => new Set(prev).add(e.player_seat))
             const p = playersForKnock.current.find(pl => pl.seat === e.player_seat)
-            const mySeat = myInfo?.seat ?? 0
-            const diff = ((e.player_seat - mySeat) + 4) % 4
-            const posMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' }
-            const knock = { name: p?.nickname || 'Player', position: posMap[diff] }
+            // the knock comes from where that player sits — the same layout as
+            // their hand: 2 players across, 3 players right and left, 4 around
+            const knock = { name: p?.nickname || 'Player',
+              position: sideOf(e.player_seat, myInfo?.seat ?? 0, playersForKnock.current.length || 4) }
             // several knocks in a row each get shown, one after another
             setKnockPlayer(cur => {
               if (cur) { knockQueue.current.push(knock); return cur }
