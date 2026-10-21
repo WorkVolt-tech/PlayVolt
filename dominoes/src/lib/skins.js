@@ -140,7 +140,7 @@ export const TABLE_SKINS = {
   pink:     { label: 'Pink', felt: `${VIGNETTE}, ${GRAIN}, #8a3361`, rail: WOOD },
   ocean:    { label: 'Ocean', felt: `${VIGNETTE}, ${GRAIN}, #0f4c5c`, rail: WOOD },
   neon:     { label: 'Neon', felt: `${VIGNETTE}, linear-gradient(rgba(0,229,255,0.07) 1px, transparent 1px) 0 0 / 26px 26px, linear-gradient(90deg, rgba(0,229,255,0.07) 1px, transparent 1px) 0 0 / 26px 26px, #0b0b12`, rail: 'linear-gradient(180deg, #2bf0ff 0%, #00a3b8 100%)' },
-  dekabess: { label: 'Dekabess', felt: `${VIGNETTE}, linear-gradient(rgba(12,11,9,0.55), rgba(12,11,9,0.55)), url(/dekabess_logo.webp) center / 42% auto no-repeat, #151310`, rail: 'linear-gradient(180deg, #e3c56f 0%, #c9a84c 45%, #7a5f22 100%)' },
+  dekabess: { label: 'Dekabess', felt: `${VIGNETTE}, linear-gradient(rgba(12,11,9,0.55), rgba(12,11,9,0.55)), url(/dekabess-logo.webp) center / 42% auto no-repeat, #151310`, rail: 'linear-gradient(180deg, #e3c56f 0%, #c9a84c 45%, #7a5f22 100%)' },
   playvolt: { label: 'PlayVolt', felt: `${VIGNETTE}, ${GRAIN}, #2a1b5e`, rail: 'linear-gradient(180deg, #7c5cfc 0%, #4b2fc9 100%)' },
   usa:      { label: 'USA', felt: `${VIGNETTE}, linear-gradient(#1f2350, #1f2350) 0 0 / 40% 53.85% no-repeat, repeating-linear-gradient(180deg, #6e1520 0%, #6e1520 7.69%, #8a847a 7.69%, #8a847a 15.38%)`, rail: WOOD },
   krisal:   { label: 'Krisal', felt: `${VIGNETTE}, linear-gradient(125deg, transparent 30%, rgba(255,255,255,0.07) 40%, transparent 50%, transparent 62%, rgba(255,255,255,0.05) 70%, transparent 78%), ${GRAIN}, #1d5f7a`, rail: 'linear-gradient(180deg, #d9eef8 0%, #8fbfd8 50%, #4d86a6 100%)' },
