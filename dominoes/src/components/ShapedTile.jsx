@@ -1,5 +1,4 @@
-import { useId } from 'react'
-import { DECO_KINDS, decoSvg } from '../lib/decoShapes'
+import { DECO_KINDS, decoSvg, decoDefs } from '../lib/decoShapes'
 
 // ── ShapedTile ───────────────────────────────────────────────────────────────
 // The art for the shaped tile skins: Kapsil (an oval) and Zo (a bone).
@@ -11,8 +10,11 @@ import { DECO_KINDS, decoSvg } from '../lib/decoShapes'
 // the pips never stretch. The box around it drops its rectangle (background,
 // shadow, border) — see "Shaped tile skins" in styles/global.css.
 //
-// Each tile gets its own ids for its gradients, so tiles never borrow each
-// other's (a hidden tile's definitions can't be used by a visible one).
+// The gradients and patterns live ONCE on the page (<ShapeDefs />, rendered by
+// App.jsx in an always-present, invisible <svg>) and every tile refers to them.
+// The shadow and the gold glow are drawn with the tile — a hidden gold outline
+// (.st-glow) the CSS fades in — so no CSS filters are used: per-tile copies of
+// the definitions and filter effects made long games run out of memory on iPhone.
 
 const SIDE = { 0: [], 1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 1, 2, 6, 7, 8] }
 
@@ -88,6 +90,9 @@ function Medallion({ k, u }) {
 function Oval({ a, b, back, u }) {
   return (
     <>
+      <rect x="1" y="5.6" width="198" height="94" rx="47" fill="rgba(0,0,0,.42)" />
+      <rect className="st-glow" x="1" y="3" width="198" height="94" rx="47" fill="none" stroke="#e8c96a" strokeWidth="14" strokeOpacity=".3" />
+      <rect className="st-glow" x="1" y="3" width="198" height="94" rx="47" fill="none" stroke="#f3d27a" strokeWidth="7" />
       <rect x="1" y="3" width="198" height="94" rx="47" fill={`url(#${u}gold)`} />
       <rect x="5" y="7" width="190" height="86" rx="43" fill="#0a0907" />
       <rect x="6" y="8" width="188" height="84" rx="42" fill={`url(#${u}face)`} />
@@ -107,6 +112,9 @@ function Oval({ a, b, back, u }) {
 function BoneFace({ a, b, u }) {
   return (
     <>
+      <path d={bonePath(0)} transform="translate(0 2.6)" fill="rgba(0,0,0,.42)" />
+      <path className="st-glow" d={bonePath(0)} fill="none" stroke="#e8c96a" strokeWidth="14" strokeOpacity=".3" strokeLinejoin="round" />
+      <path className="st-glow" d={bonePath(0)} fill="none" stroke="#f3d27a" strokeWidth="7" strokeLinejoin="round" />
       <path d={bonePath(0)} fill={`url(#${u}gold)`} stroke="#5e4312" strokeWidth="1" />
       <path d={bonePath(4)} fill="#0a0907" />
       <path d={bonePath(5)} fill={`url(#${u}face)`} />
@@ -122,6 +130,7 @@ function BoneFace({ a, b, u }) {
 function BoneBack({ u }) {
   return (
     <>
+      <path d={bonePath(0)} transform="translate(0 2.6)" fill="rgba(0,0,0,.42)" />
       <path d={bonePath(0)} fill={`url(#${u}gold)`} stroke="#5e4312" strokeWidth="1" />
       <path d={bonePath(5)} fill={`url(#${u}goldin)`} />
       <path d={bonePath(7.5)} fill="#0c0b09" />
@@ -133,30 +142,41 @@ function BoneBack({ u }) {
   )
 }
 
-// shape: 'oval' | 'bone'. sideways: lie along a 2:1 box (else upright, 1:2).
+const U = 'sd-ov-'      // the shared ids for Kapsil and Zo
+
+// Rendered once by App.jsx: every shaped tile's gradients and patterns.
+// (Invisible but present: a display:none <svg> would make browsers drop them.)
+export function ShapeDefs() {
+  return (
+    <svg aria-hidden="true" width="0" height="0" focusable="false"
+      style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      <Defs u={U} />
+      <g dangerouslySetInnerHTML={{ __html: decoDefs() }} />
+    </svg>
+  )
+}
+
+// shape: 'oval' | 'bone' | a deco shape. sideways: lie along a 2:1 box (else upright, 1:2).
 export default function ShapedTile({ shape, a = 0, b = 0, back = false, sideways = false }) {
-  const u = 'st' + useId().replace(/[^a-zA-Z0-9]/g, '') + '-'
-  // the black-marble deco family (Hexa, Oktav, Fle, Lozanj, Dyaman, Konkav)
+  const box = { position: 'absolute', inset: 0, display: 'block', overflow: 'visible' }
+  const view = sideways ? '0 0 200 100' : '0 0 100 200'
+  // the black-marble deco family (Hexa, Oktav, Fle, Lozanj, Dyaman, Konkav, Triyang)
   if (DECO_KINDS.includes(shape)) {
-    const html = { __html: decoSvg(shape, a, b, back, u) }
+    const html = { __html: decoSvg(shape, a, b, back) }
     return (
       <div data-tile-shape={shape} aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <svg viewBox={sideways ? '0 0 200 100' : '0 0 100 200'} preserveAspectRatio="xMidYMid meet"
-          width="100%" height="100%" style={{ position: 'absolute', inset: 0, display: 'block', overflow: 'visible' }}>
+        <svg viewBox={view} preserveAspectRatio="xMidYMid meet" width="100%" height="100%" style={box}>
           {sideways ? <g dangerouslySetInnerHTML={html} /> : <g transform="translate(100 0) rotate(90)" dangerouslySetInnerHTML={html} />}
         </svg>
       </div>
     )
   }
   const art = shape === 'bone'
-    ? (back ? <BoneBack u={u} /> : <BoneFace a={a} b={b} u={u} />)
-    : <Oval a={a} b={b} back={back} u={u} />
+    ? (back ? <BoneBack u={U} /> : <BoneFace a={a} b={b} u={U} />)
+    : <Oval a={a} b={b} back={back} u={U} />
   return (
-    <div data-tile-shape={shape} aria-hidden="true"
-      style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-      <svg viewBox={sideways ? '0 0 200 100' : '0 0 100 200'} preserveAspectRatio="xMidYMid meet"
-        width="100%" height="100%" style={{ position: 'absolute', inset: 0, display: 'block', overflow: 'visible' }}>
-        <Defs u={u} />
+    <div data-tile-shape={shape} aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      <svg viewBox={view} preserveAspectRatio="xMidYMid meet" width="100%" height="100%" style={box}>
         {sideways ? art : <g transform="translate(100 0) rotate(90)">{art}</g>}
       </svg>
     </div>

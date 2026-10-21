@@ -22,6 +22,7 @@ import Heartbeat from './components/Heartbeat'
 import ChallengeBanner from './components/ChallengeBanner'
 import VersionAlert from './components/VersionAlert'
 import './styles/global.css'
+import { ShapeDefs } from './components/ShapedTile'
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
       <Heartbeat />
       <ChallengeBanner />
       <VersionAlert />
+      <ShapeDefs />
       <DragProvider>
       <Routes>
         <Route path="/" element={<Lobby />} />

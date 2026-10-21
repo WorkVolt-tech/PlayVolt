@@ -5,8 +5,8 @@
 // and Konkav (concave). Drawn sideways in a 200 × 100 grid, like Kapsil and Zo;
 // components/ShapedTile.jsx turns them upright and handles the box.
 //
-// decoSvg(kind, a, b, back, u) returns the SVG markup (our own drawing, no user
-// text in it). `u` makes every gradient/pattern id private to one tile.
+// decoSvg(kind, a, b, back) returns one tile's SVG markup (our own drawing, no
+// user text in it); decoDefs() the shared gradients and patterns it uses.
 
 const SIDE ={0:[],1:[4],2:[2,6],3:[2,4,6],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,1,2,6,7,8]}
 const DEFS=`<defs>
@@ -97,7 +97,13 @@ function medallion(k,cx=100){const cy=50
 function art(kind,a,b,back){
   // rim, dark edge, face, fine inner line (the triangles get a slimmer rim: they narrow to a point)
   const [e1,e2,e3] = kind==='triangles' ? [4,5,7.5] : [5,6,9]
-  let s=layer(kind,0,'fill="url(#gold)" stroke="#4a3410" stroke-width="1"')
+  // a soft shadow under the shape, and a gold outline the CSS fades in for the
+  // playable / selected / just-played glow — drawn with the tile, so no CSS
+  // filters are needed (those are costly on phones)
+  let s=`<g transform="translate(0 2.6)">${layer(kind,0,'fill="rgba(0,0,0,.42)"')}</g>`
+     + layer(kind,0,'class="st-glow" fill="none" stroke="#e8c96a" stroke-width="14" stroke-opacity=".3" stroke-linejoin="round"')
+     + layer(kind,0,'class="st-glow" fill="none" stroke="#f3d27a" stroke-width="7" stroke-linejoin="round"')
+     + layer(kind,0,'fill="url(#gold)" stroke="#4a3410" stroke-width="1"')
      + layer(kind,e1,'fill="#0a0907"') + layer(kind,e2,'fill="url(#face)"') + layer(kind,e2,`fill="url(#${back?'quilt':'veins'})"`)
      + layer(kind,e3,'fill="none" stroke="#c9a14a" stroke-width=".9" opacity=".8"')
   if(kind==='fleur'){ s+=fleurMark(30,-1)+fleurMark(170,1) }
@@ -120,7 +126,14 @@ function art(kind,a,b,back){
 
 export const DECO_KINDS = ['hex', 'oct', 'fleur', 'lozenge', 'diamonds', 'concave', 'triangles']
 
-export function decoSvg(kind, a, b, back, u) {
-  const markup = DEFS + art(kind, a || 0, b || 0, !!back)
-  return markup.replace(/url\(#(\w+)\)/g, `url(#${u}$1)`).replace(/id="(\w+)"/g, `id="${u}$1"`)
+// The colour definitions, once for the whole page (ShapedTile puts them in a
+// shared, always-present <svg>); every tile refers to them by these ids.
+export const DECO_PREFIX = 'sd-dk-'
+export function decoDefs() {
+  return DEFS.replace(/url\(#(\w+)\)/g, `url(#${DECO_PREFIX}$1)`).replace(/id="(\w+)"/g, `id="${DECO_PREFIX}$1"`)
+}
+
+// one tile's art (no definitions of its own)
+export function decoSvg(kind, a, b, back) {
+  return art(kind, a || 0, b || 0, !!back).replace(/url\(#(\w+)\)/g, `url(#${DECO_PREFIX}$1)`)
 }
