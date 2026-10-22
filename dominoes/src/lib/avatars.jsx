@@ -43,6 +43,8 @@ const hand = <path d="M38 78 C30 72 28 62 30 54 L30 40 C30 36 36 36 36 40 L36 52
 const fist = <g {...S}><path d="M32 44 Q32 34 42 34 H60 Q68 34 68 42 V58 Q68 70 56 70 H44 Q32 70 32 58 Z" fill={IV} /><path d="M44 34 V44 M52 34 V44 M60 34 V44" fill="none" /><path d="M32 50 Q24 50 26 58 Q28 64 36 62" fill={IV} /></g>
 
 export const TROPHY_ICONS = {
+  // Vyèj streak: three cups, one after another, climbing
+  'twa-vyej-swiv': <g>{cup(22, 64, 0.5)}{cup(50, 56, 0.62)}{cup(78, 47, 0.74)}{sparkle(88, 18, 7, GOLD)}</g>,
   // Getting started
   'premye-chez': chair(),
   'premye-vyej': <g {...S}><path d="M38 56 L30 82 L40 76 L44 86 L50 62 M62 56 L70 82 L60 76 L56 86 L50 62" fill={RED} />{[...Array(12)].map((_, i) => { const a = i * Math.PI / 6; return <circle key={i} cx={50 + 17 * Math.cos(a)} cy={42 + 17 * Math.sin(a)} r="6" fill={BLUE} stroke={INK} strokeWidth="1.5" /> })}<circle cx="50" cy="42" r="14" fill={GOLD} /><text x="50" y="49" textAnchor="middle" fontSize="18" fontWeight="700" fill={INK} stroke="none" fontFamily="Georgia, serif">1</text></g>,

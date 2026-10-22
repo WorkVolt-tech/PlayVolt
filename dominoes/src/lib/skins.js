@@ -415,7 +415,7 @@ export function useEquippedSkins() {
 // ── A player's stats, as trophies and skins read them ──────────────────────
 // Guests (no account) get all zeros.
 export async function loadPlayerStats() {
-  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0, fiveDoubles: 0, fiveDoublesWon: 0, tableUnlocks: [], tileUnlocks: [], expertsBeaten: [], puzzlesDone: 0 }
+  const zero = { games: 0, vyej: 0, dekabess: 0, tournaments: 0, chapters: [], cleanRounds: 0, comebacks: 0, fiveDoubles: 0, fiveDoublesWon: 0, bestVyejStreak: 0, tableUnlocks: [], tileUnlocks: [], expertsBeaten: [], puzzlesDone: 0 }
   const { data: auth } = await db.auth.getUser()
   const uid = auth?.user?.id
   if (!uid) return zero
@@ -438,6 +438,7 @@ export async function loadPlayerStats() {
     chapters: row?.completed_chapters || [],
     cleanRounds: prof?.total_clean_rounds ?? 0,
     comebacks: prof?.total_comebacks ?? 0,
+    bestVyejStreak: prof?.best_vyej_streak ?? 0,     // matches won in a row (record_round_stats)
     fiveDoubles: prof?.total_five_double_rounds ?? 0,
     fiveDoublesWon: prof?.total_five_double_wins ?? 0,
     tableUnlocks: (won || []).map(r => r.skin),

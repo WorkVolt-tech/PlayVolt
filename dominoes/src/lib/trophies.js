@@ -6,13 +6,14 @@
 //
 // s = the player's stats:
 //   { games, vyej, dekabess, tournaments, chapters: [ids], cleanRounds, comebacks,
-//     fiveDoubles, fiveDoublesWon }
+//     fiveDoubles, fiveDoublesWon, bestVyejStreak }
 
 const ch = n => s => (s.chapters || []).includes(n)
 
 export const TROPHY_GROUPS = [
   { id: 'start',   label: 'Getting started' },
   { id: 'wins',    label: 'Matches won' },
+  { id: 'streak',  label: 'Vyèj streaks' },
   { id: 'played',  label: 'Matches played' },
   { id: 'dek',     label: 'Dekabess' },
   { id: 'clean',   label: 'Clean rounds' },
@@ -34,6 +35,8 @@ export const TROPHIES = [
   { id: 'chanpyon',  group: 'wins', tier: 'silver', kreyol: 'Chanpyon',  meaning: 'Champion',            desc: 'Win 15 matches', test: s => s.vyej >= 15, rewards: { tiles: ['jamaica'] } },
   { id: 'lejann',    group: 'wins', tier: 'gold',   kreyol: 'Lejann',    meaning: 'Legend',              desc: 'Win 20 matches', test: s => s.vyej >= 20, rewards: { tiles: ['fuchsia'] } },
   { id: 'met-tab',   group: 'wins', tier: 'platinum',   kreyol: 'Mèt Tab',   meaning: 'Master of the table', desc: 'Win 25 matches', test: s => s.vyej >= 25, rewards: { tables: ['jamaica'] } },
+  // Vyèj streaks — matches won in a row (a lost match starts the count again)
+  { id: 'twa-vyej-swiv', group: 'streak', tier: 'gold', kreyol: 'Twa Vyèj Swiv', meaning: 'Three Vyèj in a row', desc: 'Win 3 matches in a row', test: s => (s.bestVyejStreak || 0) >= 3, rewards: {} },
   // Matches played
   { id: 'chofe-chez',  group: 'played', tier: 'bronze', kreyol: 'Chofe Chèz',  meaning: 'Warming the chair',  desc: 'Play 10 matches',  test: s => s.games >= 10,  rewards: { tables: ['pink'] } },
   { id: 'figi-konnen', group: 'played', tier: 'bronze', kreyol: 'Figi Konnen', meaning: 'A known face',       desc: 'Play 25 matches',  test: s => s.games >= 25,  rewards: { tiles: ['neonGreen'] } },
