@@ -45,6 +45,8 @@ const fist = <g {...S}><path d="M32 44 Q32 34 42 34 H60 Q68 34 68 42 V58 Q68 70 
 export const TROPHY_ICONS = {
   // Vyèj streak: three cups, one after another, climbing
   'twa-vyej-swiv': <g>{cup(22, 64, 0.5)}{cup(50, 56, 0.62)}{cup(78, 47, 0.74)}{sparkle(88, 18, 7, GOLD)}</g>,
+  'senk-vyej-swiv': <g><path d="M50 14 C62 30 74 36 70 56 C68 70 58 78 50 78 C42 78 32 70 30 56 C27 40 40 34 42 22 C46 30 48 34 50 14 Z" fill={ORANGE} stroke={INK} strokeWidth="2.5" strokeLinejoin="round" /><path d="M50 40 C56 48 60 54 58 62 C56 70 44 70 42 62 C41 54 46 50 50 40 Z" fill={GOLD} />{cup(50, 72, 0.5)}</g>,
+  'dis-vyej-swiv': <g><path d="M24 40 L30 16 L41 30 L50 12 L59 30 L70 16 L76 40 Z" fill={GOLD} stroke={INK} strokeWidth="2.5" strokeLinejoin="round" /><circle cx="50" cy="30" r="3.2" fill={RED} stroke={INK} strokeWidth="1.5" />{cup(30, 76, 0.42)}{cup(50, 72, 0.5)}{cup(70, 76, 0.42)}</g>,
   // Getting started
   'premye-chez': chair(),
   'premye-vyej': <g {...S}><path d="M38 56 L30 82 L40 76 L44 86 L50 62 M62 56 L70 82 L60 76 L56 86 L50 62" fill={RED} />{[...Array(12)].map((_, i) => { const a = i * Math.PI / 6; return <circle key={i} cx={50 + 17 * Math.cos(a)} cy={42 + 17 * Math.sin(a)} r="6" fill={BLUE} stroke={INK} strokeWidth="1.5" /> })}<circle cx="50" cy="42" r="14" fill={GOLD} /><text x="50" y="49" textAnchor="middle" fontSize="18" fontWeight="700" fill={INK} stroke="none" fontFamily="Georgia, serif">1</text></g>,

@@ -66,6 +66,8 @@ export const TILE_SKINS = {
   krisal:   { label: 'Krisal', face: () => 'linear-gradient(135deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.65) 9%, transparent 9%, transparent 52%, rgba(255,255,255,0.35) 52%, rgba(255,255,255,0.35) 57%, transparent 57%), linear-gradient(160deg, #eefaff 0%, #a9dcf5 55%, #6fbbe6 100%)', edge: '#3d86b0', pip: '#0b2a40', ring: 'none', divider: 'rgba(11,42,64,0.25)' },
   phoenix:  { label: 'Phoenix', face: () => 'linear-gradient(180deg, #ffd166 0%, #ff8c42 38%, #e63946 72%, #7a0f2a 100%)', edge: '#4a0612', pip: '#ffffff', ring: RING, divider: 'rgba(0,0,0,0.25)', pipStroke: '#000000', pipStrokeW: 6 },
   bone:     { label: 'Bone', face: () => 'radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.35) 0%, transparent 55%), linear-gradient(160deg, #efe4c8 0%, #dccba2 55%, #c4ad7e 100%)', edge: '#9c875c', pip: '#3a2c14', ring: 'none', divider: 'rgba(58,44,20,0.35)' },
+  // Vyèj streak reward (Senk Vyèj Swiv — 5 matches won in a row): on fire
+  flanm:    { label: 'Flanm', face: () => 'radial-gradient(ellipse at 50% 118%, rgba(255,200,80,0.55) 0%, rgba(255,120,40,0.25) 35%, transparent 65%), linear-gradient(170deg, #4a0f08 0%, #8f1d0c 45%, #d4471a 80%, #ff8a2b 100%)', edge: '#2a0603', pip: '#ffd36b', ring: 'none', divider: 'rgba(255,211,107,0.4)' },
   royal:    { label: 'Royal', face: () => 'linear-gradient(160deg, #2a3f8f 0%, #182a66 55%, #0d1a45 100%)', edge: '#c9a84c', pip: '#e8c96a', ring: 'none', divider: 'rgba(232,201,106,0.45)' },
   // ── flags ──
   // Drawn so the flag reads correctly on a tile lying sideways — the way most
@@ -136,6 +138,8 @@ export const TABLE_SKINS = {
   burgundy: { label: 'Burgundy', felt: `${VIGNETTE}, ${GRAIN}, #5a1424`, rail: WOOD },
   slate:    { label: 'Slate', felt: `${VIGNETTE}, ${GRAIN}, #2c3236`, rail: 'linear-gradient(180deg, #2a2a2a 0%, #141414 100%)' },
   mahogany: { label: 'Mahogany', felt: `${VIGNETTE}, repeating-linear-gradient(90deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 2px, transparent 2px, transparent 11px), linear-gradient(180deg, #7a4423 0%, #5b3018 100%)`, rail: 'linear-gradient(180deg, #2b1a0c 0%, #150c05 100%)' },
+  // Vyèj streak reward (Dis Vyèj Swiv — 10 matches won in a row): black velvet, a gold crown's glow
+  kouwon:   { label: 'Kouwòn', felt: `${VIGNETTE}, radial-gradient(ellipse at 50% 45%, rgba(232,201,106,0.16) 0%, rgba(232,201,106,0.05) 35%, transparent 65%), repeating-linear-gradient(45deg, rgba(232,201,106,0.035) 0 2px, transparent 2px 22px), repeating-linear-gradient(-45deg, rgba(232,201,106,0.035) 0 2px, transparent 2px 22px), ${GRAIN}, #0d0b10`, rail: 'linear-gradient(180deg, #f3d98a 0%, #c9a84c 45%, #7a5f22 100%)' },
   purple:   { label: 'Purple', felt: `${VIGNETTE}, ${GRAIN}, #3b1d63`, rail: WOOD },
   pink:     { label: 'Pink', felt: `${VIGNETTE}, ${GRAIN}, #8a3361`, rail: WOOD },
   ocean:    { label: 'Ocean', felt: `${VIGNETTE}, ${GRAIN}, #0f4c5c`, rail: WOOD },
@@ -474,6 +478,7 @@ export const TILE_GROUPS = [
   { label: 'Neon', ids: ['neonGreen', 'neonPink', 'neonOrange', 'neonYellow', 'neonBlue', 'glow'] },
   { label: 'Flags', ids: ['haiti', 'quebec', 'jamaica', 'trinidad', 'dominican', 'usa', 'france'] },
   { label: 'Culture & Dekabess', ids: ['kafe', 'kanaval', 'phoenix', 'dekabess', 'playvolt'] },
+  { label: 'Vyèj Streaks', ids: ['flanm'] },
   { label: 'Shapes', ids: ['kapsil', 'zo', 'hexa', 'oktav', 'fle', 'lozanj', 'dyaman', 'konkav', 'triyang'] },
   { label: 'Zodiac — Shop', ids: ['zodiac-aries', 'zodiac-taurus', 'zodiac-gemini', 'zodiac-cancer', 'zodiac-leo', 'zodiac-virgo', 'zodiac-libra', 'zodiac-scorpio', 'zodiac-sagittarius', 'zodiac-capricorn', 'zodiac-aquarius', 'zodiac-pisces'] },
 ]
@@ -481,6 +486,7 @@ export const TABLE_GROUPS = [
   { label: 'Classic Felts', ids: ['green', 'midnight', 'burgundy', 'slate', 'mahogany', 'purple', 'pink', 'ocean'] },
   { label: 'Flags', ids: ['haiti', 'jamaica', 'quebec', 'usa'] },
   { label: 'Culture & Neon', ids: ['neon', 'krisal', 'kanaval', 'phoenix', 'lakou', 'dekabess', 'playvolt'] },
+  { label: 'Vyèj Streaks', ids: ['kouwon'] },
   { label: 'Wa Tab La Prizes', ids: ['tiger', 'viking', 'marron', 'jazz', 'negmaron'] },
   { label: 'Challenge Prizes', ids: ['emerald', 'sapphire', 'burgundydeco', 'teal', 'amethyst'] },
   { label: 'Zodiac — Shop', ids: ['zodiac-aries', 'zodiac-taurus', 'zodiac-gemini', 'zodiac-cancer', 'zodiac-leo', 'zodiac-virgo', 'zodiac-libra', 'zodiac-scorpio', 'zodiac-sagittarius', 'zodiac-capricorn', 'zodiac-aquarius', 'zodiac-pisces'] },
