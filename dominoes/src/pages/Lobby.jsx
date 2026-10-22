@@ -816,7 +816,7 @@ export default function Lobby() {
       <div className="wrapper">
         {/* Logo */}
         <div className="title-block">
-          <img src="/dekabess-logo.webp" alt="Dekabess!" className="logo-img" />
+          <img src="/dekabess-logo-lobby.webp" alt="Dekabess!" className="logo-img" />
           <p className="subtitle">Block · 4 Players · Online</p>
         </div>
 
