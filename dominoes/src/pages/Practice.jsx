@@ -15,6 +15,7 @@ import { db } from '../lib/supabase'
 import { canPlayOnSide } from '../hooks/useGameState'
 import './Game.css'
 import './StoryChallenge.css'
+import { useEndPause } from '../lib/useEndPause'
 
 // ── Practice ─────────────────────────────────────────────────────────────────
 // A throwaway game against bots, for killing time between tournament rounds.
@@ -150,6 +151,9 @@ export default function Practice({ embedded = false, onExit }) {
     : (setup?.seats === 2 ? setup.opponents[0] : setup?.opponents?.[seat - 1]) || 'Player')
   // where a knock comes from: the same layout as the hands —
   // 2 players across, 3 players right and left, 4 around
+  // the round panel waits a moment, so the last domino can be seen landing
+  const endShown = useEndPause(st?.status === 'over')
+
   const knockPos = seat => {
     const n = st?.seats ?? 4
     if (seat === 0) return 'bottom'
@@ -372,7 +376,7 @@ export default function Practice({ embedded = false, onExit }) {
         />
       )}
 
-      {st?.status === 'over' && setup && st.winner >= 0 && !boardDek && !showDek && (
+      {endShown && st?.status === 'over' && setup && st.winner >= 0 && !boardDek && !showDek && (
         <div className="sc-overlay">
           <div className="sc-card">
             <h2>{st.winner === 0 ? 'You win the round' : `${seatNames[st.winner] || 'Player'} wins the round`}</h2>

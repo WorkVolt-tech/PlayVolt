@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { db } from '../lib/supabase'
 import '../pages/Stakes.css'
+import GoudCoin from './GoudCoin'
 
 // ── Goud stakes in the Lobby ─────────────────────────────────────────────────
 // "Play for Goud" when creating a room (off unless the player turns it on),
@@ -54,12 +55,12 @@ export function StakeCreate({ on, setOn, signedIn, onCreated }) {
       <label className="stake-toggle">
         <input type="checkbox" checked={on} onChange={e => setOn(e.target.checked)} />
         <span className="stake-toggle-track"><span /></span>
-        <span>🪙 Play for Goud</span>
+        <span><GoudCoin />Play for Goud</span>
       </label>
       {on && !signedIn && <p className="stakes-sub">Sign in to play for Goud.</p>}
       {on && signedIn && (
         <div className="stake-setup">
-          <p className="stakes-sub">You have <strong>🪙 {balance ?? '…'}</strong> Goud. Each player puts in the stake; the Vyèj winner takes the pot{mode === 'asosye' ? ' (partners split it)' : ''}. Players see the stake before joining and can vote on another amount.</p>
+          <p className="stakes-sub">You have <strong><GoudCoin />{balance ?? '…'}</strong> Goud. Each player puts in the stake; the Vyèj winner takes the pot{mode === 'asosye' ? ' (partners split it)' : ''}. Players see the stake before joining and can vote on another amount.</p>
           <div className="stakes-chips">
             {PRESETS.map(v => (
               <button key={v} className={`stakes-chip ${custom === '' && amount === v ? 'on' : ''}`} disabled={v > maxBal}
@@ -110,9 +111,9 @@ export function StakeJoinCard({ preview, signedIn, onJoined, onCancel }) {
 
   return (
     <div className="stakes-card stakes-preview-card">
-      <div className="stakes-label">🪙 This room plays for Goud</div>
+      <div className="stakes-label"><GoudCoin />This room plays for Goud</div>
       <div><strong>{preview.host}</strong>’s table · {modeName}</div>
-      <div className="stakes-amount">🪙 {preview.stake} <span>Goud each · pot {preview.pot}</span></div>
+      <div className="stakes-amount"><GoudCoin />{preview.stake} <span>Goud each · pot {preview.pot}</span></div>
       <div className="stakes-sub">{preview.seated}/{preview.seat_count} seated{preview.vote_open ? ' · a stake vote is open' : ''}</div>
       {!signedIn ? <div className="stakes-sub">Sign in to play for Goud.</div>
         : mine ? <div className="stakes-row"><button className="stakes-btn gold" onClick={join} disabled={busy}>Back to your table</button></div>

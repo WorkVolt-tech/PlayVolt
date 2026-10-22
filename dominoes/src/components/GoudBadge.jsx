@@ -3,6 +3,7 @@ import { db } from '../lib/supabase'
 import { loadPlayerStats } from '../lib/skins'
 import { TROPHIES } from '../lib/trophies'
 import './Goud.css'
+import GoudCoin from './GoudCoin'
 
 // ── Goud in the lobby ────────────────────────────────────────────────────────
 // Shows your balance. On opening it collects today's bonus and pays any
@@ -60,7 +61,7 @@ export default function GoudBadge() {
   if (balance == null) return null
   return (
     <div className="goud-badge" title="Goud — earned by playing">
-      <span className="goud-coin" aria-hidden="true">G</span>{fmtGoud(balance)}
+      <GoudCoin />{fmtGoud(balance)}
       {gain && <div className="goud-gain">{gain}</div>}
     </div>
   )
@@ -82,7 +83,7 @@ export function GoudPanel() {
     <div className="goud-panel">
       <div className="goud-panel-head">
         <span>Goud</span>
-        <strong><span className="goud-coin" aria-hidden="true">G</span>{fmtGoud(balance)}</strong>
+        <strong><GoudCoin />{fmtGoud(balance)}</strong>
       </div>
       <p className="goud-panel-how">Earned by playing: rounds and matches won against people or expert AIs, trophies, the Challenge and Wa Tab La — plus a daily bonus.</p>
       {rows.map((r, i) => (

@@ -19,6 +19,7 @@ import { canPlayOnSide, pipCount } from '../hooks/useGameState'
 import '../pages/Game.css'
 import './StoryChallenge.css'
 import { recordShapeWin } from '../lib/shapeUnlocks'
+import { useEndPause } from '../lib/useEndPause'
 
 // ── Story challenge screen ───────────────────────────────────────────────────
 // Plays one chapter, challenge by challenge, using the story engine. The board
@@ -301,6 +302,9 @@ export default function StoryChallenge() {
     } else how = `${w === 0 ? 'You' : who} went out first.`
     return { title, how, mine }
   }, [seatBot, challenge?.partner, partner])
+
+  // the round panel waits a moment, so the last domino can be seen landing
+  const endShown = useEndPause(st?.status === 'over')
 
   // A new deal: say who opens, and give it a moment before anyone moves.
   useEffect(() => {
@@ -688,7 +692,7 @@ export default function StoryChallenge() {
         <DekabessOverlay playerName={nameAt(st.winner)} onDone={() => setShowDek(false)} />
       )}
 
-      {roundPanel && !result && !showDek && !boardDek && (
+      {endShown && roundPanel && !result && !showDek && !boardDek && (
         <div className="sc-overlay">
           <div className="sc-card">
             <h2>{roundPanel.title}</h2>
@@ -709,7 +713,7 @@ export default function StoryChallenge() {
         </div>
       )}
 
-      {result && !showDek && !boardDek && (
+      {endShown && result && !showDek && !boardDek && (
         <div className="sc-overlay">
           <div className="sc-card">
             <h2>{result.met ? 'Challenge complete' : 'Not this time'}</h2>

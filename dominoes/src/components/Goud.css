@@ -1,9 +1,10 @@
 /* ── Goud ──────────────────────────────────────────────────────── */
+/* the Goud coin (components/GoudCoin.jsx): sized to the text around it */
 .goud-coin {
-  display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; margin-right: 6px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #f6e08f, #c9a84c 55%, #8a6d22); color: #3a2a08;
-  font-family: 'Playfair Display', Georgia, serif; font-size: 0.55rem; font-weight: 700; box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+  display: inline-block; width: 1.15em; height: 1.15em; margin-right: 0.35em;
+  vertical-align: -0.22em; object-fit: contain; flex: none; user-select: none; -webkit-user-drag: none;
 }
+.goud-badge .goud-coin { width: 1.5em; height: 1.5em; vertical-align: -0.4em; margin-right: 0.45em; }
 .goud-badge {
   position: relative; display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 20px;
   background: var(--surface2, #242118); border: 1px solid rgba(201,168,76,0.55); color: var(--gold-glow, #e8c96a);

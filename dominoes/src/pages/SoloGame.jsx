@@ -16,6 +16,7 @@ import './StoryChallenge.css'      // the result card's styles
 import { botsCountForTrophies } from '../lib/trophies'
 import './Game.css'
 import { recordShapeWin } from '../lib/shapeUnlocks'
+import { useEndPause } from '../lib/useEndPause'
 
 // ── Solo vs AI, on the device ────────────────────────────────────────────────
 //
@@ -213,6 +214,9 @@ export default function SoloGame({ challengeMode = false }) {
       }
     }
   }, [st.log])
+
+  // the round panel waits a moment, so the last domino can be seen landing
+  const endShown = useEndPause(!!roundEnd)
 
   // ── a round ended ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -500,7 +504,7 @@ export default function SoloGame({ challengeMode = false }) {
         </div>
       )}
 
-      {roundEnd && !showDek && !boardDek && !(challengeMode && roundEnd.vyej) && (
+      {endShown && roundEnd && !showDek && !boardDek && !(challengeMode && roundEnd.vyej) && (
         <RoundOverlay
           roomData={roomLike}
           players={players}

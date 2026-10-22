@@ -14,6 +14,8 @@ import DekabessOverlay from '../components/DekabessOverlay'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
 import OpponentHands from '../components/OpponentHands'
 import './Game.css'
+import GoudCoin from '../components/GoudCoin'
+import { useEndPause } from '../lib/useEndPause'
 
 // Where a seat sits on my screen — the same placement as the opponents' hands:
 // 2 players: across.  3 players: right, left.  4 players: right, across, left.
@@ -56,6 +58,8 @@ export default function Game() {
     reshuffleOffer, callReshuffle, keepDeal,
     startNextRound, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
+  // the round panel waits a moment, so the last domino can be seen landing
+  const endShown = useEndPause(!!showOverlay)
 
   const addFriendFromTable = useCallback(async (player) => {
     if (!player || player.is_ai || !player.user_id) return
@@ -488,7 +492,7 @@ export default function Game() {
           <span className="game-title">Dekabess!</span>
           {myInfo.stake
             // a stake table shows what's at stake instead of its code
-            ? <span className="room-code-badge" title={`${myInfo.stake} Goud each`}>🪙 pot {myInfo.stake * (roomData?.seat_count || players.length || 4)}</span>
+            ? <span className="room-code-badge" title={`${myInfo.stake} Goud each`}><GoudCoin />pot {myInfo.stake * (roomData?.seat_count || players.length || 4)}</span>
             : <span className="room-code-badge">{myInfo.roomCode || '——'}</span>}
           {watchers > 0 && <span className="room-code-badge" title="People watching this game">👁 {watchers}</span>}
         </div>
@@ -521,7 +525,7 @@ export default function Game() {
         const team = myInfo.seat === 0 || myInfo.seat === 2 ? 'A' : 'B'
         const won = roomData.game_mode === 'asosye' ? roomData.match_winner === team : String(roomData.match_winner) === String(myInfo.seat)
         const gain = roomData.game_mode === 'asosye' ? myInfo.stake * 2 : pot
-        return <div className={`stake-result ${won ? '' : 'lost'}`}>{won ? `🪙 You won ${gain} Goud` : `You lost your ${myInfo.stake} Goud stake`}</div>
+        return <div className={`stake-result ${won ? '' : 'lost'}`}>{won ? <><GoudCoin />You won {gain} Goud</> : `You lost your ${myInfo.stake} Goud stake`}</div>
       })()}
       <div className="board-container">
         {unlockHints.length > 0 && (
@@ -627,7 +631,7 @@ export default function Game() {
       )}
 
       {/* Round/Match overlay */}
-      {showOverlay && !showDekabess && !boardDek && roomData && (
+      {endShown && !showDekabess && !boardDek && roomData && (
         <RoundOverlay
           boardTiles={boardData?.tiles?.length ?? null}
           roomData={roomData}

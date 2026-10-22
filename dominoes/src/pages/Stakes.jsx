@@ -4,6 +4,7 @@ import { db } from '../lib/supabase'
 import { useAuth } from '../lib/useAuth'
 import { statusOf } from './Friends'
 import './Stakes.css'
+import GoudCoin from '../components/GoudCoin'
 
 // ── The stake waiting room ───────────────────────────────────────────────────
 // Reached from the Lobby: "Play for Goud" when creating a room, or a room code
@@ -140,7 +141,7 @@ export default function Stakes() {
         <h1 className="stakes-title">Goud Stakes</h1>
         <div className="stakes-card stakes-room">
           <div className="stakes-code">Table <strong>{info.code}</strong></div>
-          <div className="stakes-amount">🪙 {info.stake} <span>Goud each</span></div>
+          <div className="stakes-amount"><GoudCoin />{info.stake} <span>Goud each</span></div>
           <div className="stakes-sub">Pot {info.pot} · {modeName(info.mode)} · {seated}/{info.seat_count} seated</div>
           <ul className="stakes-seats">
             {Array.from({ length: info.seat_count }).map((_, i) => {

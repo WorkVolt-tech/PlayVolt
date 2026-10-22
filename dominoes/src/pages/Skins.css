@@ -102,10 +102,7 @@
 }
 .skin-buy:active { transform: scale(0.95); background: rgba(201,168,76,0.25); }
 .skin-buy:disabled { opacity: 0.6; }
-.skin-buy .goud-coin {
-  display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-right: 5px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #f6e08f, #c9a84c 55%, #8a6d22); color: #3a2a08; font-size: 0.5rem; font-weight: 700;
-}
+.skin-buy .goud-coin { width: 1.45em; height: 1.45em; margin-right: 0.4em; vertical-align: -0.38em; }
 .skin-variants { display: flex; gap: 6px; margin: 8px 0 0; }
 .skin-variants button {
   flex: 1; height: 28px; border-radius: 14px; cursor: pointer; border: 1px solid var(--border, #3a3528); background: transparent;

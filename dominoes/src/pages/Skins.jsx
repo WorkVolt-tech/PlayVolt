@@ -8,6 +8,7 @@ import {
 import TileFace from '../components/TileFace'
 import './Skins.css'
 import { InfoButton } from '../components/GameGuide'
+import GoudCoin from '../components/GoudCoin'
 
 // ── Skins ────────────────────────────────────────────────────────────────────
 // Every tile and table skin. What you own comes from your account's stats
@@ -117,7 +118,7 @@ export default function Skins() {
                 {!c.on && c.owned && <button className="skin-equip" onClick={() => setEquipped('tile', c.id)}>Equip</button>}
                 {!c.owned && c.shop && (
                   <button className="skin-buy wide" disabled={buying === `tile:${c.id}`} onClick={() => buy(c, 'tile')}>
-                    {buying === `tile:${c.id}` ? '…' : <><span className="goud-coin" aria-hidden="true">G</span>{c.shop.toLocaleString('en-US')}</>}
+                    {buying === `tile:${c.id}` ? '…' : <><GoudCoin />{c.shop.toLocaleString('en-US')}</>}
                   </button>
                 )}
                 {!c.owned && !c.shop && <div className="skin-state locked">Locked</div>}
@@ -163,7 +164,7 @@ export default function Skins() {
                   {!c.on && c.owned && <button className="skin-equip compact" onClick={() => setEquipped('table', valueOf(c.id))}>Equip</button>}
                   {!c.owned && c.shop && (
                     <button className="skin-buy" disabled={buying === c.id} onClick={() => buy(c, 'table')}>
-                      {buying === c.id ? '…' : <><span className="goud-coin" aria-hidden="true">G</span>{c.shop.toLocaleString('en-US')}</>}
+                      {buying === c.id ? '…' : <><GoudCoin />{c.shop.toLocaleString('en-US')}</>}
                     </button>
                   )}
                   {!c.owned && !c.shop && <div className="skin-state locked compact"><Lock /></div>}
