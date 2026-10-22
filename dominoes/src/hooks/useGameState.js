@@ -235,7 +235,7 @@ export function useGameState(myInfo, navigate) {
     const room = roomData
     if (!room || stake || room.practice || !myInfo) return
     if (room.status !== 'round_end' && room.status !== 'finished') return
-    const key = `dekabess_shape:${myInfo.roomId}:${room.round ?? 1}`
+    const key = `dekabess_shape:${myInfo.roomId}:${room.round ?? 1}:${room.updated_at || ''}`
     try { if (localStorage.getItem(key)) return } catch { return }
     if (!(playersRef.current || []).length) return                 // players not loaded yet: try again when they are
     try { localStorage.setItem(key, '1') } catch { /* ignore */ }
@@ -1007,6 +1007,44 @@ export function useGameState(myInfo, navigate) {
     }
   }, [hand, myInfo, advanceTurn, commitMove, endRound, loadGameState])
 
+  // ── Play again: a new match at the same table, same players ────────────────
+  // After a Vyèj anyone at the table can start one. The first tap claims the
+  // finished match (only one tap can: the update needs the match still finished
+  // and unclaimed); it's dealt like a new game — the 6-6 (or, with a pile, the
+  // highest double) opens — with fresh scores and streak. Everyone else's panel
+  // closes as the deal arrives. Not for stake, tournament or Team Challenge rooms.
+  const newMatch = useCallback(async () => {
+    if (!myInfo || stakeRef.current) return
+    overlayShownRef.current = false
+    setShowOverlay(false)
+    const { data: claimed } = await db.from('domino_rooms').update({ match_winner: null })
+      .eq('id', myInfo.roomId).eq('status', 'finished').not('match_winner', 'is', null).select('id')
+    if (!claimed?.length) { await loadGameState(); return }      // someone else already started it
+
+    const n = seatCountRef.current
+    const variant = n < 4 ? dealVariantRef.current : 'all'
+    const { hands, pile } = dealTable(n, variant)
+    for (let i = 0; i < hands.length; i++)
+      await db.from('domino_players').update({ hand: hands[i] }).eq('room_id', myInfo.roomId).eq('seat', i)
+    await db.from('game_events').delete().eq('room_id', myInfo.roomId)
+    await db.from('board').delete().eq('room_id', myInfo.roomId)
+    await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
+    // the opener, as in a new game: the 6-6, or the highest double dealt
+    let startingSeat = 0, openingTile = null
+    for (let d = 6; d >= 0 && !openingTile; d--) {
+      const holder = hands.findIndex(h => h.some(t => t[0] === d && t[1] === d))
+      if (holder >= 0) { startingSeat = holder; openingTile = [d, d] }
+    }
+    await db.from('domino_rooms').update({
+      status: 'playing', current_turn: startingSeat, round: 1,
+      scores: [0, 0, 0, 0], streak: { seat: null, team: null, count: 0 },
+      pending_point: false, blocked: false, match_winner: null, ended_by: null,
+      stats_recorded: false, deal_no: 0, deal_decided: null,
+      pile, opening_tile: openingTile,
+    }).eq('id', myInfo.roomId)
+    await loadGameState()
+  }, [myInfo, loadGameState])   // eslint-disable-line react-hooks/exhaustive-deps
+
   const startNextRound = useCallback(async () => {
     overlayShownRef.current = false
     setShowOverlay(false)
@@ -1441,7 +1479,7 @@ export function useGameState(myInfo, navigate) {
     showOverlay, toast, isProcessing,
     me, hand, isMyTurn, playable, hasTilesOnBoard,
     selectTile, placeTile, passMove,
-    startNextRound, leaveTable, setShowOverlay, replaceWithBot,
+    startNextRound, newMatch, leaveTable, setShowOverlay, replaceWithBot,
     presentSeats, awaySeats, standIn, deciderSeat,
     turnStart, turnLimitMs: TURN_LIMIT_MS,
     pileCount: Array.isArray(roomData?.pile) ? roomData.pile.length : 0, drawTile,

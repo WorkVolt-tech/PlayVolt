@@ -56,7 +56,7 @@ export default function Game() {
     awaySeats, standIn, turnStart, turnLimitMs, deciderSeat,
     selectTile, placeTile, passMove, cancelSelection, pileCount, drawTile,
     reshuffleOffer, callReshuffle, keepDeal,
-    startNextRound, leaveTable, setShowOverlay,
+    startNextRound, newMatch, leaveTable, setShowOverlay,
   } = useGameState(myInfo, navigate)
   // the round panel waits a moment, so the last domino can be seen landing
   const endShown = useEndPause(!!showOverlay)
@@ -638,6 +638,9 @@ export default function Game() {
           players={players}
           myInfo={myInfo}
           onNextRound={startNextRound}
+          // after a Vyèj: a new match at the same table (not for stake,
+          // tournament or Team Challenge rooms, which have their own rules)
+          onPlayAgain={!myInfo?.stake && !fromTournament && !roomData.tournament_match_id && !roomData.challenge_week ? newMatch : undefined}
           leaveLabel={fromTournament ? 'Back to the tournament' : undefined}
           onLeaveLobby={() => {
             sessionStorage.removeItem('domino_player')

@@ -1,4 +1,4 @@
 // The version shown at the bottom of the lobby. Bumped with every delivery,
 // so a glance at the lobby tells you whether the newest code is live.
-export const VERSION = 'v1.53'
-export const VERSION_NOTE = 'Goud coin; see the last domino'
+export const VERSION = 'v1.54'
+export const VERSION_NOTE = 'Play again after a Vyèj'
