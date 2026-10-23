@@ -16,6 +16,7 @@ import OpponentHands from '../components/OpponentHands'
 import './Game.css'
 import GoudCoin from '../components/GoudCoin'
 import { useEndPause } from '../lib/useEndPause'
+import { forgetSeat, rememberSeat, savedSeat, takeFreshStart } from '../lib/activeGame'
 
 // Where a seat sits on my screen — the same placement as the opponents' hands:
 // 2 players: across.  3 players: right, left.  4 players: right, across, left.
@@ -38,7 +39,23 @@ export default function Game() {
     } catch { return false }
   })()
   const navigate = useNavigate()
-  const myInfo   = JSON.parse(sessionStorage.getItem('domino_player') || 'null')
+  // your seat: from this session, or — after the phone restarted the app —
+  // from the copy kept across restarts (lib/activeGame.js)
+  const myInfo   = (() => {
+    const s = JSON.parse(sessionStorage.getItem('domino_player') || 'null')
+    if (s) return s
+    const kept = savedSeat()
+    if (kept) sessionStorage.setItem('domino_player', JSON.stringify(kept))
+    return kept
+  })()
+  // keep the seat across app restarts while you're at the table
+  useEffect(() => {
+    takeFreshStart()                        // the app opened here: the lobby mustn't pull you back later
+    if (!myInfo?.roomId) return
+    rememberSeat(myInfo)
+    const t = setInterval(() => rememberSeat(myInfo), 5 * 60 * 1000)
+    return () => clearInterval(t)
+  }, [myInfo?.roomId, myInfo?.seat])        // eslint-disable-line react-hooks/exhaustive-deps
 
   const [passingSeats, setPassingSeats] = useState(new Set())
   const [showDekabess, setShowDekabess] = useState(false)
@@ -643,7 +660,7 @@ export default function Game() {
           onPlayAgain={!myInfo?.stake && !fromTournament && !roomData.tournament_match_id && !roomData.challenge_week ? newMatch : undefined}
           leaveLabel={fromTournament ? 'Back to the tournament' : undefined}
           onLeaveLobby={() => {
-            sessionStorage.removeItem('domino_player')
+            forgetSeat()
             navigate(fromTournament ? '/tournament' : '/')
           }}
         />

@@ -20,6 +20,7 @@ import { VERSION, VERSION_NOTE } from '../version'
 import GoudBadge from '../components/GoudBadge'
 import { InfoButton } from '../components/GameGuide'
 import { StakeCreate, StakeJoinCard, openStakeRoom } from '../components/StakeLobby'
+import { forgetSeat, savedSeat, takeFreshStart } from '../lib/activeGame'
 
 // Experts are earned in Story Mode: beat a bot's chapter and they're yours.
 // Ordinary bots are always available.
@@ -71,6 +72,26 @@ function humanCapacity(mode) {
 
 export default function Lobby() {
   const navigate = useNavigate()
+
+  // The phone restarted the app (it was in the background) while you were at an
+  // online table: take you straight back to your seat, if that table is still
+  // going. Only on the app's first screen — walking here yourself never does.
+  useEffect(() => {
+    if (!takeFreshStart()) return
+    const seat = savedSeat()
+    if (!seat?.roomId) return
+    let gone = false
+    db.from('domino_rooms').select('status').eq('id', seat.roomId).maybeSingle().then(({ data }) => {
+      if (gone) return
+      if (data && ['playing', 'round_end', 'finished'].includes(data.status)) {
+        sessionStorage.setItem('domino_player', JSON.stringify(seat))
+        navigate('/game')
+      } else if (!data || data.status === 'abandoned') {
+        forgetSeat()                          // that table is gone
+      }
+    })
+    return () => { gone = true }
+  }, [])   // eslint-disable-line react-hooks/exhaustive-deps
   const { user: authUser, profile: authProfile } = useAuth()
 
   // Detect iOS Safari (not already installed)

@@ -5,6 +5,7 @@ import { isTableBlocked } from '../lib/blockedGame'
 import { tableCountsForLeaderboard } from '../lib/trophies'
 import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
 import { recordShapeWin } from '../lib/shapeUnlocks'
+import { forgetSeat } from '../lib/activeGame'
 
 // Turn timing. Off by default; switch it on from the console with
 //   localStorage.setItem('domino_timing','1')   (then reload)
@@ -441,7 +442,7 @@ export function useGameState(myInfo, navigate) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'domino_rooms', filter: `id=eq.${myInfo.roomId}` }, (payload) => {
         if (payload.new?.status === 'abandoned' && myInfo.seat !== 0) {
           alert('The host has left. Returning to lobby…')
-          sessionStorage.removeItem('domino_player')
+          forgetSeat()
           navigate('/')
           return
         }
@@ -1139,7 +1140,7 @@ export function useGameState(myInfo, navigate) {
       // table code on the Goud Stakes page to come back.
       const over = roomData?.status === 'finished'
       if (!over && !confirm(`Leave this stake game?\n\nYour ${myInfo.stake} Goud stays in play and the server plays your turns when your time runs out. To come back, enter code ${myInfo.roomCode} on the Goud Stakes page.`)) return
-      sessionStorage.removeItem('domino_player')
+      forgetSeat()
       navigate('/')
       return
     }
@@ -1171,7 +1172,7 @@ export function useGameState(myInfo, navigate) {
     // A tournament match, or a practice room opened from one, goes back to
     // the bracket rather than the lobby.
     const backTo = myInfo?.tournamentMatchId || myInfo?.fromTournament ? '/tournament' : '/'
-    sessionStorage.removeItem('domino_player')
+    forgetSeat()
     navigate(backTo)
   }, [myInfo, navigate, roomData?.status])
 
