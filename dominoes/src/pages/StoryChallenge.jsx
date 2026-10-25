@@ -5,7 +5,7 @@ import { createConfirmedSaver } from '../story/saveProgress'
 import { useAuth } from '../lib/useAuth'
 import { CHAPTERS, NORMAL_CIRCUIT } from '../story/chapters'
 import * as Engine from '../story/storyEngine'
-import { chooseTile, getPersonality, isExpertBot, pickOpener } from '../lib/botAI'
+import { chooseTile, getPersonality, isExpertBot, pickOpener, knocksFromMoves } from '../lib/botAI'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
@@ -220,6 +220,7 @@ export default function StoryChallenge() {
           seat,
           mode: 'chien',
           tileCountsBySeat: next.hands.map(h => h.length),
+          knocks: knocksFromMoves(next.log),          // who knocked on which numbers (team play)
           opponentTileCounts: next.hands.map((h, i) => (i === seat ? null : h.length)).filter(x => x !== null),
         }
         if (isExpertBot(pers)) ctx.hands = next.hands

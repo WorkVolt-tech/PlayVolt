@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import * as Engine from '../story/storyEngine'
-import { chooseTile, getPersonality, isExpertBot, pickOpener } from '../lib/botAI'
+import { chooseTile, getPersonality, isExpertBot, pickOpener, knocksFromMoves } from '../lib/botAI'
 import { canPlayOnSide } from '../hooks/useGameState'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
@@ -175,6 +175,7 @@ export default function SoloGame({ challengeMode = false }) {
           seat,
           mode: teams ? 'asosye' : 'chien',         // with partners, seats 0 & 2 vs 1 & 3
           tileCountsBySeat: next.hands.map(h => h.length),
+          knocks: knocksFromMoves(next.log),          // who knocked on which numbers (team play)
           opponentTileCounts: next.hands.map((h, i) => (i === seat ? null : h.length)).filter(x => x !== null),
         }
         if (isExpertBot(pers)) ctx.hands = next.hands

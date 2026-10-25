@@ -227,7 +227,7 @@ export function drawOrPass(st) {
     ...st,
     passes,
     turn: (seat + 1) % st.seats,
-    log: [...st.log, { seat, action: 'pass' }],
+    log: [...st.log, { seat, action: 'pass', ends: [st.board.left_end, st.board.right_end] }],   // the ends they couldn't answer
   }
 
   // Everyone passed in a row = the round is jammed (a backstop — a blocked

@@ -1,4 +1,4 @@
 // The version shown at the bottom of the lobby. Bumped with every delivery,
 // so a glance at the lobby tells you whether the newest code is live.
-export const VERSION = 'v1.58'
-export const VERSION_NOTE = 'Asosyé: the winners choose who opens'
+export const VERSION = 'v1.59'
+export const VERSION_NOTE = 'Bots play as partners in Asosyé'

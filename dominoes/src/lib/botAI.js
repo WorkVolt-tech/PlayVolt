@@ -99,10 +99,52 @@ function reopeners(n, unknown, myRemaining) {
   return fromOthers + fromMine
 }
 
+// ── Knocks: which numbers each seat can't have ─────────────────────────────────
+// moves: the round in order, [{ seat, action: 'play'|'pass'|'draw', tile, side }].
+// Replays the plays to know the open ends; a pass means that seat holds no
+// tile with either end's number (nothing was left to draw, so that's for good).
+// Returns [seat] -> [numbers].
+export function knocksFromMoves(moves) {
+  return tableReads(moves).knocks
+}
+
+// What the table has told us: knocks (numbers a seat can't have) and shows —
+// how often each seat left each number showing when it played (players tend to
+// lead the numbers they're long in; a partner's shows are a signal).
+export function tableReads(moves) {
+  const knocks = [[], [], [], []]
+  const shows = [0, 1, 2, 3].map(() => Array(7).fill(0))
+  let L = null, R = null
+  for (const m of moves || []) {
+    if (m.action === 'play' && Array.isArray(m.tile)) {
+      const [a, b] = m.tile
+      const seat = m.seat
+      if (L === null) {
+        L = a; R = b
+        if (shows[seat]) { shows[seat][a]++; if (b !== a) shows[seat][b]++ }
+        continue
+      }
+      let shown
+      if (m.side === 'left') { shown = (a === L ? b : a); L = shown }
+      else { shown = (a === R ? b : a); R = shown }
+      if (shows[seat]) shows[seat][shown]++
+    } else if (m.action === 'pass') {
+      const ends = Array.isArray(m.ends) ? m.ends : [L, R]
+      const seat = m.seat
+      if (seat == null || !knocks[seat]) continue
+      for (const n of ends) if (n !== null && n !== undefined && !knocks[seat].includes(n)) knocks[seat].push(n)
+    }
+  }
+  return { knocks, shows }
+}
+
 // How much danger is an opponent in of going out soon?
 //   1 tile left → very urgent, 2 → urgent, otherwise normal.
 function dangerMultiplier(ctx) {
-  const counts = ctx?.opponentTileCounts
+  // In asosyé the partner is not an opponent: their going out is a WIN.
+  const counts = (ctx?.mode === 'asosye' && ctx?.tileCountsBySeat && ctx.seat !== undefined)
+    ? [1, 3].map(d => ctx.tileCountsBySeat[(ctx.seat + d) % 4]).filter(n => n !== undefined)
+    : ctx?.opponentTileCounts
   if (!counts?.length) return 1
   const min = Math.min(...counts)
   if (min <= 1) return 4
@@ -139,6 +181,36 @@ function evaluate(move, hand, board, unknown, ctx, W) {
   //    both opponents as well. Real partner play needs to know which numbers
   //    the partner knocked on, which the bots aren't told yet.
   score -= opponentOptionsCount(L, R, unknown) * W.block * dangerMultiplier(ctx)
+
+  // 3b) Asosyé: play for the team. Using the knocks, avoid leaving ends my
+  //     partner can't answer and favour ends the opponents can't. When my
+  //     partner is closer to going out than me, I support them: their chances
+  //     count double and my own hand matters half as much.
+  if (ctx?.mode === 'asosye' && ctx.seat !== undefined && !ctx.noTeamPlay) {
+    const me = ctx.seat, mate = (me + 2) % 4
+    const knocks = ctx.knocks || []
+    const cant = (s, n) => (knocks[s] || []).includes(n)
+    const ends = L === R ? [L] : [L, R]
+    const counts = ctx.tileCountsBySeat || []
+    const support = counts.length === 4 && (counts[mate] < remaining.length || counts[mate] <= 2)
+    // Tested over thousands of simulated rounds: steering by knocks alone didn't
+    // help (opening the board for a partner opens it for both opponents too),
+    // so those weights are off; supporting a partner who's ahead does.
+    const T = { mateStuck: 0, mateEnd: 0, oppStuck: 0, supportK: 2, ownCut: 0.5, ...(ctx.teamW || {}) }
+    const k = support ? T.supportK : 1
+    if (ends.every(n => cant(mate, n))) score -= T.mateStuck * k          // my partner would have to knock
+    else score -= ends.filter(n => cant(mate, n)).length * T.mateEnd * k
+    for (const o of [(me + 1) % 4, (me + 3) % 4]) if (ends.every(n => cant(o, n))) score += T.oppStuck * k
+    if (support) score -= remaining.filter(t => canPlay(t, L, R)).length * W.ownOption * T.ownCut
+    // signals: keep my partner's numbers showing, and the opponents' numbers off
+    const shows = ctx.shows || []
+    if (T.mateShow || T.oppShow) {
+      for (const n of ends) {
+        score += (T.mateShow || 0) * k * Math.min(2, shows[mate]?.[n] || 0)
+        score -= (T.oppShow || 0) * Math.min(2, (shows[(me + 1) % 4]?.[n] || 0) + (shows[(me + 3) % 4]?.[n] || 0))
+      }
+    }
+  }
 
   // 4) Pips. Positive weight = shed heavy tiles (safer if the round jams);
   //    negative weight = keep them back for later (Ti-Sak).
@@ -737,6 +809,67 @@ export function getPersonality(nickname) {
   return 'strategist' // default for new bots
 }
 
+// ── Team sense for the regular bots (Asosyé) ─────────────────────────────────
+// The regular bots can't see other hands. To play for their partner they
+// imagine a few deals of the unseen tiles that fit what they know (how many
+// tiles each player holds, and the numbers each knocked on), look a few moves
+// ahead in each with the experts' search — where a partner's win counts as
+// their own — and then pick THEIR OWN favourite move among those that don't
+// clearly hurt the team. So each keeps their personality, but stops throwing
+// rounds their partner was winning.
+function imagineHands(hand, board, ctx, rnd) {
+  const counts = ctx.tileCountsBySeat
+  const knocks = ctx.knocks || [[], [], [], []]
+  const pool = unknownTiles(board, hand).slice()
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]] }
+  const hands = [[], [], [], []]
+  hands[ctx.seat] = hand.map(t => [t[0], t[1]])
+  const others = [0, 1, 2, 3].filter(s => s !== ctx.seat)
+  // hand out the tiles a seat may hold (not its knocked numbers); whatever is
+  // left over goes anywhere it still fits by count
+  const allowed = (seat, t) => !(knocks[seat] || []).some(n => t[0] === n || t[1] === n)
+  for (const seat of others.sort((a, b) => (knocks[b]?.length || 0) - (knocks[a]?.length || 0))) {
+    const need = counts[seat] || 0
+    for (let i = 0; i < pool.length && hands[seat].length < need; ) {
+      if (allowed(seat, pool[i])) hands[seat].push(pool.splice(i, 1)[0]); else i++
+    }
+  }
+  for (const seat of others) while (hands[seat].length < (counts[seat] || 0) && pool.length) hands[seat].push(pool.pop())
+  return hands
+}
+
+const TEAM_SAMPLES = 4, TEAM_BUDGET = 6000
+function teamSense(playable, hand, board, ctx, personalityPick) {
+  const moves = legalRootMoves(playable, board)
+  if (moves.length <= 1 || !ctx?.tileCountsBySeat || ctx.seat === undefined) return personalityPick
+  let seed = 7 + hand.length * 131 + (board?.tiles?.length || 0) * 17
+  const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff
+  const total = moves.map(() => 0)
+  for (let k = 0; k < TEAM_SAMPLES; k++) {
+    const hands = imagineHands(hand, board, ctx, rnd)
+    const st = buildState(hands, board, ctx.seat, ctx.consecutivePasses)
+    const rootHand = st.hands[ctx.seat]
+    const rootMoves = moves.map(m => ({ tile: rootHand.find(t => sameTile(t, m.tile)), side: m.side }))
+    const sc = deepScores(st, rootMoves, teamCheck(ctx), TEAM_BUDGET, { dekBonus: 300, partnerSeat: (ctx.seat + 2) % 4 })
+    if (!sc) return personalityPick
+    sc.forEach((v, i) => { total[i] += v })
+  }
+  const best = Math.max(...total)
+  const margin = (ctx.teamMargin ?? 60) * TEAM_SAMPLES
+  const ok = i => total[i] >= best - margin
+  const pi = moves.findIndex(m => sameTile(m.tile, personalityPick?.tile || []) && m.side === personalityPick?.side)
+  if (pi >= 0 && ok(pi)) return personalityPick                  // the bot's own choice is fine for the team
+  // otherwise: the bot's favourite among the moves that are fine for the team
+  let bi = -1, bs = -Infinity
+  const unknown = unknownTiles(board, hand)
+  for (let i = 0; i < moves.length; i++) {
+    if (!ok(i)) continue
+    const v = evaluate(moves[i], hand, board, unknown, ctx, STRATEGIST_W)
+    if (v > bs) { bs = v; bi = i }
+  }
+  return bi >= 0 ? moves[bi] : personalityPick
+}
+
 // ── Who should open (Asosyé) ─────────────────────────────────────────────────
 // When the winning team is two bots, they let the stronger hand open: a long
 // run of one number (control of the table), doubles to lay down, and fewer
@@ -758,5 +891,11 @@ export function pickOpener(winnerSeat, winnerHand, partnerSeat, partnerHand) {
 
 export function chooseTile(personality, playable, hand, board, ctx) {
   const fn = PERSONALITIES[personality] || strategist
-  return fn(playable, hand, board, ctx)
+  const pick = fn(playable, hand, board, ctx)
+  // Asosyé: the regular bots check their choice with their partner in mind
+  // (the experts already play for the team in their own search).
+  if (ctx?.mode === 'asosye' && !isExpertBot(personality) && !ctx.noTeamPlay && ctx.teamSense !== false) {
+    return teamSense(playable, hand, board, ctx, pick)
+  }
+  return pick
 }
