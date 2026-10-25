@@ -5,7 +5,7 @@ import { createConfirmedSaver } from '../story/saveProgress'
 import { useAuth } from '../lib/useAuth'
 import { CHAPTERS, NORMAL_CIRCUIT } from '../story/chapters'
 import * as Engine from '../story/storyEngine'
-import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
+import { chooseTile, getPersonality, isExpertBot, pickOpener } from '../lib/botAI'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
@@ -153,7 +153,15 @@ export default function StoryChallenge() {
           objective: challenge.objective || { kind: 'win' },
           ...(winnerOpens ? { starter: opts.starter } : { forceDoubleSix: true }),
         }
-    const fresh = Engine.settleTurn(Engine.startGame(cfg))
+    let fresh = Engine.settleTurn(Engine.startGame(cfg))
+    // Asosyé: after a round, the winning team chooses who opens. Your team: you
+    // choose (kept in the round, so it survives a refresh). The bots: the
+    // stronger hand opens.
+    if (winnerOpens && challenge.partner && (cfg.seats || 4) === 4) {
+      const W = opts.starter, P = (W + 2) % 4
+      if (W % 2 === 0) fresh = { ...fresh, openerChoice: { winner: W } }
+      else fresh = { ...fresh, turn: pickOpener(W, fresh.hands[W], P, fresh.hands[P]) }
+    }
     setSt({ ...fresh, dealId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}` })
     setSelected(null)
   }, [challenge, partner])
@@ -190,9 +198,11 @@ export default function StoryChallenge() {
   const offerOpen = !!st && challenge?.type !== 'puzzle' && !challenge?.partner && st.status === 'playing' && !(st.board?.tiles?.length)
     && !(st.log || []).length && myDoubles >= 5 && !st.doublesDecided
   const playOn = () => setSt(prev => (prev ? { ...prev, doublesDecided: true, fiveDoubles: true } : prev))
+  const holding = offerOpen || !!st?.openerChoice
+  const chooseOpener = seat => setSt(prev => (prev ? { ...prev, turn: seat, openerChoice: null } : prev))
 
   useEffect(() => {
-    if (!st || st.status !== 'playing' || st.turn === 0 || busyRef.current || knock || opener || offerOpen) return
+    if (!st || st.status !== 'playing' || st.turn === 0 || busyRef.current || knock || opener || holding) return
     busyRef.current = true
     const drawing = !Engine.canPlay(st) && st.usePile && st.pile.length > 0
     const timer = setTimeout(() => {
@@ -236,7 +246,7 @@ export default function StoryChallenge() {
   // In a puzzle there's nobody else to hand the turn to, so a dead end ends
   // the attempt and you can try again.
   useEffect(() => {
-    if (!st || st.status !== 'playing' || st.turn !== 0 || knock || offerOpen) return
+    if (!st || st.status !== 'playing' || st.turn !== 0 || knock || holding) return
     if (Engine.canPlay(st)) return
     if (st.usePile && st.pile.length > 0) return
     const t = setTimeout(() => setSt(p => {
@@ -535,7 +545,7 @@ export default function StoryChallenge() {
   const slideFrom = lastPlay
     ? ((st?.seats ?? 4) === 2 ? (lastPlay.seat === 0 ? 'bottom' : 'top') : ['bottom', 'right', 'top', 'left'][lastPlay.seat])
     : null
-  const isMyTurn = !!st && st.status === 'playing' && st.turn === 0 && !offerOpen
+  const isMyTurn = !!st && st.status === 'playing' && st.turn === 0 && !holding
   // you may only draw when you have nothing to play
   const mustDraw = isMyTurn && !!st?.usePile && st.pile.length > 0 && !Engine.canPlay(st)
 
@@ -692,6 +702,20 @@ export default function StoryChallenge() {
         <DekabessOverlay playerName={nameAt(st.winner)} onDone={() => setShowDek(false)} />
       )}
 
+      {st?.openerChoice && (() => {
+        const W = st.openerChoice.winner, P = (W + 2) % 4
+        const other = W === 0 ? P : W
+        return (
+          <div className="opener-choice" role="dialog" aria-label="Who opens">
+            <div className="opener-title">{W === 0 ? 'You won the round — who opens?' : `${seatBot(W) || 'Your partner'} won the round — who opens?`}</div>
+            <div className="opener-sub">Look at your tiles, then choose.</div>
+            <div className="opener-btns">
+              <button className="sc-btn" onClick={() => chooseOpener(0)}>Me</button>
+              <button className="sc-btn ghost" onClick={() => chooseOpener(other)}>{seatBot(other) || 'Partner'}</button>
+            </div>
+          </div>
+        )
+      })()}
       {endShown && roundPanel && !result && !showDek && !boardDek && (
         <div className="sc-overlay">
           <div className="sc-card">

@@ -3,7 +3,7 @@ import { db } from '../lib/supabase'
 import { weekStartUTC } from '../lib/skins'
 import { isTableBlocked } from '../lib/blockedGame'
 import { tableCountsForLeaderboard } from '../lib/trophies'
-import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
+import { chooseTile, getPersonality, isExpertBot, pickOpener } from '../lib/botAI'
 import { recordShapeWin } from '../lib/shapeUnlocks'
 import { forgetSeat } from '../lib/activeGame'
 
@@ -174,6 +174,17 @@ export function useGameState(myInfo, navigate) {
     const t = setTimeout(() => setOfferTick(x => x + 1), left + 60)   // re-check when the 10 s are up
     return () => clearTimeout(t)
   }, [offerHolders.length, offerKey])
+  // ── Asosyé: the winning team chooses who opens ─────────────────────────────
+  // The winner chooses if they're a person; otherwise their partner (a person
+  // with a bot partner always decides); two bots pick the stronger hand.
+  const openerPending = roomData?.status === 'playing' && !!roomData?.opener_pending
+  const openerWinner = openerPending ? roomData.current_turn : null
+  const openerChooser = (() => {
+    if (!openerPending) return null
+    const W = roomData.current_turn, P = (W + 2) % 4
+    const human = s => { const p = players.find(x => x.seat === s); return !!p && !p.is_ai && !p.stand_in }
+    return human(W) ? W : human(P) ? P : -1
+  })()
   const offerOpen = offerHolders.length > 0 && Date.now() < offerSeen.current.at + 10000
   const offerOpenRef = useRef(false)
   offerOpenRef.current = offerOpen
@@ -374,7 +385,7 @@ export function useGameState(myInfo, navigate) {
   // attempt gets 2.5 s, then it tries again (4 tries); if none gets through,
   // play is released anyway (the server still rejects a move made out of turn).
   const seatAtTurnNow = players.find(p => p.seat === roomData?.current_turn)
-  const iActNow = !!roomData && roomData.status === 'playing' && !!myInfo
+  const iActNow = !!roomData && roomData.status === 'playing' && !!myInfo && !roomData.opener_pending
     && (roomData.current_turn === myInfo.seat || (amRunner && !!seatAtTurnNow?.is_ai))
   const turnKey = `${roomData?.round}:${roomData?.current_turn}:${roomData?.status}`
   const syncKey = `${turnKey}:${resumeTick}`
@@ -480,7 +491,7 @@ export function useGameState(myInfo, navigate) {
 
   useEffect(() => {
     if (!roomData) return
-    const isMyTurn = roomData.current_turn === myInfo.seat && roomData.status === 'playing' && !offerOpenRef.current
+    const isMyTurn = roomData.current_turn === myInfo.seat && roomData.status === 'playing' && !offerOpenRef.current && !roomData.opener_pending
     const active = players.find(p => p.seat === roomData.current_turn)
     if (isMyTurn) showToastMsg('Your turn!')
     else if (active) showToastMsg(`${active.nickname}'s turn`)
@@ -495,7 +506,7 @@ export function useGameState(myInfo, navigate) {
 
   const me          = players.find(p => p.seat === myInfo?.seat)
   const hand        = me?.hand || []
-  const isMyTurn    = roomData?.current_turn === myInfo?.seat && roomData?.status === 'playing' && !syncing && !offerOpen
+  const isMyTurn    = roomData?.current_turn === myInfo?.seat && roomData?.status === 'playing' && !syncing && !offerOpen && !openerPending
   const playable    = getPlayableTiles(hand, boardData, roomData)
   const hasTilesOnBoard = !!boardData?.tiles?.length
 
@@ -1087,7 +1098,7 @@ export function useGameState(myInfo, navigate) {
     await db.from('board').delete().eq('room_id', myInfo.roomId)
     await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
     await db.from('game_events').delete().eq('room_id', myInfo.roomId)
-    await db.from('domino_rooms').update({
+    const nextRoomRow = {
       status: 'playing',
       current_turn: winnerSeat,
       round: nextRound,
@@ -1096,9 +1107,46 @@ export function useGameState(myInfo, navigate) {
       pending_point: false,
       blocked: false,
       stats_recorded: false,
-    }).eq('id', myInfo.roomId)
+    }
+    // Asosyé: the winning team chooses who opens (the winner or the partner)
+    if (room.game_mode === 'asosye') nextRoomRow.opener_pending = true
+    let { error: dealErr } = await db.from('domino_rooms').update(nextRoomRow).eq('id', myInfo.roomId)
+    if (dealErr && /opener_pending/.test(dealErr.message || '')) {
+      // the database doesn't have the choice yet (its SQL not run): the winner opens, as before
+      delete nextRoomRow.opener_pending
+      await db.from('domino_rooms').update(nextRoomRow).eq('id', myInfo.roomId)
+    }
     await loadGameState()
   }, [myInfo, loadGameState])
+
+  // Choose who opens (only while the choice is open; the first choice wins).
+  const chooseOpener = useCallback(async (seat) => {
+    if (!myInfo) return
+    if (stakeRef.current) {
+      await db.rpc('stake_choose_opener', { p_room: myInfo.roomId, p_seat: seat })
+    } else {
+      await db.from('domino_rooms').update({ current_turn: seat, opener_pending: false })
+        .eq('id', myInfo.roomId).eq('opener_pending', true)
+    }
+    await loadGameState()
+  }, [myInfo, loadGameState])
+
+  // Two bots choose at once; anyone's 20 seconds running out lets the winner open.
+  // (The table's runner does it, so it happens once. Stake rooms: the server.)
+  useEffect(() => {
+    if (!openerPending) return
+    if (stake) {
+      const t = setTimeout(() => { db.rpc('stake_choose_opener', { p_room: myInfo.roomId, p_seat: null }).then(() => loadGameState()) }, 21000)
+      return () => clearTimeout(t)
+    }
+    if (!amRunner) return
+    const W = roomData.current_turn, P = (W + 2) % 4
+    const hand = s => (playersRef.current.find(p => p.seat === s)?.hand) || []
+    const t = openerChooser === -1
+      ? setTimeout(() => chooseOpener(pickOpener(W, hand(W), P, hand(P))), 1200)
+      : setTimeout(() => chooseOpener(W), 20000)
+    return () => clearTimeout(t)
+  }, [openerPending, openerChooser, amRunner, roomData?.round, roomData?.current_turn])   // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Who decides about a missing player's seat ─────────────────────────────
   // Team games: their PARTNER. Every-man games: the HOST (seat 0). If that
@@ -1186,13 +1234,13 @@ export function useGameState(myInfo, navigate) {
     setTurnStart(Date.now())
     setTimedOutSeat(null)
     timedOutRef.current = null
-  }, [roomData?.current_turn, roomData?.round, roomData?.status])
+  }, [roomData?.current_turn, roomData?.round, roomData?.status, roomData?.opener_pending])
 
   // Only the table's runner enforces the clock, so a timeout fires once. If
   // two devices ever disagree for a moment, the server's turn guard rejects
   // any move made out of turn.
   useEffect(() => {
-    if (!roomData || roomData.status !== 'playing' || !amRunner) return
+    if (!roomData || roomData.status !== 'playing' || !amRunner || roomData.opener_pending) return
     const seat = roomData.current_turn
     // Another player's clock gets 10 s of grace: this device can't see when
     // their screen was ready to play (theirs starts counting only then).
@@ -1268,6 +1316,7 @@ export function useGameState(myInfo, navigate) {
   // AI turns
   useEffect(() => {
     if (!roomData || !players.length || roomData.status !== 'playing') return
+    if (roomData.opener_pending) return                 // the winning team is still choosing who opens
     const currentPlayer = players.find(p => p.seat === roomData.current_turn)
     // A bot's turn — or a player whose 2 minutes have run out
     const outOfTime = !!currentPlayer && timedOutSeat === currentPlayer.seat
@@ -1473,7 +1522,7 @@ export function useGameState(myInfo, navigate) {
       loadGameState()
     }, 1200)
     return () => { clearTimeout(timer); clearTimeout(safetyTimer); botRunningRef.current = false }
-  }, [roomData?.current_turn, roomData?.status, syncing, amRunner, timedOutSeat, roomData?.pile?.length, offerOpen])
+  }, [roomData?.current_turn, roomData?.status, syncing, amRunner, timedOutSeat, roomData?.pile?.length, offerOpen, roomData?.opener_pending])
 
   return {
     roomData, players, boardData, selectedTile, showPicker,
@@ -1481,6 +1530,7 @@ export function useGameState(myInfo, navigate) {
     me, hand, isMyTurn, playable, hasTilesOnBoard,
     selectTile, placeTile, passMove,
     startNextRound, newMatch, leaveTable, setShowOverlay, replaceWithBot,
+    openerPending, openerWinner, openerChooser, chooseOpener,
     presentSeats, awaySeats, standIn, deciderSeat,
     turnStart, turnLimitMs: TURN_LIMIT_MS,
     pileCount: Array.isArray(roomData?.pile) ? roomData.pile.length : 0, drawTile,

@@ -74,6 +74,7 @@ export default function Game() {
     selectTile, placeTile, passMove, cancelSelection, pileCount, drawTile,
     reshuffleOffer, callReshuffle, keepDeal,
     startNextRound, newMatch, leaveTable, setShowOverlay,
+    openerPending, openerWinner, openerChooser, chooseOpener,
   } = useGameState(myInfo, navigate)
   // the round panel waits a moment, so the last domino can be seen landing
   const endShown = useEndPause(!!showOverlay)
@@ -648,6 +649,26 @@ export default function Game() {
       )}
 
       {/* Round/Match overlay */}
+      {/* Asosyé: the winning team chooses who opens this round */}
+      {openerPending && (() => {
+        const name = seat => players.find(p => p.seat === seat)?.nickname || 'Partner'
+        const W = openerWinner, P = (W + 2) % 4
+        if (openerChooser === myInfo?.seat) {
+          const other = myInfo.seat === W ? P : W
+          return (
+            <div className="opener-choice" role="dialog" aria-label="Who opens">
+              <div className="opener-title">{myInfo.seat === W ? 'You won the round — who opens?' : `${name(W)} won the round — who opens?`}</div>
+              <div className="opener-sub">Look at your tiles, then choose.</div>
+              <div className="opener-btns">
+                <button className="sc-btn" onClick={() => chooseOpener(myInfo.seat)}>Me</button>
+                <button className="sc-btn ghost" onClick={() => chooseOpener(other)}>{name(other)}</button>
+              </div>
+            </div>
+          )
+        }
+        const who = openerChooser === -1 ? `${name(W)} & ${name(P)} are` : `${name(openerChooser)} is`
+        return <div className="opener-wait">{who} choosing who opens…</div>
+      })()}
       {endShown && !showDekabess && !boardDek && roomData && (
         <RoundOverlay
           boardTiles={boardData?.tiles?.length ?? null}

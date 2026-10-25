@@ -235,3 +235,22 @@ input {
     width: 100%;
   }
 }
+
+/* ── Asosyé: who opens (the winning team chooses) ── */
+.opener-choice {
+  position: fixed; left: 50%; bottom: calc(var(--hand-h, 90px) + 14px); transform: translateX(-50%);
+  z-index: 60; width: min(340px, calc(100vw - 24px)); box-sizing: border-box;
+  padding: 0.9rem 1rem; border-radius: 14px; text-align: center;
+  background: rgba(12, 11, 9, 0.94); border: 1px solid var(--gold, #c9a84c);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: 'DM Mono', monospace;
+}
+.opener-title { color: var(--gold-glow, #e8c96a); font-size: 0.9rem; margin-bottom: 0.2rem; }
+.opener-sub { color: var(--ivory-dim, #a09880); font-size: 0.68rem; margin-bottom: 0.7rem; }
+.opener-btns { display: flex; gap: 0.5rem; justify-content: center; }
+.opener-btns .sc-btn { min-width: 110px; }
+.opener-wait {
+  position: fixed; left: 50%; bottom: calc(var(--hand-h, 90px) + 14px); transform: translateX(-50%);
+  z-index: 60; padding: 6px 14px; border-radius: 14px; white-space: nowrap;
+  background: rgba(12, 11, 9, 0.88); border: 1px solid rgba(201,168,76,0.45);
+  color: var(--gold-glow, #e8c96a); font: 0.72rem/1.3 'DM Mono', monospace; pointer-events: none;
+}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { db } from '../lib/supabase'
 import * as Engine from '../story/storyEngine'
-import { chooseTile, getPersonality, isExpertBot } from '../lib/botAI'
+import { chooseTile, getPersonality, isExpertBot, pickOpener } from '../lib/botAI'
 import { canPlayOnSide } from '../hooks/useGameState'
 import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
@@ -138,6 +138,10 @@ export default function SoloGame({ challengeMode = false }) {
   // decided. (Solo is every-man-for-himself, so it always applies.)
   const myDoubles = countDoubles(st.hands?.[0])
   const offerOpen = !teams && st.status === 'playing' && !(st.board?.tiles?.length) && !(st.log || []).length
+  // Asosyé: after a round, the winning team chooses who opens (the winner or
+  // the partner). Your team: you choose. The bots: the stronger hand opens.
+  const [openerChoice, setOpenerChoice] = useState(null)      // { winner } while it's open
+  const holding = offerOpen || !!openerChoice
     && myDoubles >= 5 && !st.doublesDecided
   const reshuffle = () => setSt(prev => Engine.startGame(prev.forceDoubleSix
     ? dealCfg({ forceDoubleSix: true })          // a first round: the doubles rule picks the opener again
@@ -150,11 +154,11 @@ export default function SoloGame({ challengeMode = false }) {
   const slideFrom = lastPlay
     ? sideOf(lastPlay.seat, 0, st?.seats ?? seats)
     : null
-  const isMyTurn = st.status === 'playing' && st.turn === 0 && !offerOpen
+  const isMyTurn = st.status === 'playing' && st.turn === 0 && !holding
 
   // ── bots play ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (paused || st.status !== 'playing' || st.turn === 0 || botBusy.current || knock || offerOpen) return
+    if (paused || st.status !== 'playing' || st.turn === 0 || botBusy.current || knock || holding) return
     botBusy.current = true
     const t = setTimeout(() => {
       setSt(prev => {
@@ -183,16 +187,16 @@ export default function SoloGame({ challengeMode = false }) {
       botBusy.current = false
     }, BOT_DELAY)
     return () => { clearTimeout(t); botBusy.current = false }
-  }, [st, knock, paused])
+  }, [st, knock, paused, holding])
 
   // You can't play: you knock automatically — but you SEE it, the same knock
   // the live game shows, and the game waits for it before moving on.
   useEffect(() => {
-    if (paused || st.status !== 'playing' || st.turn !== 0 || knock || offerOpen) return
+    if (paused || st.status !== 'playing' || st.turn !== 0 || knock || holding) return
     if (Engine.canPlay(st)) return
     const t = setTimeout(() => setSt(p => (p.turn === 0 && !Engine.canPlay(p) ? Engine.drawOrPass(p) : p)), BOT_DELAY)
     return () => clearTimeout(t)
-  }, [st, knock, paused])
+  }, [st, knock, paused, holding])
 
   // Watch the move log: every pass gets its knock, and a seat stops showing
   // PASS the moment it plays a tile again.
@@ -313,8 +317,19 @@ export default function SoloGame({ challengeMode = false }) {
     setKnock(null)
     setPassingSeats(new Set())
     seenLog.current = 0
-    setSt(Engine.startGame(dealCfg({ starter })))
-  }, [roundEnd])
+    const fresh = Engine.startGame(dealCfg({ starter }))
+    setSt(fresh)
+    if (teams) {
+      const P = (starter + 2) % 4
+      if (starter % 2 === 0) setOpenerChoice({ winner: starter })            // your team: you choose
+      else setSt({ ...fresh, turn: pickOpener(starter, fresh.hands[starter], P, fresh.hands[P]) })   // the bots choose
+    }
+  }, [roundEnd, teams])
+
+  const chooseOpener = useCallback(seat => {
+    setSt(prev => ({ ...prev, turn: seat }))
+    setOpenerChoice(null)
+  }, [])
 
   useEffect(() => {
     try {
@@ -504,6 +519,21 @@ export default function SoloGame({ challengeMode = false }) {
         </div>
       )}
 
+      {openerChoice && (() => {
+        const W = openerChoice.winner, P = (W + 2) % 4
+        const name = seat => (seat === 0 ? 'Me' : baseName(bots[seat - 1]))
+        const other = W === 0 ? P : W
+        return (
+          <div className="opener-choice" role="dialog" aria-label="Who opens">
+            <div className="opener-title">{W === 0 ? 'You won the round — who opens?' : `${baseName(bots[W - 1])} won the round — who opens?`}</div>
+            <div className="opener-sub">Look at your tiles, then choose.</div>
+            <div className="opener-btns">
+              <button className="sc-btn" onClick={() => chooseOpener(0)}>Me</button>
+              <button className="sc-btn ghost" onClick={() => chooseOpener(other)}>{name(other)}</button>
+            </div>
+          </div>
+        )
+      })()}
       {endShown && roundEnd && !showDek && !boardDek && !(challengeMode && roundEnd.vyej) && (
         <RoundOverlay
           roomData={roomLike}
