@@ -1,4 +1,4 @@
-import { isTableBlocked } from '../lib/blockedGame'
+import { isTableBlocked } from '../rules/dekabess'
 
 // ── Story Mode engine ────────────────────────────────────────────────────────
 //
@@ -23,7 +23,9 @@ import {
   getPlayableTiles,
   canPlayOnSide,
   checkDekabess,
-} from '../hooks/useGameState'
+  blockedWinner,
+  firstOpener,
+} from '../rules/dekabess'
 
 // ── Setting up ───────────────────────────────────────────────────────────────
 
@@ -68,11 +70,8 @@ export function startGame(cfg = {}) {
       //   2. nobody has it (it's in the pile): the HIGHEST double opens, and
       //      that double is the only tile they may open with
       //   3. nobody has any double: the player (seat 0) opens, any tile
-      turn = 0
-      for (let d = 6; d >= 0; d--) {
-        const holder = hands.findIndex(h => h.some(t => t[0] === d && t[1] === d))
-        if (holder >= 0) { turn = holder; openingTile = [d, d]; break }
-      }
+      const first = firstOpener(hands)
+      turn = first.seat; openingTile = first.tile
     } else {
       // No first-round rule asked for: 6-6 holder if there is one, else seat 0
       turn = hands.findIndex(h => h.some(t => t[0] === 6 && t[1] === 6))
@@ -186,11 +185,7 @@ function blockedNow(st) {
 // A jammed round: lowest pips wins, ties to the lowest seat — exactly as
 // endRound resolves it.
 function endBlocked(st) {
-  let best = 0, bestPips = Infinity
-  for (let s = 0; s < st.seats; s++) {
-    const p = pipCount(st.hands[s])
-    if (p < bestPips) { bestPips = p; best = s }
-  }
+  const best = blockedWinner(st.hands.slice(0, st.seats))
   return { ...st, status: 'over', winner: best, blocked: true, dekabess: false }
 }
 

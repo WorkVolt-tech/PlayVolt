@@ -20,6 +20,7 @@ import '../pages/Game.css'
 import './StoryChallenge.css'
 import { recordShapeWin } from '../lib/shapeUnlocks'
 import { useEndPause } from '../lib/useEndPause'
+import { seatSide } from '../rules/dekabess'
 
 // ── Story challenge screen ───────────────────────────────────────────────────
 // Plays one chapter, challenge by challenge, using the story engine. The board
@@ -261,13 +262,9 @@ export default function StoryChallenge() {
   const knockName = seat => (seat === 0 ? 'You' : (seatBot(seat) || 'Player'))
   // where a knock comes from: the same layout as the hands —
   // 2 players across, 3 players right and left, 4 around
-  const knockPos = seat => {
-    const n = st?.seats ?? 4
-    if (seat === 0) return 'bottom'
-    if (n === 2) return 'top'
-    if (n === 3) return seat === 1 ? 'right' : 'left'
-    return ({ 1: 'right', 2: 'top', 3: 'left' })[seat]
-  }
+  // where a knock comes from: the same seating as the hands (rules/dekabess.js)
+  const knockPos = seat => seatSide(seat, 0, st?.seats ?? 4)
+
 
   // Watch the move log: every pass gets its knock, and a seat stops showing
   // PASS the moment it plays a tile again. A new deal starts clean.

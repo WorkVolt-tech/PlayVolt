@@ -17,6 +17,7 @@ import { botsCountForTrophies } from '../lib/trophies'
 import './Game.css'
 import { recordShapeWin } from '../lib/shapeUnlocks'
 import { useEndPause } from '../lib/useEndPause'
+import { nextStreak, isVyej, seatSide } from '../rules/dekabess'
 
 // ── Solo vs AI, on the device ────────────────────────────────────────────────
 //
@@ -40,28 +41,10 @@ import { useEndPause } from '../lib/useEndPause'
 const BOT_DELAY = 1200
 const POS = { 1: 'right', 2: 'top', 3: 'left', 0: 'bottom' }
 // where a seat sits on screen for 2, 3 or 4 players (as the opponents' hands do)
-function sideOf(seat, mySeat, n) {
-  const k = Math.max(2, Math.min(4, n || 4)), diff = ((seat - mySeat) % k + k) % k
-  if (diff === 0) return 'bottom'
-  if (k === 2) return 'top'
-  if (k === 3) return diff === 1 ? 'right' : 'left'
-  return ['bottom', 'right', 'top', 'left'][diff]
-}
+// where a player sits, as seen from a seat: the rule lives in rules/dekabess.js
+const sideOf = seatSide
 const baseName = n => String(n || '').replace(/\s+\d+$/, '')   // "Ti-Djo 2" -> "Ti-Djo"
 
-// Same as computeNewStreak in useGameState, for a game with no partners.
-// Asosyé (offline): you and your partner (seats 0 and 2) are one team, the
-// two opponents (1 and 3) the other. The streak belongs to the team.
-function nextTeamStreak(streak, winner, isDek) {
-  const team = winner % 2
-  if (streak.team === team && streak.seat !== null) return { seat: winner, team, count: streak.count + (isDek ? 2 : 1) }
-  return { seat: winner, team, count: isDek ? 2 : 1 }
-}
-
-function nextStreak(streak, winner, isDek) {
-  if (streak.seat === winner) return { ...streak, count: streak.count + (isDek ? 2 : 1) }
-  return { seat: winner, team: winner, count: isDek ? 2 : 1 }
-}
 
 export default function SoloGame({ challengeMode = false }) {
   const navigate = useNavigate()
@@ -138,11 +121,11 @@ export default function SoloGame({ challengeMode = false }) {
   // decided. (Solo is every-man-for-himself, so it always applies.)
   const myDoubles = countDoubles(st.hands?.[0])
   const offerOpen = !teams && st.status === 'playing' && !(st.board?.tiles?.length) && !(st.log || []).length
+    && myDoubles >= 5 && !st.doublesDecided
   // Asosyé: after a round, the winning team chooses who opens (the winner or
   // the partner). Your team: you choose. The bots: the stronger hand opens.
   const [openerChoice, setOpenerChoice] = useState(null)      // { winner } while it's open
   const holding = offerOpen || !!openerChoice
-    && myDoubles >= 5 && !st.doublesDecided
   const reshuffle = () => setSt(prev => Engine.startGame(prev.forceDoubleSix
     ? dealCfg({ forceDoubleSix: true })          // a first round: the doubles rule picks the opener again
     : dealCfg({ starter: prev.turn })))           // a later round: the same winner still opens
@@ -228,9 +211,9 @@ export default function SoloGame({ challengeMode = false }) {
     if (st.status !== 'over' || roundEnd) return
     const winner = st.winner
     const isDek = !!st.dekabess
-    const s2 = teams ? nextTeamStreak(streak, winner, isDek) : nextStreak(streak, winner, isDek)
+    const s2 = nextStreak(streak, winner, isDek, { teams, teamOf: seat => seat % 2 })   // Solo writes teams as 0 / 1
     const mineWin = teams ? winner % 2 === 0 : winner === 0          // my team won the round
-    const vyej = s2.count >= 4
+    const vyej = isVyej(s2)
     setStreak(s2)
     setRoundEnd({ winner, isDek, blocked: !!st.blocked, vyej })
     if (isDek) setBoardDek(`solo-${Date.now()}`)     // the board plays its part, then the celebration

@@ -17,17 +17,12 @@ import './Game.css'
 import GoudCoin from '../components/GoudCoin'
 import { useEndPause } from '../lib/useEndPause'
 import { forgetSeat, rememberSeat, savedSeat, takeFreshStart } from '../lib/activeGame'
+import { seatSide } from '../rules/dekabess'
 
 // Where a seat sits on my screen — the same placement as the opponents' hands:
 // 2 players: across.  3 players: right, left.  4 players: right, across, left.
-function sideOf(seat, mySeat, n) {
-  const k = Math.max(2, Math.min(4, n || 4))
-  const diff = ((seat - mySeat) % k + k) % k
-  if (diff === 0) return 'bottom'
-  if (k === 2) return 'top'
-  if (k === 3) return diff === 1 ? 'right' : 'left'
-  return ['bottom', 'right', 'top', 'left'][diff]
-}
+// where a player sits, as seen from my seat: the rule lives in rules/dekabess.js
+const sideOf = seatSide
 
 export default function Game() {
   // A tournament match, or a practice room started from one: the way out is

@@ -1,3 +1,4 @@
+import { blockedWinner } from '../rules/dekabess'
 // ── Bot AI Engine ─────────────────────────────────────────────────────────────
 // Each personality picks a { tile, side } from the playable tiles.
 //
@@ -446,14 +447,7 @@ function leafValue(st, mine, pipWeight = 0.3, style = {}) {
   return v
 }
 
-function blockedWinner(hands) {
-  let best = 0, bestPips = Infinity
-  for (let s = 0; s < 4; s++) {
-    const p = handPips(hands[s])
-    if (p < bestPips) { bestPips = p; best = s }   // strict < keeps lowest seat on ties
-  }
-  return best
-}
+// a blocked round's winner: the rule lives in rules/dekabess.js (lowest pips, ties to the lowest seat)
 
 // What would player p sensibly play here? The same judgement the regular
 // bots use (keep your own tiles playable, cut others' options, protect your
@@ -870,24 +864,8 @@ function teamSense(playable, hand, board, ctx, personalityPick) {
   return bi >= 0 ? moves[bi] : personalityPick
 }
 
-// ── Who should open (Asosyé) ─────────────────────────────────────────────────
-// When the winning team is two bots, they let the stronger hand open: a long
-// run of one number (control of the table), doubles to lay down, and fewer
-// pips to get caught with. Higher = better hand to open with.
-export function openerStrength(hand) {
-  const count = Array(7).fill(0)
-  let doubles = 0, pipTotal = 0
-  for (const t of hand || []) {
-    pipTotal += t[0] + t[1]
-    if (t[0] === t[1]) { doubles++; count[t[0]]++ }
-    else { count[t[0]]++; count[t[1]]++ }
-  }
-  return Math.max(0, ...count) * 3 + doubles * 2 - pipTotal / 12
-}
-// the winner keeps the opening unless the partner's hand is clearly stronger
-export function pickOpener(winnerSeat, winnerHand, partnerSeat, partnerHand) {
-  return openerStrength(partnerHand) > openerStrength(winnerHand) + 0.5 ? partnerSeat : winnerSeat
-}
+// Who opens (Asosyé): the rule lives in rules/dekabess.js
+export { openerStrength, pickOpener } from '../rules/dekabess'
 
 export function chooseTile(personality, playable, hand, board, ctx) {
   const fn = PERSONALITIES[personality] || strategist

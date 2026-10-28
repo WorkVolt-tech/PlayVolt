@@ -6,7 +6,9 @@ import { isTableBlocked } from '../src/lib/blockedGame.js'
 const read = p => readFileSync(new URL(p, import.meta.url), 'utf8')
 const hook = read('../src/hooks/useGameState.js')
 const engine = read('../src/story/storyEngine.js').replace(/import[\s\S]*?from ['"][^'"]+['"]\s*/g, '').replace(/export /g, '')
-const helpers = hook.slice(hook.indexOf('export function generateDominoSet'), hook.indexOf('// ── Main hook')).replace(/export /g, '')
+// the engine's rules come from rules/dekabess.js (the one copy every mode uses)
+const helpers = read('../src/rules/dekabess.js')
+  .replace(/import[\s\S]*?from ['"][^'"]+['"]\s*/g, '').replace(/export \{[^}]*\}\s*/g, '').replace(/export /g, '')
 const ctx = vm.createContext({ isTableBlocked })
 vm.runInContext(helpers + engine + '\nglobalThis.engine = { startGame, playTile, drawFrom, drawOrPass }', ctx)
 const E = ctx.engine

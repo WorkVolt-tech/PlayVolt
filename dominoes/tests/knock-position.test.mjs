@@ -4,11 +4,13 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-// the online game's rule, taken from Game.jsx itself
+// the one seating rule (rules/dekabess.js), used by every screen
+import { register } from 'node:module'
+register('./_story-loader.js', import.meta.url)
+const { seatSide: sideOf } = await import('../src/rules/dekabess.js')
 const game = readFileSync(new URL('../src/pages/Game.jsx', import.meta.url), 'utf8')
-const fnSrc = game.slice(game.indexOf('function sideOf'), game.indexOf('\n}\n', game.indexOf('function sideOf')) + 2)
-const sideOf = new Function(fnSrc + '; return sideOf')()
-assert.match(game, /position: sideOf\(e\.player_seat, myInfo\?\.seat \?\? 0, playersForKnock\.current\.length \|\| 4\)/, 'online knocks use sideOf with the table size')
+assert.match(game, /const sideOf = seatSide/, 'the online game uses the shared seating rule')
+assert.match(game, /position: sideOf\(e\.player_seat, myInfo\?\.seat \?\? 0, playersForKnock\.current\.length \|\| 4\)/, 'online knocks use it with the table size')
 
 // the hands' layout (OpponentHands.jsx), as the reference
 function handSide(seat, mySeat, n) {
@@ -23,13 +25,9 @@ for (const n of [2, 3, 4]) for (let me = 0; me < n; me++) for (let s = 0; s < n;
 }
 assert.equal(sideOf(2, 0, 3), 'left', 'the reported case: 3 players, the left player knocks')
 
-// Story and Practice (you are always seat 0)
+// Story and Practice use the same rule (you are always seat 0)
 for (const f of ['StoryChallenge.jsx', 'Practice.jsx']) {
   const src = readFileSync(new URL(`../src/pages/${f}`, import.meta.url), 'utf8')
-  const body = src.slice(src.indexOf('const knockPos = seat => {'), src.indexOf('\n  }\n', src.indexOf('const knockPos = seat => {')) + 4)
-  for (const n of [2, 3, 4]) {
-    const knockPos = new Function('st', body + '; return knockPos')({ seats: n })
-    for (let s = 0; s < n; s++) assert.equal(knockPos(s), handSide(s, 0, n), `${f}: ${n} players, seat ${s} knocks`)
-  }
+  assert.match(src, /const knockPos = seat => seatSide\(seat, 0, st\?\.seats \?\? 4\)/, `${f} uses the shared seating rule`)
 }
 console.log('knocks come from the right side: 2, 3 and 4 players, every seat')

@@ -16,95 +16,17 @@ const TIMING = (() => {
 const tlog = (...a) => { if (TIMING) console.log('[timing]', ...a) }
 
 // ── Pure helpers ────────────────────────────────────────────────────────────
-export function generateRoomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-}
-
-export function generateDominoSet() {
-  const tiles = []
-  for (let a = 0; a <= 6; a++)
-    for (let b = a; b <= 6; b++) tiles.push([a, b])
-  return tiles
-}
-
-// ── Dealing for 2, 3 or 4 players (every tile dealt) ──
-//   4 players: 7 each.  3 players: the 0-0 is set aside, 9 each.  2 players: 14 each.
-// ── The pile variant (2 or 3 players): 7 tiles each, the rest face down in a
-//    pile — a player who can't play draws instead of knocking.
-export function dealTable(n = 4, variant = 'all') {
-  if (variant === 'pile' && n < 4) {
-    const tiles = shuffle(generateDominoSet())
-    const hands = Array.from({ length: n }, (_, i) => tiles.slice(i * 7, i * 7 + 7))
-    return { hands, pile: tiles.slice(n * 7) }
-  }
-  return { hands: dealHands(n), pile: [] }
-}
-
-export function dealHands(n = 4) {
-  let tiles = shuffle(generateDominoSet())
-  if (n === 3) {
-    tiles = tiles.filter(t => !(t[0] === 0 && t[1] === 0))
-    return [0, 1, 2].map(i => tiles.slice(i * 9, i * 9 + 9))
-  }
-  if (n === 2) return [0, 1].map(i => tiles.slice(i * 14, i * 14 + 14))
-  return [0, 1, 2, 3].map(i => tiles.slice(i * 7, i * 7 + 7))
-}
-
-export function shuffle(arr) {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
-export function pipCount(hand) {
-  return (hand || []).reduce((s, t) => s + t[0] + t[1], 0)
-}
-
-export function getPlayableTiles(hand, boardData, roomData) {
-  // Round 1, first tile: must play 6-6 — or, with a pile, the double the room
-  // names (the 6-6 may be in the pile; then the highest double opens)
-  if (!boardData?.tiles?.length) {
-    if (Array.isArray(roomData?.opening_tile)) {
-      const [a, b] = roomData.opening_tile
-      const req = hand.filter(t => (t[0] === a && t[1] === b) || (t[0] === b && t[1] === a))
-      if (req.length) return req
-    }
-    if (roomData?.round === 1) {
-      const doubleSix = hand.filter(t => t[0] === 6 && t[1] === 6)
-      return doubleSix.length ? doubleSix : hand
-    }
-    return hand
-  }
-  const { left_end: L, right_end: R } = boardData
-  return hand.filter(t => t[0] === L || t[1] === L || t[0] === R || t[1] === R)
-}
-
-export function canPlayOnSide(tile, side, boardData) {
-  if (!boardData?.tiles?.length) return true
-  const end = side === 'left' ? boardData.left_end : boardData.right_end
-  return tile[0] === end || tile[1] === end
-}
-
-export function checkDekabess(tile, boardData) {
-  if (!tile || tile[0] === tile[1] || !boardData) return false
-  const { left_end: L, right_end: R } = boardData
-  return (tile[0] === L && tile[1] === R) || (tile[1] === L && tile[0] === R)
-}
-
-function computeNewStreak(streak, resolvedSeat, isDek, mode) {
-  const winnerKey = mode === 'asosye'
-    ? (resolvedSeat === 0 || resolvedSeat === 2 ? 'A' : 'B')
-    : resolvedSeat
-  const sameWinner = mode === 'asosye' ? streak.team === winnerKey : streak.seat === winnerKey
-  if (sameWinner) return { ...streak, count: streak.count + (isDek ? 2 : 1) }
-  return { seat: resolvedSeat, team: winnerKey, count: isDek ? 2 : 1 }
-}
-
-// ── Main hook ───────────────────────────────────────────────────────────────
+// The rules (tiles, dealing, legal moves, Dekabess, streaks, openers) live in
+// rules/dekabess.js — one copy for every mode. Re-exported here, where other
+// files have always imported them from.
+export {
+  generateRoomCode, generateDominoSet, dealTable, dealHands, shuffle, pipCount,
+  getPlayableTiles, canPlayOnSide, checkDekabess,
+} from '../rules/dekabess'
+import {
+  generateDominoSet, dealTable, shuffle, pipCount, getPlayableTiles, canPlayOnSide,
+  checkDekabess, blockedWinner, nextStreak, isVyej as streakIsVyej, firstOpener,
+} from '../rules/dekabess'
 export function useGameState(myInfo, navigate) {
   // Goud stake room (set by the Stakes page): the SERVER runs it — deals, keeps
   // the hands private, checks every move, ends rounds and pays the pot (see
@@ -533,12 +455,10 @@ export function useGameState(myInfo, navigate) {
           boardResult.data, active.map(p => p.hand), room.pile?.length || 0, room.seat_count || 4,
         )) return
         playersRef.current = playerResult.data
-        const sorted = active.map(p => ({ seat: p.seat, pips: pipCount(p.hand) }))
-          .sort((a, b) => a.pips - b.pips || a.seat - b.seat)
-        resolvedSeat = sorted[0].seat
+        resolvedSeat = active[blockedWinner(active.map(p => p.hand))].seat   // lowest pips, ties: lowest seat
       }
-      const newStreak = computeNewStreak(streak, resolvedSeat, isDek, mode)
-      const isVyej    = newStreak.count >= 4
+      const newStreak = nextStreak(streak, resolvedSeat, isDek, { teams: mode === 'asosye' })
+      const isVyej    = streakIsVyej(newStreak)
       const winnerKey = mode === 'asosye' ? (resolvedSeat === 0 || resolvedSeat === 2 ? 'A' : 'B') : resolvedSeat
       
       // Check the saved roster at match completion, including the AI partner.
@@ -1042,11 +962,7 @@ export function useGameState(myInfo, navigate) {
     await db.from('board').delete().eq('room_id', myInfo.roomId)
     await db.from('board').insert({ room_id: myInfo.roomId, tiles: [], left_end: null, right_end: null })
     // the opener, as in a new game: the 6-6, or the highest double dealt
-    let startingSeat = 0, openingTile = null
-    for (let d = 6; d >= 0 && !openingTile; d--) {
-      const holder = hands.findIndex(h => h.some(t => t[0] === d && t[1] === d))
-      if (holder >= 0) { startingSeat = holder; openingTile = [d, d] }
-    }
+    const { seat: startingSeat, tile: openingTile } = firstOpener(hands)
     await db.from('domino_rooms').update({
       status: 'playing', current_turn: startingSeat, round: 1,
       scores: [0, 0, 0, 0], streak: { seat: null, team: null, count: 0 },

@@ -21,6 +21,7 @@ import GoudBadge from '../components/GoudBadge'
 import { InfoButton } from '../components/GameGuide'
 import { StakeCreate, StakeJoinCard, openStakeRoom } from '../components/StakeLobby'
 import { forgetSeat, savedSeat, takeFreshStart } from '../lib/activeGame'
+import { firstOpener } from '../rules/dekabess'
 
 // Experts are earned in Story Mode: beat a bot's chapter and they're yours.
 // Ordinary bots are always available.
@@ -690,11 +691,7 @@ export default function Lobby() {
     // The opener: whoever holds the 6-6. In a pile game it may be in the pile:
     // then whoever holds the highest double opens with it; with no doubles
     // dealt at all, the first seat opens with any tile.
-    let startingSeat = 0, openingTile = null
-    for (let d = 6; d >= 0 && !openingTile; d--) {
-      const holder = hands.findIndex(h => h.some(t => t[0] === d && t[1] === d))
-      if (holder >= 0) { startingSeat = holder; openingTile = [d, d] }
-    }
+    const { seat: startingSeat, tile: openingTile } = firstOpener(hands)
 
     await db.from('domino_rooms').update({
       status: 'playing',

@@ -10,6 +10,7 @@ import { SeatAvatar, hasSeatAvatar } from '../lib/avatars'
 import { setRoomSkins } from '../lib/skins'
 import './Game.css'
 import './Watch.css'
+import { seatSide } from '../rules/dekabess'
 
 // ── Watching a game ──────────────────────────────────────────────────────────
 // A read-only seat beside the table. Spectators see the board, every player's
@@ -22,14 +23,8 @@ import './Watch.css'
 const MAX_WATCHERS = 20
 
 // where a seat sits, viewed from seat 0's side of the table (as the players see it)
-function sideOf(seat, viewSeat, n) {
-  const k = Math.max(2, Math.min(4, n || 4))
-  const diff = ((seat - viewSeat) % k + k) % k
-  if (diff === 0) return 'bottom'
-  if (k === 2) return 'top'
-  if (k === 3) return diff === 1 ? 'right' : 'left'
-  return ['bottom', 'right', 'top', 'left'][diff]
-}
+// where a player sits, as seen from a seat: the rule lives in rules/dekabess.js
+const sideOf = seatSide
 
 export default function Watch() {
   const { roomId } = useParams()
