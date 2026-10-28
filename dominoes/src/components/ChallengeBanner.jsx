@@ -14,6 +14,8 @@ const MODE = { chien: 'Chien Manjé Chien', asosye: 'Asosyé', stake: 'a Goud st
 const LIFE_MS = 5 * 60 * 1000
 
 export default function ChallengeBanner() {
+  const [gone, setGone] = useState('')                 // an invite that couldn't be joined
+  useEffect(() => { if (!gone) return; const t = setTimeout(() => setGone(''), 5000); return () => clearTimeout(t) }, [gone])
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [list, setList] = useState([])
@@ -36,13 +38,15 @@ export default function ChallengeBanner() {
 
   const live = list.filter(c => now - new Date(c.created_at).getTime() < LIFE_MS)
   const c = live[0]
-  if (!c) return null
+  if (!c) return gone ? <div className="cb-banner cb-note" role="status">{gone}</div> : null
 
   const answer = async accept => {
     if (accept && pathname === '/game' && !window.confirm('Leave your current game to join this one?')) return
     setList(l => l.filter(x => x.id !== c.id))
-    const { data: code } = await db.rpc('challenge_respond', { p_id: c.id, p_accept: accept })
-    if (accept && code) navigate(`/?join=${code}&auto=1`)
+    const { data: code, error } = await db.rpc('challenge_respond', { p_id: c.id, p_accept: accept })
+    if (!accept) return
+    if (code) navigate(`/?join=${code}&auto=1`)
+    else setGone(error ? 'Couldn’t reach the table — try again in a moment.' : 'That invite has expired, or the table is gone.')
   }
 
   return (

@@ -207,7 +207,13 @@ export default function Lobby() {
     })
   }, [unlockedBots])
 
+  // Join / challenge links. Read every time the address changes — not only when
+  // the lobby first opens: accepting a friend's invite while already sitting in
+  // the lobby lands here again with a new code (before, nothing happened).
+  const handledLink = useRef('')
   useEffect(() => {
+    if (!location.search || handledLink.current === location.search) return
+    handledLink.current = location.search
     const q = new URLSearchParams(location.search)
     const code = q.get('join')
     if (code) {
@@ -229,7 +235,7 @@ export default function Lobby() {
     }
     if (code || friend) window.history.replaceState(null, '', '/')
     loadQueueCount()
-  }, [])
+  }, [location.search])   // eslint-disable-line react-hooks/exhaustive-deps
 
   const [inQueue, setInQueue] = useState(false)
   const [myQueueId, setMyQueueId] = useState(null)
