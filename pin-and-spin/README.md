@@ -39,6 +39,34 @@ The **`pin-and-spin` Supabase Edge Function** is the public game API gateway. It
 
 The shared TV/display concept is a **future phase** and is not yet implemented.
 
+The phone board uses stacked horizontal guess rows (four, or eight in Rush), a
+three-by-two palette, green Pin markers and white Spin markers. The selectable
+colors are Blue, Red, Green, Yellow, Purple and White. Everyone's Guesses includes
+a player filter and shows missed timed guesses. Unsubmitted selections survive a
+page refresh when browser storage is available.
+
+The home screen separates Create Room, Join Room and How to Play. Mode selection
+uses four stacked cards; the lobby offers Copy Code and Invite Friends. A midnight
+navy and purple theme with patterned balls keeps colors distinguishable.
+
+## Backend source and verification
+
+- `backend/schema.sql` records the initial schema and transactional game functions
+  already applied to Game DB. **Do not rerun it against the existing database.**
+- `backend/index.ts` is the deployed `pin-and-spin` Edge Function source. It uses
+  random guest-session tokens; no account or service key is required in the client.
+- The tables intentionally have RLS enabled and no public policies or grants.
+  Only the server can read them. Snapshots redact the secret and unrevealed opponents' guesses.
+- `tests/database.sql` checks scoring, authorization, turn order, ties, timeouts,
+  limits and rematches inside a transaction that rolls all test data back.
+- `test:live` is an optional automated ten-player concurrency test. It creates a
+  disposable room and leaves all test seats afterward. It needs network access.
+
+Client state refreshes every 1.8 seconds while the page is visible. Server time
+determines deadlines; a room request advances an expired round before accepting
+another guess. Closing a phone does not forfeit its seat: reopen the page to resume,
+or use Leave Room before exiting. Rooms expire after 24 hours.
+
 ## Optional
 
 To point the game header's PlayVolt link to a deployed hub (instead of the GitHub repository), add the Cloudflare build environment variable `VITE_PLAYVOLT_HUB_URL` with the verified hub URL.
