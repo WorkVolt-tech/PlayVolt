@@ -523,6 +523,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .game-card-suggest:hover { border-color: var(--volt) !important; opacity: 1; }
 
 .game-icon { font-size: 2.4rem; margin-bottom: 8px; display: block; }
+.game-logo-image { display: block; width: 100%; height: 96px; object-fit: contain; margin: 0 auto 8px; }
 .game-name { font-size: 0.88rem; font-weight: 900; margin-bottom: 3px; }
 .game-desc { font-size: 0.68rem; color: var(--muted); line-height: 1.3; }
 .lock-chip {
@@ -879,6 +880,7 @@ const GAMES = [
     id:      'pin_and_spin',
     name:    'Pin & Spin',
     icon:    '🎯',
+    image:   './pin-and-spin/public/pin-and-spin-logo.webp',
     desc:    'Crack the color code with friends. 4 modes, 2–10 players!',
     access:  'all',
     route:   GAME_ROUTES.pin_and_spin,
@@ -1021,7 +1023,7 @@ function buildGamesGrid(isAdult) {
 
     card.innerHTML = `
       ${chipHTML}
-      <span class="game-icon">${game.icon}</span>
+      ${game.image ? `<img class="game-logo-image" src="${game.image}" alt="${game.name}" loading="lazy" />` : `<span class="game-icon">${game.icon}</span>`}
       <div class="game-name">${game.name}</div>
       <div class="game-desc">${game.desc}</div>
     `;

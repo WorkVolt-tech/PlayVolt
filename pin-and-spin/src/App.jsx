@@ -361,10 +361,7 @@ export default function App() {
         {!session && <section className="screen entry-screen">
           {formTab === 'home' ? <>
             <div className="hero approved-hero">
-              <h1 className="game-logo">Pin &amp; <em>Spin</em></h1>
-              <div className="hero-pegs approved-pegs" aria-hidden="true">
-                {[0, 1, 3, 4].map(value => <Peg key={value} value={value} tiny />)}
-              </div>
+              <h1 className="bunny-logo"><img src="/pin-and-spin-logo.webp" alt="Pin & Spin" width="1536" height="1024" fetchPriority="high" /></h1>
               <p className="tagline">Crack the code.<br />Challenge your friends.</p>
               <span className="players-badge">2–10 players</span>
             </div>
