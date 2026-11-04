@@ -288,7 +288,7 @@ export default function App() {
     <div className="ambient" aria-hidden="true" />
     <div className="shell">
       <header className="topbar">
-        <a className="home-link" href="https://playvolt.pages.dev/" aria-label="PlayVolt home">← <span>PLAYVOLT</span></a>
+        <a className="home-link" href={import.meta.env.VITE_PLAYVOLT_HUB_URL || "https://github.com/WorkVolt-tech/PlayVolt"} aria-label="Back to PlayVolt">← <span>PLAYVOLT</span></a>
         <div className="brand">PIN <span>&amp;</span> SPIN</div>
         <div className="live"><i /><span>{game ? 'ROOM LIVE' : 'PARTY GAME'}</span></div>
       </header>
