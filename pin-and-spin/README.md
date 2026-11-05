@@ -86,6 +86,9 @@ The TV live board (`src/tv/TvBoard.jsx`) always fits one screen with no scrollin
 status bar, a one-line result strip at the end, and a grid of player lanes (max 2 rows for
 up to 10 players, `src/tv/tvGrid.js`) whose ball size is measured from the space available.
 Each lane shows one row per try, including empty ones.
+When a new version is deployed, the TV (and the TV app) refreshes itself about 4 seconds
+after the update banner appears (once per version), since nobody should need a remote to
+press "Update Now". Phones still wait for the player to tap it.
 
 **TV pairing (no long link to type):** on the TV, open `<site>/tv` (bookmark it). It
 shows a 4-letter code (no look-alike letters, new code every 10 minutes). A player in

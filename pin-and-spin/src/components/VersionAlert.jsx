@@ -5,7 +5,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
 const CHECK_EVERY_MS = 60 * 1000;
 
-export function VersionAlert() {
+// autoUpdate: the TV display only watches (its room link is in the address), so it
+// refreshes itself instead of waiting for someone to press a button with a TV remote.
+export function VersionAlert({ autoUpdate = false }) {
   const [latestVersion, setLatestVersion] = useState(null);
   const [updating, setUpdating] = useState(false);
   const lastCheckRef = useRef(0);
@@ -45,6 +47,17 @@ export function VersionAlert() {
     // The room session and any unsubmitted colors are saved, so the game resumes after the reload.
     window.setTimeout(() => window.location.reload(), 350);
   }
+
+  useEffect(() => {
+    if (!autoUpdate || !latestVersion) return undefined;
+    // Once per new version: if a stale copy still loads, show the banner instead of looping.
+    try {
+      if (sessionStorage.getItem('pin_and_spin_auto_update') === latestVersion) return undefined;
+      sessionStorage.setItem('pin_and_spin_auto_update', latestVersion);
+    } catch { /* storage disabled: still refresh once */ }
+    const timer = window.setTimeout(() => window.location.reload(), 4000);
+    return () => window.clearTimeout(timer);
+  }, [autoUpdate, latestVersion]);
 
   if (!latestVersion) return null;
   return <div className="version-alert" role="alert" aria-live="assertive">

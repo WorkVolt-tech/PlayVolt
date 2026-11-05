@@ -10,5 +10,5 @@ import './polish.css';
 // "?tv=ROOM#token" opens the shared big-screen display; anything else is the phone game.
 const tv = isTvLink();
 createRoot(document.getElementById('root')).render(
-  <React.StrictMode>{tv ? <><TvApp /><VersionAlert /></> : <App />}</React.StrictMode>
+  <React.StrictMode>{tv ? <><TvApp /><VersionAlert autoUpdate /></> : <App />}</React.StrictMode>
 );
