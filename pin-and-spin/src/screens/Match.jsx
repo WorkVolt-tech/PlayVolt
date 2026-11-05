@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { CodeBoard } from '../components/CodeBoard.jsx';
 import { canSubmitGuess, guessLimit, myGuesses, nextAttempt, placeColor, remainingTime, statusText } from '../game/selectors.js';
+import { MiniBoards } from '../shared/MiniBoards.jsx';
 import { Scoreboard } from '../shared/Scoreboard.jsx';
 import { FinishPanel } from './FinishPanel.jsx';
 import { GuessPanel } from './GuessPanel.jsx';
 import { MatchRoomBar, MatchStatus, ViewTabs } from './MatchHeader.jsx';
-import { PlayerStrip } from './PlayerStrip.jsx';
 
 const canFullscreen = typeof document !== 'undefined' && document.fullscreenEnabled;
 
@@ -13,6 +13,7 @@ const canFullscreen = typeof document !== 'undefined' && document.fullscreenEnab
 export function Match({ state, onShare }) {
   const { game, busy, clock, offset, view, setView, draft, setDraft, selected, setSelected, resetDraft, act } = state;
   const [fullscreen, setFullscreen] = useState(false);
+  const [boardFocus, setBoardFocus] = useState('all');
   const host = game.hostId === game.me;
   const mine = myGuesses(game);
   const limit = guessLimit(game.mode);
@@ -37,6 +38,7 @@ export function Match({ state, onShare }) {
     else void document.documentElement.requestFullscreen?.().catch(() => {});
   }
   function closeBoard() {
+    setBoardFocus('all');
     if (document.fullscreenElement) void document.exitFullscreen();
     setView('play');
   }
@@ -57,7 +59,7 @@ export function Match({ state, onShare }) {
   return <>
     <MatchRoomBar game={game} onShare={onShare} />
     <MatchStatus game={game} statusText={statusText(game, { busy, canSubmit })} remainingMs={remainingMs} />
-    <PlayerStrip game={game} />
+    <MiniBoards game={game} onOpen={(id) => { setBoardFocus(id); setView('results'); }} />
     <ViewTabs view={view} setView={setView} />
     {game.status === 'finished'
       ? <FinishPanel game={game} onViewResults={() => setView('results')}>{playAgain}</FinishPanel>
@@ -69,7 +71,7 @@ export function Match({ state, onShare }) {
       <CodeBoard mine={mine} limit={limit} attempt={attempt} canSubmit={false}
         draft={draft} selected={selected} onSelect={setSelected} />
     </div>}
-    {boardOpen && <Scoreboard game={game} remainingMs={remainingMs} actions={playAgain}
+    {boardOpen && <Scoreboard key={boardFocus} initialFocus={boardFocus} game={game} remainingMs={remainingMs} actions={playAgain}
       nav={<div className="board-nav">
         <button type="button" className="board-back" onClick={closeBoard}>← My board</button>
         {canFullscreen && <button type="button" className="board-fs" onClick={toggleFullscreen}

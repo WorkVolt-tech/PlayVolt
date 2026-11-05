@@ -11,12 +11,3 @@ export function Feedback({ guess }) {
       className={i < pins ? 'pin-dot' : i < pins + spins ? 'spin-dot' : ''} />)}
   </span>;
 }
-
-// Numeric counters for the shared board: easy to read from across a room.
-export function FeedbackCounts({ guess }) {
-  if (!guess.colors) return <span className="count-missed">MISSED</span>;
-  return <span className="counts" role="img" aria-label={`${guess.pins} Pins, ${guess.spins} Spins`}>
-    <b className="count pin-count">{guess.pins}</b>
-    <b className="count spin-count">{guess.spins}</b>
-  </span>;
-}

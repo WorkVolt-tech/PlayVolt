@@ -1,4 +1,4 @@
-/* Phase 5 polish: avatars, player strip, full-screen shared board, winner moments, motion.
+/* Phase 5 polish: avatars, mini boards, full-screen shared board, winner moments, motion.
    Loaded after styles.css. All motion is disabled for prefers-reduced-motion. */
 
 /* ---------- Avatars ---------- */
@@ -22,25 +22,38 @@
 .ready-meter{height:6px;border-radius:6px;background:#2a2340;overflow:hidden;margin:-4px 0 14px}
 .ready-meter span{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#46d892,#8ef0be);transition:width .45s ease}
 
-/* ---------- Player strip (compact progress for everyone) ---------- */
-.player-strip{display:flex;gap:7px;overflow-x:auto;margin:0 -2px 14px;padding:2px 2px 4px;scrollbar-width:none}
-.player-strip::-webkit-scrollbar{display:none}
-.strip-chip{flex:none;display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:7px;row-gap:1px;align-items:center;padding:6px 10px 6px 6px;border-radius:14px;background:#1b1630;border:1px solid #3d3058;transition:border-color .2s,background .2s}
-.strip-chip .avatar{grid-row:span 2}
-.strip-name{font-size:11px;font-weight:800;max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.strip-state{font-size:9px;font-weight:900;letter-spacing:.5px;color:var(--sub)}
-.strip-best{display:none}
-.strip-chip.me{border-color:#7b58a8}
-.strip-chip.turn{border-color:#c18bff;background:#31204d;box-shadow:0 0 14px #a95bff40}
-.strip-chip.turn .strip-state{color:#e2c8ff;animation:blink 1.2s ease-in-out infinite}
-.strip-chip.in{border-color:#4fc28b88;background:#173126}
-.strip-chip.in .strip-state{color:var(--pin)}
-.strip-chip.thinking .strip-state{color:#ffd78a}
-.strip-chip.won{border-color:#ffd76a;background:#3a2d17}
-.strip-chip.won .strip-state{color:#ffd76a}
-.strip-chip.left{opacity:.45}
-@media(min-width:420px){.strip-chip{grid-template-columns:auto auto auto}.strip-best{display:flex;gap:2px;grid-row:span 2;margin-left:2px}
-  .strip-best i{width:5px;height:14px;border-radius:2px;background:#3a3352}.strip-best i.on{background:var(--pin)}}
+/* ---------- Mini boards (a small view of everyone's guesses) ---------- */
+.mini-boards{display:flex;gap:8px;overflow-x:auto;margin:0 -2px 14px;padding:2px 2px 6px;scrollbar-width:none;scroll-snap-type:x proximity}
+.mini-boards::-webkit-scrollbar{display:none}
+.mini-card{flex:none;scroll-snap-align:start;display:flex;flex-direction:column;gap:6px;width:112px;padding:7px 7px 8px;border-radius:14px;background:#1b1630;border:1px solid #3d3058;color:var(--text);text-align:left;font:inherit;transition:border-color .2s,background .2s,box-shadow .2s}
+.mini-card:active{transform:scale(.97)}
+.mini-head{display:flex;align-items:center;gap:5px;min-width:0}
+.mini-name{flex:1;min-width:0;font-size:11px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini-state{font-size:9px;font-weight:900;letter-spacing:.4px;color:var(--sub)}
+.mini-rows{display:flex;flex-direction:column;gap:3px}
+.mini-row{display:flex;align-items:center;justify-content:space-between;gap:4px;height:16px}
+.mini-row .tiny-pegs{gap:3px}
+.mini-row .tiny-peg{width:15px;height:15px;min-width:0;max-width:none;flex:none;border-radius:50%;font-size:0}
+.mini-row .tiny-peg.patterned-peg{--pattern-size:7px 7px}
+.mini-row .tiny-peg.patterned-peg:after{display:none}
+.mini-row .empty-peg{background:#100e22;border:1px solid #3a3054;color:transparent}
+.mini-row .feedback-dots{grid-template-columns:repeat(2,5px);gap:2px;width:12px}
+.mini-row .feedback-dots i{width:5px;height:5px}
+.mini-gap{width:12px;flex:none}
+.mini-row .sealed-balls{flex:none;gap:3px}
+.mini-row .sealed-balls i{width:15px;height:15px}
+.mini-missed{font-size:8px;font-weight:800;letter-spacing:.5px;color:#8d84a8;text-transform:uppercase}
+.mini-card.me{border-color:#7b58a8}
+.mini-card.turn{border-color:#c18bff;background:#31204d;box-shadow:0 0 14px #a95bff40}
+.mini-card.turn .mini-state{color:#e2c8ff;animation:blink 1.2s ease-in-out infinite}
+.mini-card.in{border-color:#4fc28b88}
+.mini-card.in .mini-state{color:var(--pin)}
+.mini-card.thinking .mini-state{color:#ffd78a}
+.mini-card.won{border-color:#ffd76a;background:#3a2d17;box-shadow:0 0 14px #ffd76a30}
+.mini-card.left{opacity:.45}
+.avatar-xs{width:18px;height:18px}
+.avatar-xs b{font-size:9px}
+@media(max-width:360px){.mini-card{width:104px}.mini-row .tiny-peg,.mini-row .sealed-balls i{width:13px;height:13px}}
 
 /* ---------- Board micro-motion ---------- */
 .code-row.current .code-slot.selected{animation:ring 1.4s ease-in-out infinite}
@@ -108,24 +121,21 @@ body.board-open{overflow:hidden}
 .lane-name small{font-size:10px;font-weight:900;letter-spacing:.8px;color:var(--sub)}
 .lane.won .lane-name small{color:#ffd76a}
 .lane.turn .lane-name small{color:#e2c8ff}
-.best{font-size:9px;font-weight:900;letter-spacing:.8px;color:var(--sub);display:flex;align-items:center;gap:5px}
-.best b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#173126;border:1px solid var(--pin);color:var(--pin);font-size:12px}
 .lane-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .lane-row{display:flex;align-items:center;gap:9px;background:#100e22;border:1px solid #33294d;border-radius:12px;padding:7px 9px;animation:flip-row .45s cubic-bezier(.2,.9,.3,1.1) backwards;animation-delay:calc(var(--i,0) * 60ms)}
 .lane-try{font-size:10px;font-weight:900;color:var(--sub);width:24px;flex:none}
 .lane-row .tiny-pegs{flex:1;gap:6px}
 .lane-row .tiny-peg{width:30px;height:30px;max-width:none;flex:none}
-.counts{display:flex;gap:6px;flex:none}
-.count{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;font:800 14px 'Space Grotesk',sans-serif}
-.pin-count{background:var(--pin);color:#06301b;box-shadow:0 0 10px #54e89e55}
-.spin-count{background:#f8f8ff;color:#1b1630;box-shadow:0 0 10px #ffffff40}
+/* Pin/Spin dots on the shared board: larger than on the phone board. */
+.lane-row .feedback-dots{grid-template-columns:repeat(2,12px);gap:5px;width:29px}
+.lane-row .feedback-dots i{width:12px;height:12px;box-shadow:inset 0 1px 2px #ffffff30,0 1px 2px #0005}
 .count-missed{font-size:9px;font-weight:900;letter-spacing:.8px;color:var(--sub);flex:none}
 .missed-row{flex:1;font-size:11px;color:#8d84a8;font-style:italic}
 .sealed-row{border-style:dashed;animation:none}
 .sealed-balls{flex:1;display:flex;gap:6px}
 .sealed-balls i{width:30px;height:30px;border-radius:50%;background:repeating-linear-gradient(45deg,#2b2343 0 5px,#352b52 5px 10px);border:1px solid #5a4880;animation:shimmer 1.6s ease-in-out infinite}
 .lane-empty{font-size:12px;color:#8d84a8;padding:8px 2px}
-@media(max-width:360px){.lane-row .tiny-peg,.sealed-balls i{width:26px;height:26px}.count{width:25px;height:25px;font-size:13px}.board-title h1{font-size:22px}}
+@media(max-width:360px){.lane-row .tiny-peg,.lane-row .sealed-balls i{width:26px;height:26px}.board-title h1{font-size:22px}}
 /* Large screens (laptop/TV): bigger type and balls so the board reads across a room. */
 @media(min-width:1100px){
   .board-screen{padding:28px 36px}
@@ -136,9 +146,8 @@ body.board-open{overflow:hidden}
   .lanes{grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:18px}
   .lane{padding:18px}
   .lane-name strong{font-size:20px}
-  .lane-row .tiny-peg,.sealed-balls i{width:42px;height:42px}
-  .count{width:38px;height:38px;font-size:19px}
-  .lane-try{font-size:13px;width:32px}
+  .lane-row .tiny-peg,.lane-row .sealed-balls i{width:42px;height:42px}
+    .lane-try{font-size:13px;width:32px}
   .secret-ball .patterned-peg{width:76px;height:76px}
 }
 

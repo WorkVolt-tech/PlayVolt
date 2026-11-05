@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MODES } from '../game/constants.js';
-import { FeedbackCounts } from '../components/Feedback.jsx';
+import { Feedback } from '../components/Feedback.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { Empty } from '../components/Empty.jsx';
@@ -11,8 +11,8 @@ import { WinnerBanner } from './WinnerBanner.jsx';
 // Built for a phone today and a TV later. It renders ONLY public data from the server
 // snapshot (revealed guesses, submitted flags, winners, and the answer once finished)
 // and holds no player controls: the controller passes navigation/actions via props.
-export function Scoreboard({ game, remainingMs, nav, actions }) {
-  const [focus, setFocus] = useState('all');
+export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'all' }) {
+  const [focus, setFocus] = useState(initialFocus);
   const lanes = playerProgress(game).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
   const shown = focus === 'all' ? lanes : lanes.filter((lane) => lane.player.id === focus);
   const limit = guessLimit(game.mode);
@@ -64,13 +64,12 @@ export function Scoreboard({ game, remainingMs, nav, actions }) {
             <small>{lane.won ? 'WINNER' : lane.left ? 'LEFT THE ROOM' : lane.isTurn ? 'PLAYING NOW'
               : lane.thinking ? 'THINKING…' : lane.sealed ? 'LOCKED IN' : `${lane.used} / ${limit} TRIES`}</small>
           </div>
-          {lane.best !== null && <span className="best" title="Best Pin count">BEST <b>{lane.best}</b></span>}
         </header>
         <ol className="lane-rows">
           {lane.guesses.map((guess, i) => <li className="lane-row" key={guess.attempt} style={{ '--i': i }}>
             <span className="lane-try">{simultaneous ? 'R' : '#'}{guess.attempt}</span>
             {guess.colors ? <PegRow colors={guess.colors} tiny /> : <span className="missed-row">No guess in time</span>}
-            <FeedbackCounts guess={guess} />
+            {guess.colors ? <Feedback guess={guess} /> : <span className="count-missed">MISSED</span>}
           </li>)}
           {lane.sealed && <li className="lane-row sealed-row">
             <span className="lane-try">R{game.round}</span>
