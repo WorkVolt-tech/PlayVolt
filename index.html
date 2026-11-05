@@ -835,9 +835,9 @@ const ADMIN_PASSWORD = 'playvolt2025';
 
 // ── GAME ROUTES ──
 const GAME_ROUTES = {
-  wtw_adult: '../PlayVolt/whos-the-worst-adult/index.html',
-  wtw_kids:  '../PlayVolt/whos-the-worst/index.html',
-  dominoes:  'dominoes/index.html',
+  wtw_adult: 'whos-the-worst-adult/index.html',
+  wtw_kids:  'whos-the-worst/index.html',
+  dominoes:  'https://playvolt-domino.pages.dev/',
   bluff:     'bluff/bluff.html',
   pin_and_spin: 'https://playvolt-pin-and-spin.pages.dev/',
 };
@@ -862,9 +862,10 @@ const GAMES = [
   },
   {
     id:      'dominoes',
-    name:    "Dominoes Online",
+    name:    'Dekabess',
     icon:    '🁣',
-    desc:    'Classic block dominoes with friends. 4 players online!',
+    image:   './dominoes/public/dekabess-logo-lobby.webp',
+    desc:    'Haitian dominoes with friends. 4 players online!',
     access:  'all',
     route:   GAME_ROUTES.dominoes,
   },
