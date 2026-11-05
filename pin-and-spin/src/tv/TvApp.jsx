@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { MatchAnnouncer } from '../components/MatchAnnouncer.jsx';
 import { remainingTime } from '../game/selectors.js';
 import { Scoreboard } from '../shared/Scoreboard.jsx';
-import { play } from '../sound/sfx.js';
+import { play, unlockNow } from '../sound/sfx.js';
 import { useGameSounds } from '../sound/useGameSounds.js';
 import { TvLobby } from './TvLobby.jsx';
 import { useDisplay } from './useDisplay.js';
 import { TvPair } from './TvPair.jsx';
-import { backToPairing, openTvLink, readTvLink } from './tvLink.js';
+import { backToPairing, inTvApp, openTvLink, readTvLink } from './tvLink.js';
 
 // The shared big screen (laptop, smart-TV browser). Read-only: phones are the controllers.
 // /tv shows a 4-letter pairing code; /?tv=ROOM#token shows that room's live board.
@@ -15,7 +15,9 @@ export function TvApp() {
   const [link, setLink] = useState(readTvLink);
   const paired = useCallback((next) => { openTvLink(next); setLink(next); }, []);
   const changeRoom = useCallback(() => { backToPairing(); setLink(null); }, []);
-  const [started, setStarted] = useState(false);
+  // The TV app is already full screen and may play sound without a click.
+  const [started, setStarted] = useState(inTvApp);
+  useEffect(() => { if (inTvApp()) unlockNow(); }, []);
   // One click turns on sound (browsers require it) and full screen.
   function start() {
     setStarted(true);

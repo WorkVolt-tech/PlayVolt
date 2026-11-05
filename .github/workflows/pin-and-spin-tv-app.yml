@@ -1,0 +1,77 @@
+# Builds the Pin & Spin TV app (Fire TV / Android TV) and publishes the install file.
+#   main            -> release "pin-and-spin-tv"         (app opens the live site)
+#   any other branch -> release "pin-and-spin-tv-preview" (app opens that branch's preview site)
+# Only runs when the TV app (pin-and-spin/firetv) or this file changes. Other games are untouched.
+name: Pin & Spin TV app
+
+on:
+  push:
+    paths:
+      - 'pin-and-spin/firetv/**'
+      - '.github/workflows/pin-and-spin-tv-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pin-and-spin-tv-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pin-and-spin/firetv
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Choose the page the app opens
+        id: target
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "url=https://playvolt-pin-and-spin.pages.dev/tv" >> "$GITHUB_OUTPUT"
+            echo "tag=pin-and-spin-tv" >> "$GITHUB_OUTPUT"
+            echo "title=Pin & Spin TV app" >> "$GITHUB_OUTPUT"
+          else
+            alias=$(echo "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
+            echo "url=https://${alias}.playvolt-pin-and-spin.pages.dev/tv" >> "$GITHUB_OUTPUT"
+            echo "tag=pin-and-spin-tv-preview" >> "$GITHUB_OUTPUT"
+            echo "title=Pin & Spin TV app (preview: $GITHUB_REF_NAME)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the app
+        run: gradle --no-daemon assembleDebug "-PtvUrl=${{ steps.target.outputs.url }}" "-PversionCode=${{ github.run_number }}"
+
+      - name: Name the install file
+        run: cp app/build/outputs/apk/debug/app-debug.apk pin-and-spin-tv.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pin-and-spin-tv
+          path: pin-and-spin/firetv/pin-and-spin-tv.apk
+
+      - name: Publish the download link
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.target.outputs.tag }}
+          TITLE: ${{ steps.target.outputs.title }}
+          URL: ${{ steps.target.outputs.url }}
+        run: |
+          notes="Install on a Fire TV with the Downloader app. Opens ${URL}. Built from ${GITHUB_SHA::7}."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TITLE" --notes "$notes"
+          else
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TITLE" --notes "$notes" --latest=false
+          fi
+          gh release upload "$TAG" pin-and-spin-tv.apk --clobber

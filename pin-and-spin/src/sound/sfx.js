@@ -66,6 +66,8 @@ function unlock() {
     }
   }
 }
+// The Pin & Spin TV app allows sound without a tap, so it unlocks right away.
+export function unlockNow() { unlock(); }
 if (typeof window !== 'undefined') {
   const once = () => {
     unlock();

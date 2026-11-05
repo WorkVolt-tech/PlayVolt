@@ -65,6 +65,12 @@ games. Do not touch them from a Pin & Spin task.
 data** from the snapshot and contain no player controls, so a TV/display screen can reuse
 it with the display token. Controller-only actions are passed in from `src/screens/`.
 
+## TV app
+
+`firetv/` is the Fire TV / Android TV app: a full-screen WebView onto `/tv`. Keep game
+logic on the website. Never change its package name (`ca.chezmaxo.pinandspin.tv`) and never
+commit a signing key. The workflow `.github/workflows/pin-and-spin-tv-app.yml` builds it.
+
 ## Phone screens
 
 Mobile portrait first. Full-screen views must respect the safe areas

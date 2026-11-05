@@ -93,6 +93,11 @@ the server-only function `pin_and_spin_tv()`, reached through the Edge Function 
 (it holds its own random TV token) can collect the room's display link, and a TV already
 connected to one room cannot be taken over by another. `public/_redirects` serves `/tv`.
 
+**TV app (Fire TV / Android TV):** `firetv/` is a small Android app that opens `/tv` full
+screen (sound without a click, no "Start sound" button). GitHub builds it on every change to
+that folder and publishes the install file; download links `/app` (live) and `/app-preview`
+(preview branches) are in `public/_redirects`. See `firetv/README.md` for sideloading.
+
 The phone board uses stacked horizontal guess rows (four, or eight in Rush), a
 three-by-two palette, green Pin markers and white Spin markers. The selectable
 colors are Blue, Red, Green, Yellow, Purple and White. Mini boards above the tabs show

@@ -1,0 +1,28 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The page the app shows. Production by default; preview builds pass -PtvUrl=...
+def tvUrl = (project.findProperty('tvUrl') ?: 'https://playvolt-pin-and-spin.pages.dev/tv').toString()
+def buildNumber = (project.findProperty('versionCode') ?: '1').toString().toInteger()
+
+android {
+    namespace 'ca.chezmaxo.pinandspin.tv'
+    compileSdk 34
+
+    defaultConfig {
+        // Permanent once published on the Amazon Appstore: never change it.
+        applicationId 'ca.chezmaxo.pinandspin.tv'
+        minSdk 22          // Fire OS 5 and newer (every Fire TV Stick still in use)
+        targetSdk 34
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+        buildConfigField 'String', 'TV_URL', "\"${tvUrl}\""
+    }
+    buildFeatures { buildConfig true }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint { abortOnError false }
+}

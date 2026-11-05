@@ -11,6 +11,8 @@ export function readTvLink() {
 // The short TV address: https://<site>/tv shows a 4-letter code to type on a phone.
 export const isTvPairPage = () => /^\/tv\/?$/i.test(location.pathname);
 export const isTvLink = () => new URLSearchParams(location.search).has('tv') || isTvPairPage();
+// True inside the Pin & Spin TV app (Fire TV / Android TV), which adds this to its user agent.
+export const inTvApp = () => /\bPlayVoltTV\//.test(navigator.userAgent);
 export const tvPairAddress = () => `${location.host}/tv`;
 // After pairing, show the normal TV link in the address bar (reloading keeps the room).
 export function openTvLink({ code, token }) {
