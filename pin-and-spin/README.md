@@ -97,7 +97,8 @@ with a display-token snapshot. Player-only actions are passed in from `screens/`
   already applied to Game DB. **Do not rerun it against the existing database.**
 - `backend/migrations/` holds later changes, applied in order after `schema.sql`:
   `002_shared_domino_login.sql` (optional Dekabess account login, recorded from Game DB)
-  and `003_host_kick_presence.sql` (host can remove players, AWAY status, host handover).
+  `003_host_kick_presence.sql` (host can remove players, AWAY status, host handover)
+  and `004_realtime_room_signal.sql` (instant-update signal).
   Any database change must be added here too, so the tests keep matching production.
 - `backend/index.ts` is the deployed `pin-and-spin` Edge Function source. It uses
   random guest-session tokens; no account or service key is required in the client.
@@ -114,7 +115,11 @@ with a display-token snapshot. Player-only actions are passed in from `screens/`
 - `test:live` is an optional automated ten-player concurrency test. It creates a
   disposable room and leaves all test seats afterward. It needs network access.
 
-Client state refreshes every 1.8 seconds while the page is visible. Server time
+**Instant updates:** database triggers (migration 004) broadcast a content-free
+"changed" signal on the public Supabase Realtime topic `pin-and-spin:<ROOM CODE>` whenever
+a room really changes; phones then fetch the redacted state immediately. Heartbeat-only
+updates do not signal. Phones also refresh exactly when a timer expires. If Realtime is
+unavailable, the client falls back to polling every 1.8 seconds (6 seconds while live). Server time
 determines deadlines; a room request advances an expired round before accepting
 another guess. Closing a phone does not forfeit its seat: reopen the page to resume,
 or use Leave Room before exiting. Rooms expire after 24 hours.

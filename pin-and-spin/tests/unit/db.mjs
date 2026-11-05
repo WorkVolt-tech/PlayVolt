@@ -12,6 +12,11 @@ export async function freshDb() {
   await db.exec(`create role anon nologin; create role authenticated nologin; create role service_role nologin;`);
   // Stand-in for the shared PlayVolt profiles table (Dekabess accounts).
   await db.exec(`create table public.profiles (id uuid primary key, nickname text);`);
+  // Stand-in for Supabase Realtime's realtime.send(): records broadcasts for assertions.
+  await db.exec(`create schema realtime;
+    create table realtime.sent (id serial primary key, topic text, event text, private boolean);
+    create function realtime.send(payload jsonb, event text, topic text, private boolean default true)
+      returns void language sql as $$ insert into realtime.sent(topic,event,private) values (topic,event,private) $$;`);
   await db.exec(await readFile(schema, 'utf8'));
   // Then every migration, in order, exactly as applied to Game DB.
   for (const file of (await readdir(migrations)).filter((f) => f.endsWith('.sql')).sort()) {

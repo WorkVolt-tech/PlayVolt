@@ -5,6 +5,12 @@ import { DRAFT_KEY, EMPTY_GUESS, NAME_KEY, SESSION_KEY } from '../game/constants
 import { callGame } from '../game/api.js';
 import { savedName, savedSession, token } from '../game/session.js';
 import { isValidDraft, nextAttempt } from '../game/selectors.js';
+import { supabase } from '../game/auth.js';
+
+// Backup polling: fast when the live signal is unavailable, slow while it is connected.
+// Polling also serves as the presence heartbeat (AWAY after 45 seconds of silence).
+const POLL_MS = 1800;
+const LIVE_POLL_MS = 6000;
 
 export function usePinAndSpin() {
   const [session, setSession] = useState(savedSession);
@@ -23,6 +29,9 @@ export function usePinAndSpin() {
   const gameRef = useRef(game);
   const busyRef = useRef(false);
   const pollingRef = useRef(false);
+  const againRef = useRef(false);
+  const liveRef = useRef(false);
+  const lastRefreshRef = useRef(0);
   const offsetRef = useRef(0);
   const lastWarningRef = useRef(0);
   const requestVersionRef = useRef(0);
@@ -65,8 +74,11 @@ export function usePinAndSpin() {
     history.replaceState(null, '', location.pathname);
   }, [resetDraft]);
   const refresh = useCallback(async () => {
-    if (!sessionRef.current || busyRef.current || pollingRef.current) return;
+    if (!sessionRef.current || busyRef.current) return;
+    // A signal that arrives mid-request must not be lost: run once more afterwards.
+    if (pollingRef.current) { againRef.current = true; return; }
     pollingRef.current = true;
+    lastRefreshRef.current = Date.now();
     const version = requestVersionRef.current;
     const currentSession = sessionRef.current;
     try {
@@ -91,6 +103,7 @@ export function usePinAndSpin() {
       }
     } finally {
       pollingRef.current = false;
+      if (againRef.current) { againRef.current = false; void refresh(); }
     }
   }, [forget, notify, updateGame]);
   const act = useCallback(async (action, data = {}) => {
@@ -127,7 +140,11 @@ export function usePinAndSpin() {
       setFormTab('join');
     }
     if (sessionRef.current) void refresh();
-    const interval = setInterval(() => { if (!document.hidden) void refresh(); }, 1800);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      if (liveRef.current && Date.now() - lastRefreshRef.current < LIVE_POLL_MS) return;
+      void refresh();
+    }, POLL_MS);
     const tick = setInterval(() => setClock(Date.now()), 250);
     const visible = () => { if (!document.hidden) void refresh(); };
     document.addEventListener('visibilitychange', visible);
@@ -142,6 +159,26 @@ export function usePinAndSpin() {
     const timeout = setTimeout(() => setToast(''), 3600);
     return () => clearTimeout(timeout);
   }, [toast]);
+
+  // Instant updates: the server broadcasts a content-free "changed" signal for this room.
+  const roomCode = game?.code;
+  useEffect(() => {
+    if (!roomCode) return undefined;
+    const channel = supabase.channel(`pin-and-spin:${roomCode}`)
+      .on('broadcast', { event: 'changed' }, () => { if (!document.hidden) void refresh(); })
+      .subscribe((status) => { liveRef.current = status === 'SUBSCRIBED'; });
+    return () => { liveRef.current = false; void supabase.removeChannel(channel); };
+  }, [roomCode, refresh]);
+
+  // Ask the server right when a round or match timer runs out, so the reveal is immediate.
+  const deadline = game?.status === 'playing' ? game?.deadline : null;
+  useEffect(() => {
+    if (!deadline) return undefined;
+    const wait = new Date(deadline).getTime() - (Date.now() + offsetRef.current) + 400;
+    if (wait > 2147483647) return undefined;
+    const timeout = setTimeout(() => void refresh(), Math.max(0, wait));
+    return () => clearTimeout(timeout);
+  }, [deadline, refresh]);
 
   // accountName: a signed-in player's PlayVolt nickname (the server uses the profile name).
   async function enter(action, accountName) {

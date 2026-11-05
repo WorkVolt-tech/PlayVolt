@@ -436,3 +436,37 @@ describe('shared Domino login (migration 002)', () => {
     await rejects(g.api('join', s.code, tok(72), { name: 'y', _account_id: ACCOUNT }), /already has a seat/);
   });
 });
+
+describe('instant updates (migration 004)', () => {
+  const sent = async () => (await db.query('select topic, event, private from realtime.sent order by id')).rows;
+  const count = async () => (await db.query('select count(*)::int n from realtime.sent')).rows[0].n;
+
+  test('room changes broadcast a content-free signal on the room topic', async () => {
+    const room = await g.room('classic', 2);
+    const rows = await sent();
+    assert.ok(rows.length > 0);
+    assert.ok(rows.every((r) => r.topic === 'pin-and-spin:' + room.code && r.event === 'changed' && r.private === false));
+  });
+
+  test('a plain state poll (heartbeat only) does not signal, so phones cannot loop', async () => {
+    const room = await started('rush', 3);
+    const before = await count();
+    for (const p of room.players) await state(room, p);
+    assert.equal(await count(), before);
+  });
+
+  test('guesses, ready changes, removals and timer reveals all signal', async () => {
+    const room = await started('timed-reveal', 3);
+    const [host, b, c] = room.players;
+    let n = await count();
+    await guess(room, b, WRONG, 1);
+    assert.ok(await count() > n, 'guess');
+    n = await count();
+    await g.api('kick', room.code, host.token, { playerId: c.id });
+    assert.ok(await count() > n, 'removal');
+    await g.expireDeadline(room.code);
+    n = await count();
+    await state(room, host);
+    assert.ok(await count() > n, 'timer reveal');
+  });
+});
