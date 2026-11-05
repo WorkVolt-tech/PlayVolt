@@ -8,6 +8,7 @@ import { GuessPanel } from './GuessPanel.jsx';
 import { MatchRoomBar, MatchStatus, ViewTabs } from './MatchHeader.jsx';
 import { ManagePlayers } from './ManagePlayers.jsx';
 import { MatchAnnouncer } from '../components/MatchAnnouncer.jsx';
+import { play } from '../sound/sfx.js';
 
 const canFullscreen = typeof document !== 'undefined' && document.fullscreenEnabled;
 
@@ -24,6 +25,14 @@ export function Match({ state, onShare, onRemove }) {
   const remainingMs = remainingTime(game, clock, offset);
   const canSubmit = canSubmitGuess(game, { busy, remainingMs });
   const boardOpen = view === 'results';
+  const secondsLeft = remainingMs === null ? null : Math.ceil(remainingMs / 1000);
+
+  // Countdown tick for the last ten seconds of any timer.
+  useEffect(() => {
+    if (game.status === 'playing' && secondsLeft !== null && secondsLeft > 0 && secondsLeft <= 10) play('tap-ui-tick');
+  }, [secondsLeft, game.status]);
+  function openBoard(focus = 'all') { play('drawer-open'); setBoardFocus(focus); setView('results'); }
+  function changeView(next) { if (next !== view) play(next === 'results' ? 'drawer-open' : 'tab-switch'); setView(next); }
 
   // The full-screen board owns scrolling while it is open.
   useEffect(() => {
@@ -41,6 +50,7 @@ export function Match({ state, onShare, onRemove }) {
     else void document.documentElement.requestFullscreen?.().catch(() => {});
   }
   function closeBoard() {
+    play('drawer-close');
     setBoardFocus('all');
     if (document.fullscreenElement) void document.exitFullscreen();
     setView('play');
@@ -48,29 +58,31 @@ export function Match({ state, onShare, onRemove }) {
 
   function addColor(value) {
     if (!canSubmit) return;
+    play('pop-bubble');
     const next = placeColor(draft, selected, value);
     setDraft(next.draft);
     setSelected(next.selected);
   }
   function submitGuess() {
     if (!canSubmit || draft.some((value) => value === null)) return;
+    play('message-sent-swish');
     void act('guess', { colors: [...draft], puzzle: game.puzzle, attempt });
   }
   const playAgain = host && <button className="primary-btn" disabled={busy}
-    onClick={() => void act('replay')}>PLAY AGAIN<span>→</span></button>;
+    onClick={() => { play('click-crisp-primary'); void act('replay'); }}>PLAY AGAIN<span>→</span></button>;
 
   return <>
     <MatchAnnouncer game={game} />
-    <MatchRoomBar game={game} onShare={onShare} onPlayers={host ? () => setManaging(true) : null} />
-    {managing && host && <ManagePlayers game={game} busy={busy} onRemove={onRemove} onClose={() => setManaging(false)} />}
+    <MatchRoomBar game={game} onShare={onShare} onPlayers={host ? () => { play('drawer-open'); setManaging(true); } : null} />
+    {managing && host && <ManagePlayers game={game} busy={busy} onRemove={onRemove} onClose={() => { play('drawer-close'); setManaging(false); }} />}
     <MatchStatus game={game} statusText={statusText(game, { busy, canSubmit })} remainingMs={remainingMs} />
-    <MiniBoards game={game} onOpen={(id) => { setBoardFocus(id); setView('results'); }} />
-    <ViewTabs view={view} setView={setView} />
+    <MiniBoards game={game} onOpen={(id) => openBoard(id)} />
+    <ViewTabs view={view} setView={changeView} />
     {game.status === 'finished'
-      ? <FinishPanel game={game} onViewResults={() => setView('results')}>{playAgain}</FinishPanel>
+      ? <FinishPanel game={game} onViewResults={() => openBoard()}>{playAgain}</FinishPanel>
       : <GuessPanel mine={mine} limit={limit} attempt={attempt} canSubmit={canSubmit}
-          draft={draft} selected={selected} onSelect={setSelected}
-          onColor={addColor} onClear={resetDraft} onSubmit={submitGuess} />}
+          draft={draft} selected={selected} onSelect={(i) => { play('tap-ui-tick'); setSelected(i); }}
+          onColor={addColor} onClear={() => { play('swipe'); resetDraft(); }} onSubmit={submitGuess} />}
     {game.status === 'finished' && <div className="surface history-panel">
       <div className="panel-title"><h2>MY GUESSES</h2><span>{mine.length} SUBMITTED</span></div>
       <CodeBoard mine={mine} limit={limit} attempt={attempt} canSubmit={false}

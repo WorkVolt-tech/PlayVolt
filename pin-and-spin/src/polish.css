@@ -237,3 +237,8 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--volt)}
 .announce span{font-size:13px;color:#d9cdee}
 @keyframes announce{0%{opacity:0;transform:translateX(-50%) scale(.7)}12%{opacity:1;transform:translateX(-50%) scale(1.04)}20%{transform:translateX(-50%) scale(1)}85%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(.96)}}
 @media(prefers-reduced-motion:reduce){.announce{animation:none!important}}
+
+/* ---------- Sound toggle ---------- */
+.topbar-right{display:flex;align-items:center;gap:10px}
+.sound-toggle{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;border:1px solid #5b4580;background:#221a38;font-size:16px;line-height:1;padding:0}
+.sound-toggle[aria-pressed="false"]{opacity:.7}

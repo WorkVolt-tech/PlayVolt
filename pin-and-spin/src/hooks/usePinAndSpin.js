@@ -6,6 +6,7 @@ import { callGame } from '../game/api.js';
 import { savedName, savedSession, token } from '../game/session.js';
 import { isValidDraft, nextAttempt } from '../game/selectors.js';
 import { getSupabase } from '../game/auth.js';
+import { play } from '../sound/sfx.js';
 
 // Backup polling: fast when the live signal is unavailable, slow while it is connected.
 // Polling also serves as the presence heartbeat (AWAY after 45 seconds of silence).
@@ -122,6 +123,7 @@ export function usePinAndSpin() {
         updateGame(result);
       }
     } catch (error) {
+      play('invalid-thunk');
       notify(error.message || 'The game request failed.');
     } finally {
       busyRef.current = false;
@@ -219,6 +221,7 @@ export function usePinAndSpin() {
       history.replaceState(null, '', location.pathname + '?room=' + encodeURIComponent(result.code));
       notify(create ? 'Room created! Invite your friends.' : 'You joined the room!');
     } catch (error) {
+      play('invalid-thunk');
       notify(error.message || 'Could not join.');
     } finally {
       busyRef.current = false;

@@ -40,6 +40,16 @@ pure function (`matchEvents` in `src/game/selectors.js`) with unit tests.
 The Supabase library loads on demand (for signed-in players and for live updates in a
 room), keeping the first download small.
 
+## Sound effects
+
+22 short sounds from the SoundWeaver library (MIT, `public/sounds/LICENSE-SoundWeaver.txt`),
+converted to small MP3s (47 KB in total) with each sound's volume baked in, since iPhones
+ignore a page's volume settings. `src/sound/sfx.js` plays them; phones allow audio only
+after the first touch, so that touch unlocks a small pool of players for later sounds
+(reveals, your turn). A 🔊/🔇 button in the header turns sound off and is remembered on the
+device; sound starts off for players who prefer reduced motion. Game moments are mapped in
+`src/sound/useGameSounds.js` (start, rounds, your turn, scoring, win/lose, lobby joins).
+
 ## Update banner
 
 Each build gets a unique version (set in `vite.config.js`), baked into the app and

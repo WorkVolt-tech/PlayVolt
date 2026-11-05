@@ -2,6 +2,7 @@ import React from 'react';
 import { MODES } from '../game/constants.js';
 import { Peg } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
+import { play } from '../sound/sfx.js';
 
 // Waiting room: code/invite, chosen mode, players and ready/start controls.
 export function Lobby({ game, busy, act, onCopy, onShare, onRemove }) {
@@ -13,8 +14,8 @@ export function Lobby({ game, busy, act, onCopy, onShare, onRemove }) {
   return <>
     <h1 className="page-title">Your room</h1>
     <div className="surface lobby-code"><strong>{game.code}</strong><div className="invite-actions">
-      <button className="outline-btn" onClick={() => onCopy(game.code, 'Room code copied!')}>▣ Copy Code</button>
-      <button className="outline-btn" onClick={onShare}>↗ Invite Friends</button>
+      <button className="outline-btn" onClick={() => { play('select-item'); onCopy(game.code, 'Room code copied!'); }}>▣ Copy Code</button>
+      <button className="outline-btn" onClick={() => { play('select-item'); onShare(); }}>↗ Invite Friends</button>
     </div></div>
     <div className="surface lobby-mode"><Peg value={MODES[game.mode].color} tiny />
       <div><strong>{MODES[game.mode].label}</strong><p>{MODES[game.mode].hint}</p></div></div>
@@ -48,11 +49,11 @@ export function Lobby({ game, busy, act, onCopy, onShare, onRemove }) {
         ? 'Invite at least one friend with your room code to start.'
         : allReady ? 'Everybody is ready. Time to crack the code!' : 'Wait for everybody to mark themselves ready.'}</p>
       {!host && <button className="outline-btn full" disabled={busy}
-          onClick={() => void act('ready', { ready: !me?.ready })}>
+          onClick={() => { play(me?.ready ? 'toggle-switch-off' : 'toggle-switch-on'); void act('ready', { ready: !me?.ready }); }}>
           {me?.ready ? 'NOT READY' : "I'M READY"}
         </button>}
       {host && <button className="primary-btn" disabled={busy || !allReady}
-          onClick={() => void act('start')}>Start Game<span>→</span></button>}
+          onClick={() => { play('click-crisp-primary'); void act('start'); }}>Start Game<span>→</span></button>}
     </div>
   </>;
 }
