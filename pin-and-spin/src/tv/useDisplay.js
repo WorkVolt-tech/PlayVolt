@@ -4,13 +4,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { callGame } from '../game/api.js';
 import { getSupabase } from '../game/auth.js';
-import { readTvLink } from './tvLink.js';
 
 const POLL_MS = 2000;
 const LIVE_POLL_MS = 6000;
 
-export function useDisplay() {
-  const [link] = useState(readTvLink);
+export function useDisplay(link) {
   const [game, setGame] = useState(null);
   const [error, setError] = useState(link ? '' : 'This TV link is incomplete. Open “Show on TV” on a phone in the room and use that link.');
   const [clock, setClock] = useState(Date.now());
@@ -31,8 +29,8 @@ export function useDisplay() {
       setGame(next);
       setError('');
     } catch (e) {
-      if (/not found|expired/i.test(e.message || '')) setError('This room has ended. Start a new room on a phone and open its TV link.');
-      else if (/display link/i.test(e.message || '')) setError('This TV link is not valid for the room. Use “Show on TV” again.');
+      if (/not found|expired/i.test(e.message || '')) setError('This room has ended. Start a new room on a phone, then connect it to this TV.');
+      else if (/display link/i.test(e.message || '')) setError('This TV link is not valid for the room. Connect the TV again.');
       // Network hiccups: keep showing the last board and retry on the next tick.
     } finally {
       busyRef.current = false;

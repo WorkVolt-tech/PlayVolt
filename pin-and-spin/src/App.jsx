@@ -57,7 +57,7 @@ export default function App() {
 
         {session && game && <section className="screen">
           {game.status === 'lobby'
-            ? <Lobby game={game} busy={busy} act={act} onCopy={copyText} onShare={share} onRemove={removePlayer} />
+            ? <Lobby game={game} busy={busy} act={act} pairTv={state.pairTv} onCopy={copyText} onShare={share} onRemove={removePlayer} />
             : <Match state={state} onShare={share} onRemove={removePlayer} />}
           <button className="leave-link" type="button" disabled={busy}
             onClick={() => { if (window.confirm('Leave this room?')) void act('leave'); }}>

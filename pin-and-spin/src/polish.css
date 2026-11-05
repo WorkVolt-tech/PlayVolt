@@ -294,3 +294,29 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--volt)}
 .announce-tv strong{font-size:clamp(48px,6vw,120px)}
 .announce-tv span{font-size:clamp(16px,1.6vw,32px)}
 @media(max-width:800px){.tv-join{flex-direction:column;text-align:center}}
+
+/* TV pairing: /tv shows a 4-letter code; the phone types it in Show on TV. */
+.tv-pair{position:relative;display:grid;grid-template-columns:1.1fr 1fr;gap:3vw;align-items:center;margin-top:4vh}
+.tv-pair-main{text-align:center;padding:3vw 2vw;border-radius:28px;border:1px solid #a46edd;background:linear-gradient(135deg,#2a1f48,#15122b);box-shadow:0 0 50px #9c3ef525}
+.tv-pair-code{display:flex;justify-content:center;gap:1.2vw;margin:1.6vw 0 1vw}
+.tv-pair-code span{display:grid;place-items:center;width:clamp(64px,8.5vw,180px);aspect-ratio:3/4;border-radius:20px;background:#100e22;border:2px solid #c685ff;font:800 clamp(48px,7vw,150px)/1 'Space Grotesk',sans-serif;color:#fff;box-shadow:inset 0 0 30px #9c3ef530,0 0 30px #9c3ef540}
+.tv-pair-timer{margin:0;font-size:clamp(14px,1.2vw,24px);color:var(--sub)}
+.tv-pair-problem{margin:1vw 0 0;font-size:clamp(14px,1.2vw,24px);color:#ffb3b8}
+.tv-pair-steps ol{margin:0 0 2.4vw;padding-left:1.4em;font-size:clamp(16px,1.6vw,34px);line-height:1.5;color:var(--text)}
+.tv-pair-steps li{margin-bottom:.5em}
+.tv-pair-scan{display:flex;align-items:center;gap:1.6vw;font-size:clamp(13px,1.1vw,22px);color:var(--sub);line-height:1.5}
+.tv-pair-scan .qr{width:clamp(110px,10vw,220px)}
+.tv-pair-scan strong{color:var(--text)}
+.tv-change{margin:2vw auto 0;display:inline-flex;width:auto;padding:.9em 1.8em;font-size:clamp(14px,1.2vw,24px)}
+@media (max-aspect-ratio:1/1){.tv-pair{grid-template-columns:1fr}}
+
+.tv-pair-form{margin-bottom:12px}
+.tv-pair-address{color:#e2c8ff;white-space:nowrap}
+.tv-pair-input{display:flex;gap:10px;margin:10px 0 8px}
+.tv-pair-input input{flex:1;min-width:0;text-align:center;font:800 26px/1 'Space Grotesk',sans-serif;letter-spacing:.35em;text-transform:uppercase;color:#fff;background:#100e22;border:1px solid #7a5aa8;border-radius:12px;padding:12px 8px 12px calc(8px + .35em)}
+.tv-pair-input input:focus{outline:2px solid #c685ff;outline-offset:1px}
+.tv-pair-input .primary-btn{flex:0 0 auto;width:auto;padding-inline:18px}
+.tv-pair-input .primary-btn:disabled{opacity:.5}
+.tv-pair-ok{margin:4px 0 8px;color:#7dffa1;font-weight:800;font-size:14px}
+.tv-pair-error{margin:4px 0 8px;color:#ffb3b8;font-size:14px}
+.tv-link-toggle{display:block;margin:0 auto 10px;background:none;border:0;color:#d9b8ff;text-decoration:underline;font-size:13px;padding:6px;cursor:pointer}

@@ -8,6 +8,8 @@ const cors = {
   'Content-Type': 'application/json',
 };
 const actions = new Set(['create', 'join', 'state', 'ready', 'start', 'guess', 'leave', 'replay', 'display', 'kick']);
+// TV pairing (migration 005): a TV shows a 4-letter code; a player in the room types it.
+const tvActions = new Set(['tv_start', 'tv_check', 'tv_pair']);
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   const reply = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: cors });
@@ -16,10 +18,11 @@ Deno.serve(async (req: Request) => {
     const raw = await req.text();
     if (raw.length > 4096) return reply({ error: 'Request too large' }, 413);
     const body = JSON.parse(raw);
-    if (!actions.has(body.action) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token)) {
+    const tv = tvActions.has(body.action);
+    if (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token)) {
       return reply({ error: 'Invalid player session' }, 400);
     }
-    if (body.action !== 'create' && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
+    if (!['create', 'tv_start', 'tv_check'].includes(body.action) && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
       return reply({ error: 'Enter the six-character room code' }, 400);
     }
     const data = body.data ?? {};
@@ -32,6 +35,10 @@ Deno.serve(async (req: Request) => {
     if (body.action === 'kick' && (typeof data.playerId !== 'string' ||
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.playerId))) {
       return reply({ error: 'Choose a player to remove' }, 400);
+    }
+    if ((body.action === 'tv_check' || body.action === 'tv_pair') &&
+      (typeof data.pairCode !== 'string' || !/^[A-Z0-9]{4}$/i.test(data.pairCode))) {
+      return reply({ error: 'Enter the 4-letter code shown on the TV' }, 400);
     }
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     // Validate with Supabase Auth; never accept an account ID from the request body.
@@ -50,15 +57,18 @@ Deno.serve(async (req: Request) => {
     const address = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(address + key));
     const originHash = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/pin_and_spin_api`, {
+    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/${tv ? 'pin_and_spin_tv' : 'pin_and_spin_api'}`, {
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_action: body.action, p_code: body.code ?? '', p_token: body.token, p_data: verifiedData, p_origin_hash: originHash }),
+      body: JSON.stringify(tv
+        ? { p_action: body.action, p_pair: data.pairCode ?? '', p_token: body.token, p_room: body.code ?? '', p_origin_hash: originHash }
+        : { p_action: body.action, p_code: body.code ?? '', p_token: body.token, p_data: verifiedData, p_origin_hash: originHash }),
     });
     const result = await response.json();
     if (!response.ok) {
       // Only deliberate game-rule errors are public; suppress database implementation details.
       return reply({ error: result.code === 'P0001' ? result.message : 'Unable to update the game. Please try again.' }, 400);
     }
+    if (tv && typeof result?.error === 'string') return reply({ error: result.error }, 400);
     return reply(result);
   } catch {
     return reply({ error: 'Unable to connect. Please try again.' }, 400);

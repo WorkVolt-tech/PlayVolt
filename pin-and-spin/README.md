@@ -83,6 +83,16 @@ the read-only `display` action: lobby with a big room code and join QR code, the
 board, announcements, countdown and winner banner. It never receives the secret before the
 end or a guess before its reveal. One click on the TV turns on sound and full screen.
 
+**TV pairing (no long link to type):** on the TV, open `<site>/tv` (bookmark it). It
+shows a 4-letter code (no look-alike letters, new code every 10 minutes). A player in
+the room types it under **Show on TV** and the TV switches to that room's board. Backend:
+migration `005_tv_pairing.sql` adds `pin_and_spin_tv_pairings`, a wrong-code counter
+`pin_and_spin_tv_pair_misses` (10 wrong codes per 10 minutes per network address) and
+the server-only function `pin_and_spin_tv()`, reached through the Edge Function actions
+`tv_start` / `tv_check` (TV) and `tv_pair` (player). Only the TV that asked for a code
+(it holds its own random TV token) can collect the room's display link, and a TV already
+connected to one room cannot be taken over by another. `public/_redirects` serves `/tv`.
+
 The phone board uses stacked horizontal guess rows (four, or eight in Rush), a
 three-by-two palette, green Pin markers and white Spin markers. The selectable
 colors are Blue, Red, Green, Yellow, Purple and White. Mini boards above the tabs show

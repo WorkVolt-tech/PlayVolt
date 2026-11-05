@@ -191,6 +191,12 @@ export function usePinAndSpin() {
     return () => clearTimeout(timeout);
   }, [deadline, refresh]);
 
+  // Connect a TV that shows a 4-letter code (TV pairing). Resolves or throws a friendly error.
+  const pairTv = useCallback((pairCode) => {
+    if (!sessionRef.current) return Promise.reject(new Error('Join a room first.'));
+    return callGame('tv_pair', sessionRef.current, { pairCode });
+  }, []);
+
   // accountName: a signed-in player's PlayVolt nickname (the server uses the profile name).
   async function enter(action, accountName) {
     if (busyRef.current) return;
@@ -234,6 +240,6 @@ export function usePinAndSpin() {
     form: { formTab, setFormTab, nickname, setNickname, roomCodeInput, setRoomCodeInput, mode, setMode, enter },
     view, setView,
     draft, setDraft, selected, setSelected, resetDraft,
-    act, forget,
+    act, forget, pairTv,
   };
 }

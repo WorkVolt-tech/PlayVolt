@@ -1,0 +1,3 @@
+# Short TV address: /tv opens the TV pairing screen (same single-page app).
+/tv  /index.html  200
+/tv/ /index.html  200
