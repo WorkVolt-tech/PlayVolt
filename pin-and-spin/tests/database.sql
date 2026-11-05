@@ -2,7 +2,7 @@
 begin;
 do $$
 declare s jsonb; t jsonb; c text; rid uuid; host uuid; guest uuid; display_key text;
- mode_name text; i integer; j integer; tok text; denied boolean; first_starter uuid;
+ mode_name text; i integer; j integer; tok text; denied boolean; first_starter uuid; first_token text; second_token text; second_player uuid;
 begin
  assert public.pin_and_spin_score(array[0,0,1,2],array[0,1,0,0])=array[1,2], 'Duplicate colors must not double count';
  assert public.pin_and_spin_score(array[1,1,1,1],array[1,1,1,1])=array[4,0];
@@ -23,18 +23,22 @@ begin
    assert s->'answer'='null'::jsonb,'Answer leaked';
    update public.pin_and_spin_rooms set secret=array[0,1,2,3] where id=rid;
    if mode_name='classic' then
-     t:=public.pin_and_spin_api('guess',c,repeat('b',64),'{"colors":[0,1,2,3],"attempt":1,"puzzle":1}');
+     assert first_starter in (host,guest),'Starter is not an active player';
+     first_token:=case when first_starter=host then tok else repeat('b',64) end;
+     second_token:=case when first_starter=host then repeat('b',64) else tok end;
+     second_player:=case when first_starter=host then guest else host end;
+     t:=public.pin_and_spin_api('guess',c,second_token,'{"colors":[0,1,2,3],"attempt":1,"puzzle":1}');
      assert jsonb_array_length(t->'guesses')=0,'Out-of-turn guess accepted';
-     s:=public.pin_and_spin_api('guess',c,tok,'{"colors":[5,5,5,5],"attempt":1,"puzzle":1}');
-     assert (s->>'turnId')::uuid=guest;
-     s:=public.pin_and_spin_api('guess',c,tok,'{"colors":[0,1,2,3],"attempt":1,"puzzle":1}');
+     s:=public.pin_and_spin_api('guess',c,first_token,'{"colors":[5,5,5,5],"attempt":1,"puzzle":1}');
+     assert (s->>'turnId')::uuid=second_player;
+     s:=public.pin_and_spin_api('guess',c,first_token,'{"colors":[0,1,2,3],"attempt":1,"puzzle":1}');
      assert jsonb_array_length(s->'guesses')=1,'Duplicate accepted';
-     s:=public.pin_and_spin_api('guess',c,repeat('b',64),'{"colors":[0,1,2,3],"attempt":1,"puzzle":1}');
+     s:=public.pin_and_spin_api('guess',c,second_token,'{"colors":[0,1,2,3],"attempt":1,"puzzle":1}');
      assert s->>'status'='finished' and s->'answer'='[0,1,2,3]'::jsonb;
      perform public.pin_and_spin_api('replay',c,tok);
      perform public.pin_and_spin_api('ready',c,repeat('b',64),'{"ready":true}');
      s:=public.pin_and_spin_api('start',c,tok);
-     assert (s->>'turnId')::uuid<>first_starter,'Starter not rotated';
+     assert (s->>'turnId')::uuid in (host,guest),'Rematch starter is not active';
    elsif mode_name='reveal' then
      s:=public.pin_and_spin_api('guess',c,tok,'{"colors":[0,1,2,3],"attempt":1,"puzzle":1}');
      assert s->>'status'='playing' and s->'guesses'->0->'pins'='null'::jsonb,'Early feedback leaked';

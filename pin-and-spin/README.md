@@ -32,7 +32,7 @@ The **`pin-and-spin` Supabase Edge Function** is the public game API gateway. It
 
 ## Modes
 
-- Classic — alternating turns, 4 guesses per player
+- Classic — a random active player starts each game/rematch, then turns proceed in seat order; 4 guesses per player
 - Reveal — simultaneous guesses, 4 rounds
 - Timed Reveal — 3 minutes per round, 4 rounds
 - Rush — 3 minutes total, 8 guesses per player

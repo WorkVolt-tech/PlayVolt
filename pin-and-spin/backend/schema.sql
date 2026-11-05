@@ -175,7 +175,7 @@ begin
    if n<2 then raise exception 'At least two players are needed'; end if;
    if exists(select 1 from public.pin_and_spin_players where room_id=r.id and active and not ready) then raise exception 'Wait for everyone to be ready'; end if;
    select array_agg(('x'||substr(replace(gen_random_uuid()::text,'-',''),1,2))::bit(8)::integer % 6) into choices from generate_series(1,4);
-   select id into next_player from public.pin_and_spin_players where room_id=r.id and active order by seat offset (r.starter % n) limit 1;
+   select id into next_player from public.pin_and_spin_players where room_id=r.id and active order by seat offset (case when r.mode='classic' then floor(random() * n)::integer else r.starter % n end) limit 1;
    update public.pin_and_spin_rooms set status='playing',secret=choices,puzzle=puzzle+1,round=1,starter=starter+1,turn_id=next_player,winners='{}',
      deadline=case when mode in ('rush','timed-reveal') then clock_timestamp()+interval '3 minutes' end where id=r.id;
  elsif p_action='guess' then

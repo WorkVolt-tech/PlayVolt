@@ -13,7 +13,7 @@ const COLORS = [
   { name: 'White', hex: '#e8eef9', glyph: '═' },
 ];
 const MODES = {
-  classic: { label: 'Classic', color: 0, icon: '↪', hint: 'Take turns · 4 guesses', description: 'Take turns trying the same secret code. Each player gets four guesses. Guesses and clues appear immediately. First to solve wins.' },
+  classic: { label: 'Classic', color: 0, icon: '↪', hint: 'Take turns · 4 guesses', description: 'A random player starts each game, including rematches. Take turns trying the same secret code. Each player gets four guesses. Guesses and clues appear immediately. First to solve wins.' },
   reveal: { label: 'Reveal', color: 1, icon: '◉', hint: 'Guess together · 4 guesses', description: 'Everyone submits privately at the same time. All guesses and clues reveal together after everyone submits. Players who solve in the same reveal share the win.' },
   'timed-reveal': { label: 'Timed Reveal', color: 3, icon: '◷', hint: '3 minutes per guess · 4 guesses', description: 'A fresh three-minute timer starts for EACH simultaneous guess. Reveal when everyone submits or time runs out. Missing a deadline uses that guess; you can play the next one. Same-reveal solvers tie.' },
   rush: { label: 'Rush', color: 2, icon: 'ϟ', hint: '3 minutes total · 8 guesses', description: 'Play at your own pace for three minutes total, with up to eight guesses each. Everyone’s submitted guesses and clues are visible live. The first correct submission wins.' },
