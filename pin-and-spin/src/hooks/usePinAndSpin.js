@@ -198,12 +198,14 @@ export function usePinAndSpin() {
   }, []);
 
   // accountName: a signed-in player's PlayVolt nickname (the server uses the profile name).
-  async function enter(action, accountName) {
+  // codeOverride: join a specific room right away (e.g. from a friend's invite).
+  async function enter(action, accountName, codeOverride) {
     if (busyRef.current) return;
     const name = (accountName || nickname).trim().slice(0, 20);
     if (!name) return notify('Please enter a nickname.');
     const create = action === 'create';
-    const code = roomCodeInput.trim().toUpperCase();
+    const code = (codeOverride || roomCodeInput).trim().toUpperCase();
+    if (codeOverride) setRoomCodeInput(code);
     if (!create && !/^[A-F0-9]{6}$/.test(code)) return notify('Enter your six-character room code.');
     const previous = sessionRef.current;
     const candidate = {

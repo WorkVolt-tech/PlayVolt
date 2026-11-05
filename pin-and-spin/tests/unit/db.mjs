@@ -12,6 +12,10 @@ export async function freshDb() {
   await db.exec(`create role anon nologin; create role authenticated nologin; create role service_role nologin;`);
   // Stand-in for the shared PlayVolt profiles table (Dekabess accounts).
   await db.exec(`create table public.profiles (id uuid primary key, nickname text);`);
+  // Stand-ins for the shared PlayVolt friends tables (managed by Dekabess; Pin & Spin only reads them).
+  await db.exec(`create table public.friendships (id uuid primary key default gen_random_uuid(), requester uuid, addressee uuid,
+      status text, created_at timestamptz default now(), accepted_at timestamptz);
+    create table public.blocks (blocker uuid, blocked uuid, created_at timestamptz default now());`);
   // Stand-in for Supabase Realtime's realtime.send(): records broadcasts for assertions.
   await db.exec(`create schema realtime;
     create table realtime.sent (id serial primary key, topic text, event text, private boolean);

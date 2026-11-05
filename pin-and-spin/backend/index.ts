@@ -15,6 +15,8 @@ const tvActions = new Set(['tv_start', 'tv_check', 'tv_pair']);
 const soloActions = new Set(['solo_home', 'solo_start', 'solo_guess', 'solo_get']);
 // Story mode (migration 008): signed-in account only; guesses use solo_guess.
 const storyActions = new Set(['story_home', 'story_start']);
+// Friend invites (migration 011): signed-in account only.
+const socialActions: Record<string, string> = { invite_friend: 'invite', my_invites: 'invites', invite_respond: 'invite_respond' };
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   const reply = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: cors });
@@ -27,14 +29,15 @@ Deno.serve(async (req: Request) => {
     const board = body.action === 'leaderboard';
     // Achievements (migration 009): the signed-in player's badges.
     const badges = body.action === 'achievements';
+    const social = Object.hasOwn(socialActions, body.action);
     const story = storyActions.has(body.action);
     const solo = soloActions.has(body.action) || story;
-    if (!board && !solo && !badges && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
+    if (!board && !solo && !badges && !social && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
       return reply({ error: 'Invalid player session' }, 400);
     }
     if (board && !['week', 'all'].includes(body.data?.period)) return reply({ error: 'Choose a leaderboard period' }, 400);
     if (board && !['multi', 'daily', 'clock', 'story', undefined].includes(body.data?.board)) return reply({ error: 'Choose a leaderboard' }, 400);
-    if (!['create', 'tv_start', 'tv_check', 'leaderboard', 'achievements'].includes(body.action) && !solo && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
+    if (!['create', 'tv_start', 'tv_check', 'leaderboard', 'achievements'].includes(body.action) && !solo && !social && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
       return reply({ error: 'Enter the six-character room code' }, 400);
     }
     const data = body.data ?? {};
@@ -71,16 +74,19 @@ Deno.serve(async (req: Request) => {
       if (!auth.ok || !user.id) return reply({ error: 'ACCOUNT_REQUIRED: Your sign-in expired. Please sign in again.' }, 401);
       accountId = user.id;
     }
+    if (social && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to invite friends.' }, 401);
     if (badges && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to see your achievements.' }, 401);
     if (solo && !accountId) return reply({ error: `ACCOUNT_REQUIRED: Sign in to play ${story ? 'story mode' : 'solo'}.` }, 401);
     const verifiedData = { ...data, _account_id: accountId };
     const address = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(address + key));
     const originHash = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
-    const rpc = badges ? 'pin_and_spin_achievements_for' : board ? 'pin_and_spin_leaderboard' : story ? 'pin_and_spin_story' : solo ? 'pin_and_spin_solo' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
+    const rpc = social ? 'pin_and_spin_social' : badges ? 'pin_and_spin_achievements_for' : board ? 'pin_and_spin_leaderboard' : story ? 'pin_and_spin_story' : solo ? 'pin_and_spin_solo' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/${rpc}`, {
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(badges
+      body: JSON.stringify(social
+        ? { p_action: socialActions[body.action], p_account: accountId, p_data: data }
+        : badges
         ? { p_account: accountId }
         : board
         ? { p_period: data.period, p_account: accountId, p_board: data.board ?? 'multi' }

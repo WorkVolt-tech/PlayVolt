@@ -141,6 +141,17 @@ fallback; `version.json` and the game server are never cached). `src/pwa.js` reg
 (not on the TV screen). The home screen shows an **Install** button on Android (the browser's
 install prompt) and **Share → Add to Home Screen** steps on iPhone; nothing once installed.
 
+**Friends (shared with Dekabess) + game invites (migration 011):** Home → Friends uses the
+shared PlayVolt friends list through Dekabess's own database functions, called with the
+player's sign-in exactly as Dekabess does (`src/social/friends.js`: my_friends, my_friend_code,
+friend_request_by_code, friend_respond); Pin & Spin does not change them. Share-link
+`/?friend=CODE` opens Friends with that code. In the lobby, signed-in players tap
+**👥 Invite friends**; the friend gets a Join pop-up (`InviteBanner`, polled every 20 s plus a
+content-free "invited" signal on `pin-and-spin-invites:<user id>`). Invites live in
+`pin_and_spin_invites` (10 minutes, lobby only, friends only, blocked = silently dropped) via
+`pin_and_spin_social()` (Edge Function actions `invite_friend`, `my_invites`, `invite_respond`).
+Dekabess's own `friend_challenges` (tied to Dekabess rooms) is not used.
+
 **How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
 (`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via
 Downloader + `<site>/app`, TV browsers via `<site>/tv`) also appear under Show on TV.

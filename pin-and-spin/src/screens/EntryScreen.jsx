@@ -20,6 +20,7 @@ export function EntryScreen({ form, busy, account }) {
         <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('join'); }}>Join Room <span>↗</span></button>
         <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('story'); }}>Story Mode <span>🗺️</span></button>
         <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('solo'); }}>Play Solo <span>🎯</span></button>
+        <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('friends'); }}>Friends <span>👥</span></button>
         <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('leaderboard'); }}>Leaderboard <span>🏆</span></button>
         <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('achievements'); }}>Achievements <span>🏅</span></button>
         <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('help'); }}>How to Play <span>?</span></button>

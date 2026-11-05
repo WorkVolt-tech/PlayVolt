@@ -569,3 +569,26 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .install-card b{color:#fff}
 .install-icon{font-size:26px;flex:none}
 .install-btn{flex:none;width:auto;min-height:40px;padding:10px 16px}
+
+/* Friends (shared PlayVolt list) + invites */
+.friend-code-card{text-align:center}
+.friend-code{display:block;font:800 30px 'Space Grotesk',sans-serif;letter-spacing:.18em;margin:2px 0 4px;color:#fff}
+.friend-add-row{display:flex;gap:10px}
+.friend-add-row input{flex:1;min-width:0;margin:0;text-transform:uppercase;letter-spacing:.15em;font-weight:800}
+.friend-add-row .primary-btn{flex:none;width:auto;padding-inline:18px;justify-content:center}
+.friend-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #2a2342}
+.friend-row:first-of-type{border-top:0}
+.friend-row strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.friend-row small{font-size:11px;color:var(--sub);white-space:nowrap}
+.friend-row small.online{color:var(--pin)}
+.friend-avatar{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#a46edd,#4b2a7a);font:800 15px 'Space Grotesk',sans-serif}
+.friend-in{font-size:11px;font-weight:800;color:var(--sub)}
+.friend-waiting{margin:10px 0 0}
+.small-btn{flex:none;width:auto;min-height:34px;padding:7px 12px;font-size:12px;justify-content:center}
+.invite-friends-btn{margin-top:12px}
+.invite-banner{position:sticky;top:max(8px,env(safe-area-inset-top));z-index:30;display:flex;align-items:center;gap:10px;padding:12px 14px;margin:0 0 14px;
+  border-radius:16px;border:1px solid #c685ff;background:linear-gradient(135deg,#3b2c5e,#1d1736);box-shadow:0 10px 30px #0008,0 0 24px #9c3ef540;animation:slide-in .35s cubic-bezier(.2,.9,.3,1.2)}
+.invite-banner-icon{font-size:26px;flex:none}
+.invite-banner div{flex:1;min-width:0}
+.invite-banner strong{display:block;font-size:14px}
+.invite-banner small{display:block;font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

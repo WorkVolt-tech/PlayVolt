@@ -7,6 +7,8 @@ import { SoloScreen } from './solo/SoloScreen.jsx';
 import { StoryScreen } from './solo/StoryScreen.jsx';
 import { AchievementsScreen } from './screens/AchievementsScreen.jsx';
 import { checkAchievements } from './achievements.js';
+import { FriendsScreen } from './social/FriendsScreen.jsx';
+import { InviteBanner } from './social/InviteBanner.jsx';
 import { VersionAlert } from './components/VersionAlert.jsx';
 import { Dialog } from './components/Dialog.jsx';
 import { SoundToggle } from './sound/SoundToggle.jsx';
@@ -30,6 +32,18 @@ export default function App() {
     return undefined;
   }, [finished, userId, notify]);
   const close = () => setDialog(null);
+  // A friend link (?friend=CODE) opens Friends with the code ready to add.
+  const [friendCode] = useState(() => {
+    const c = new URLSearchParams(location.search).get('friend');
+    return c && /^[A-Za-z0-9-]{3,16}$/.test(c) ? c.toUpperCase() : '';
+  });
+  const { setFormTab } = form;
+  useEffect(() => {
+    if (!friendCode) return;
+    setFormTab('friends');
+    history.replaceState(null, '', location.pathname);
+  }, [friendCode, setFormTab]);
+  const accountName = account.signedIn ? account.profile?.nickname || '' : '';
 
   function removePlayer(player) {
     setDialog({ title: `Remove ${player.name}?`, message: 'They won’t be able to rejoin this room.',
@@ -72,8 +86,10 @@ export default function App() {
       </header>
 
       <main>
+        <InviteBanner userId={account.signedIn ? userId : null} active={!session} notify={notify}
+          onJoin={(code) => void form.enter('join', accountName, code)} />
         {!session && form.formTab === 'account' && <AccountScreen account={account}
-          onBack={() => form.setFormTab('home')} onDone={(message) => { notify(message); form.setFormTab('home'); }} />}
+          onBack={() => form.setFormTab('home')} onDone={(message) => { notify(message); form.setFormTab(friendCode ? 'friends' : 'home'); }} />}
         {!session && form.formTab === 'leaderboard' && <LeaderboardScreen account={account}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
         {!session && form.formTab === 'solo' && <SoloScreen account={account} notify={notify}
@@ -82,14 +98,16 @@ export default function App() {
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
         {!session && form.formTab === 'achievements' && <AchievementsScreen account={account}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
-        {!session && !['account', 'leaderboard', 'solo', 'story', 'achievements'].includes(form.formTab) && <EntryScreen form={form} busy={busy || account.loading} account={account} />}
+        {!session && form.formTab === 'friends' && <FriendsScreen account={account} notify={notify} startCode={friendCode}
+          onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
+        {!session && !['account', 'leaderboard', 'solo', 'story', 'achievements', 'friends'].includes(form.formTab) && <EntryScreen form={form} busy={busy || account.loading} account={account} />}
 
         {session && !game && <div className="surface"><p>Reconnecting to your room…</p>
           <button className="outline-btn full" onClick={forget}>BACK TO HOME</button></div>}
 
         {session && game && <section className="screen">
           {game.status === 'lobby'
-            ? <Lobby game={game} busy={busy} act={act} pairTv={state.pairTv} onCopy={copyText} onShare={share} onRemove={removePlayer} />
+            ? <Lobby game={game} busy={busy} act={act} pairTv={state.pairTv} signedIn={account.signedIn} onCopy={copyText} onShare={share} onRemove={removePlayer} />
             : <Match state={state} onShare={share} onRemove={removePlayer} />}
           <button className="leave-link" type="button" disabled={busy}
             onClick={leaveRoom}>

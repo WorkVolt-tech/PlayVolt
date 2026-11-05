@@ -4,24 +4,29 @@ import { Peg } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { play } from '../sound/sfx.js';
 import { ShowOnTv } from './ShowOnTv.jsx';
+import { InviteFriends } from '../social/InviteFriends.jsx';
 
 // Waiting room: code/invite, chosen mode, players and ready/start controls.
-export function Lobby({ game, busy, act, pairTv, onCopy, onShare, onRemove }) {
+export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRemove }) {
   const activePlayers = (game.players || []).filter((player) => player.active);
   const me = activePlayers.find((player) => player.id === game.me);
   const host = game.hostId === game.me;
   const allReady = activePlayers.length >= 2 && activePlayers.every((player) => player.ready);
   const readyCount = activePlayers.filter((player) => player.ready).length;
   const [tvOpen, setTvOpen] = useState(false);
+  const [inviting, setInviting] = useState(false);
   return <>
     <h1 className="page-title">Your room</h1>
     <div className="surface lobby-code"><strong>{game.code}</strong><div className="invite-actions">
       <button className="outline-btn" onClick={() => { play('select-item'); onCopy(game.code, 'Room code copied!'); }}>▣ Copy Code</button>
-      <button className="outline-btn" onClick={() => { play('select-item'); onShare(); }}>↗ Invite Friends</button>
+      <button className="outline-btn" onClick={() => { play('select-item'); onShare(); }}>↗ Share link</button>
     </div>
+      {signedIn && <button type="button" className="primary-btn full invite-friends-btn" onClick={() => { play('drawer-open'); setInviting(true); }}>
+        👥 Invite friends <span>→</span></button>}
       {game.displayToken && <button type="button" className="outline-btn full tv-button" onClick={() => { play('drawer-open'); setTvOpen(true); }}>
         📺 Show on TV</button>}
     </div>
+    {inviting && <InviteFriends game={game} onClose={() => { play('drawer-close'); setInviting(false); }} />}
     {tvOpen && <ShowOnTv game={game} pairTv={pairTv} onClose={() => { play('drawer-close'); setTvOpen(false); }} />}
     <div className="surface lobby-mode"><Peg value={MODES[game.mode].color} tiny />
       <div><strong>{MODES[game.mode].label}</strong><p>{MODES[game.mode].hint}</p></div></div>
