@@ -3,14 +3,14 @@ import { EMPTY_GUESS } from '../game/constants.js';
 import { Feedback } from '../components/Feedback.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
-import { guessLimit, playerProgress } from '../game/selectors.js';
+import { guessLimit, inTurnOrder, playerProgress } from '../game/selectors.js';
 
 // A mini view of everyone's guesses: one small card per player with their public
 // guess rows (balls + Pin/Spin dots) and empty rows for tries not yet used.
 // Public data only, so it is safe for the shared display too.
 export function MiniBoards({ game, onOpen }) {
   const limit = guessLimit(game.mode);
-  const lanes = playerProgress(game).filter((lane) => !lane.left || lane.guesses.length);
+  const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => !lane.left || lane.guesses.length);
   return <div className="mini-boards" aria-label="Everyone's guesses, mini view">
     {lanes.map((lane) => {
       const state = lane.won ? 'won' : lane.left ? 'left' : lane.away ? 'away' : lane.isTurn ? 'turn' : lane.sealed ? 'in' : lane.thinking ? 'thinking' : '';
@@ -21,6 +21,7 @@ export function MiniBoards({ game, onOpen }) {
         className={'mini-card ' + state + (lane.player.id === game.me ? ' me' : '')}
         aria-label={`${lane.player.name}: ${lane.used} of ${limit} tries${label ? ', ' + state : ''}. Open Everyone's Guesses`}>
         <span className="mini-head">
+          {lane.order && <span className="turn-no" title={`Plays ${lane.order === 1 ? 'first' : `#${lane.order}`}`}>{lane.order}</span>}
           <PlayerAvatar player={lane.player} size="xs" />
           <span className="mini-name">{lane.player.id === game.me ? 'You' : lane.player.name}</span>
           {label && <span className="mini-state">{label}</span>}

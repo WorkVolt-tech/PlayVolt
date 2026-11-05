@@ -114,3 +114,21 @@ export function matchEvents(prev, next) {
   }
   return events;
 }
+
+// Classic turn order. The server picks a random starter, then turns go round by seat.
+// The snapshot has no "starter", so it is worked out from the guess counts: walking round
+// the seats, the starter is where the count steps up (earlier players have one more guess).
+// Returns lanes (from playerProgress) sorted in turn order, each with `order` (1 = first).
+// Other modes are simultaneous: lanes keep seat order and get no `order`.
+export function inTurnOrder(game, lanes) {
+  const bySeat = [...lanes].sort((a, b) => a.player.seat - b.player.seat);
+  if (game?.mode !== 'classic' || game.status === 'lobby') return bySeat;
+  const active = bySeat.filter((lane) => !lane.left);
+  const n = active.length;
+  if (!n) return bySeat;
+  let start = active.findIndex((lane, i) => active[(i - 1 + n) % n].guesses.length < lane.guesses.length);
+  if (start < 0) start = Math.max(0, active.findIndex((lane) => lane.player.id === game.turnId));
+  const ordered = [...active.slice(start), ...active.slice(0, start)].map((lane, i) => ({ ...lane, order: i + 1 }));
+  return [...ordered, ...bySeat.filter((lane) => lane.left)];
+}
+export const ordinal = (n) => `${n}${n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th'}`;

@@ -4,7 +4,7 @@ import { Feedback } from '../components/Feedback.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { Empty } from '../components/Empty.jsx';
-import { formatClock, guessLimit, isSimultaneous, playerProgress } from '../game/selectors.js';
+import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress } from '../game/selectors.js';
 import { WinnerBanner } from './WinnerBanner.jsx';
 
 // "Everyone's Guesses": the full-screen shared results board.
@@ -13,7 +13,7 @@ import { WinnerBanner } from './WinnerBanner.jsx';
 // and holds no player controls: the controller passes navigation/actions via props.
 export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'all', showFilter = true }) {
   const [focus, setFocus] = useState(initialFocus);
-  const lanes = playerProgress(game).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
+  const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
   const shown = focus === 'all' ? lanes : lanes.filter((lane) => lane.player.id === focus);
   const limit = guessLimit(game.mode);
   const simultaneous = isSimultaneous(game.mode);
@@ -58,6 +58,7 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
       {shown.map((lane) => <section key={lane.player.id}
         className={'lane' + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
         <header className="lane-head">
+          {lane.order && <span className="turn-no" title={`Plays ${ordinal(lane.order)}`}>{lane.order}</span>}
           <PlayerAvatar player={lane.player} />
           <div className="lane-name">
             <strong>{lane.player.name}{lane.player.id === game.me ? ' (you)' : ''}</strong>

@@ -377,3 +377,44 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .tvb-lane .feedback-dots{flex:none;grid-template-columns:repeat(2,calc(var(--tvb)*.34));gap:calc(var(--tvb)*.1);width:auto}
 .tvb-lane .feedback-dots i{width:calc(var(--tvb)*.34);height:calc(var(--tvb)*.34)}
 .tvb-fb-space{flex:none;width:calc(var(--tvb)*.78)}
+
+/* Classic turn order: a number badge before each player (1 = plays first). */
+.turn-no{display:inline-grid;place-items:center;flex:none;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#3b2c5e;border:1px solid #8c5ccd;color:#f0e4ff;font:800 11px/1 'Space Grotesk',sans-serif}
+.mini-head .turn-no{min-width:15px;height:15px;font-size:9px;padding:0 3px;border-radius:8px}
+.lane-head .turn-no{min-width:24px;height:24px;font-size:13px;border-radius:12px}
+.tvb-lane .turn-no{min-width:calc(var(--tvb)*.62);height:calc(var(--tvb)*.62);font-size:calc(var(--tvb)*.34);border-radius:calc(var(--tvb)*.31);padding:0 calc(var(--tvb)*.12)}
+.tvb-lane.turn .turn-no{background:#8a32eb;border-color:#e2c8ff}
+.tvb-lane.next{border-color:#8c5ccd}
+.tvb-lane.next header small{color:#d9b8ff}
+
+/* ⓘ How to play + TV setup guide */
+.info-btn{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;border:1px solid #5b4580;background:#221a38;color:#e2c8ff;font:italic 800 17px/1 Georgia,'Times New Roman',serif;padding:0;cursor:pointer}
+.info-btn:hover,.info-btn:focus-visible{border-color:#c685ff;color:#fff}
+.help-sheet{max-height:min(88vh,88dvh);display:flex;flex-direction:column}
+.help-tabs{display:flex;gap:6px;margin:0 0 12px;flex:none}
+.help-tabs button{flex:1;padding:9px 6px;border-radius:10px;border:1px solid #4b3d68;background:#1a1530;color:var(--sub);font-weight:800;font-size:12px;cursor:pointer}
+.help-tabs button.on{background:#3b2c5e;border-color:#c685ff;color:#fff}
+.help-body{overflow-y:auto;overscroll-behavior:contain;min-height:0;padding-right:2px;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+.guide section{padding:12px 0;border-top:1px solid #2c2446}
+.guide section:first-child{border-top:0;padding-top:2px}
+.guide h3{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 6px;font:700 16px 'Space Grotesk',sans-serif}
+.guide p,.guide li{font-size:14px;line-height:1.55;color:#ddd5ee}
+.guide p{margin:0 0 6px}
+.guide ul,.guide ol{margin:0 0 6px;padding-left:20px}
+.guide li{margin-bottom:5px}
+.guide-note{color:var(--sub)!important;font-size:13px!important}
+.guide-note.small{font-size:12px!important;margin-top:8px}
+.guide-tag{font:800 10px/1 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#e2c8ff;background:#2e2048;border:1px solid #6a5394;border-radius:20px;padding:4px 8px}
+.guide-colors{display:flex;gap:8px;margin:6px 0}
+.guide .tiny-peg{width:28px;height:28px;max-width:none;flex:none}
+.guide h3 .tiny-peg{width:22px;height:22px}
+.guide-dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px}
+.guide-dot.pin-dot{background:var(--pin)}
+.guide-dot.spin-dot{background:var(--spin)}
+.guide-example{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px 12px;background:#100e22;border:1px solid #33294d;border-radius:12px;padding:10px 12px;margin:6px 0}
+.guide-example>span:nth-child(3n+1){font-size:11px;font-weight:900;letter-spacing:.08em;color:var(--sub);text-transform:uppercase}
+.guide-example .tiny-pegs{display:flex;gap:6px}
+.guide-example .feedback-dots{grid-template-columns:repeat(2,11px);gap:4px}
+.guide-example .feedback-dots i{width:11px;height:11px}
+.guide-link{font:700 13px ui-monospace,Menlo,monospace;color:#fff;background:#2a2048;border:1px solid #6a5394;border-radius:6px;padding:1px 6px;word-break:break-all;user-select:all}
+.tv-sheet .tv-guide{max-height:52vh;overflow-y:auto;overscroll-behavior:contain;margin-bottom:10px;padding-right:2px}

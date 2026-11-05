@@ -90,6 +90,15 @@ When a new version is deployed, the TV (and the TV app) refreshes itself about 4
 after the update banner appears (once per version), since nobody should need a remote to
 press "Update Now". Phones still wait for the player to tap it.
 
+**Turn order (Classic):** a number badge before each player (TV lanes, phone mini boards,
+Everyone's Guesses) shows the turn order, 1 = plays first; lanes are sorted that way and the
+TV marks PLAYING NOW and UP NEXT. The snapshot has no "starter", so `inTurnOrder()` in
+`src/game/selectors.js` works it out from the guess counts (tested in `turnorder.test.mjs`).
+
+**How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
+(`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via
+Downloader + `<site>/app`, TV browsers via `<site>/tv`) also appear under Show on TV.
+
 **TV pairing (no long link to type):** on the TV, open `<site>/tv` (bookmark it). It
 shows a 4-letter code (no look-alike letters, new code every 10 minutes). A player in
 the room types it under **Show on TV** and the TV switches to that room's board. Backend:

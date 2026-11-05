@@ -4,6 +4,7 @@ import { useAccount } from './hooks/useAccount.js';
 import { AccountScreen } from './screens/AccountScreen.jsx';
 import { VersionAlert } from './components/VersionAlert.jsx';
 import { SoundToggle } from './sound/SoundToggle.jsx';
+import { HowToPlayButton } from './components/HowToPlay.jsx';
 import { useGameSounds } from './sound/useGameSounds.js';
 import { EntryScreen } from './screens/EntryScreen.jsx';
 import { Lobby } from './screens/Lobby.jsx';
@@ -42,6 +43,7 @@ export default function App() {
         <a className="home-link" href={import.meta.env.VITE_PLAYVOLT_HUB_URL || "https://playvolt-hub.pages.dev/"} aria-label="Back to PlayVolt">← <span>PLAYVOLT</span></a>
         <div className="brand">Pin &amp; <span>Spin</span></div>
         <div className="topbar-right">
+          <HowToPlayButton />
           <SoundToggle />
           <div className="live"><i /><span>{game ? 'ROOM LIVE' : 'PARTY GAME'}</span></div>
         </div>

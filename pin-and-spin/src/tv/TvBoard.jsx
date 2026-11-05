@@ -4,20 +4,23 @@ import { Confetti } from '../components/Confetti.jsx';
 import { Feedback } from '../components/Feedback.jsx';
 import { Peg, PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
-import { formatClock, guessLimit, isSimultaneous, playerProgress } from '../game/selectors.js';
+import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress } from '../game/selectors.js';
 import { tvGrid } from './tvGrid.js';
 
 
 // The live board on the TV. Public data only (revealed guesses, locked-in flags, winners,
 // and the secret once the match is over). Every player gets a lane with one row per try.
 export function TvBoard({ game, remainingMs }) {
-  const lanes = playerProgress(game).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
+  const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
   const limit = guessLimit(game.mode);
   const simultaneous = isSimultaneous(game.mode);
   const playing = game.status === 'playing';
   const active = lanes.filter((lane) => !lane.left);
   const locked = active.filter((lane) => lane.player.submitted).length;
   const { cols, rows } = tvGrid(lanes.length);
+  // Classic: who plays after the current player (skipping anyone with no tries left).
+  const turnAt = active.findIndex((lane) => lane.isTurn);
+  const upNext = turnAt < 0 ? null : [...active.slice(turnAt + 1), ...active.slice(0, turnAt)].find((lane) => lane.used < limit)?.player.id;
   const hasTimer = playing && remainingMs !== null && remainingMs !== undefined;
   const [minutes, seconds] = hasTimer ? formatClock(remainingMs) : [];
 
@@ -54,6 +57,7 @@ export function TvBoard({ game, remainingMs }) {
       </span>
       <span className="tvb-mode">{MODES[game.mode]?.label}</span>
       {playing && simultaneous && <span className="tvb-note">{locked} of {active.length} locked in</span>}
+      {game.mode === 'classic' && <span className="tvb-note">Turn order: 1 → {active.length}</span>}
       <span className="tvb-legend"><span><i className="pin-dot" /> Pin</span><span><i className="spin-dot" /> Spin</span></span>
       {hasTimer && <span className={'tvb-timer' + (remainingMs <= 20000 ? ' urgent' : '')}>{minutes}:{seconds}</span>}
     </div>
@@ -77,13 +81,14 @@ export function TvBoard({ game, remainingMs }) {
     <div className="tvb-grid" ref={gridRef}
       style={{ '--cols': cols, '--rows': rows, '--tries': limit, '--tvb': `${ball}px` }}>
       {lanes.map((lane) => {
-        const status = lane.won ? 'WINNER' : lane.left ? 'LEFT' : lane.away ? 'AWAY' : lane.isTurn ? 'PLAYING NOW'
+        const status = lane.won ? 'WINNER' : lane.left ? 'LEFT' : lane.away ? 'AWAY' : lane.isTurn ? 'PLAYING NOW' : lane.player.id === upNext ? 'UP NEXT'
           : lane.thinking ? 'THINKING…' : lane.sealed ? 'LOCKED IN' : `${lane.used} / ${limit}`;
         const tries = Array.from({ length: limit }, (_, i) => lane.guesses.find((g) => g.attempt === i + 1) || null);
         const sealedAt = !lane.sealed ? -1 : simultaneous ? game.round - 1 : lane.guesses.length;
         return <section key={lane.player.id}
-          className={'tvb-lane' + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
+          className={'tvb-lane' + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.player.id === upNext ? ' next' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
           <header>
+            {lane.order && <span className="turn-no" title={`Plays ${ordinal(lane.order)}`}>{lane.order}</span>}
             <PlayerAvatar player={lane.player} />
             <strong>{lane.player.name}</strong>
             <small>{status}</small>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { tvPairAddress, tvUrl } from '../tv/tvLink.js';
 import { play } from '../sound/sfx.js';
+import { TvSetupGuide } from '../components/TvSetupGuide.jsx';
 
 // Letters that can appear in a TV code (no look-alikes such as 0/O or 1/I).
 const clean = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
@@ -13,6 +14,7 @@ export function ShowOnTv({ game, pairTv, onClose }) {
   const [code, setCode] = useState('');
   const [status, setStatus] = useState({ busy: false, done: false, error: '' });
   const [showLink, setShowLink] = useState(!pairTv);
+  const [guide, setGuide] = useState(false);
 
   async function copy() {
     play('select-item');
@@ -52,6 +54,10 @@ export function ShowOnTv({ game, pairTv, onClose }) {
         {status.error && <p className="tv-pair-error" role="alert">{status.error}</p>}
         <p className="field-help small">Tip: bookmark that page on the TV. Several TVs can show the same room.</p>
       </form>}
+
+      <button type="button" className="text-btn tv-link-toggle" aria-expanded={guide} onClick={() => setGuide(!guide)}>
+        {guide ? 'Hide TV setup steps' : 'First time? How to set up your TV (Fire TV app & more)'}</button>
+      {guide && <TvSetupGuide />}
 
       {pairTv && !showLink && <button type="button" className="text-btn tv-link-toggle" onClick={() => setShowLink(true)}>
         Use a link instead (laptop or computer)</button>}
