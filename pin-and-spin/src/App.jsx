@@ -94,11 +94,7 @@ function GuessRow({ guess, label }) {
   return <div className="guess-item">
     <div className="guess-id"><b>{label}</b><small>TRY {guess.attempt}</small></div>
     <PegRow colors={guess.colors || EMPTY_GUESS} tiny />
-    <div className="score">
-      {!guess.colors ? <span className="pending">MISSED</span> : guess.revealed
-        ? <><span className="pin">{guess.pins} PIN</span><span className="spin">{guess.spins} SPIN</span></>
-        : <span className="pending">SEALED</span>}
-    </div>
+    <div className="score"><Feedback guess={guess} /></div>
   </div>;
 }
 
@@ -419,10 +415,10 @@ export default function App() {
             </div></div>
             <div className="surface lobby-mode"><Peg value={MODES[game.mode].color} tiny />
               <div><strong>{MODES[game.mode].label}</strong><p>{MODES[game.mode].hint}</p></div></div>
-          </> : <div className="room-header">
-            <div><p className="eyebrow">YOUR GAME ROOM</p><h1>{game.code}</h1>
-              <p className="room-mode">{MODES[game.mode]?.label || 'GAME'} · {activePlayers.length} PLAYERS</p></div>
+          </> : <div className="match-room-bar">
+            <span className="match-room-code">Room <strong>{game.code}</strong></span>
             <button className="outline-btn small" onClick={share}>Invite ↗</button>
+            <span className="match-room-details">{MODES[game.mode]?.label || 'Game'} · {activePlayers.length} players</span>
           </div>}
 
           {game.status === 'lobby'

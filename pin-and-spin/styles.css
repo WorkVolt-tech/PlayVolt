@@ -27,3 +27,6 @@
 
 /* Approved bunny branding; preserve the compact gameplay header. */
 .approved-hero .bunny-logo{margin:0 -6px 12px;line-height:0}.bunny-logo img{display:block;width:100%;height:auto;max-height:330px;object-fit:contain}.approved-hero:has(.bunny-logo){padding-top:8px}.approved-hero:has(.bunny-logo) .tagline{margin-top:12px}
+
+/* Compact in-game room details and visual feedback on shared guess rows. */
+.match-room-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 14px;font-size:11px;color:var(--sub)}.match-room-code{white-space:nowrap}.match-room-code strong{font-size:12px;letter-spacing:1px;color:var(--text);margin-left:4px}.match-room-bar .outline-btn.small{font-size:11px;min-height:36px;padding:6px 10px}.match-room-details{margin-left:auto;font-size:10px}.guess-item .feedback-dots{grid-template-columns:repeat(2,10px);gap:5px;width:25px}.guess-item .feedback-dots i{height:10px;width:10px;box-shadow:inset 0 1px 2px #ffffff30,0 1px 2px #0005}
