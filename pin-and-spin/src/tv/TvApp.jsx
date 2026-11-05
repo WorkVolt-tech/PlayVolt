@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { MatchAnnouncer } from '../components/MatchAnnouncer.jsx';
 import { remainingTime } from '../game/selectors.js';
-import { Scoreboard } from '../shared/Scoreboard.jsx';
 import { play, unlockNow } from '../sound/sfx.js';
 import { useGameSounds } from '../sound/useGameSounds.js';
+import { TvBoard } from './TvBoard.jsx';
 import { TvLobby } from './TvLobby.jsx';
 import { useDisplay } from './useDisplay.js';
 import { TvPair } from './TvPair.jsx';
@@ -45,6 +45,13 @@ function TvRoom({ link, onChangeRoom }) {
   const remainingMs = game ? remainingTime(game, clock, offset) : null;
   const secondsLeft = remainingMs === null ? null : Math.ceil(remainingMs / 1000);
 
+  const board = !error && game && game.status !== 'lobby';
+  // The live board fills exactly one screen (no page scrolling).
+  useEffect(() => {
+    document.documentElement.classList.toggle('tv-fit', Boolean(board));
+    return () => document.documentElement.classList.remove('tv-fit');
+  }, [board]);
+
   useEffect(() => { document.title = game ? `Pin & Spin · Room ${game.code} · TV` : 'Pin & Spin · TV'; }, [game]);
   useEffect(() => {
     if (game?.status === 'playing' && secondsLeft !== null && secondsLeft > 0 && secondsLeft <= 10) play('tap-ui-tick');
@@ -60,10 +67,9 @@ function TvRoom({ link, onChangeRoom }) {
       <button type="button" className="primary-btn tv-change" onClick={onChangeRoom} autoFocus>Connect another room</button></div>}
     {!error && !game && <div className="tv-message"><h1>Connecting to the room…</h1></div>}
     {!error && game?.status === 'lobby' && <TvLobby game={game} />}
-    {!error && game && game.status !== 'lobby' && <>
+    {board && <>
       <MatchAnnouncer game={game} audience="tv" />
-      <Scoreboard game={game} remainingMs={remainingMs} showFilter={false}
-        nav={<span className="tv-board-kicker">Live board · phones are the controllers</span>} />
+      <TvBoard game={game} remainingMs={remainingMs} />
     </>}
   </>;
 }

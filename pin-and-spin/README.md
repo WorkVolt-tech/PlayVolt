@@ -82,6 +82,10 @@ opens the link on a laptop or smart-TV browser. The link is `/?tv=ROOM#<display 
 the read-only `display` action: lobby with a big room code and join QR code, then the live
 board, announcements, countdown and winner banner. It never receives the secret before the
 end or a guess before its reveal. One click on the TV turns on sound and full screen.
+The TV live board (`src/tv/TvBoard.jsx`) always fits one screen with no scrolling: a slim
+status bar, a one-line result strip at the end, and a grid of player lanes (max 2 rows for
+up to 10 players, `src/tv/tvGrid.js`) whose ball size is measured from the space available.
+Each lane shows one row per try, including empty ones.
 
 **TV pairing (no long link to type):** on the TV, open `<site>/tv` (bookmark it). It
 shows a 4-letter code (no look-alike letters, new code every 10 minutes). A player in

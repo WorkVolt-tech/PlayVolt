@@ -320,3 +320,60 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--volt)}
 .tv-pair-ok{margin:4px 0 8px;color:#7dffa1;font-weight:800;font-size:14px}
 .tv-pair-error{margin:4px 0 8px;color:#ffb3b8;font-size:14px}
 .tv-link-toggle{display:block;margin:0 auto 10px;background:none;border:0;color:#d9b8ff;text-decoration:underline;font-size:13px;padding:6px;cursor:pointer}
+
+/* TV live board: one screen, no scrolling, up to 10 players. Sizes follow --tvb (not --ball, which holds ball images),
+   which TvBoard measures from the space each lane gets. */
+html.tv-fit,html.tv-fit body{height:100%;overflow:hidden}
+html.tv-fit .tv{height:100vh;height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:1.2vw 1.8vw 1.4vw}
+html.tv-fit .tv-top{margin-bottom:.8vw;gap:1.6vw}
+html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
+.tvb{position:relative;flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:.8vw}
+.tvb-status{display:flex;align-items:center;gap:1.2vw;flex-wrap:nowrap;min-height:0}
+.tvb-status .status-pill{font-size:clamp(11px,.95vw,20px);padding:.45em 1.1em;white-space:nowrap}
+.tvb-mode{font:700 clamp(14px,1.3vw,28px) 'Space Grotesk',sans-serif;color:#fff}
+.tvb-note{font-size:clamp(12px,1.1vw,24px);color:var(--sub);white-space:nowrap}
+.tvb-legend{display:flex;gap:1vw;font-size:clamp(11px,.95vw,20px);color:var(--sub)}
+.tvb-legend span{display:inline-flex;align-items:center;gap:.4em}
+.tvb-legend i{width:.8em;height:.8em;border-radius:50%;display:inline-block}
+.tvb-legend .pin-dot{background:var(--pin,#4ee49a)}
+.tvb-legend .spin-dot{background:#f4f1ff}
+.tvb-timer{margin-left:auto;font:800 clamp(22px,2.6vw,56px)/1 'Space Grotesk',sans-serif;font-variant-numeric:tabular-nums;padding:.15em .55em;border-radius:14px;background:#100e22;border:1px solid #4b3d68}
+.tvb-timer.urgent{color:#ff6b7a;border-color:#ff6b7a}
+.tvb-result{position:relative;overflow:hidden;flex:none;display:flex;align-items:center;gap:2vw;padding:.7vw 2vw;border-radius:20px;border:1px solid #6a5394;background:linear-gradient(135deg,#2a1f48,#15122b)}
+.tvb-result.has-winner{border-color:#ffd76a99;box-shadow:0 0 40px #ffd76a22}
+.tvb-trophy{font-size:clamp(30px,3.2vw,68px);line-height:1}
+.tvb-result-text{display:flex;flex-direction:column;gap:.35vw;min-width:0}
+.tvb-result-text strong{font:800 clamp(20px,2.2vw,48px)/1 'Space Grotesk',sans-serif;letter-spacing:.02em}
+.tvb-winners{display:flex;align-items:center;flex-wrap:wrap;gap:.6vw;font-size:clamp(13px,1.2vw,26px);color:var(--sub)}
+.tvb-winners .winner-chip{font-size:clamp(13px,1.15vw,25px)}
+.tvb-secret{margin-left:auto;display:flex;align-items:center;gap:1vw}
+.tvb-secret small{font-size:clamp(10px,.85vw,18px);font-weight:900;letter-spacing:.14em;color:var(--sub)}
+.tvb-secret>div{display:flex;gap:.7vw}
+.tvb-secret .secret-ball .patterned-peg{width:clamp(34px,3.6vw,76px);height:clamp(34px,3.6vw,76px)}
+.tvb-grid{flex:1 1 0;min-height:0;display:grid;gap:max(8px,.8vw);grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:repeat(var(--rows),minmax(0,1fr))}
+.tvb-lane{min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:calc(var(--tvb)*.2);padding:calc(var(--tvb)*.3);border-radius:calc(var(--tvb)*.45);background:linear-gradient(135deg,#24203f,#14132c);border:1px solid #4b3d68;transition:border-color .3s,box-shadow .3s}
+.tvb-lane.turn{border-color:#c685ff;box-shadow:0 0 30px #9c3ef545}
+.tvb-lane.won{border-color:#ffd76a;box-shadow:0 0 34px #ffd76a40}
+.tvb-lane.left,.tvb-lane.away{opacity:.6}
+.tvb-lane.away{border-style:dashed}
+.tvb-lane header{display:flex;align-items:center;gap:calc(var(--tvb)*.3);min-width:0;flex:none}
+.tvb-lane .avatar{width:calc(var(--tvb)*1.05);height:calc(var(--tvb)*1.05)}
+.tvb-lane .avatar b{font-size:calc(var(--tvb)*.48)}
+.tvb-lane header strong{font-size:calc(var(--tvb)*.52);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvb-lane header small{font-size:calc(var(--tvb)*.3);font-weight:900;letter-spacing:.08em;color:var(--sub);white-space:nowrap}
+.tvb-lane.won header small{color:#ffd76a}
+.tvb-lane.turn header small{color:#e2c8ff}
+.tvb-lane ol{flex:1 1 0;min-height:0;list-style:none;margin:0;padding:0;display:grid;grid-template-rows:repeat(var(--tries),minmax(0,1fr));gap:calc(var(--tvb)*.14)}
+.tvb-lane li{min-height:0;display:flex;align-items:center;gap:calc(var(--tvb)*.26);padding:0 calc(var(--tvb)*.3);border-radius:calc(var(--tvb)*.3);background:#100e22;border:1px solid #33294d}
+.tvb-lane li.open{background:#100e2288;border-style:dashed;border-color:#2a2342}
+.tvb-lane li.played{animation:flip-row .45s cubic-bezier(.2,.9,.3,1.1) backwards}
+.tvb-try{width:calc(var(--tvb)*.55);flex:none;font-size:calc(var(--tvb)*.32);font-weight:900;color:var(--sub)}
+.tvb-lane .tiny-pegs{flex:1;display:flex;gap:calc(var(--tvb)*.18)}
+.tvb-lane .tiny-pegs .tiny-peg{width:var(--tvb);height:var(--tvb);min-width:0;max-width:none;flex:none}
+.tvb-lane .sealed-balls,.tvb-empty{flex:1;display:flex;gap:calc(var(--tvb)*.18)}
+.tvb-lane .sealed-balls i{width:var(--tvb);height:var(--tvb)}
+.tvb-empty i{width:var(--tvb);height:var(--tvb);border-radius:50%;border:1px dashed #3a3058}
+.tvb-missed{flex:1;font-size:calc(var(--tvb)*.32);color:var(--sub);font-style:italic}
+.tvb-lane .feedback-dots{flex:none;grid-template-columns:repeat(2,calc(var(--tvb)*.34));gap:calc(var(--tvb)*.1);width:auto}
+.tvb-lane .feedback-dots i{width:calc(var(--tvb)*.34);height:calc(var(--tvb)*.34)}
+.tvb-fb-space{flex:none;width:calc(var(--tvb)*.78)}
