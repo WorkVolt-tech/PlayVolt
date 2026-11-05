@@ -46,7 +46,7 @@ export function useAccount() {
     const supabase = await connect();
     const { data, error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { nickname }, emailRedirectTo: location.origin + location.pathname },
+      options: { data: { nickname } },
     });
     if (error) throw error;
     if (data.session) setUser(data.user ?? null);

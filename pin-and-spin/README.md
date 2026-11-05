@@ -56,9 +56,8 @@ existing `handle_new_user` trigger). Signed-in players use their profile nicknam
 client sends their access token and the Edge Function verifies it with Supabase Auth.
 The browser uses only the public anon key.
 
-For confirmation emails to return players to Pin & Spin, add
-`https://playvolt-pin-and-spin.pages.dev/**` to Supabase → Authentication → URL
-Configuration → Redirect URLs (otherwise the link opens the default Site URL).
+Account emails (only sent if email confirmation is ever turned on; it is off today) go to
+the Supabase project's Site URL, the same as for Dekabess — ideally the PlayVolt hub.
 
 ## Modes
 
