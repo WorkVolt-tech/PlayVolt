@@ -17,7 +17,7 @@ export function GuessPanel({ mine, limit, attempt, canSubmit, draft, selected, o
       <span><i className="spin-dot" /> Spin: right color</span></div>
     <p className="field-help">Dots count matches; they do not point to particular slots.</p>
     <p className="field-label colors-label">PICK A COLOR</p>
-    <div className={'color-palette' + (colorCount === 4 ? ' four' : '')}>
+    <div className={'color-palette' + (colorCount === 4 || colorCount >= 7 ? ' four' : '')}>
       {COLORS.slice(0, colorCount).map((color, index) => <button type="button"
         className="color-choice" style={{ '--color': color.hex }}
         key={color.name} aria-label={'Choose '+color.name} disabled={!canSubmit}

@@ -22,7 +22,11 @@ export function useSolo(notify, userId) {
   const offsetRef = useRef(0);
   const gameRef = useRef(null);
 
-  const resetDraft = useCallback(() => { setDraft([...EMPTY_GUESS]); setSelected(0); }, []);
+  // The draft has one spot per ball: 4, or 5 in story World 4.
+  const resetDraft = useCallback(() => {
+    setDraft(Array.from({ length: gameRef.current?.slots || EMPTY_GUESS.length }, () => null));
+    setSelected(0);
+  }, []);
   const show = useCallback((next) => {
     offsetRef.current = new Date(next.serverTime || Date.now()).getTime() - Date.now();
     const old = gameRef.current;

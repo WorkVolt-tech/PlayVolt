@@ -549,3 +549,15 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .badge strong{font-size:13px}
 .badge small{font-size:11px;color:var(--sub);line-height:1.35}
 .badge em{font-style:normal;font-size:10px;font-weight:800;color:#ffd76a;letter-spacing:.04em}
+
+/* Story World 4: 5 balls and two new colors (orange, pink). */
+.patterned-peg.color-6{--ball:url('./balls/ball-6-orange.svg')}
+.patterned-peg.color-7{--ball:url('./balls/ball-7-pink.svg')}
+.feedback-dots.five{grid-template-columns:repeat(3,9px);width:37px}
+.lane-row .feedback-dots.five,.story-clues .feedback-dots.five{grid-template-columns:repeat(3,10px);width:auto}
+.code-board.slots-5 .code-slots{gap:6px}
+.code-board.slots-5 .code-slots .tiny-peg{width:36px;height:36px}
+.code-board.slots-5 .code-slot{min-width:38px;min-height:40px}
+.story-clues .code-slots .tiny-pegs:has(> :nth-child(5)){gap:6px}
+.story-clues .code-slots .tiny-pegs:has(> :nth-child(5)) .tiny-peg{width:30px;height:30px}
+.story-world.world-4{background:linear-gradient(145deg,#1d2a3a,#0f1724);border-color:#4aa3b8}

@@ -7,7 +7,8 @@ import { useSolo } from './useSolo.js';
 export const WORLDS = {
   1: { name: 'Carrot Patch', icon: '🥕', blurb: 'Spin the bunny’s carrots are locked in code vaults! Learn to crack them.' },
   2: { name: 'Clockwork Burrow', icon: '⚙️', blurb: 'Deep underground, the vaults have timers. Think fast.' },
-  3: { name: 'Moon Maze', icon: '🌙', blurb: 'The last vaults, under the stars. Experts only.' },
+  3: { name: 'Moon Maze', icon: '🌙', blurb: 'The vaults under the stars. Experts only.' },
+  4: { name: 'Crystal Caves', icon: '💎', blurb: 'Bigger vaults: five balls and two new colors, orange and pink.' },
 };
 
 const formatSeconds = (s) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `0:${String(s).padStart(2, '0')}`);
@@ -29,7 +30,7 @@ export function StoryScreen({ account, notify, onBack, onSignIn }) {
   if (!account.signedIn) return <section className="screen solo-screen">
     <button className="back-button" onClick={onBack}>← Back</button>
     <h1 className="page-title">🗺️ Story Mode</h1>
-    <div className="surface lb-note"><p>Help Spin the bunny crack 24 locked vaults across three worlds. Your stars are saved to
+    <div className="surface lb-note"><p>Help Spin the bunny crack 32 locked vaults across four worlds. Your stars are saved to
       your PlayVolt account. Sign in (or create a free account) to play.</p>
       <button type="button" className="primary-btn" onClick={onSignIn}>Sign in / Create account <span>→</span></button></div>
   </section>;
@@ -88,6 +89,7 @@ export function StoryScreen({ account, notify, onBack, onSignIn }) {
         <p className="story-intro">{picked.intro}</p>
         <div className="story-rules">
           {picked.kind === 'logic' && <span>🧩 Logic puzzle</span>}
+          {picked.slots === 5 && <span>⚪ 5 balls</span>}
           <span>🎨 {picked.colors} colors</span>
           <span>{picked.repeats ? '🔁 Repeats allowed' : '🚫 No repeats'}</span>
           <span>🎯 {picked.tries} {picked.tries === 1 ? 'try' : 'tries'}</span>

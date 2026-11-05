@@ -62,9 +62,10 @@ export function isValidDraft(colors) {
 // Fill the selected slot, then move to the next empty slot (wrapping), else the next slot.
 export function placeColor(draft, selected, value) {
   const next = [...draft];
+  const n = next.length; // 4 balls, or 5 in story World 4
   next[selected] = value;
-  const empty = [1, 2, 3, 4].map((step) => (selected + step) % 4).find((index) => next[index] === null);
-  return { draft: next, selected: empty === undefined ? (selected + 1) % 4 : empty };
+  const empty = Array.from({ length: n }, (_, i) => (selected + i + 1) % n).find((index) => next[index] === null);
+  return { draft: next, selected: empty === undefined ? (selected + 1) % n : empty };
 }
 
 // Public per-player progress for the strip and the shared board. Uses only data the

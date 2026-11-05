@@ -30,3 +30,10 @@ test('every badge the server can award has a name and description', async () => 
   assert.ok(codes.length >= 19);
   for (const c of codes) assert.ok(byCode[c], c);
 });
+
+test('picking colors moves to the next empty spot, for 4 or 5 balls', async () => {
+  const { placeColor } = await import('../../src/game/selectors.js');
+  assert.deepEqual(placeColor([null, null, null, null, null], 0, 6), { draft: [6, null, null, null, null], selected: 1 });
+  assert.deepEqual(placeColor([1, 2, 3, null, 4], 4, 7), { draft: [1, 2, 3, null, 7], selected: 3 });
+  assert.deepEqual(placeColor([1, 2, 3, 4], 3, 0), { draft: [1, 2, 3, 0], selected: 0 });
+});

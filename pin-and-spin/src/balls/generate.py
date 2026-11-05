@@ -1,4 +1,4 @@
-# Generates the six logo-style ball SVGs in this folder: python3 generate.py .
+# Generates the eight logo-style ball SVGs in this folder: python3 generate.py .
 import math, sys
 out = sys.argv[1]
 def f(x): return f'{x:.1f}'.rstrip('0').rstrip('.')
@@ -61,6 +61,18 @@ def dots(c):
             circles.append(f'<circle cx="{f(x)}" cy="{f(y)}" r="4.6"/>')
     return f'<g fill="{c}">{"".join(circles)}</g>'
 
+def stripes(c):
+    bands = []
+    for k in range(-8, 9):
+        bands.append(f'<rect x="{k*16}" y="-60" width="8" height="220"/>')
+    return f'<g transform="rotate(35 50 50)" fill="{c}">{"".join(bands)}</g>'
+
+def rings(c):
+    circles = []
+    for r in range(8, 80, 12):
+        circles.append(f'<circle cx="58" cy="60" r="{r}"/>')
+    return f'<g fill="none" stroke="{c}" stroke-width="5">{"".join(circles)}</g>'
+
 BALLS = [
     ('blue',   '#7cc6ff', '#1466f2', '#06248a', '#4fc0ff', .95, waves),
     ('red',    '#ff8478', '#ee1520', '#7a000e', '#a8000f', .7, spiral),
@@ -68,6 +80,9 @@ BALLS = [
     ('yellow', '#fff3a0', '#ffc010', '#a86200', '#ffe55c', .85, rays),
     ('purple', '#d9a2ff', '#8a1ff0', '#350675', '#b663ff', .9, diamonds),
     ('white',  '#ffffff', '#e8e4f6', '#8e86b8', '#b9b1df', .95, dots),
+    # Extra colors for story World 4 (8-color levels).
+    ('orange', '#ffc48a', '#ff7a12', '#8a3200', '#ffb35c', .9, stripes),
+    ('pink',   '#ffb3df', '#f2479f', '#7a0f4a', '#ff8ccb', .9, rings),
 ]
 for i, (name, light, mid, dark, pat, op, fn) in enumerate(BALLS):
     svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">

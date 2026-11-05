@@ -10,6 +10,9 @@ export const COLORS = [
   { name: 'Yellow', hex: '#ffc81a', glyph: '✦' },
   { name: 'Purple', hex: '#a43cff', glyph: '⬟' },
   { name: 'White', hex: '#ece8f7', glyph: '═' },
+  // Story World 4 only (multiplayer and the other solo modes use the first six).
+  { name: 'Orange', hex: '#ff7a12', glyph: '▤' },
+  { name: 'Pink', hex: '#f2479f', glyph: '◎' },
 ];
 export const MODES = {
   classic: { label: 'Classic', color: 0, icon: '↪', hint: 'Take turns · 4 guesses', description: 'A random player starts each game, including rematches. Take turns trying the same secret code. Each player gets four guesses. Guesses and clues appear immediately. First to solve wins.' },

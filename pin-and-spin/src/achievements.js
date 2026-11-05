@@ -20,6 +20,7 @@ export const ACHIEVEMENTS = [
   { code: 'world_1', group: 'Story', icon: '🥕', title: 'Carrot Keeper', text: 'Finish World 1: Carrot Patch.' },
   { code: 'world_2', group: 'Story', icon: '⚙️', title: 'Gear Breaker', text: 'Finish World 2: Clockwork Burrow.' },
   { code: 'world_3', group: 'Story', icon: '🌙', title: 'Moon Walker', text: 'Finish World 3: Moon Maze.' },
+  { code: 'world_4', group: 'Story', icon: '💎', title: 'Crystal Clear', text: 'Finish World 4: Crystal Caves.' },
   { code: 'logic_master', group: 'Story', icon: '🧩', title: 'Logic Master', text: 'Solve every logic puzzle in story mode.' },
   { code: 'perfectionist', group: 'Story', icon: '⭐', title: 'Perfectionist', text: 'Get 3 stars on every story level.' },
 ];

@@ -52,10 +52,11 @@ Deno.serve(async (req: Request) => {
       (typeof data.pairCode !== 'string' || !/^[A-Z0-9]{4}$/i.test(data.pairCode))) {
       return reply({ error: 'Enter the 4-letter code shown on the TV' }, 400);
     }
+    // Solo/story guesses: 4 or 5 balls, colors 0-7 (the game itself checks its own limits).
     if (body.action === 'solo_guess' && (typeof data.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.id) ||
-      !Array.isArray(data.colors) || data.colors.length !== 4 ||
-      !data.colors.every((c: unknown) => Number.isInteger(c) && Number(c) >= 0 && Number(c) <= 5) || !Number.isInteger(data.attempt))) {
-      return reply({ error: 'Choose four colors' }, 400);
+      !Array.isArray(data.colors) || data.colors.length < 4 || data.colors.length > 5 ||
+      !data.colors.every((c: unknown) => Number.isInteger(c) && Number(c) >= 0 && Number(c) <= 7) || !Number.isInteger(data.attempt))) {
+      return reply({ error: 'Choose a color for every ball' }, 400);
     }
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     // Validate with Supabase Auth; never accept an account ID from the request body.

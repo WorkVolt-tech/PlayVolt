@@ -28,10 +28,10 @@ async function win(level, extraMisses = 0, account = A) {
 }
 
 describe('story mode', () => {
-  test('24 levels in 3 worlds; only level 1 is open at first; signed-in only', async () => {
+  test('32 levels in 4 worlds; only level 1 is open at first; signed-in only', async () => {
     const home = await story('story_home');
-    assert.equal(home.levels.length, 24);
-    assert.deepEqual([...new Set(home.levels.map((l) => l.world))], [1, 2, 3]);
+    assert.equal(home.levels.length, 32);
+    assert.deepEqual([...new Set(home.levels.map((l) => l.world))], [1, 2, 3, 4]);
     assert.deepEqual(home.levels.filter((l) => l.unlocked).map((l) => l.level), [1]);
     assert.equal(home.stars, 0);
     await rejects(story('story_start', { level: 2 }), /Finish the level before/);
@@ -101,5 +101,61 @@ describe('story mode', () => {
       has_table_privilege('anon','public.pin_and_spin_story_levels','select') b,
       has_function_privilege('anon','public.pin_and_spin_story(text,uuid,jsonb)','execute') f`)).rows[0];
     assert.deepEqual(r, { a: false, b: false, f: false });
+  });
+});
+
+describe('story World 4: 5 balls and 8 colors (migration 010)', () => {
+  const unlockTo = (n) => db.query(`insert into public.pin_and_spin_story_progress(user_id, level, stars, best_tries)
+    select $1, level, 1, 1 from generate_series(1, $2) level on conflict do nothing`, [A, n]);
+  const allCodes = (colors, slots) => {
+    let codes = [[]];
+    for (let i = 0; i < slots; i++) codes = codes.flatMap((c) => Array.from({ length: colors }, (_, v) => [...c, v]));
+    return codes;
+  };
+  const score5 = (s, g) => {
+    const pins = g.filter((v, i) => v === s[i]).length;
+    let m = 0; for (let c = 0; c < 8; c++) m += Math.min(s.filter((v) => v === c).length, g.filter((v) => v === c).length);
+    return [pins, m - pins];
+  };
+
+  test('5-ball levels: the code has 5 balls and guesses must have 5', async () => {
+    await unlockTo(24);
+    const g = await story('story_start', { level: 25 });
+    assert.deepEqual([g.slots, g.colors, g.maxTries], [5, 6, 10]);
+    const s = await secretOf(g.id);
+    assert.equal(s.length, 5);
+    assert.equal(new Set(s).size, 5, 'no repeats on level 25');
+    await rejects(solo('solo_guess', { id: g.id, colors: [0, 1, 2, 3], attempt: 1 }), /Choose 5 colors/);
+    const won = await solo('solo_guess', { id: g.id, colors: s, attempt: 1 });
+    assert.deepEqual([won.status, won.answer.length, won.guesses[0].pins], ['won', 5, 5]);
+  });
+
+  test('8-color levels use orange and pink; 4-ball games still refuse 5 balls', async () => {
+    await unlockTo(25);
+    const g = await story('story_start', { level: 26 });
+    assert.deepEqual([g.slots, g.colors], [4, 8]);
+    const s = await secretOf(g.id);
+    assert.ok(s.every((c) => c >= 0 && c < 8));
+    await rejects(solo('solo_guess', { id: g.id, colors: [0, 1, 2, 3, 4], attempt: 1 }), /Choose 4 colors/);
+    const r = await solo('solo_guess', { id: g.id, colors: [6, 7, 6, 7], attempt: 1 });
+    assert.equal(r.guesses.length, 1);
+  });
+
+  test('World 4 logic puzzles (7 colors; 5 balls) still have exactly one answer', async () => {
+    await unlockTo(29);
+    for (const [level, colors, slots] of [[27, 7, 4], [30, 6, 5]]) {
+      const g = await story('story_start', { level, fresh: true });
+      const s = await secretOf(g.id);
+      const fits = allCodes(colors, slots).filter((code) => new Set(code).size === slots &&
+        g.clues.every((cl) => { const [p, sp] = score5(code, cl.colors); return p === cl.pins && sp === cl.spins; }));
+      assert.deepEqual(fits, [s], `level ${level}`);
+      assert.ok(g.clues.every((cl) => cl.colors.length === slots));
+    }
+  });
+
+  test('classic solo games are unchanged: 4 balls', async () => {
+    const g = await solo('solo_start', { kind: 'practice' });
+    assert.equal(g.slots, 4);
+    assert.equal((await secretOf(g.id)).length, 4);
   });
 });

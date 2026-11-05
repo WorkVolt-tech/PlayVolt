@@ -5,11 +5,12 @@ import { Feedback } from './Feedback.jsx';
 
 // The player's own stacked guess rows; the current row's slots are tappable.
 export function CodeBoard({ mine, limit, attempt, canSubmit, draft, selected, onSelect }) {
-  return <div className="code-board" aria-label="Your guess board">
+  const empty = draft?.length === 5 ? [null, null, null, null, null] : EMPTY_GUESS;
+  return <div className={'code-board' + (empty.length === 5 ? ' slots-5' : '')} aria-label="Your guess board">
     {Array.from({ length: limit }, (_, i) => {
       const guess = mine.find((g) => g.attempt === i + 1);
       const active = canSubmit && attempt === i + 1;
-      const colors = !guess && attempt === i + 1 ? draft : guess?.colors || EMPTY_GUESS;
+      const colors = !guess && attempt === i + 1 ? draft : guess?.colors || empty;
       return <div className={'code-row' + (active ? ' current' : '') + (guess ? ' played' : '')} key={i}>
         <span className="attempt-number">{i + 1}</span>
         <div className="code-slots">
@@ -21,7 +22,7 @@ export function CodeBoard({ mine, limit, attempt, canSubmit, draft, selected, on
               </button>
             : <Peg key={index} value={value} tiny />)}
         </div>
-        <Feedback guess={guess} />
+        <Feedback guess={guess} slots={empty.length} />
       </div>;
     })}
   </div>;

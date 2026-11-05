@@ -71,6 +71,6 @@ export function LeaderboardScreen({ account, onBack, onSignIn }) {
     {!account.signedIn
       ? <div className="lb-note surface"><p>Only signed-in players appear on the leaderboards. Guest games don’t count.</p>
           <button type="button" className="primary-btn" onClick={onSignIn}>Sign in / Create account <span>→</span></button></div>
-      : data && !data.me && <p className="lb-sub">You’re not on this board{board !== 'story' && period === 'week' ? ' this week' : ''} yet.</p>}
+      : data && !data.me && !meShown && <p className="lb-sub">You’re not on this board{board !== 'story' && period === 'week' ? ' this week' : ''} yet.</p>}
   </section>;
 }

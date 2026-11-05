@@ -94,6 +94,8 @@ begin
       left join public.pin_and_spin_story_progress p on p.level = l.level and p.user_id = p_user group by l.world) w where world = 2 and done) then earned := array_append(earned, 'world_2'); end if;
   if exists (select 1 from (select l.world, count(p.level) = count(*) done from public.pin_and_spin_story_levels l
       left join public.pin_and_spin_story_progress p on p.level = l.level and p.user_id = p_user group by l.world) w where world = 3 and done) then earned := array_append(earned, 'world_3'); end if;
+  if exists (select 1 from (select l.world, count(p.level) = count(*) done from public.pin_and_spin_story_levels l
+      left join public.pin_and_spin_story_progress p on p.level = l.level and p.user_id = p_user group by l.world) w where world = 4 and done) then earned := array_append(earned, 'world_4'); end if;
   if not exists (select 1 from public.pin_and_spin_story_levels l where l.kind = 'logic' and not exists (
       select 1 from public.pin_and_spin_story_progress p where p.user_id = p_user and p.level = l.level)) then earned := array_append(earned, 'logic_master'); end if;
   if not exists (select 1 from public.pin_and_spin_story_levels l where not exists (

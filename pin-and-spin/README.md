@@ -119,6 +119,20 @@ Wins earn 1-3 stars (fewer tries = more) and unlock the next level. Migration `0
 `pin_and_spin_solo_games`, `pin_and_spin_story()` (actions `story_home`, `story_start`; guesses
 use `solo_guess`) and the star-award trigger.
 
+**More leaderboards + achievements (migration 009):** the Leaderboard has four boards:
+Multiplayer (wins), Daily (puzzles solved; ties: fewer average tries), Clock (best Beat the Clock
+score) and Story (total stars). `pin_and_spin_leaderboard(p_period, p_account, p_board)` returns
+two numbers per player (`a` ranked, `b` detail). Home → Achievements shows 20 badges
+(`src/achievements.js` names them; `pin_and_spin_award()` decides them). Triggers on match
+results, finished solo games and story progress award badges automatically; a toast announces
+new ones after a game. `pin_and_spin_achievements` stores them (Edge Function action
+`achievements`, account required).
+
+**Story World 4 "Crystal Caves" (migration 010):** levels 25-32 use 5-ball codes and up to 8
+colors (new balls 6 = orange, 7 = pink in `src/balls/`). Levels and solo games have `slots`
+(4 or 5); `pin_and_spin_code_n()` and the logic-puzzle builder work for any size. Multiplayer
+and the other solo modes still use 4 balls and 6 colors.
+
 **How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
 (`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via
 Downloader + `<site>/app`, TV browsers via `<site>/tv`) also appear under Show on TV.
