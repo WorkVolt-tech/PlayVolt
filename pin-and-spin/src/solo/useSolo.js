@@ -43,6 +43,18 @@ export function useSolo(notify) {
     finally { setBusy(false); }
   }
 
+  // Story mode: play a level (resumes an unfinished try unless fresh).
+  async function startStory(level, fresh = false) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      show(await call('story_start', { level, fresh }));
+      resetDraft(); setFlash(null);
+      play('drawer-open');
+    } catch (e) { play('invalid-thunk'); notify(e.message || 'Could not start the level.'); }
+    finally { setBusy(false); }
+  }
+
   async function submit() {
     if (busy || !game || draft.some((v) => v === null)) return;
     setBusy(true);
@@ -75,7 +87,7 @@ export function useSolo(notify) {
     const tick = setInterval(() => setClock(Date.now()), 250);
     const wait = new Date(deadline).getTime() - (Date.now() + offsetRef.current) + 300;
     const end = setTimeout(async () => {
-      try { const next = await call('solo_get', { id: game.id }); show(next); play('achievement'); } catch { /* retried by the next action */ }
+      try { const next = await call('solo_get', { id: game.id }); show(next); play(next.kind === 'clock' ? 'achievement' : 'modal-close-fall'); } catch { /* retried by the next action */ }
     }, Math.max(0, wait));
     return () => { clearInterval(tick); clearTimeout(end); };
   }, [deadline, game?.id, show]);
@@ -86,5 +98,5 @@ export function useSolo(notify) {
   }, [flash]);
 
   const remainingMs = deadline ? Math.max(0, new Date(deadline).getTime() - (clock + offsetRef.current)) : null;
-  return { home, game, busy, error, draft, selected, flash, remainingMs, loadHome, start, submit, pick, clear, leave, setSelected };
+  return { home, game, busy, error, draft, selected, flash, remainingMs, loadHome, start, startStory, submit, pick, clear, leave, setSelected };
 }

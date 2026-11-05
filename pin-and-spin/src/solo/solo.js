@@ -18,6 +18,12 @@ export const LEVELS = {
   hard: { label: 'Hard', hint: '6 colors · repeats · 6 tries' },
 };
 
+// Story stars for a win: fewer tries = more stars (thresholds come with each level).
+export function storyStars(level, tries) {
+  if (!level) return 0;
+  return tries <= level.star3 ? 3 : tries <= level.star2 ? 2 : 1;
+}
+
 // Wordle-style result to share: one line per guess, 🟢 = Pin, ⚪ = Spin, ⚫ = miss.
 // It never shows the colors, so it doesn't spoil the puzzle.
 export function shareText(game, url) {

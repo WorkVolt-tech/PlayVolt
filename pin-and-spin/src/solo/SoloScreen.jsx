@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { PegRow } from '../components/Peg.jsx';
+import { Feedback } from '../components/Feedback.jsx';
 import { Confetti } from '../components/Confetti.jsx';
 import { GuessPanel } from '../screens/GuessPanel.jsx';
 import { formatClock } from '../game/selectors.js';
 import { play } from '../sound/sfx.js';
-import { LEVELS, msToTomorrow, shareText } from './solo.js';
+import { LEVELS, msToTomorrow, shareText, storyStars } from './solo.js';
 import { useSolo } from './useSolo.js';
 
 // 1-player modes: Daily puzzle, Free play and Beat the clock. Signed-in players only.
@@ -74,20 +75,25 @@ function SoloHub({ solo, onBack }) {
   </section>;
 }
 
-function SoloGame({ solo, notify }) {
+// story (optional): { level, next, onNext, onMap } when playing a story level.
+export function SoloGame({ solo, notify, story }) {
   const { game, busy, draft, selected, flash, remainingMs, submit, pick, clear, leave, start, setSelected } = solo;
   const playing = game.status === 'playing';
-  const title = game.kind === 'daily' ? `Daily Puzzle #${game.number}` : game.kind === 'clock' ? 'Beat the Clock' : `Free Play · ${LEVELS[game.level].label}`;
+  const title = story ? `Level ${story.level.level} · ${story.level.title}` : game.kind === 'daily' ? `Daily Puzzle #${game.number}`
+    : game.kind === 'clock' ? 'Beat the Clock' : `Free Play · ${LEVELS[game.level].label}`;
+  const timed = game.kind === 'clock' || (game.kind === 'story' && game.deadline);
   const [minutes, seconds] = remainingMs === null ? [] : formatClock(remainingMs);
-  const help = game.kind === 'clock' ? 'Crack it to score, then a new code appears. 8 tries per code.'
+  const help = story ? (story.level.kind === 'logic' ? 'Only one code fits every clue above. Work it out, then enter it.'
+      : `${game.colors} colors${story.level.repeats ? ', repeats allowed' : ', no repeats'}. ${story.level.intro}`)
+    : game.kind === 'clock' ? 'Crack it to score, then a new code appears. 8 tries per code.'
     : game.level === 'easy' ? '4 colors, and the code never repeats a color.' : 'Tap colors to fill your slots. Repeats are allowed.';
 
   return <section className="screen solo-screen">
-    <button className="back-button" onClick={() => { play('tap-ui-tick'); leave(); }}>← Solo</button>
-    <div className={'solo-game-head' + (game.kind === 'clock' && playing ? ' sticky' : '')}>
-      <div><p className="eyebrow">PLAY SOLO</p><h1>{title}</h1></div>
-      {game.kind === 'clock' && <div className="solo-clock">
-        <span className="solo-score">🔓 {game.solved}</span>
+    <button className="back-button" onClick={() => { play('tap-ui-tick'); if (story) story.onMap(); else leave(); }}>← {story ? 'Map' : 'Solo'}</button>
+    <div className={'solo-game-head' + (timed && playing ? ' sticky' : '')}>
+      <div><p className="eyebrow">{story ? 'STORY MODE' : 'PLAY SOLO'}</p><h1>{title}</h1></div>
+      {timed && <div className="solo-clock">
+        {game.kind === 'clock' && <span className="solo-score">🔓 {game.solved}</span>}
         {playing && <span className={'timer' + (remainingMs <= 20000 ? ' urgent' : '')}>{minutes}:{seconds}</span>}
       </div>}
     </div>
@@ -97,15 +103,25 @@ function SoloGame({ solo, notify }) {
       <PegRow colors={flash.code} tiny />
     </div>}
 
+    {game.clues?.length > 0 && <div className="surface story-clues">
+      <div className="panel-title"><h2>🧩 CLUES</h2><span>{game.clues.length} GUESSES</span></div>
+      {game.clues.map((clue, i) => <div className="code-row played" key={i}>
+        <span className="attempt-number">{String.fromCharCode(65 + i)}</span>
+        <div className="code-slots"><PegRow colors={clue.colors} tiny /></div>
+        <Feedback guess={{ revealed: true, colors: clue.colors, pins: clue.pins, spins: clue.spins }} />
+      </div>)}
+    </div>}
+
     {playing
       ? <GuessPanel mine={game.guesses} limit={game.maxTries} attempt={game.guesses.length + 1} canSubmit={!busy}
           draft={draft} selected={selected} onSelect={setSelected} onColor={pick} onClear={clear} onSubmit={() => void submit()}
           colorCount={game.colors} help={help} />
-      : <SoloResult game={game} solo={solo} notify={notify} onAgain={() => start(game.kind, game.level, true)} />}
+      : <SoloResult game={game} solo={solo} notify={notify} story={story}
+          onAgain={() => (story ? solo.startStory(story.level.level, true) : start(game.kind, game.level, true))} />}
   </section>;
 }
 
-function SoloResult({ game, notify, onAgain, solo }) {
+function SoloResult({ game, notify, onAgain, solo, story }) {
   const won = game.status === 'won';
   const [left, setLeft] = useState(msToTomorrow());
   useEffect(() => {
@@ -127,15 +143,27 @@ function SoloResult({ game, notify, onAgain, solo }) {
   return <div className={'surface finish-panel solo-result' + (won || game.kind === 'clock' ? ' has-winner' : '')}>
     {(won || (game.kind === 'clock' && game.solved > 0)) && <Confetti />}
     <span className="trophy" aria-hidden="true">{game.kind === 'clock' ? '⏱️' : won ? '🏆' : '✦'}</span>
+    {story && won && <div className="story-stars" aria-label={`${storyStars(story.level, game.guesses.length)} of 3 stars`}>
+      {[1, 2, 3].map((n) => <span key={n} className={n <= storyStars(story.level, game.guesses.length) ? 'on' : ''} style={{ '--i': n }}>★</span>)}
+    </div>}
     {game.kind === 'clock'
       ? <><h2>Time’s up!</h2><p>You cracked <b>{game.solved}</b> code{game.solved === 1 ? '' : 's'} in 3 minutes ({game.totalGuesses} guesses).</p></>
       : won ? <><h2>YOU CRACKED IT!</h2><p>Solved in <b>{game.guesses.length}</b> of {game.maxTries} tries.</p></>
-      : <><h2>So close!</h2><p>Out of tries. Here’s the code:</p></>}
+      : <><h2>{game.deadline && new Date(game.deadline) <= new Date(game.serverTime) ? 'Out of time!' : 'So close!'}</h2>
+          <p>{game.deadline && new Date(game.deadline) <= new Date(game.serverTime) ? 'The clock ran out.' : 'Out of tries.'} Here’s the code:</p></>}
     {game.answer && <>
       <p className="field-label">{game.kind === 'clock' ? 'LAST CODE' : 'SECRET COMBINATION'}</p>
       <div className="secret-reveal">{game.answer.map((v, i) => <span className="secret-ball" key={i} style={{ '--i': i }}><PegRow colors={[v]} tiny /></span>)}</div>
     </>}
-    {game.kind === 'daily'
+    {story
+      ? <div className="story-actions">
+          {won && story.next && <button type="button" className="primary-btn" disabled={solo.busy} onClick={story.onNext}>Next level <span>→</span></button>}
+          {won && !story.next && <p className="solo-next">🌙 You finished the story! Go back for 3 stars on every level.</p>}
+          <button type="button" className={won ? 'outline-btn full' : 'primary-btn'} disabled={solo.busy} onClick={onAgain}>
+            {won ? 'Replay for more stars' : 'Try again'} {!won && <span>↻</span>}</button>
+          <button type="button" className="outline-btn full" onClick={story.onMap}>Back to the map</button>
+        </div>
+      : game.kind === 'daily'
       ? <>
           <button type="button" className="primary-btn" onClick={() => void share()}>Share result <span>↗</span></button>
           <p className="solo-next">Next puzzle in <b>{pad(hours)}:{pad(mins)}:{pad(secs)}</b></p>

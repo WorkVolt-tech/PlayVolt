@@ -110,6 +110,15 @@ Migration `007_solo.sql`: `pin_and_spin_daily`, `pin_and_spin_solo_games` and
 `pin_and_spin_solo()` (Edge Function actions `solo_home`, `solo_start`, `solo_guess`, `solo_get`;
 account required). The code stays on the server until the game ends.
 
+**Story Mode (signed-in players):** Home → Story Mode (`src/solo/StoryScreen.jsx`). 24 levels in
+3 worlds (Carrot Patch, Clockwork Burrow, Moon Maze) on a winding map. Game levels twist the
+rules (4-6 colors, no repeats, fewer tries, timers); logic levels show clue guesses with their
+Pins/Spins that fit exactly one code (built by `pin_and_spin_story_clues()`) and give 1-3 tries.
+Wins earn 1-3 stars (fewer tries = more) and unlock the next level. Migration `008_story.sql`:
+`pin_and_spin_story_levels` (the level list), `pin_and_spin_story_progress`, story columns on
+`pin_and_spin_solo_games`, `pin_and_spin_story()` (actions `story_home`, `story_start`; guesses
+use `solo_guess`) and the star-award trigger.
+
 **How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
 (`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via
 Downloader + `<site>/app`, TV browsers via `<site>/tv`) also appear under Show on TV.

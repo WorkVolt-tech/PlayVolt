@@ -4,6 +4,7 @@ import { useAccount } from './hooks/useAccount.js';
 import { AccountScreen } from './screens/AccountScreen.jsx';
 import { LeaderboardScreen } from './screens/LeaderboardScreen.jsx';
 import { SoloScreen } from './solo/SoloScreen.jsx';
+import { StoryScreen } from './solo/StoryScreen.jsx';
 import { VersionAlert } from './components/VersionAlert.jsx';
 import { Dialog } from './components/Dialog.jsx';
 import { SoundToggle } from './sound/SoundToggle.jsx';
@@ -68,7 +69,9 @@ export default function App() {
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
         {!session && form.formTab === 'solo' && <SoloScreen account={account} notify={notify}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
-        {!session && !['account', 'leaderboard', 'solo'].includes(form.formTab) && <EntryScreen form={form} busy={busy || account.loading} account={account} />}
+        {!session && form.formTab === 'story' && <StoryScreen account={account} notify={notify}
+          onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
+        {!session && !['account', 'leaderboard', 'solo', 'story'].includes(form.formTab) && <EntryScreen form={form} busy={busy || account.loading} account={account} />}
 
         {session && !game && <div className="surface"><p>Reconnecting to your room…</p>
           <button className="outline-btn full" onClick={forget}>BACK TO HOME</button></div>}

@@ -13,6 +13,8 @@ const tvActions = new Set(['tv_start', 'tv_check', 'tv_pair']);
 // Leaderboard (migration 006): public, needs no room or session.
 // Solo modes (migration 007): signed-in account only, no room or guest session.
 const soloActions = new Set(['solo_home', 'solo_start', 'solo_guess', 'solo_get']);
+// Story mode (migration 008): signed-in account only; guesses use solo_guess.
+const storyActions = new Set(['story_home', 'story_start']);
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   const reply = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: cors });
@@ -23,7 +25,8 @@ Deno.serve(async (req: Request) => {
     const body = JSON.parse(raw);
     const tv = tvActions.has(body.action);
     const board = body.action === 'leaderboard';
-    const solo = soloActions.has(body.action);
+    const story = storyActions.has(body.action);
+    const solo = soloActions.has(body.action) || story;
     if (!board && !solo && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
       return reply({ error: 'Invalid player session' }, 400);
     }
@@ -64,12 +67,12 @@ Deno.serve(async (req: Request) => {
       if (!auth.ok || !user.id) return reply({ error: 'ACCOUNT_REQUIRED: Your sign-in expired. Please sign in again.' }, 401);
       accountId = user.id;
     }
-    if (solo && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to play solo.' }, 401);
+    if (solo && !accountId) return reply({ error: `ACCOUNT_REQUIRED: Sign in to play ${story ? 'story mode' : 'solo'}.` }, 401);
     const verifiedData = { ...data, _account_id: accountId };
     const address = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(address + key));
     const originHash = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
-    const rpc = board ? 'pin_and_spin_leaderboard' : solo ? 'pin_and_spin_solo' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
+    const rpc = board ? 'pin_and_spin_leaderboard' : story ? 'pin_and_spin_story' : solo ? 'pin_and_spin_solo' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/${rpc}`, {
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(board
