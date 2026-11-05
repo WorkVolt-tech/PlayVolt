@@ -102,6 +102,14 @@ still in the room plus anyone who left after guessing; 2+ players; guests never 
 trigger `pin_and_spin_rooms_results` and `pin_and_spin_leaderboard()` (Edge Function action
 `leaderboard`, no session needed; nicknames come from the shared `profiles` table, read only).
 
+**Play Solo (signed-in players):** Home → Play Solo (`src/solo/`). Daily Puzzle (same code for
+everyone on the player's local day, 6 colors, 6 tries, share result, streaks), Free Play (Easy:
+4 colors no repeats 8 tries; Normal: 6 colors 8 tries; Hard: 6 colors 6 tries; unfinished games
+resume) and Beat the Clock (3 minutes, crack as many codes as possible, 8 tries per code).
+Migration `007_solo.sql`: `pin_and_spin_daily`, `pin_and_spin_solo_games` and
+`pin_and_spin_solo()` (Edge Function actions `solo_home`, `solo_start`, `solo_guess`, `solo_get`;
+account required). The code stays on the server until the game ends.
+
 **How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
 (`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via
 Downloader + `<site>/app`, TV browsers via `<site>/tv`) also appear under Show on TV.
