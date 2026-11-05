@@ -2,6 +2,7 @@ import React from 'react';
 import { usePinAndSpin } from './hooks/usePinAndSpin.js';
 import { useAccount } from './hooks/useAccount.js';
 import { AccountScreen } from './screens/AccountScreen.jsx';
+import { VersionAlert } from './components/VersionAlert.jsx';
 import { EntryScreen } from './screens/EntryScreen.jsx';
 import { Lobby } from './screens/Lobby.jsx';
 import { Match } from './screens/Match.jsx';
@@ -61,5 +62,6 @@ export default function App() {
       <footer className="footer">PIN &amp; SPIN <span>·</span> A PLAYVOLT GAME</footer>
     </div>
     <div className={'toast' + (toast ? ' show' : '')} role="status" aria-live="polite">{toast}</div>
+    <VersionAlert />
   </>;
 }

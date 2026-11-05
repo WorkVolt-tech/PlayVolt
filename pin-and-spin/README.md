@@ -30,6 +30,14 @@ All Pin & Spin tables begin with `pin_and_spin_`:
 
 The **`pin-and-spin` Supabase Edge Function** is the public game API gateway. Its service credential stays on the server; it is never included in the Vite client. PostgreSQL functions perform protected game actions and scoring.
 
+## Update banner
+
+Each build gets a unique version (set in `vite.config.js`), baked into the app and
+published as `/version.json` (never cached, see `public/_headers`). Like Dekabess, open
+pages check it every minute and when the tab regains focus; when a newer version is
+deployed, an "Update required" banner offers **Update Now** (a reload — the room and
+unsubmitted colors are restored afterwards).
+
 ## Accounts (optional)
 
 Players can play as guests, or sign in / create a **PlayVolt account** — the same Supabase

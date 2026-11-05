@@ -206,3 +206,12 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--volt)}
 .account-sent h2{font:700 24px 'Space Grotesk',sans-serif;margin:6px 0 10px}
 .account-sent p{color:var(--sub);font-size:14px;line-height:1.6}
 .account-icon{font-size:40px}
+
+/* ---------- Update banner (same as Dekabess, in Pin & Spin colors) ---------- */
+.version-alert{position:fixed;top:max(10px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:100000;width:min(720px,calc(100vw - 20px));display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid #c18bffa0;border-radius:14px;background:radial-gradient(circle at 0 0,#a95bff2e,transparent 42%),#1a1530fa;color:var(--text);box-shadow:0 12px 34px #0000007a,inset 0 1px 0 #ffffff0a;backdrop-filter:blur(10px);animation:rise .35s ease-out}
+.version-alert__copy{min-width:0;flex:1;display:grid;gap:3px}
+.version-alert__copy strong{color:#e2c8ff;font:700 16px 'Space Grotesk',sans-serif}
+.version-alert__copy span{color:#cfc4e4;font-size:11px;line-height:1.45}
+.version-alert button{flex:0 0 auto;min-height:40px;padding:0 14px;border:1px solid #c685ff;border-radius:10px;background:linear-gradient(115deg,#8a32eb,#a735ed);color:#fff;font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.version-alert button:disabled{opacity:.65;cursor:wait}
+@media(max-width:600px){.version-alert{align-items:stretch;flex-direction:column;gap:9px}.version-alert button{width:100%}}
