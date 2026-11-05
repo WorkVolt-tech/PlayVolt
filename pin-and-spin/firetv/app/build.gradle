@@ -3,7 +3,7 @@ plugins {
 }
 
 // The page the app shows. Production by default; preview builds pass -PtvUrl=...
-def tvUrl = (project.findProperty('tvUrl') ?: 'https://playvolt-pin-and-spin.pages.dev/tv').toString()
+def tvUrl = (project.findProperty('tvUrl') ?: 'https://playvolt-pin-and-spin.pages.dev/?tv=pair').toString()
 def buildNumber = (project.findProperty('versionCode') ?: '1').toString().toInteger()
 
 android {

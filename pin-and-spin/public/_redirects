@@ -1,6 +1,6 @@
-# Short TV address: /tv opens the TV pairing screen (same single-page app).
-/tv  /index.html  200
-/tv/ /index.html  200
+# Short TV address: /tv sends the TV to the code screen (/?tv=pair).
+/tv   /?tv=pair  302
+/tv/  /?tv=pair  302
 # Short download links for the Pin & Spin TV app (type into the Downloader app on a Fire TV).
 /app          https://github.com/WorkVolt-tech/PlayVolt/releases/download/pin-and-spin-tv/pin-and-spin-tv.apk          302
 /app-preview  https://github.com/WorkVolt-tech/PlayVolt/releases/download/pin-and-spin-tv-preview/pin-and-spin-tv.apk  302

@@ -8,7 +8,8 @@ export function readTvLink() {
   const token = location.hash.replace(/^#/, '');
   return /^[A-F0-9]{6}$/.test(code) && /^[a-f0-9]{64}$/.test(token) ? { code, token } : null;
 }
-// The short TV address: https://<site>/tv shows a 4-letter code to type on a phone.
+// The TV code screen is /?tv=pair (any ?tv without a valid room link). The short address
+// <site>/tv redirects there (public/_redirects); the path check is a fallback.
 export const isTvPairPage = () => /^\/tv\/?$/i.test(location.pathname);
 export const isTvLink = () => new URLSearchParams(location.search).has('tv') || isTvPairPage();
 // True inside the Pin & Spin TV app (Fire TV / Android TV), which adds this to its user agent.
@@ -19,5 +20,5 @@ export function openTvLink({ code, token }) {
   history.replaceState(null, '', `/?tv=${encodeURIComponent(code)}#${token}`);
 }
 export function backToPairing() {
-  history.replaceState(null, '', '/tv');
+  history.replaceState(null, '', '/?tv=pair');
 }

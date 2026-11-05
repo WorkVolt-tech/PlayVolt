@@ -1,5 +1,5 @@
 # Builds the Pin & Spin TV app (Fire TV / Android TV) and publishes the install file.
-#   main            -> release "pin-and-spin-tv"         (app opens the live site)
+#   main            -> release "pin-and-spin-tv"         (app opens the live site's TV screen)
 #   any other branch -> release "pin-and-spin-tv-preview" (app opens that branch's preview site)
 # Only runs when the TV app (pin-and-spin/firetv) or this file changes. Other games are untouched.
 name: Pin & Spin TV app
@@ -40,12 +40,12 @@ jobs:
         id: target
         run: |
           if [ "$GITHUB_REF_NAME" = "main" ]; then
-            echo "url=https://playvolt-pin-and-spin.pages.dev/tv" >> "$GITHUB_OUTPUT"
+            echo "url=https://playvolt-pin-and-spin.pages.dev/?tv=pair" >> "$GITHUB_OUTPUT"
             echo "tag=pin-and-spin-tv" >> "$GITHUB_OUTPUT"
             echo "title=Pin & Spin TV app" >> "$GITHUB_OUTPUT"
           else
             alias=$(echo "$GITHUB_REF_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
-            echo "url=https://${alias}.playvolt-pin-and-spin.pages.dev/tv" >> "$GITHUB_OUTPUT"
+            echo "url=https://${alias}.playvolt-pin-and-spin.pages.dev/?tv=pair" >> "$GITHUB_OUTPUT"
             echo "tag=pin-and-spin-tv-preview" >> "$GITHUB_OUTPUT"
             echo "title=Pin & Spin TV app (preview: $GITHUB_REF_NAME)" >> "$GITHUB_OUTPUT"
           fi
