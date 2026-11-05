@@ -4,12 +4,12 @@ export const SESSION_KEY = 'pin_and_spin_session_v1';
 export const NAME_KEY = 'pin_and_spin_nickname';
 export const DRAFT_KEY = 'pin_and_spin_draft_v1';
 export const COLORS = [
-  { name: 'Blue', hex: '#52adff', glyph: '✚' },
-  { name: 'Red', hex: '#ff5579', glyph: '▦' },
-  { name: 'Green', hex: '#62e5a0', glyph: '▲' },
-  { name: 'Yellow', hex: '#ffdc55', glyph: '✦' },
-  { name: 'Purple', hex: '#b987ff', glyph: '⬟' },
-  { name: 'White', hex: '#e8eef9', glyph: '═' },
+  { name: 'Blue', hex: '#1f7bff', glyph: '✚' },
+  { name: 'Red', hex: '#ff2d3a', glyph: '▦' },
+  { name: 'Green', hex: '#2fcf1e', glyph: '▲' },
+  { name: 'Yellow', hex: '#ffc81a', glyph: '✦' },
+  { name: 'Purple', hex: '#a43cff', glyph: '⬟' },
+  { name: 'White', hex: '#ece8f7', glyph: '═' },
 ];
 export const MODES = {
   classic: { label: 'Classic', color: 0, icon: '↪', hint: 'Take turns · 4 guesses', description: 'A random player starts each game, including rematches. Take turns trying the same secret code. Each player gets four guesses. Guesses and clues appear immediately. First to solve wins.' },

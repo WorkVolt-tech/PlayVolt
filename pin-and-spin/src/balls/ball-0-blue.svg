@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<defs>
+<radialGradient id="b" cx="36%" cy="30%" r="75%"><stop offset="0" stop-color="#7cc6ff"/><stop offset=".5" stop-color="#1466f2"/><stop offset="1" stop-color="#06248a"/></radialGradient>
+<radialGradient id="s" cx="42%" cy="36%" r="64%"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".42"/></radialGradient>
+<linearGradient id="h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient>
+<clipPath id="c"><circle cx="50" cy="50" r="45.5"/></clipPath>
+</defs>
+<circle cx="50" cy="50" r="49.5" fill="#1a0f3f"/>
+<circle cx="50" cy="50" r="45.5" fill="url(#b)"/>
+<g clip-path="url(#c)" opacity="0.95"><g transform="rotate(-14 50 50)" fill="none" stroke="#4fc0ff" stroke-width="6" stroke-linecap="round"><path d="M-20 4 Q-12.5 -5 -5 4 T10 4 Q17.5 -5 25 4 T40 4 Q47.5 -5 55 4 T70 4 Q77.5 -5 85 4 T100 4 Q107.5 -5 115 4 T130 4"/><path d="M-20 19 Q-12.5 10 -5 19 T10 19 Q17.5 10 25 19 T40 19 Q47.5 10 55 19 T70 19 Q77.5 10 85 19 T100 19 Q107.5 10 115 19 T130 19"/><path d="M-20 34 Q-12.5 25 -5 34 T10 34 Q17.5 25 25 34 T40 34 Q47.5 25 55 34 T70 34 Q77.5 25 85 34 T100 34 Q107.5 25 115 34 T130 34"/><path d="M-20 49 Q-12.5 40 -5 49 T10 49 Q17.5 40 25 49 T40 49 Q47.5 40 55 49 T70 49 Q77.5 40 85 49 T100 49 Q107.5 40 115 49 T130 49"/><path d="M-20 64 Q-12.5 55 -5 64 T10 64 Q17.5 55 25 64 T40 64 Q47.5 55 55 64 T70 64 Q77.5 55 85 64 T100 64 Q107.5 55 115 64 T130 64"/><path d="M-20 79 Q-12.5 70 -5 79 T10 79 Q17.5 70 25 79 T40 79 Q47.5 70 55 79 T70 79 Q77.5 70 85 79 T100 79 Q107.5 70 115 79 T130 79"/><path d="M-20 94 Q-12.5 85 -5 94 T10 94 Q17.5 85 25 94 T40 94 Q47.5 85 55 94 T70 94 Q77.5 85 85 94 T100 94 Q107.5 85 115 94 T130 94"/></g></g>
+<circle cx="50" cy="50" r="45.5" fill="url(#s)"/>
+<path d="M22 76 A36 36 0 0 0 82 70" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<ellipse cx="35" cy="23" rx="15" ry="7.5" transform="rotate(-24 35 23)" fill="url(#h)"/>
+<circle cx="50" cy="50" r="45.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1.2"/>
+</svg>

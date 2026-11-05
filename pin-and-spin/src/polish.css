@@ -215,3 +215,18 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--volt)}
 .version-alert button{flex:0 0 auto;min-height:40px;padding:0 14px;border:1px solid #c685ff;border-radius:10px;background:linear-gradient(115deg,#8a32eb,#a735ed);color:#fff;font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
 .version-alert button:disabled{opacity:.65;cursor:wait}
 @media(max-width:600px){.version-alert{align-items:stretch;flex-direction:column;gap:9px}.version-alert button{width:100%}}
+
+/* ---------- Logo-style balls (src/balls/*.svg, matched to the Pin & Spin logo) ----------
+   Each color keeps its own pattern for color-blind players:
+   blue waves, red spiral, green honeycomb, yellow sunburst, purple diamonds, white dots. */
+.patterned-peg,.code-slots .patterned-peg,.answer-slots .patterned-peg.slot.filled{background:var(--ball) center/100% 100% no-repeat!important;border:0!important;border-radius:50%;box-shadow:0 3px 6px #0007!important}
+.patterned-peg:before,.patterned-peg:after,.mini-row .tiny-peg.patterned-peg:after{display:none!important}
+.patterned-peg.color-0{--ball:url('./balls/ball-0-blue.svg')}
+.patterned-peg.color-1{--ball:url('./balls/ball-1-red.svg')}
+.patterned-peg.color-2{--ball:url('./balls/ball-2-green.svg')}
+.patterned-peg.color-3{--ball:url('./balls/ball-3-yellow.svg')}
+.patterned-peg.color-4{--ball:url('./balls/ball-4-purple.svg')}
+.patterned-peg.color-5{--ball:url('./balls/ball-5-white.svg')}
+.mini-row .patterned-peg{box-shadow:none!important}
+.avatar b{text-shadow:0 1px 3px #000,0 0 8px #000c}
+.avatar.color-5 b,.avatar.color-3 b{color:#1a1430;text-shadow:0 0 6px #fff}
