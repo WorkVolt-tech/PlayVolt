@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node --test 'tests/unit/*.test.mjs'",
     "test:live": "node tests/live-smoke.mjs"
   },
   "dependencies": {
@@ -14,6 +15,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.15",
     "@vitejs/plugin-react": "6.1.0",
     "vite": "8.2.2"
   }

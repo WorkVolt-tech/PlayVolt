@@ -73,6 +73,12 @@ with a display-token snapshot. Player-only actions are passed in from `screens/`
   random guest-session tokens; no account or service key is required in the client.
 - The tables intentionally have RLS enabled and no public policies or grants.
   Only the server can read them. Snapshots redact the secret and unrevealed opponents' guesses.
+- `npm test` runs the automated tests offline (no Game DB access needed). It loads
+  `backend/schema.sql` into an in-memory Postgres (PGlite) and tests the real server
+  functions: scoring with repeated colors (all 1,296 guesses against several secrets),
+  all four modes, hidden-guess secrecy, timers, limits, shared wins, leaving, reconnecting
+  and rematches. `tests/unit/selectors.test.mjs` covers the phone's view rules.
+  Keep `schema.sql` in sync with any database change so these tests stay meaningful.
 - `tests/database.sql` checks scoring, authorization, turn order, ties, timeouts,
   limits and rematches inside a transaction that rolls all test data back.
 - `test:live` is an optional automated ten-player concurrency test. It creates a
