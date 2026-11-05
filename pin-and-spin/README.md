@@ -41,9 +41,14 @@ The shared TV/display concept is a **future phase** and is not yet implemented.
 
 The phone board uses stacked horizontal guess rows (four, or eight in Rush), a
 three-by-two palette, green Pin markers and white Spin markers. The selectable
-colors are Blue, Red, Green, Yellow, Purple and White. Everyone's Guesses includes
-a player filter and shows missed timed guesses. Unsubmitted selections survive a
-page refresh when browser storage is available.
+colors are Blue, Red, Green, Yellow, Purple and White. A player strip shows everyone's
+progress (whose turn, locked in, thinking, tries used, best Pin count, winners).
+Unsubmitted selections survive a page refresh when browser storage is available.
+
+**Everyone's Guesses** is a full-screen board (`src/shared/Scoreboard.jsx`) with one lane
+per player, numeric Pin/Spin counts, round and timer, sealed markers for players who have
+locked in, the winner banner and the final secret. It scales up on laptop/TV-sized
+screens and offers a full-screen button where the browser supports it.
 
 The home screen separates Create Room, Join Room and How to Play. Mode selection
 uses four stacked cards; the lobby offers Copy Code and Invite Friends. A midnight

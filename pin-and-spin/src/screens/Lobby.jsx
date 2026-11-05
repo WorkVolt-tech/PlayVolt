@@ -1,6 +1,7 @@
 import React from 'react';
 import { MODES } from '../game/constants.js';
 import { Peg } from '../components/Peg.jsx';
+import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 
 // Waiting room: code/invite, chosen mode, players and ready/start controls.
 export function Lobby({ game, busy, act, onCopy, onShare }) {
@@ -8,6 +9,7 @@ export function Lobby({ game, busy, act, onCopy, onShare }) {
   const me = activePlayers.find((player) => player.id === game.me);
   const host = game.hostId === game.me;
   const allReady = activePlayers.length >= 2 && activePlayers.every((player) => player.ready);
+  const readyCount = activePlayers.filter((player) => player.ready).length;
   return <>
     <h1 className="page-title">Your room</h1>
     <div className="surface lobby-code"><strong>{game.code}</strong><div className="invite-actions">
@@ -17,17 +19,26 @@ export function Lobby({ game, busy, act, onCopy, onShare }) {
     <div className="surface lobby-mode"><Peg value={MODES[game.mode].color} tiny />
       <div><strong>{MODES[game.mode].label}</strong><p>{MODES[game.mode].hint}</p></div></div>
     <div className="surface">
-      <div className="panel-title"><h2>Players</h2><span>{activePlayers.length} / 10 PLAYERS</span></div>
+      <div className="panel-title"><h2>Players</h2><span>{readyCount} READY · {activePlayers.length} / 10</span></div>
       <div className="player-list">
         {activePlayers.map((player) => <div className="player-item" key={player.id}>
-          <span className="player-avatar">{(player.name || '?').slice(0,1).toUpperCase()}</span>
+          <PlayerAvatar player={player} />
           <div className="player-info"><div className="player-name">{player.name}{player.id === game.me ? ' (YOU)' : ''}</div>
-            <div className="player-description">{player.id === game.hostId ? 'HOST' : 'PLAYER ' + player.seat}</div>
+            <div className="player-description">{player.id === game.hostId ? <span className="host-badge">★ HOST</span> : 'PLAYER ' + player.seat}</div>
           </div>
           <span className={'ready-pill' + (player.ready ? '' : ' wait')}>
             {player.ready ? '● READY' : '○ WAITING'}
           </span>
         </div>)}
+        {activePlayers.length < 2 && <div className="player-item open-seat">
+          <span className="open-seat-icon">＋</span>
+          <div className="player-info"><div className="player-name">Waiting for a friend…</div>
+            <div className="player-description">Share the code or invite link</div></div>
+        </div>}
+      </div>
+      <div className="ready-meter" role="progressbar" aria-label="Players ready" aria-valuemin={0}
+        aria-valuemax={activePlayers.length} aria-valuenow={readyCount}>
+        <span style={{ width: `${activePlayers.length ? readyCount / activePlayers.length * 100 : 0}%` }} />
       </div>
       <p className="lobby-help">{activePlayers.length < 2
         ? 'Invite at least one friend with your room code to start.'

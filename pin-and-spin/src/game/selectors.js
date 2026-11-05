@@ -66,3 +66,28 @@ export function placeColor(draft, selected, value) {
   const empty = [1, 2, 3, 4].map((step) => (selected + step) % 4).find((index) => next[index] === null);
   return { draft: next, selected: empty === undefined ? (selected + 1) % 4 : empty };
 }
+
+// Public per-player progress for the strip and the shared board. Uses only data the
+// server already made public: revealed guesses and each player's "submitted" flag.
+export function playerProgress(game) {
+  const revealed = publicGuesses(game?.guesses);
+  const winners = game?.winners || [];
+  const playing = game?.status === 'playing';
+  return (game?.players || []).map((player) => {
+    const own = revealed.filter((guess) => guess.playerId === player.id).sort((a, b) => a.attempt - b.attempt);
+    const sealed = isSimultaneous(game.mode) && playing && player.submitted &&
+      !own.some((guess) => guess.attempt === game.round);
+    const scored = own.filter((guess) => guess.colors);
+    return {
+      player,
+      guesses: own,
+      used: own.length + (sealed ? 1 : 0),
+      sealed,
+      best: scored.length ? Math.max(...scored.map((guess) => guess.pins || 0)) : null,
+      won: winners.includes(player.id),
+      isTurn: playing && game.mode === 'classic' && game.turnId === player.id,
+      thinking: playing && isSimultaneous(game.mode) && player.active && !player.submitted,
+      left: !player.active,
+    };
+  });
+}

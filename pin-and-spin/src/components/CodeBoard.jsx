@@ -10,14 +10,14 @@ export function CodeBoard({ mine, limit, attempt, canSubmit, draft, selected, on
       const guess = mine.find((g) => g.attempt === i + 1);
       const active = canSubmit && attempt === i + 1;
       const colors = !guess && attempt === i + 1 ? draft : guess?.colors || EMPTY_GUESS;
-      return <div className={'code-row' + (active ? ' current' : '')} key={i}>
+      return <div className={'code-row' + (active ? ' current' : '') + (guess ? ' played' : '')} key={i}>
         <span className="attempt-number">{i + 1}</span>
         <div className="code-slots">
           {colors.map((value, index) => active
             ? <button type="button" key={index} className={'code-slot' + (selected === index ? ' selected' : '')}
                 aria-label={`Slot ${index + 1}: ${value === null ? 'empty' : COLORS[value].name}`}
                 aria-pressed={selected === index} onClick={() => onSelect(index)}>
-                <Peg value={value} tiny />
+                <Peg key={value ?? 'empty'} value={value} tiny />
               </button>
             : <Peg key={index} value={value} tiny />)}
         </div>

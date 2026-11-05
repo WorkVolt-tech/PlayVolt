@@ -1,0 +1,169 @@
+/* Phase 5 polish: avatars, player strip, full-screen shared board, winner moments, motion.
+   Loaded after styles.css. All motion is disabled for prefers-reduced-motion. */
+
+/* ---------- Avatars ---------- */
+.avatar{display:grid;place-items:center;flex:none;width:36px;height:36px;max-width:none;border-radius:50%}
+.avatar b{position:relative;z-index:1;font:800 15px 'Space Grotesk',sans-serif;color:#fff;text-shadow:0 1px 3px #000c,0 0 6px #0009}
+.avatar.color-5 b,.avatar.color-3 b{color:#1a1430;text-shadow:0 0 4px #fff9}
+.avatar-sm{width:26px;height:26px}
+.avatar-sm b{font-size:11px}
+.avatar-lg{width:48px;height:48px}
+.host-badge{color:#ffd76a;font-weight:800;letter-spacing:.5px}
+
+/* Large secret balls: bright, like the board balls (the .slot rules made them dull). */
+.answer-slots .patterned-peg.slot.filled{border-radius:50%;background:radial-gradient(circle at 30% 23%,color-mix(in srgb,var(--color) 45%,white),var(--color) 55%,color-mix(in srgb,var(--color) 58%,black));border:1px solid #ffffff70}
+
+/* ---------- Lobby ---------- */
+.player-item{animation:slide-in .35s cubic-bezier(.2,.9,.3,1.2) backwards}
+.player-item:nth-child(2){animation-delay:.04s}.player-item:nth-child(3){animation-delay:.08s}.player-item:nth-child(4){animation-delay:.12s}
+.ready-pill:not(.wait){animation:pill-pop .3s ease-out}
+.open-seat{border-style:dashed;background:transparent;opacity:.75}
+.open-seat-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:1px dashed #8c6bb5;color:#c9a6f5;font-size:18px}
+.ready-meter{height:6px;border-radius:6px;background:#2a2340;overflow:hidden;margin:-4px 0 14px}
+.ready-meter span{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#46d892,#8ef0be);transition:width .45s ease}
+
+/* ---------- Player strip (compact progress for everyone) ---------- */
+.player-strip{display:flex;gap:7px;overflow-x:auto;margin:0 -2px 14px;padding:2px 2px 4px;scrollbar-width:none}
+.player-strip::-webkit-scrollbar{display:none}
+.strip-chip{flex:none;display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:7px;row-gap:1px;align-items:center;padding:6px 10px 6px 6px;border-radius:14px;background:#1b1630;border:1px solid #3d3058;transition:border-color .2s,background .2s}
+.strip-chip .avatar{grid-row:span 2}
+.strip-name{font-size:11px;font-weight:800;max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.strip-state{font-size:9px;font-weight:900;letter-spacing:.5px;color:var(--sub)}
+.strip-best{display:none}
+.strip-chip.me{border-color:#7b58a8}
+.strip-chip.turn{border-color:#c18bff;background:#31204d;box-shadow:0 0 14px #a95bff40}
+.strip-chip.turn .strip-state{color:#e2c8ff;animation:blink 1.2s ease-in-out infinite}
+.strip-chip.in{border-color:#4fc28b88;background:#173126}
+.strip-chip.in .strip-state{color:var(--pin)}
+.strip-chip.thinking .strip-state{color:#ffd78a}
+.strip-chip.won{border-color:#ffd76a;background:#3a2d17}
+.strip-chip.won .strip-state{color:#ffd76a}
+.strip-chip.left{opacity:.45}
+@media(min-width:420px){.strip-chip{grid-template-columns:auto auto auto}.strip-best{display:flex;gap:2px;grid-row:span 2;margin-left:2px}
+  .strip-best i{width:5px;height:14px;border-radius:2px;background:#3a3352}.strip-best i.on{background:var(--pin)}}
+
+/* ---------- Board micro-motion ---------- */
+.code-row.current .code-slot.selected{animation:ring 1.4s ease-in-out infinite}
+.code-row.current .patterned-peg{animation:peg-pop .28s cubic-bezier(.3,1.6,.5,1)}
+.code-row.played{animation:row-lock .4s ease-out}
+.feedback-dots .pin-dot,.feedback-dots .spin-dot{animation:dot-in .35s cubic-bezier(.3,1.7,.5,1) backwards;animation-delay:calc(var(--i,0) * 90ms + .15s)}
+.color-choice{transition:transform .12s,border-color .15s,background .15s}
+.color-choice:not(:disabled):active{transform:scale(.93)}
+.timer.urgent{animation:urgent 1s ease-in-out infinite}
+.view-tab{transition:background .2s,color .2s}
+
+/* ---------- Winner moments ---------- */
+.finish-panel{position:relative;overflow:hidden}
+.winner-banner{position:relative;text-align:center}
+.winner-banner .trophy{font-size:52px;line-height:1;margin-bottom:10px;animation:trophy 0.7s cubic-bezier(.3,1.6,.5,1) both}
+.winner-banner h2{font:700 31px 'Space Grotesk',sans-serif;margin:0 0 10px;animation:rise .5s .15s ease-out both}
+.winner-banner.has-winner h2{background:linear-gradient(90deg,#ffe28a,#fff,#d7a8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.winner-list{animation:rise .5s .25s ease-out both;margin-bottom:6px}
+.winner-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.winner-chip{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:30px;background:#3a2d17;border:1px solid #ffd76a88;font-weight:800;font-size:14px}
+.winner-list p,.winner-note{font-size:13px;color:var(--sub);margin:8px 0 4px}
+.winner-banner .field-label{margin-top:18px}
+.secret-reveal{display:flex;justify-content:center;gap:12px;margin:4px 0 22px;perspective:600px}
+.secret-ball .patterned-peg{width:56px;height:56px;max-width:none;flex:none;--pattern-size:18px 18px}
+.secret-ball{display:block;animation:flip-in .6s cubic-bezier(.3,1.4,.5,1) both;animation-delay:calc(.35s + var(--i) * .18s)}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.confetti i{position:absolute;top:-14px;width:7px;height:12px;border-radius:2px;opacity:0;animation:confetti 2.6s cubic-bezier(.2,.6,.4,1) forwards}
+.confetti i.wide{width:11px;height:6px}
+.winner-banner>*:not(.confetti){position:relative;z-index:1}
+
+/* ---------- Full-screen shared board ---------- */
+body.board-open{overflow:hidden}
+.board-screen{position:fixed;inset:0;z-index:15;overflow-y:auto;overscroll-behavior:contain;background:radial-gradient(ellipse 80% 40% at 0 0,#6021b33a,transparent 80%),radial-gradient(ellipse 70% 45% at 100% 100%,#7121cc30,transparent 75%),#0d0c22;padding:max(14px,env(safe-area-inset-top)) 14px max(24px,env(safe-area-inset-bottom));animation:board-in .3s cubic-bezier(.2,.8,.3,1)}
+.board-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:1400px;margin:0 auto 12px}
+.board-nav{display:flex;gap:8px;width:100%}
+.board-back,.board-fs{background:#30243f;border:1px solid #70518e;border-radius:10px;color:#e5d9fa;min-height:40px;padding:8px 14px;font-weight:700}
+.board-fs{margin-left:auto;font-size:18px;padding:6px 12px}
+.board-title{flex:1;min-width:0}
+.board-title h1{font:700 26px 'Space Grotesk',sans-serif;letter-spacing:-.8px;margin:6px 0 2px}
+.board-title p{margin:0;color:var(--sub);font-size:12px}
+.board-timer{font-size:26px}
+.board-status{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;max-width:1400px;margin:0 auto 14px}
+.status-pill{padding:6px 12px;border-radius:30px;background:#2e2048;border:1px solid #8c5ccd;color:#e2c8ff;font-size:11px;font-weight:900;letter-spacing:1px}
+.status-pill.done{background:#3a2d17;border-color:#ffd76a88;color:#ffd76a}
+.status-text{font-size:12px;color:var(--sub);flex:1;min-width:180px}
+.board-legend.inline{margin:0;gap:12px}
+.board-screen .winner-banner{max-width:1400px;margin:0 auto 16px;padding:22px 16px;border-radius:20px;border:1px solid #ffd76a55;background:linear-gradient(135deg,#2d2340,#16132b);overflow:hidden}
+.board-screen .winner-banner.no-winner{border-color:#4b3d68}
+.board-screen .winner-banner .primary-btn{max-width:420px;margin:0 auto}
+.winner-banner.compact .trophy{font-size:40px}
+.winner-banner.compact h2{font-size:27px}
+.lane-filter{display:flex;gap:6px;overflow-x:auto;max-width:1400px;margin:0 auto 14px;padding-bottom:2px;scrollbar-width:none}
+.lane-filter::-webkit-scrollbar{display:none}
+.lane-filter button{flex:none;border:1px solid #4b3c64;background:#1b1630;color:#d9cdee;border-radius:30px;padding:8px 14px;font-size:12px;font-weight:700;min-height:36px}
+.lane-filter button.on{background:linear-gradient(115deg,#7e39c5,#a44ce3);border-color:#c685ff;color:#fff}
+.board-screen .empty-state{max-width:1400px;margin:0 auto 14px}
+.lanes{display:grid;gap:12px;max-width:1400px;margin:0 auto;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));align-items:start}
+.lane{background:linear-gradient(135deg,#24203f,#14132c);border:1px solid #4b3d68;border-radius:18px;padding:12px;transition:border-color .3s,box-shadow .3s}
+.lane.turn{border-color:#c18bff;box-shadow:0 0 22px #a95bff35}
+.lane.won{border-color:#ffd76a;box-shadow:0 0 26px #ffd76a30}
+.lane.left{opacity:.55}
+.lane-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.lane-name{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.lane-name strong{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lane-name small{font-size:10px;font-weight:900;letter-spacing:.8px;color:var(--sub)}
+.lane.won .lane-name small{color:#ffd76a}
+.lane.turn .lane-name small{color:#e2c8ff}
+.best{font-size:9px;font-weight:900;letter-spacing:.8px;color:var(--sub);display:flex;align-items:center;gap:5px}
+.best b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#173126;border:1px solid var(--pin);color:var(--pin);font-size:12px}
+.lane-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.lane-row{display:flex;align-items:center;gap:9px;background:#100e22;border:1px solid #33294d;border-radius:12px;padding:7px 9px;animation:flip-row .45s cubic-bezier(.2,.9,.3,1.1) backwards;animation-delay:calc(var(--i,0) * 60ms)}
+.lane-try{font-size:10px;font-weight:900;color:var(--sub);width:24px;flex:none}
+.lane-row .tiny-pegs{flex:1;gap:6px}
+.lane-row .tiny-peg{width:30px;height:30px;max-width:none;flex:none}
+.counts{display:flex;gap:6px;flex:none}
+.count{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;font:800 14px 'Space Grotesk',sans-serif}
+.pin-count{background:var(--pin);color:#06301b;box-shadow:0 0 10px #54e89e55}
+.spin-count{background:#f8f8ff;color:#1b1630;box-shadow:0 0 10px #ffffff40}
+.count-missed{font-size:9px;font-weight:900;letter-spacing:.8px;color:var(--sub);flex:none}
+.missed-row{flex:1;font-size:11px;color:#8d84a8;font-style:italic}
+.sealed-row{border-style:dashed;animation:none}
+.sealed-balls{flex:1;display:flex;gap:6px}
+.sealed-balls i{width:30px;height:30px;border-radius:50%;background:repeating-linear-gradient(45deg,#2b2343 0 5px,#352b52 5px 10px);border:1px solid #5a4880;animation:shimmer 1.6s ease-in-out infinite}
+.lane-empty{font-size:12px;color:#8d84a8;padding:8px 2px}
+@media(max-width:360px){.lane-row .tiny-peg,.sealed-balls i{width:26px;height:26px}.count{width:25px;height:25px;font-size:13px}.board-title h1{font-size:22px}}
+/* Large screens (laptop/TV): bigger type and balls so the board reads across a room. */
+@media(min-width:1100px){
+  .board-screen{padding:28px 36px}
+  .board-title h1{font-size:40px}
+  .board-title p,.status-text{font-size:16px}
+  .status-pill{font-size:14px;padding:8px 16px}
+  .board-timer{font-size:40px;padding:10px 18px}
+  .lanes{grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:18px}
+  .lane{padding:18px}
+  .lane-name strong{font-size:20px}
+  .lane-row .tiny-peg,.sealed-balls i{width:42px;height:42px}
+  .count{width:38px;height:38px;font-size:19px}
+  .lane-try{font-size:13px;width:32px}
+  .secret-ball .patterned-peg{width:76px;height:76px}
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes slide-in{from{opacity:0;transform:translateY(10px) scale(.98)}}
+@keyframes pill-pop{50%{transform:scale(1.12)}}
+@keyframes peg-pop{from{transform:scale(.4);opacity:.3}}
+@keyframes ring{50%{outline-color:#d1afff00;outline-offset:6px}}
+@keyframes row-lock{40%{transform:scale(1.015);border-color:#c18bff}}
+@keyframes dot-in{from{transform:scale(0);opacity:0}}
+@keyframes urgent{50%{transform:scale(1.06);box-shadow:0 0 18px #ff789166}}
+@keyframes blink{50%{opacity:.55}}
+@keyframes trophy{from{transform:scale(.2) rotate(-25deg);opacity:0}}
+@keyframes rise{from{transform:translateY(12px);opacity:0}}
+@keyframes flip-in{from{transform:rotateY(90deg) scale(.6);opacity:0}}
+@keyframes flip-row{from{transform:rotateX(70deg);opacity:0}}
+@keyframes board-in{from{transform:translateY(24px);opacity:0}}
+@keyframes shimmer{50%{opacity:.55}}
+@keyframes confetti{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--drift),420px) rotate(var(--spin))}}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .confetti{display:none}
+}
+
+/* Sealed / missed label on the player's own board: keep on one line. */
+.code-row>.pending{max-width:none;white-space:nowrap;overflow-wrap:normal;font-size:8px;font-weight:900;letter-spacing:.6px;padding:4px 6px;border-radius:8px;background:#2a2142;color:#cdb8ef}
+@media(max-width:480px){.board-title h1{font-size:clamp(20px,6.2vw,26px)}}

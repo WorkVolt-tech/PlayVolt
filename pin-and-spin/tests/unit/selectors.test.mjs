@@ -67,3 +67,33 @@ test('timer formatting rounds up to whole seconds', () => {
   assert.deepEqual(formatClock(95001), ['01', '36']);
   assert.deepEqual(formatClock(400), ['00', '01']);
 });
+
+test('player progress uses only public data and marks sealed, thinking, turn and winners', async () => {
+  const { playerProgress } = await import('../../src/game/selectors.js');
+  const players = [
+    { id: 'a', seat: 1, active: true, submitted: true },
+    { id: 'b', seat: 2, active: true, submitted: false },
+    { id: 'c', seat: 3, active: false, submitted: false },
+  ];
+  const guesses = [
+    { playerId: 'a', attempt: 1, colors: [0, 1, 2, 3], pins: 2, spins: 1, revealed: true },
+    { playerId: 'a', attempt: 2, colors: [5, 5, 5, 5], pins: null, spins: null, revealed: false },
+    { playerId: 'b', attempt: 1, colors: null, pins: 0, spins: 0, revealed: true },
+  ];
+  const [a, b, c] = playerProgress(mk({ mode: 'reveal', round: 2, turnId: null, players, guesses }));
+  assert.equal(a.sealed, true);
+  assert.equal(a.used, 2);
+  assert.equal(a.guesses.length, 1, 'the sealed guess itself is never included');
+  assert.ok(a.guesses.every((x) => x.revealed));
+  assert.equal(a.best, 2);
+  assert.equal(b.thinking, true);
+  assert.equal(b.best, null, 'a missed guess does not count as a score');
+  assert.equal(c.left, true);
+  assert.equal(c.thinking, false);
+
+  const classic = playerProgress(mk({ turnId: 'b', players, guesses: [] }));
+  assert.deepEqual(classic.map((x) => x.isTurn), [false, true, false]);
+  const done = playerProgress(mk({ status: 'finished', winners: ['a', 'b'], players, guesses: [] }));
+  assert.deepEqual(done.map((x) => x.won), [true, true, false]);
+  assert.ok(done.every((x) => !x.isTurn && !x.thinking));
+});
