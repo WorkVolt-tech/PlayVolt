@@ -798,11 +798,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 <div class="modal-overlay hidden" id="adminModal" onclick="if(event.target===this) closeAdminModal()">
   <div class="modal-box">
     <div class="modal-title">⚡ Admin Access</div>
-    <div class="modal-sub">Enter the admin password to unlock adult games.</div>
+    <div class="modal-sub">Sign in with your PlayVolt (Dekabess) admin account to unlock adult games.</div>
     <div class="msg" id="adminMsg"></div>
     <div class="field-group">
+      <label class="field-label">Email</label>
+      <input type="email" id="adminEmail" placeholder="you@example.com" autocomplete="email"
+             onkeydown="if(event.key==='Enter') document.getElementById('adminPassword').focus()">
+    </div>
+    <div class="field-group">
       <label class="field-label">Password</label>
-      <input type="password" id="adminPassword" placeholder="Admin password"
+      <input type="password" id="adminPassword" placeholder="Account password" autocomplete="current-password"
              onkeydown="if(event.key==='Enter') submitAdminPassword()">
     </div>
     <button class="btn btn-volt" onclick="submitAdminPassword()" style="margin-bottom:10px;">Unlock</button>
@@ -831,21 +836,30 @@ input[type="date"]::-webkit-calendar-picker-indicator {
    Admin mode unlocks adult games via password.
 ═══════════════════════════════════════════ */
 
-// ── Admin password is checked on the server (Game DB: playvolt_check_admin). ──
-// Only a yes/no answer comes back; the password itself is never in this page.
-// To change it, run in the Supabase SQL editor:
-//   select public.playvolt_set_admin_password('your new password');
+// ── Admin access comes from your PlayVolt account (the same accounts as Dekabess). ──
+// Sign in, then the database's am_i_admin() says whether the account is in the admins
+// table. No password is stored in this page; only the public browser key is.
 const PLAYVOLT_DB_URL = 'https://eybzbtyfafmqbkulyvog.supabase.co';
 const PLAYVOLT_DB_PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5YnpidHlmYWZtcWJrdWx5dm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MjE0MDksImV4cCI6MjA5MDM5NzQwOX0.65mO6dICDWAlS4nh0gBs7tSNobuNMNo103YY0Ylccq8';
 
-async function checkAdminPassword(password) {
-  const res = await fetch(`${PLAYVOLT_DB_URL}/rest/v1/rpc/playvolt_check_admin`, {
+// Returns 'admin', 'not-admin' or throws with a readable message.
+async function checkAdminAccount(email, password) {
+  const login = await fetch(`${PLAYVOLT_DB_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
-    headers: { apikey: PLAYVOLT_DB_PUBLIC_KEY, Authorization: `Bearer ${PLAYVOLT_DB_PUBLIC_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_password: password }),
+    headers: { apikey: PLAYVOLT_DB_PUBLIC_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) throw new Error('check failed');
-  return (await res.json()) === true;
+  const session = await login.json().catch(() => ({}));
+  if (!login.ok || !session.access_token) {
+    throw new Error(session.error_description || session.msg || 'Incorrect email or password.');
+  }
+  const check = await fetch(`${PLAYVOLT_DB_URL}/rest/v1/rpc/am_i_admin`, {
+    method: 'POST',
+    headers: { apikey: PLAYVOLT_DB_PUBLIC_KEY, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  if (!check.ok) throw new Error('Could not check admin access. Try again.');
+  return (await check.json()) === true ? 'admin' : 'not-admin';
 }
 
 // ── GAME ROUTES ──
@@ -933,7 +947,7 @@ function handleAdminToggle() {
     document.getElementById('adminModal').classList.remove('hidden');
     document.getElementById('adminPassword').value = '';
     clearMsg('adminMsg');
-    setTimeout(() => document.getElementById('adminPassword').focus(), 100);
+    setTimeout(() => document.getElementById('adminEmail').focus(), 100);
   }
 }
 
@@ -954,29 +968,30 @@ function updateAdminBtn() {
 let adminChecking = false;
 async function submitAdminPassword() {
   if (adminChecking) return;
+  const email = document.getElementById('adminEmail').value.trim();
   const pw = document.getElementById('adminPassword').value;
-  if (!pw) { setMsg('adminMsg', 'Enter the admin password.'); return; }
+  if (!email || !pw) { setMsg('adminMsg', 'Enter your account email and password.'); return; }
   adminChecking = true;
-  setMsg('adminMsg', 'Checking…', 'info');
-  let ok = false;
+  setMsg('adminMsg', 'Signing in…', 'info');
+  let result;
   try {
-    ok = await checkAdminPassword(pw);
-  } catch {
+    result = await checkAdminAccount(email, pw);
+  } catch (e) {
     adminChecking = false;
-    setMsg('adminMsg', 'Could not reach the server. Check your connection and try again.');
+    setMsg('adminMsg', e.message === 'Failed to fetch' ? 'Could not reach the server. Check your connection.' : (e.message || 'Sign-in failed.'));
     return;
   }
   adminChecking = false;
-  if (ok) {
-    setAdminMode(true);
-    closeAdminModal();
-    refreshHub();
-    showToast('⚡ Admin mode on — all games unlocked!');
-    updateAdminBtn();
-  } else {
-    setMsg('adminMsg', 'Incorrect password. Try again.');
-    document.getElementById('adminPassword').select();
+  document.getElementById('adminPassword').value = '';
+  if (result === 'not-admin') {
+    setMsg('adminMsg', 'This account is not an admin account.');
+    return;
   }
+  setAdminMode(true);
+  closeAdminModal();
+  refreshHub();
+  showToast('⚡ Admin mode on — all games unlocked!');
+  updateAdminBtn();
 }
 
 function closeAdminModal() {
