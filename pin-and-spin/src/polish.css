@@ -242,3 +242,55 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--volt)}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .sound-toggle{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;border:1px solid #5b4580;background:#221a38;font-size:16px;line-height:1;padding:0}
 .sound-toggle[aria-pressed="false"]{opacity:.7}
+
+/* ---------- Show on TV (phone) ---------- */
+.tv-button{margin-top:12px}
+.tv-link-box{font:12px/1.5 ui-monospace,Menlo,monospace;word-break:break-all;color:#d9cdee;background:#100e22;border:1px solid #4b3d68;border-radius:10px;padding:10px 12px;margin:0 0 14px}
+.tv-sheet-actions{display:flex;gap:10px;margin-bottom:10px}
+.tv-sheet-actions .primary-btn{flex:1}
+.tv-open{display:flex;align-items:center;justify-content:center;text-decoration:none;flex:0 0 34%}
+.field-help.small{font-size:11px;margin:0}
+
+/* ---------- TV display (laptop / smart-TV browser, landscape) ---------- */
+.tv{position:relative;min-height:100dvh;padding:max(2vw,env(safe-area-inset-top)) 3vw 3vw;color:var(--text)}
+.tv-top{position:relative;display:flex;align-items:center;gap:2vw;margin-bottom:2vw}
+.tv-top .brand{font-size:clamp(26px,2.6vw,54px)}
+.tv-room{font-size:clamp(15px,1.4vw,30px);color:var(--sub)}
+.tv-room strong{color:#fff;letter-spacing:.14em;margin-left:.3em}
+.tv-badge{margin-left:auto;font-size:clamp(11px,.9vw,18px);font-weight:900;letter-spacing:.1em;color:#e2c8ff;border:1px solid #8c5ccd;background:#2e2048;border-radius:30px;padding:.5em 1.1em}
+.tv-message{position:relative;text-align:center;margin-top:16vh}
+.tv-message h1{font:700 clamp(30px,3.4vw,70px) 'Space Grotesk',sans-serif;margin:0 0 1vw}
+.tv-message p{font-size:clamp(16px,1.5vw,30px);color:var(--sub);max-width:60vw;margin:0 auto;line-height:1.5}
+.tv-lobby{position:relative;display:grid;gap:2.2vw}
+.tv-join{display:flex;align-items:center;justify-content:space-between;gap:4vw;padding:1.8vw 3vw;border-radius:28px;border:1px solid #a46edd;background:linear-gradient(135deg,#2a1f48,#15122b);box-shadow:0 0 50px #9c3ef525}
+.tv-kicker{margin:0;font-size:clamp(16px,1.6vw,34px);font-weight:800;color:#e2c8ff}
+.tv-code{display:block;font:800 clamp(56px,8vw,170px)/1 'Space Grotesk',sans-serif;letter-spacing:.12em;margin:.15em 0 .1em}
+.tv-url{margin:0;font-size:clamp(18px,1.8vw,38px);font-weight:700;color:#fff}
+.tv-hint{margin:.6vw 0 0;font-size:clamp(14px,1.2vw,24px);color:var(--sub)}
+.qr{flex:none;width:clamp(160px,16vw,340px);background:#fff;padding:clamp(10px,1vw,20px);border-radius:22px;box-shadow:0 10px 40px #0008}
+.qr svg{display:block;width:100%;height:auto}
+.tv-mode{display:flex;align-items:center;gap:1.4vw}
+.tv-mode .patterned-peg{width:clamp(44px,4vw,80px);height:clamp(44px,4vw,80px);max-width:none;flex:none}
+.tv-mode strong{display:block;font:700 clamp(22px,2.2vw,46px) 'Space Grotesk',sans-serif}
+.tv-mode span{font-size:clamp(14px,1.3vw,26px);color:var(--sub)}
+.tv-players{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(104px,8.3vw,230px),1fr));gap:1vw}
+.tv-player{display:flex;flex-direction:column;align-items:center;gap:.6vw;padding:1.2vw .6vw;border-radius:22px;background:linear-gradient(135deg,#24203f,#14132c);border:1px solid #4b3d68;animation:slide-in .4s cubic-bezier(.2,.9,.3,1.2) backwards}
+.tv-player .avatar-lg{width:clamp(48px,4.4vw,100px);height:clamp(48px,4.4vw,100px)}
+.tv-player .avatar-lg b{font-size:clamp(22px,2.2vw,46px)}
+.tv-player strong{font-size:clamp(15px,1.3vw,30px);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tv-player span{font-size:clamp(11px,.95vw,20px);font-weight:900;letter-spacing:.1em;color:var(--sub)}
+.tv-player.ready{border-color:#4fc28b;box-shadow:0 0 24px #4fc28b30}
+.tv-player.ready span{color:var(--pin)}
+.tv-player.away{border-style:dashed;border-color:#ff9a6a88}
+.tv-player.empty{border-style:dashed;background:transparent;opacity:.6}
+.tv-empty-seat{display:grid;place-items:center;width:clamp(56px,5.5vw,116px);height:clamp(56px,5.5vw,116px);border-radius:50%;border:2px dashed #8c6bb5;color:#c9a6f5;font-size:clamp(24px,2.4vw,50px)}
+.tv-status{text-align:center;font-size:clamp(18px,1.8vw,38px);font-weight:700;color:#e2c8ff;margin:.5vw 0 0}
+/* The live board fills the TV page instead of overlaying it. */
+.tv .board-screen{position:relative;inset:auto;z-index:auto;overflow:visible;background:none;padding:0;animation:none}
+.tv .board-head,.tv .board-status,.tv .lanes,.tv .winner-banner{max-width:none}
+.tv-board-kicker{width:100%;font-size:clamp(12px,1vw,20px);font-weight:800;letter-spacing:.08em;color:var(--sub);text-transform:uppercase}
+.tv-start{position:fixed;z-index:40;right:2.5vw;bottom:2.5vw;border:1px solid #c685ff;background:linear-gradient(115deg,#8a32eb,#a735ed);color:#fff;border-radius:16px;padding:1em 1.6em;font-weight:800;font-size:clamp(14px,1.1vw,22px);box-shadow:0 10px 30px #0008}
+.announce-tv{top:32%;padding:2vw 4vw;border-radius:32px}
+.announce-tv strong{font-size:clamp(48px,6vw,120px)}
+.announce-tv span{font-size:clamp(16px,1.6vw,32px)}
+@media(max-width:800px){.tv-join{flex-direction:column;text-align:center}}

@@ -11,7 +11,7 @@ import { WinnerBanner } from './WinnerBanner.jsx';
 // Built for a phone today and a TV later. It renders ONLY public data from the server
 // snapshot (revealed guesses, submitted flags, winners, and the answer once finished)
 // and holds no player controls: the controller passes navigation/actions via props.
-export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'all' }) {
+export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'all', showFilter = true }) {
   const [focus, setFocus] = useState(initialFocus);
   const lanes = playerProgress(game).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
   const shown = focus === 'all' ? lanes : lanes.filter((lane) => lane.player.id === focus);
@@ -45,7 +45,7 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
 
     {game.status === 'finished' && <WinnerBanner game={game} compact>{actions}</WinnerBanner>}
 
-    {lanes.length > 1 && <div className="lane-filter" role="group" aria-label="Show players">
+    {showFilter && lanes.length > 1 && <div className="lane-filter" role="group" aria-label="Show players">
       <button type="button" className={focus === 'all' ? 'on' : ''} aria-pressed={focus === 'all'} onClick={() => setFocus('all')}>All players</button>
       {lanes.map(({ player }) => <button type="button" key={player.id} className={focus === player.id ? 'on' : ''}
         aria-pressed={focus === player.id} onClick={() => setFocus(focus === player.id ? 'all' : player.id)}>{player.name}</button>)}

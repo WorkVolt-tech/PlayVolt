@@ -76,7 +76,12 @@ the Supabase project's Site URL, the same as for Dekabess — ideally the PlayVo
 - Timed Reveal — 3 minutes per round, 4 rounds
 - Rush — 3 minutes total, 8 guesses per player
 
-The shared TV/display concept is a **future phase** and is not yet implemented.
+**TV mode:** in the lobby (or the 📺 button in a match) a player taps **Show on TV** and
+opens the link on a laptop or smart-TV browser. The link is `/?tv=ROOM#<display token>`
+(the token stays after `#`, so it never reaches the web server). The TV (`src/tv/`) uses
+the read-only `display` action: lobby with a big room code and join QR code, then the live
+board, announcements, countdown and winner banner. It never receives the secret before the
+end or a guess before its reveal. One click on the TV turns on sound and full screen.
 
 The phone board uses stacked horizontal guess rows (four, or eight in Rush), a
 three-by-two palette, green Pin markers and white Spin markers. The selectable

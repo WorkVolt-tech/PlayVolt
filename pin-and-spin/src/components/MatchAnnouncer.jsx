@@ -7,7 +7,8 @@ const BUZZ = { start: [40], round: [25, 40, 25], turn: [60], scored: [30], solve
 const buzz = (pattern) => { try { navigator.vibrate?.(pattern); } catch { /* not supported */ } };
 
 // Watches the match and shows a brief banner ("Round 2", "Your turn!") with a buzz.
-export function MatchAnnouncer({ game }) {
+export function MatchAnnouncer({ game, audience = 'player' }) {
+  const tv = audience === 'tv';
   const prevRef = useRef(null);
   const [banner, setBanner] = useState(null);
 
@@ -17,7 +18,8 @@ export function MatchAnnouncer({ game }) {
     if (!events.length) return;
     const has = (type) => events.find((e) => e.type === type);
     const end = has('end'), scored = has('scored'), round = has('round');
-    if (end) buzz(end.won ? BUZZ.win : BUZZ.end);
+    if (tv) { /* the shared screen does not vibrate */ }
+    else if (end) buzz(end.won ? BUZZ.win : BUZZ.end);
     else if (scored?.pins === 4) buzz(BUZZ.solved);
     else if (round) buzz(BUZZ.round);
     else if (has('turn')) buzz(BUZZ.turn);
@@ -26,11 +28,12 @@ export function MatchAnnouncer({ game }) {
 
     const mode = MODES[game.mode];
     if (has('start')) {
+      const first = (game.players || []).find((p) => p.id === game.turnId)?.name;
       setBanner({ key: Date.now(), title: 'Game on!', sub: game.mode === 'classic'
-        ? (game.turnId === game.me ? 'You go first' : 'Watch for your turn')
+        ? (tv ? `${first || 'A random player'} goes first` : game.turnId === game.me ? 'You go first' : 'Watch for your turn')
         : game.mode === 'rush' ? 'Three minutes on the clock' : `Round 1 of 4 · ${mode.label}` });
     } else if (round) {
-      setBanner({ key: Date.now(), title: `Round ${round.round}`, sub: `Round ${round.round - 1} revealed · make your next guess` });
+      setBanner({ key: Date.now(), title: `Round ${round.round}`, sub: tv ? `Round ${round.round - 1} revealed · next guesses please!` : `Round ${round.round - 1} revealed · make your next guess` });
     } else if (has('turn')) {
       setBanner({ key: Date.now(), title: 'Your turn!', sub: 'Pick four colors and submit' });
     }
@@ -43,7 +46,7 @@ export function MatchAnnouncer({ game }) {
   }, [banner]);
 
   if (!banner) return null;
-  return <div className="announce" key={banner.key} role="status" aria-live="polite">
+  return <div className={'announce' + (tv ? ' announce-tv' : '')} key={banner.key} role="status" aria-live="polite">
     <strong>{banner.title}</strong><span>{banner.sub}</span>
   </div>;
 }

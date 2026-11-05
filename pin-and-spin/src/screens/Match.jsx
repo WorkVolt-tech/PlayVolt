@@ -7,6 +7,7 @@ import { FinishPanel } from './FinishPanel.jsx';
 import { GuessPanel } from './GuessPanel.jsx';
 import { MatchRoomBar, MatchStatus, ViewTabs } from './MatchHeader.jsx';
 import { ManagePlayers } from './ManagePlayers.jsx';
+import { ShowOnTv } from './ShowOnTv.jsx';
 import { MatchAnnouncer } from '../components/MatchAnnouncer.jsx';
 import { play } from '../sound/sfx.js';
 
@@ -18,6 +19,7 @@ export function Match({ state, onShare, onRemove }) {
   const [fullscreen, setFullscreen] = useState(false);
   const [boardFocus, setBoardFocus] = useState('all');
   const [managing, setManaging] = useState(false);
+  const [tvOpen, setTvOpen] = useState(false);
   const host = game.hostId === game.me;
   const mine = myGuesses(game);
   const limit = guessLimit(game.mode);
@@ -73,7 +75,9 @@ export function Match({ state, onShare, onRemove }) {
 
   return <>
     <MatchAnnouncer game={game} />
-    <MatchRoomBar game={game} onShare={onShare} onPlayers={host ? () => { play('drawer-open'); setManaging(true); } : null} />
+    <MatchRoomBar game={game} onShare={onShare} onPlayers={host ? () => { play('drawer-open'); setManaging(true); } : null}
+      onTv={game.displayToken ? () => { play('drawer-open'); setTvOpen(true); } : null} />
+    {tvOpen && <ShowOnTv game={game} onClose={() => { play('drawer-close'); setTvOpen(false); }} />}
     {managing && host && <ManagePlayers game={game} busy={busy} onRemove={onRemove} onClose={() => { play('drawer-close'); setManaging(false); }} />}
     <MatchStatus game={game} statusText={statusText(game, { busy, canSubmit })} remainingMs={remainingMs} />
     <MiniBoards game={game} onOpen={(id) => openBoard(id)} />

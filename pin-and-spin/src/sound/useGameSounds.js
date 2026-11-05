@@ -3,7 +3,7 @@ import { matchEvents } from '../game/selectors.js';
 import { play } from './sfx.js';
 
 // Plays one sound for what just changed in the room (lobby or match).
-export function useGameSounds(game) {
+export function useGameSounds(game, { audience = 'player' } = {}) {
   const prevRef = useRef(null);
   useEffect(() => {
     const prev = prevRef.current;
@@ -21,7 +21,8 @@ export function useGameSounds(game) {
     const events = matchEvents(prev, game);
     const has = (type) => events.find((e) => e.type === type);
     const end = has('end'), scored = has('scored');
-    if (end) play(end.won ? 'level-up' : (game.winners || []).length ? 'error-soft-thud' : 'modal-close-fall');
+    const someoneWon = (game.winners || []).length > 0;
+    if (end) play(end.won || (audience === 'tv' && someoneWon) ? 'level-up' : someoneWon ? 'error-soft-thud' : 'modal-close-fall');
     else if (scored?.pins === 4) play('achievement');
     else if (has('round')) play('notification-ding');
     else if (has('turn')) play('mention-pop');

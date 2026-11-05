@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MODES } from '../game/constants.js';
 import { Peg } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { play } from '../sound/sfx.js';
+import { ShowOnTv } from './ShowOnTv.jsx';
 
 // Waiting room: code/invite, chosen mode, players and ready/start controls.
 export function Lobby({ game, busy, act, onCopy, onShare, onRemove }) {
@@ -11,12 +12,17 @@ export function Lobby({ game, busy, act, onCopy, onShare, onRemove }) {
   const host = game.hostId === game.me;
   const allReady = activePlayers.length >= 2 && activePlayers.every((player) => player.ready);
   const readyCount = activePlayers.filter((player) => player.ready).length;
+  const [tvOpen, setTvOpen] = useState(false);
   return <>
     <h1 className="page-title">Your room</h1>
     <div className="surface lobby-code"><strong>{game.code}</strong><div className="invite-actions">
       <button className="outline-btn" onClick={() => { play('select-item'); onCopy(game.code, 'Room code copied!'); }}>▣ Copy Code</button>
       <button className="outline-btn" onClick={() => { play('select-item'); onShare(); }}>↗ Invite Friends</button>
-    </div></div>
+    </div>
+      {game.displayToken && <button type="button" className="outline-btn full tv-button" onClick={() => { play('drawer-open'); setTvOpen(true); }}>
+        📺 Show on TV</button>}
+    </div>
+    {tvOpen && <ShowOnTv game={game} onClose={() => { play('drawer-close'); setTvOpen(false); }} />}
     <div className="surface lobby-mode"><Peg value={MODES[game.mode].color} tiny />
       <div><strong>{MODES[game.mode].label}</strong><p>{MODES[game.mode].hint}</p></div></div>
     <div className="surface">
