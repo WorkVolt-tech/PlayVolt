@@ -10,6 +10,7 @@ const cors = {
 const actions = new Set(['create', 'join', 'state', 'ready', 'start', 'guess', 'leave', 'replay', 'display', 'kick']);
 // TV pairing (migration 005): a TV shows a 4-letter code; a player in the room types it.
 const tvActions = new Set(['tv_start', 'tv_check', 'tv_pair']);
+// Leaderboard (migration 006): public, needs no room or session.
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   const reply = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: cors });
@@ -19,10 +20,12 @@ Deno.serve(async (req: Request) => {
     if (raw.length > 4096) return reply({ error: 'Request too large' }, 413);
     const body = JSON.parse(raw);
     const tv = tvActions.has(body.action);
-    if (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token)) {
+    const board = body.action === 'leaderboard';
+    if (!board && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
       return reply({ error: 'Invalid player session' }, 400);
     }
-    if (!['create', 'tv_start', 'tv_check'].includes(body.action) && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
+    if (board && !['week', 'all'].includes(body.data?.period)) return reply({ error: 'Choose a leaderboard period' }, 400);
+    if (!['create', 'tv_start', 'tv_check', 'leaderboard'].includes(body.action) && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
       return reply({ error: 'Enter the six-character room code' }, 400);
     }
     const data = body.data ?? {};
@@ -57,9 +60,12 @@ Deno.serve(async (req: Request) => {
     const address = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(address + key));
     const originHash = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/${tv ? 'pin_and_spin_tv' : 'pin_and_spin_api'}`, {
+    const rpc = board ? 'pin_and_spin_leaderboard' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
+    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/${rpc}`, {
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(tv
+      body: JSON.stringify(board
+        ? { p_period: data.period, p_account: accountId }
+        : tv
         ? { p_action: body.action, p_pair: data.pairCode ?? '', p_token: body.token, p_room: body.code ?? '', p_origin_hash: originHash }
         : { p_action: body.action, p_code: body.code ?? '', p_token: body.token, p_data: verifiedData, p_origin_hash: originHash }),
     });

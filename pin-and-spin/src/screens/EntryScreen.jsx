@@ -17,6 +17,7 @@ export function EntryScreen({ form, busy, account }) {
       <div className="home-actions">
         <button className="primary-btn" onClick={() => { play('tap-ui-tick'); setFormTab('create'); }}>Create Room <span>＋</span></button>
         <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('join'); }}>Join Room <span>↗</span></button>
+        <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('leaderboard'); }}>Leaderboard <span>🏆</span></button>
         <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('help'); }}>How to Play <span>?</span></button>
       </div>
       <div className="account-bar">

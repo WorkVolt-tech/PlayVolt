@@ -95,6 +95,13 @@ Everyone's Guesses) shows the turn order, 1 = plays first; lanes are sorted that
 TV marks PLAYING NOW and UP NEXT. The snapshot has no "starter", so `inTurnOrder()` in
 `src/game/selectors.js` works it out from the guess counts (tested in `turnorder.test.mjs`).
 
+**Leaderboard:** Home → Leaderboard ranks signed-in players by multiplayer wins (ties: fewer
+games first), Last 7 days or All time, top 50 plus your own row. Migration `006_leaderboard.sql`
+adds `pin_and_spin_results` (one row per signed-in participant when a match finishes: players
+still in the room plus anyone who left after guessing; 2+ players; guests never stored), the
+trigger `pin_and_spin_rooms_results` and `pin_and_spin_leaderboard()` (Edge Function action
+`leaderboard`, no session needed; nicknames come from the shared `profiles` table, read only).
+
 **How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
 (`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via
 Downloader + `<site>/app`, TV browsers via `<site>/tv`) also appear under Show on TV.

@@ -431,3 +431,24 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 @keyframes dialog-in{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.dialog,.dialog-backdrop{animation:none}}
 .dialog-actions .primary-btn,.dialog-actions .outline-btn{justify-content:center;text-align:center}
+
+/* Leaderboard */
+.lb-sub{color:var(--sub);font-size:13px;text-align:center;margin:-6px 0 14px;line-height:1.5}
+.lb-tabs{display:flex;gap:8px;margin-bottom:14px}
+.lb-tabs button{flex:1;padding:11px;border-radius:12px;border:1px solid #4b3d68;background:#1a1530;color:var(--sub);font-weight:800;font-size:13px;cursor:pointer}
+.lb-tabs button.on{background:#3b2c5e;border-color:#c685ff;color:#fff}
+.lb-empty p{margin:0;color:var(--sub);text-align:center;line-height:1.6}
+.lb-list{list-style:none;margin:0 0 14px;padding:8px}
+.lb-head,.lb-row{display:grid;grid-template-columns:38px 1fr 46px 50px 50px;align-items:center;gap:6px;padding:9px 8px;border-radius:12px}
+.lb-head{font-size:10px;font-weight:900;letter-spacing:.08em;color:var(--sub);text-transform:uppercase}
+.lb-head span:nth-child(n+3),.lb-row span:nth-child(n+3){text-align:right}
+.lb-row{font-size:14px;color:#ddd5ee}
+.lb-row+.lb-row{border-top:1px solid #2a2342}
+.lb-row.top{background:linear-gradient(90deg,#3a2d1722,transparent)}
+.lb-row.me{background:#3b2c5e;border:1px solid #8c5ccd}
+.lb-mine{margin-top:6px}
+.lb-rank{font-weight:900;font-size:16px;text-align:center}
+.lb-name{font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-wins{font-weight:900;color:#ffd76a}
+.lb-note{text-align:center}
+.lb-note p{margin:0 0 12px;color:var(--sub);font-size:14px;line-height:1.5}

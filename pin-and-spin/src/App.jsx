@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { usePinAndSpin } from './hooks/usePinAndSpin.js';
 import { useAccount } from './hooks/useAccount.js';
 import { AccountScreen } from './screens/AccountScreen.jsx';
+import { LeaderboardScreen } from './screens/LeaderboardScreen.jsx';
 import { VersionAlert } from './components/VersionAlert.jsx';
 import { Dialog } from './components/Dialog.jsx';
 import { SoundToggle } from './sound/SoundToggle.jsx';
@@ -62,7 +63,9 @@ export default function App() {
       <main>
         {!session && form.formTab === 'account' && <AccountScreen account={account}
           onBack={() => form.setFormTab('home')} onDone={(message) => { notify(message); form.setFormTab('home'); }} />}
-        {!session && form.formTab !== 'account' && <EntryScreen form={form} busy={busy || account.loading} account={account} />}
+        {!session && form.formTab === 'leaderboard' && <LeaderboardScreen account={account}
+          onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
+        {!session && form.formTab !== 'account' && form.formTab !== 'leaderboard' && <EntryScreen form={form} busy={busy || account.loading} account={account} />}
 
         {session && !game && <div className="surface"><p>Reconnecting to your room…</p>
           <button className="outline-btn full" onClick={forget}>BACK TO HOME</button></div>}
