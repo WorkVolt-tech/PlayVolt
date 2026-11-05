@@ -49,6 +49,22 @@ The home screen separates Create Room, Join Room and How to Play. Mode selection
 uses four stacked cards; the lobby offers Copy Code and Invite Friends. A midnight
 navy and purple theme with patterned balls keeps colors distinguishable.
 
+## Client structure
+
+```
+src/
+  App.jsx                  shell: header, routing between entry / lobby / match
+  game/                    no React — constants, guest session, API call, pure selectors
+  hooks/usePinAndSpin.js   player-device state: session, polling, actions, draft recovery
+  components/              Peg, Feedback, CodeBoard, Empty
+  screens/                 phone controller: EntryScreen, Lobby, Match, GuessPanel, FinishPanel
+  shared/                  EveryonesGuesses + GuessRow — the shared results board
+```
+
+`shared/` renders only public data (revealed guesses, players, the answer once
+finished) and contains no player controls, so the future TV/display mode can reuse it
+with a display-token snapshot. Player-only actions are passed in from `screens/`.
+
 ## Backend source and verification
 
 - `backend/schema.sql` records the initial schema and transactional game functions
