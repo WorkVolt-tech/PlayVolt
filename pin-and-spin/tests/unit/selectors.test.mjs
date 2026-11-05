@@ -97,3 +97,19 @@ test('player progress uses only public data and marks sealed, thinking, turn and
   assert.deepEqual(done.map((x) => x.won), [true, true, false]);
   assert.ok(done.every((x) => !x.isTurn && !x.thinking));
 });
+
+test('match events: start, new round, own scored guess, your turn, end — nothing on first load', async () => {
+  const { matchEvents } = await import('../../src/game/selectors.js');
+  const base = { code: 'A', puzzle: 1, me: 'a', mode: 'reveal', status: 'playing', round: 1, turnId: null, winners: [], guesses: [] };
+  assert.deepEqual(matchEvents(null, base), []);
+  assert.deepEqual(matchEvents({ ...base, status: 'lobby', puzzle: 0 }, base).map((e) => e.type), ['start']);
+  const revealed = { ...base, round: 2, guesses: [
+    { playerId: 'a', attempt: 1, colors: [0, 1, 2, 3], pins: 2, spins: 1, revealed: true },
+    { playerId: 'b', attempt: 1, colors: [0, 0, 0, 0], pins: 1, spins: 0, revealed: true }] };
+  assert.deepEqual(matchEvents(base, revealed), [{ type: 'round', round: 2 }, { type: 'scored', pins: 2, spins: 1 }]);
+  assert.deepEqual(matchEvents(revealed, revealed), [], 'polling the same state fires nothing');
+  const classic = { ...base, mode: 'classic', turnId: 'b' };
+  assert.deepEqual(matchEvents(classic, { ...classic, turnId: 'a' }).map((e) => e.type), ['turn']);
+  assert.deepEqual(matchEvents(base, { ...base, status: 'finished', winners: ['a'] }), [{ type: 'end', won: true }]);
+  assert.deepEqual(matchEvents(revealed, { ...base, puzzle: 2 }), [], 'a rematch does not replay old events');
+});

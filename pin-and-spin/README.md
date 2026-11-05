@@ -30,6 +30,16 @@ All Pin & Spin tables begin with `pin_and_spin_`:
 
 The **`pin-and-spin` Supabase Edge Function** is the public game API gateway. Its service credential stays on the server; it is never included in the Vite client. PostgreSQL functions perform protected game actions and scoring.
 
+## Announcements and vibration
+
+A short banner announces the start of a game, each new Reveal round ("Round 2") and
+"Your turn!" in Classic; phones that support vibration (most Android phones; not iPhone)
+buzz for those, for a scored guess, a solve and the end of the match. The logic is a
+pure function (`matchEvents` in `src/game/selectors.js`) with unit tests.
+
+The Supabase library loads on demand (for signed-in players and for live updates in a
+room), keeping the first download small.
+
 ## Update banner
 
 Each build gets a unique version (set in `vite.config.js`), baked into the app and

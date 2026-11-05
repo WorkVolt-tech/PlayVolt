@@ -92,3 +92,25 @@ export function playerProgress(game) {
     };
   });
 }
+
+// What just happened between two server snapshots, for announcements and vibration.
+// Returns [] on first load and across rematches so nothing fires spuriously.
+export function matchEvents(prev, next) {
+  if (!prev || !next || prev.code !== next.code) return [];
+  const events = [];
+  if (prev.status === 'lobby' && next.status === 'playing') events.push({ type: 'start' });
+  if (prev.puzzle !== next.puzzle) return events;
+  const playing = next.status === 'playing';
+  if (playing && isSimultaneous(next.mode) && next.round > prev.round) events.push({ type: 'round', round: next.round });
+  const seen = new Set((prev.guesses || []).filter((g) => g.revealed).map((g) => g.playerId + ':' + g.attempt));
+  for (const g of next.guesses || []) {
+    if (g.playerId === next.me && g.revealed && g.colors && !seen.has(g.playerId + ':' + g.attempt)) {
+      events.push({ type: 'scored', pins: g.pins, spins: g.spins });
+    }
+  }
+  if (playing && next.mode === 'classic' && next.turnId === next.me && prev.turnId !== next.me) events.push({ type: 'turn' });
+  if (prev.status === 'playing' && next.status === 'finished') {
+    events.push({ type: 'end', won: (next.winners || []).includes(next.me) });
+  }
+  return events;
+}

@@ -7,6 +7,7 @@ import { FinishPanel } from './FinishPanel.jsx';
 import { GuessPanel } from './GuessPanel.jsx';
 import { MatchRoomBar, MatchStatus, ViewTabs } from './MatchHeader.jsx';
 import { ManagePlayers } from './ManagePlayers.jsx';
+import { MatchAnnouncer } from '../components/MatchAnnouncer.jsx';
 
 const canFullscreen = typeof document !== 'undefined' && document.fullscreenEnabled;
 
@@ -59,6 +60,7 @@ export function Match({ state, onShare, onRemove }) {
     onClick={() => void act('replay')}>PLAY AGAIN<span>→</span></button>;
 
   return <>
+    <MatchAnnouncer game={game} />
     <MatchRoomBar game={game} onShare={onShare} onPlayers={host ? () => setManaging(true) : null} />
     {managing && host && <ManagePlayers game={game} busy={busy} onRemove={onRemove} onClose={() => setManaging(false)} />}
     <MatchStatus game={game} statusText={statusText(game, { busy, canSubmit })} remainingMs={remainingMs} />

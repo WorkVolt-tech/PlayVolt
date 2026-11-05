@@ -5,7 +5,7 @@ import { DRAFT_KEY, EMPTY_GUESS, NAME_KEY, SESSION_KEY } from '../game/constants
 import { callGame } from '../game/api.js';
 import { savedName, savedSession, token } from '../game/session.js';
 import { isValidDraft, nextAttempt } from '../game/selectors.js';
-import { supabase } from '../game/auth.js';
+import { getSupabase } from '../game/auth.js';
 
 // Backup polling: fast when the live signal is unavailable, slow while it is connected.
 // Polling also serves as the presence heartbeat (AWAY after 45 seconds of silence).
@@ -164,10 +164,19 @@ export function usePinAndSpin() {
   const roomCode = game?.code;
   useEffect(() => {
     if (!roomCode) return undefined;
-    const channel = supabase.channel(`pin-and-spin:${roomCode}`)
-      .on('broadcast', { event: 'changed' }, () => { if (!document.hidden) void refresh(); })
-      .subscribe((status) => { liveRef.current = status === 'SUBSCRIBED'; });
-    return () => { liveRef.current = false; void supabase.removeChannel(channel); };
+    let cancelled = false, supabase = null, channel = null;
+    getSupabase().then((client) => {
+      if (cancelled) return;
+      supabase = client;
+      channel = client.channel(`pin-and-spin:${roomCode}`)
+        .on('broadcast', { event: 'changed' }, () => { if (!document.hidden) void refresh(); })
+        .subscribe((status) => { liveRef.current = status === 'SUBSCRIBED'; });
+    }).catch(() => { /* Live signal unavailable: polling continues. */ });
+    return () => {
+      cancelled = true;
+      liveRef.current = false;
+      if (supabase && channel) void supabase.removeChannel(channel);
+    };
   }, [roomCode, refresh]);
 
   // Ask the server right when a round or match timer runs out, so the reveal is immediate.
