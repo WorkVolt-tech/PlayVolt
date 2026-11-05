@@ -418,3 +418,16 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .guide-example .feedback-dots i{width:11px;height:11px}
 .guide-link{font:700 13px ui-monospace,Menlo,monospace;color:#fff;background:#2a2048;border:1px solid #6a5394;border-radius:6px;padding:1px 6px;word-break:break-all;user-select:all}
 .tv-sheet .tv-guide{max-height:52vh;overflow-y:auto;overscroll-behavior:contain;margin-bottom:10px;padding-right:2px}
+
+/* In-game dialog (replaces the browser's confirm/prompt pop-ups). */
+.dialog-backdrop{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:#05040fcc;backdrop-filter:blur(3px);animation:fade-in .18s ease}
+.dialog{width:100%;max-width:380px;padding:22px 20px 18px;text-align:center;animation:dialog-in .22s cubic-bezier(.2,.9,.3,1.2)}
+.dialog h2{margin:0 0 8px;font:700 21px 'Space Grotesk',sans-serif;letter-spacing:0}
+.dialog p{margin:0 0 18px;color:var(--sub);font-size:14px;line-height:1.5}
+.dialog-copy{width:100%;margin:4px 0 16px;padding:10px 12px;border-radius:10px;border:1px solid #6a5394;background:#100e22;color:#fff;font:13px ui-monospace,Menlo,monospace}
+.dialog-actions{display:flex;gap:10px}
+.dialog-actions>*{flex:1;margin:0}
+.danger-btn{background:linear-gradient(115deg,#d7354c,#ff5b6e)!important;border-color:#ff8a98!important;color:#fff!important}
+@keyframes dialog-in{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.dialog,.dialog-backdrop{animation:none}}
+.dialog-actions .primary-btn,.dialog-actions .outline-btn{justify-content:center;text-align:center}

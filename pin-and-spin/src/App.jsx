@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePinAndSpin } from './hooks/usePinAndSpin.js';
 import { useAccount } from './hooks/useAccount.js';
 import { AccountScreen } from './screens/AccountScreen.jsx';
 import { VersionAlert } from './components/VersionAlert.jsx';
+import { Dialog } from './components/Dialog.jsx';
 import { SoundToggle } from './sound/SoundToggle.jsx';
 import { HowToPlayButton } from './components/HowToPlay.jsx';
 import { useGameSounds } from './sound/useGameSounds.js';
@@ -15,15 +16,24 @@ export default function App() {
   const account = useAccount();
   useGameSounds(state.game);
   const { session, game, busy, toast, notify, form, act, forget } = state;
+  const [dialog, setDialog] = useState(null);
+  const close = () => setDialog(null);
 
   function removePlayer(player) {
-    if (window.confirm(`Remove ${player.name} from the room? They won't be able to rejoin.`)) {
-      void act('kick', { playerId: player.id });
-    }
+    setDialog({ title: `Remove ${player.name}?`, message: 'They won’t be able to rejoin this room.',
+      confirmLabel: 'Remove', danger: true, onConfirm: () => { close(); void act('kick', { playerId: player.id }); } });
+  }
+  function leaveRoom() {
+    const message = (game?.status === 'playing'
+      ? 'The game continues without you, and you can’t rejoin this match.'
+      : 'You can come back with the room code while the room is in the lobby.')
+      + (game?.hostId === game?.me ? ' The next player becomes the host.' : '');
+    setDialog({ title: 'Leave this room?', message, confirmLabel: 'Leave room', danger: true,
+      onConfirm: () => { close(); void act('leave'); } });
   }
   async function copyText(text, message) {
     try { await navigator.clipboard.writeText(text); notify(message); }
-    catch { window.prompt('Copy:', text); }
+    catch { setDialog({ title: 'Copy this', copyText: text }); }
   }
   async function share() {
     if (!game) return;
@@ -62,7 +72,7 @@ export default function App() {
             ? <Lobby game={game} busy={busy} act={act} pairTv={state.pairTv} onCopy={copyText} onShare={share} onRemove={removePlayer} />
             : <Match state={state} onShare={share} onRemove={removePlayer} />}
           <button className="leave-link" type="button" disabled={busy}
-            onClick={() => { if (window.confirm('Leave this room?')) void act('leave'); }}>
+            onClick={leaveRoom}>
             ← Leave room
           </button>
         </section>}
@@ -70,6 +80,7 @@ export default function App() {
       <footer className="footer">PIN &amp; SPIN <span>·</span> A PLAYVOLT GAME</footer>
     </div>
     <div className={'toast' + (toast ? ' show' : '')} role="status" aria-live="polite">{toast}</div>
+    {dialog && <Dialog {...dialog} onCancel={close} />}
     <VersionAlert />
   </>;
 }

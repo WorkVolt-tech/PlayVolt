@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { tvPairAddress, tvUrl } from '../tv/tvLink.js';
 import { play } from '../sound/sfx.js';
 import { TvSetupGuide } from '../components/TvSetupGuide.jsx';
+import { Dialog } from '../components/Dialog.jsx';
 
 // Letters that can appear in a TV code (no look-alikes such as 0/O or 1/I).
 const clean = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
@@ -15,11 +16,12 @@ export function ShowOnTv({ game, pairTv, onClose }) {
   const [status, setStatus] = useState({ busy: false, done: false, error: '' });
   const [showLink, setShowLink] = useState(!pairTv);
   const [guide, setGuide] = useState(false);
+  const [copyFallback, setCopyFallback] = useState(false);
 
   async function copy() {
     play('select-item');
     try { await navigator.clipboard.writeText(link); setCopied(true); }
-    catch { window.prompt('Copy this TV link:', link); }
+    catch { setCopyFallback(true); }
   }
   async function connect(event) {
     event.preventDefault();
@@ -71,6 +73,7 @@ export function ShowOnTv({ game, pairTv, onClose }) {
         </div>
       </>}
       <p className="field-help small">On the TV, press “Start sound &amp; full screen” once.</p>
+      {copyFallback && <Dialog title="Copy the TV link" copyText={link} onCancel={() => setCopyFallback(false)} />}
     </div>
   </div>;
 }
