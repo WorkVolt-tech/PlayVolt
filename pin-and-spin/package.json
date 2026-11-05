@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test 'tests/unit/*.test.mjs'",
-    "test:live": "node tests/live-smoke.mjs"
+    "test:live": "node tests/live-smoke.mjs",
+    "db:fingerprint": "node tests/fingerprint.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.4",
