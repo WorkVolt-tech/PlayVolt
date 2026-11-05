@@ -6,10 +6,11 @@ import { callGame } from '../game/api.js';
 import { placeColor } from '../game/selectors.js';
 import { play } from '../sound/sfx.js';
 import { localDay } from './solo.js';
+import { checkAchievements } from '../achievements.js';
 
 const call = (action, data) => callGame(action, {}, data);
 
-export function useSolo(notify) {
+export function useSolo(notify, userId) {
   const [home, setHome] = useState(null);
   const [game, setGame] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -19,12 +20,17 @@ export function useSolo(notify) {
   const [flash, setFlash] = useState(null); // beat the clock: last code solved/skipped
   const [clock, setClock] = useState(Date.now());
   const offsetRef = useRef(0);
+  const gameRef = useRef(null);
 
   const resetDraft = useCallback(() => { setDraft([...EMPTY_GUESS]); setSelected(0); }, []);
   const show = useCallback((next) => {
     offsetRef.current = new Date(next.serverTime || Date.now()).getTime() - Date.now();
+    const old = gameRef.current;
+    gameRef.current = next;
+    // A game just ended: announce any badge it earned.
+    if (old?.id === next.id && old.status === 'playing' && next.status !== 'playing') void checkAchievements(userId, notify);
     setGame(next);
-  }, []);
+  }, [userId, notify]);
 
   const loadHome = useCallback(async () => {
     setError('');
@@ -78,7 +84,7 @@ export function useSolo(notify) {
     setDraft(next.draft); setSelected(next.selected);
   }
   function clear() { play('swipe'); resetDraft(); }
-  function leave() { setGame(null); setFlash(null); resetDraft(); void loadHome(); }
+  function leave() { gameRef.current = null; setGame(null); setFlash(null); resetDraft(); void loadHome(); }
 
   // Beat the clock: tick, and ask the server for the final result when time is up.
   const deadline = game?.status === 'playing' ? game.deadline : null;

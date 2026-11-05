@@ -534,3 +534,18 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .story-stars span{color:#3d3456;animation:flip-in .5s cubic-bezier(.3,1.4,.5,1) both;animation-delay:calc(var(--i) * .2s)}
 .story-stars span.on{color:#ffd76a;text-shadow:0 0 18px #ffd76a80}
 .story-actions{display:grid;gap:0}
+
+/* More leaderboards + achievements */
+.lb-boards button{padding:10px 4px;font-size:12px}
+.lb-period{margin-top:-4px}
+.lb-period button{padding:8px;font-size:12px}
+.badge-progress{height:8px;border-radius:8px;background:#1a1530;border:1px solid #33294d;overflow:hidden;margin:-4px 0 16px}
+.badge-progress i{display:block;height:100%;background:linear-gradient(90deg,#8a32eb,#ffd76a);border-radius:8px}
+.badge-group h2{margin:0 0 12px;font:700 15px 'Space Grotesk',sans-serif;letter-spacing:.5px}
+.badge-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.badge{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:14px 8px;border-radius:14px;background:#100e22;border:1px solid #2c2446;opacity:.55}
+.badge.earned{opacity:1;border-color:#ffd76a99;background:linear-gradient(160deg,#3a2d17,#16122b);box-shadow:0 0 18px #ffd76a20}
+.badge-icon{font-size:30px;line-height:1.1}
+.badge strong{font-size:13px}
+.badge small{font-size:11px;color:var(--sub);line-height:1.35}
+.badge em{font-style:normal;font-size:10px;font-weight:800;color:#ffd76a;letter-spacing:.04em}

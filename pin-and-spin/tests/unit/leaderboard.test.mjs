@@ -99,17 +99,17 @@ describe('leaderboard', () => {
     await add(ACC[2], true, 30); // only all-time
     const week = await board('week', ACC[0]);
     assert.deepEqual(week.players.map((p) => [p.rank, p.name, p.wins, p.games, p.me]), [[1, 'Dick', 2, 2, false], [2, 'Maxo', 2, 3, true]]);
-    assert.deepEqual(week.me, { rank: 2, name: 'Maxo', wins: 2, games: 3 });
+    assert.deepEqual(week.me, { rank: 2, name: 'Maxo', wins: 2, games: 3, a: 2, b: 3 });
     const all = await board('all', ACC[2]);
     assert.equal(all.players.length, 3);
-    assert.deepEqual(all.me, { rank: 3, name: 'Ana', wins: 1, games: 1 });
+    assert.deepEqual(all.me, { rank: 3, name: 'Ana', wins: 1, games: 1, a: 1, b: 1 });
     assert.equal((await board('week', ACC[2])).me, null);
     await rejects(board('month'), /period/);
   });
 
   test('results are private; the leaderboard function is server-only', async () => {
     const r = (await db.query(`select has_table_privilege('anon','public.pin_and_spin_results','select') a,
-      has_function_privilege('anon','public.pin_and_spin_leaderboard(text,uuid)','execute') f`)).rows[0];
+      has_function_privilege('anon','public.pin_and_spin_leaderboard(text,uuid,text)','execute') f`)).rows[0];
     assert.deepEqual(r, { a: false, f: false });
   });
 });

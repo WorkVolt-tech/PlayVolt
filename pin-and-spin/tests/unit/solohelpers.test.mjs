@@ -14,3 +14,19 @@ test('the share text shows clues only, never the colors', () => {
   assert.equal(shareText(game, 'https://x.dev'), 'Pin & Spin Daily #5 2/6\n🟢⚪⚪⚫\n🟢🟢🟢🟢\nhttps://x.dev');
   assert.match(shareText({ ...game, status: 'lost' }), /X\/6/);
 });
+
+test('achievement announcements: only badges new since the last check, none on the first check', async () => {
+  const { newBadges, ACHIEVEMENTS } = await import('../../src/achievements.js');
+  assert.deepEqual(newBadges(null, { first_win: 'x' }), []);
+  assert.deepEqual(newBadges(['first_win'], { first_win: 'x', streak_3: 'y', bogus: 'z' }), ['streak_3']);
+  assert.equal(new Set(ACHIEVEMENTS.map((a) => a.code)).size, ACHIEVEMENTS.length);
+});
+
+test('every badge the server can award has a name and description', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { byCode } = await import('../../src/achievements.js');
+  const sql = await readFile(new URL('../../backend/migrations/009_boards_achievements.sql', import.meta.url), 'utf8');
+  const codes = [...sql.matchAll(/array_append\(earned, '([a-z_0-9]+)'\)/g)].map((m) => m[1]);
+  assert.ok(codes.length >= 19);
+  for (const c of codes) assert.ok(byCode[c], c);
+});

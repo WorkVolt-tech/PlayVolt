@@ -10,7 +10,7 @@ import { useSolo } from './useSolo.js';
 
 // 1-player modes: Daily puzzle, Free play and Beat the clock. Signed-in players only.
 export function SoloScreen({ account, notify, onBack, onSignIn }) {
-  const solo = useSolo(notify);
+  const solo = useSolo(notify, account.user?.id);
   const { loadHome } = solo;
   useEffect(() => { if (account.signedIn) void loadHome(); }, [account.signedIn, loadHome]);
 

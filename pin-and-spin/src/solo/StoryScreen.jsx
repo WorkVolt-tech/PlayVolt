@@ -14,7 +14,7 @@ const formatSeconds = (s) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).
 
 // Story mode: a level map across three worlds. Signed-in players only.
 export function StoryScreen({ account, notify, onBack, onSignIn }) {
-  const solo = useSolo(notify);
+  const solo = useSolo(notify, account.user?.id);
   const [map, setMap] = useState(null);
   const [error, setError] = useState('');
   const [picked, setPicked] = useState(null);
