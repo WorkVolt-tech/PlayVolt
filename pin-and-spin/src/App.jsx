@@ -8,6 +8,11 @@ export default function App() {
   const state = usePinAndSpin();
   const { session, game, busy, toast, notify, form, act, forget } = state;
 
+  function removePlayer(player) {
+    if (window.confirm(`Remove ${player.name} from the room? They won't be able to rejoin.`)) {
+      void act('kick', { playerId: player.id });
+    }
+  }
   async function copyText(text, message) {
     try { await navigator.clipboard.writeText(text); notify(message); }
     catch { window.prompt('Copy:', text); }
@@ -40,8 +45,8 @@ export default function App() {
 
         {session && game && <section className="screen">
           {game.status === 'lobby'
-            ? <Lobby game={game} busy={busy} act={act} onCopy={copyText} onShare={share} />
-            : <Match state={state} onShare={share} />}
+            ? <Lobby game={game} busy={busy} act={act} onCopy={copyText} onShare={share} onRemove={removePlayer} />
+            : <Match state={state} onShare={share} onRemove={removePlayer} />}
           <button className="leave-link" type="button" disabled={busy}
             onClick={() => { if (window.confirm('Leave this room?')) void act('leave'); }}>
             ← Leave room

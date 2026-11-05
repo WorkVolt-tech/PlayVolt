@@ -13,8 +13,8 @@ export function MiniBoards({ game, onOpen }) {
   const lanes = playerProgress(game).filter((lane) => !lane.left || lane.guesses.length);
   return <div className="mini-boards" aria-label="Everyone's guesses, mini view">
     {lanes.map((lane) => {
-      const state = lane.won ? 'won' : lane.left ? 'left' : lane.isTurn ? 'turn' : lane.sealed ? 'in' : lane.thinking ? 'thinking' : '';
-      const label = { won: '🏆', left: 'LEFT', turn: 'TURN', in: '✓', thinking: '…' }[state] || '';
+      const state = lane.won ? 'won' : lane.left ? 'left' : lane.away ? 'away' : lane.isTurn ? 'turn' : lane.sealed ? 'in' : lane.thinking ? 'thinking' : '';
+      const label = { won: '🏆', left: 'LEFT', away: 'AWAY', turn: 'TURN', in: '✓', thinking: '…' }[state] || '';
       const rows = [...lane.guesses];
       const total = Math.max(limit, rows.length + (lane.sealed ? 1 : 0));
       return <button type="button" key={lane.player.id} onClick={() => onOpen?.(lane.player.id)}

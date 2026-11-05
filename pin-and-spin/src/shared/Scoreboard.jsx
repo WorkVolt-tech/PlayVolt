@@ -56,12 +56,12 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
 
     <div className="lanes">
       {shown.map((lane) => <section key={lane.player.id}
-        className={'lane' + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.left ? ' left' : '')}>
+        className={'lane' + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
         <header className="lane-head">
           <PlayerAvatar player={lane.player} />
           <div className="lane-name">
             <strong>{lane.player.name}{lane.player.id === game.me ? ' (you)' : ''}</strong>
-            <small>{lane.won ? 'WINNER' : lane.left ? 'LEFT THE ROOM' : lane.isTurn ? 'PLAYING NOW'
+            <small>{lane.won ? 'WINNER' : lane.left ? 'LEFT THE ROOM' : lane.away ? 'AWAY · NOT CONNECTED' : lane.isTurn ? 'PLAYING NOW'
               : lane.thinking ? 'THINKING…' : lane.sealed ? 'LOCKED IN' : `${lane.used} / ${limit} TRIES`}</small>
           </div>
         </header>

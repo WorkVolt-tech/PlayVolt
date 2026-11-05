@@ -75,6 +75,10 @@ with a display-token snapshot. Player-only actions are passed in from `screens/`
 
 - `backend/schema.sql` records the initial schema and transactional game functions
   already applied to Game DB. **Do not rerun it against the existing database.**
+- `backend/migrations/` holds later changes, applied in order after `schema.sql`:
+  `002_shared_domino_login.sql` (optional Dekabess account login, recorded from Game DB)
+  and `003_host_kick_presence.sql` (host can remove players, AWAY status, host handover).
+  Any database change must be added here too, so the tests keep matching production.
 - `backend/index.ts` is the deployed `pin-and-spin` Edge Function source. It uses
   random guest-session tokens; no account or service key is required in the client.
 - The tables intentionally have RLS enabled and no public policies or grants.

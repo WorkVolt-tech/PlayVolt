@@ -7,7 +7,7 @@ const cors = {
   'Cache-Control': 'no-store',
   'Content-Type': 'application/json',
 };
-const actions = new Set(['create', 'join', 'state', 'ready', 'start', 'guess', 'leave', 'replay', 'display']);
+const actions = new Set(['create', 'join', 'state', 'ready', 'start', 'guess', 'leave', 'replay', 'display', 'kick']);
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   const reply = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: cors });
@@ -29,13 +29,30 @@ Deno.serve(async (req: Request) => {
       !Number.isInteger(data.attempt) || !Number.isInteger(data.puzzle))) {
       return reply({ error: 'Choose four colors' }, 400);
     }
+    if (body.action === 'kick' && (typeof data.playerId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.playerId))) {
+      return reply({ error: 'Choose a player to remove' }, 400);
+    }
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Validate with Supabase Auth; never accept an account ID from the request body.
+    let accountId: string | null = null;
+    const authorization = req.headers.get('authorization');
+    if (authorization) {
+      if (!/^Bearer \S+$/i.test(authorization)) return reply({ error: 'ACCOUNT_REQUIRED: Please sign in again.' }, 401);
+      const auth = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/user`, {
+        headers: { apikey: key, Authorization: authorization },
+      });
+      const user = await auth.json();
+      if (!auth.ok || !user.id) return reply({ error: 'ACCOUNT_REQUIRED: Your sign-in expired. Please sign in again.' }, 401);
+      accountId = user.id;
+    }
+    const verifiedData = { ...data, _account_id: accountId };
     const address = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(address + key));
     const originHash = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/pin_and_spin_api`, {
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_action: body.action, p_code: body.code ?? '', p_token: body.token, p_data: data, p_origin_hash: originHash }),
+      body: JSON.stringify({ p_action: body.action, p_code: body.code ?? '', p_token: body.token, p_data: verifiedData, p_origin_hash: originHash }),
     });
     const result = await response.json();
     if (!response.ok) {

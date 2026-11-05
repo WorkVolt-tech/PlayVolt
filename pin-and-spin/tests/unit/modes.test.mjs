@@ -338,3 +338,101 @@ describe('rooms, reconnects and rematches', () => {
     assert.equal(old.guesses.length, 0, 'a guess for the old puzzle is ignored');
   });
 });
+
+describe('host controls and presence', () => {
+  const kick = (room, by, target) => g.api('kick', room.code, by.token, { playerId: target.id });
+  const silence = (player, seconds) =>
+    db.query(`update public.pin_and_spin_players set last_seen=now()-make_interval(secs=>$2) where id=$1`, [player.id, seconds]);
+
+  test('only the host can remove a player, and not themselves', async () => {
+    const room = await g.room('classic', 3);
+    const [host, b, c] = room.players;
+    await rejects(kick(room, b, c), /Only the host/);
+    await rejects(kick(room, host, host), /Leave Room/);
+    const s = await kick(room, host, c);
+    assert.deepEqual(s.players.filter((p) => p.active).map((p) => p.id), [host.id, b.id]);
+  });
+
+  test('a removed player is told so and cannot rejoin', async () => {
+    const room = await g.room('reveal', 3);
+    const [host, , c] = room.players;
+    await kick(room, host, c);
+    await rejects(state(room, c), /removed you/);
+    await rejects(g.api('join', room.code, c.token, { name: 'Again' }), /removed you/);
+  });
+
+  test('removing the player whose turn it is passes the Classic turn on', async () => {
+    const room = await started('classic', 3);
+    const host = room.players[0];
+    let current = byId(room, room.state.turnId);
+    if (current === host) current = byId(room, (await guess(room, host, WRONG, 1)).turnId);
+    const s = await kick(room, host, current);
+    assert.notEqual(s.turnId, current.id);
+    assert.equal(s.status, 'playing');
+  });
+
+  test('removing the last player who has not submitted triggers the Reveal', async () => {
+    const room = await started('reveal', 3);
+    const [host, b, c] = room.players;
+    await guess(room, host, WRONG, 1);
+    await guess(room, b, WRONG, 1);
+    const s = await kick(room, host, c);
+    assert.equal(s.round, 2);
+  });
+
+  test('removing everyone else in Rush leaves the host playing alone, not stuck', async () => {
+    const room = await started('rush', 2);
+    const [host, b] = room.players;
+    const s = await kick(room, host, b);
+    assert.equal(s.status, 'playing');
+    assert.equal((await guess(room, host, SECRET, 1)).status, 'finished');
+  });
+
+  test('players silent for 45 seconds show as away; any request clears it', async () => {
+    const room = await g.room('classic', 2);
+    const [host, b] = room.players;
+    await silence(b, 50);
+    let s = await state(room, host);
+    assert.equal(s.players.find((p) => p.id === b.id).away, true);
+    assert.equal(s.players.find((p) => p.id === host.id).away, false);
+    await state(room, b);
+    s = await state(room, host);
+    assert.equal(s.players.find((p) => p.id === b.id).away, false);
+  });
+
+  test('a host silent for 60 seconds hands the room to the next connected player', async () => {
+    const room = await g.room('classic', 3);
+    const [host, b, c] = room.players;
+    await silence(host, 65);
+    await silence(b, 65);
+    const s = await state(room, c);
+    assert.equal(s.hostId, c.id, 'skips players who are also away');
+    await state(room, host);
+    assert.equal((await state(room, host)).hostId, c.id, 'the old host returns as a player');
+  });
+
+  test('a host who is only briefly quiet keeps the room', async () => {
+    const room = await g.room('classic', 2);
+    const [host, b] = room.players;
+    await silence(host, 30);
+    assert.equal((await state(room, b)).hostId, host.id);
+  });
+});
+
+describe('shared Domino login (migration 002)', () => {
+  const ACCOUNT = '11111111-1111-4111-8111-111111111111';
+  test('signed-in players use their Domino nickname and keep it after host controls run', async () => {
+    await db.query(`insert into public.profiles(id,nickname) values($1,'DominoKing')`, [ACCOUNT]);
+    const s = await g.api('create', '', tok(70), { name: 'ignored', mode: 'classic', _account_id: ACCOUNT });
+    assert.equal(s.players[0].name, 'DominoKing');
+    const again = await g.api('state', s.code, tok(70), { _account_id: ACCOUNT });
+    assert.equal(again.me, s.me);
+    await rejects(g.api('state', s.code, tok(70)), /ACCOUNT_REQUIRED/);
+  });
+
+  test('one account cannot take two seats in the same room', async () => {
+    await db.query(`insert into public.profiles(id,nickname) values($1,'DominoKing')`, [ACCOUNT]);
+    const s = await g.api('create', '', tok(71), { name: 'x', mode: 'reveal', _account_id: ACCOUNT });
+    await rejects(g.api('join', s.code, tok(72), { name: 'y', _account_id: ACCOUNT }), /already has a seat/);
+  });
+});

@@ -4,7 +4,7 @@ import { Peg } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 
 // Waiting room: code/invite, chosen mode, players and ready/start controls.
-export function Lobby({ game, busy, act, onCopy, onShare }) {
+export function Lobby({ game, busy, act, onCopy, onShare, onRemove }) {
   const activePlayers = (game.players || []).filter((player) => player.active);
   const me = activePlayers.find((player) => player.id === game.me);
   const host = game.hostId === game.me;
@@ -26,9 +26,13 @@ export function Lobby({ game, busy, act, onCopy, onShare }) {
           <div className="player-info"><div className="player-name">{player.name}{player.id === game.me ? ' (YOU)' : ''}</div>
             <div className="player-description">{player.id === game.hostId ? <span className="host-badge">★ HOST</span> : 'PLAYER ' + player.seat}</div>
           </div>
-          <span className={'ready-pill' + (player.ready ? '' : ' wait')}>
-            {player.ready ? '● READY' : '○ WAITING'}
-          </span>
+          {player.away
+            ? <span className="ready-pill away">◌ AWAY</span>
+            : <span className={'ready-pill' + (player.ready ? '' : ' wait')}>
+                {player.ready ? '● READY' : '○ WAITING'}
+              </span>}
+          {host && player.id !== game.me && <button type="button" className="remove-btn" disabled={busy}
+            aria-label={`Remove ${player.name}`} onClick={() => onRemove(player)}>✕</button>}
         </div>)}
         {activePlayers.length < 2 && <div className="player-item open-seat">
           <span className="open-seat-icon">＋</span>

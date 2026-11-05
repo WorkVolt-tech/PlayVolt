@@ -176,3 +176,16 @@ body.board-open{overflow:hidden}
 /* Sealed / missed label on the player's own board: keep on one line. */
 .code-row>.pending{max-width:none;white-space:nowrap;overflow-wrap:normal;font-size:8px;font-weight:900;letter-spacing:.6px;padding:4px 6px;border-radius:8px;background:#2a2142;color:#cdb8ef}
 @media(max-width:480px){.board-title h1{font-size:clamp(20px,6.2vw,26px)}}
+
+/* ---------- Host controls and presence ---------- */
+.ready-pill.away{color:#ffb38a;background:#3a2318;border-color:#ff9a6a66}
+.remove-btn{flex:none;width:36px;height:36px;border-radius:10px;border:1px solid #7a4a64;background:#2c1a2a;color:#ff9ab4;font-weight:900}
+.remove-btn:active{transform:scale(.94)}
+.mini-card.away{border-style:dashed;border-color:#ff9a6a88}
+.mini-card.away .mini-state{color:#ffb38a}
+.lane.away{border-style:dashed;border-color:#ff9a6a88}
+.lane.away .lane-name small{color:#ffb38a}
+.sheet-backdrop{position:fixed;inset:0;z-index:18;background:#05040fcc;display:flex;align-items:flex-end;justify-content:center;padding:12px;animation:fade-in .2s ease}
+.sheet{width:100%;max-width:520px;max-height:80dvh;overflow-y:auto;margin-bottom:max(0px,env(safe-area-inset-bottom));animation:board-in .25s cubic-bezier(.2,.8,.3,1)}
+.sheet-close{border:1px solid #70518e;background:#30243f;color:#e5d9fa;border-radius:10px;width:36px;height:36px}
+@keyframes fade-in{from{opacity:0}}

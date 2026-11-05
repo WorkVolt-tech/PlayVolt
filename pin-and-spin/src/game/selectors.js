@@ -88,6 +88,7 @@ export function playerProgress(game) {
       isTurn: playing && game.mode === 'classic' && game.turnId === player.id,
       thinking: playing && isSimultaneous(game.mode) && player.active && !player.submitted,
       left: !player.active,
+      away: !!player.active && !!player.away,
     };
   });
 }

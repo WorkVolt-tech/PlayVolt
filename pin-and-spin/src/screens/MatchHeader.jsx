@@ -2,11 +2,12 @@ import React from 'react';
 import { MODES } from '../game/constants.js';
 import { formatClock, isSimultaneous } from '../game/selectors.js';
 
-export function MatchRoomBar({ game, onShare }) {
+export function MatchRoomBar({ game, onShare, onPlayers }) {
   const activeCount = (game.players || []).filter((player) => player.active).length;
   return <div className="match-room-bar">
     <span className="match-room-code">Room <strong>{game.code}</strong></span>
     <button className="outline-btn small" onClick={onShare}>Invite ↗</button>
+    {onPlayers && <button className="outline-btn small" onClick={onPlayers}>Players</button>}
     <span className="match-room-details">{MODES[game.mode]?.label || 'Game'} · {activeCount} players</span>
   </div>;
 }

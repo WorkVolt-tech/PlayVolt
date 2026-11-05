@@ -6,14 +6,16 @@ import { Scoreboard } from '../shared/Scoreboard.jsx';
 import { FinishPanel } from './FinishPanel.jsx';
 import { GuessPanel } from './GuessPanel.jsx';
 import { MatchRoomBar, MatchStatus, ViewTabs } from './MatchHeader.jsx';
+import { ManagePlayers } from './ManagePlayers.jsx';
 
 const canFullscreen = typeof document !== 'undefined' && document.fullscreenEnabled;
 
 // An in-progress or finished match on a player's phone: My Board + Everyone's Guesses.
-export function Match({ state, onShare }) {
+export function Match({ state, onShare, onRemove }) {
   const { game, busy, clock, offset, view, setView, draft, setDraft, selected, setSelected, resetDraft, act } = state;
   const [fullscreen, setFullscreen] = useState(false);
   const [boardFocus, setBoardFocus] = useState('all');
+  const [managing, setManaging] = useState(false);
   const host = game.hostId === game.me;
   const mine = myGuesses(game);
   const limit = guessLimit(game.mode);
@@ -57,7 +59,8 @@ export function Match({ state, onShare }) {
     onClick={() => void act('replay')}>PLAY AGAIN<span>→</span></button>;
 
   return <>
-    <MatchRoomBar game={game} onShare={onShare} />
+    <MatchRoomBar game={game} onShare={onShare} onPlayers={host ? () => setManaging(true) : null} />
+    {managing && host && <ManagePlayers game={game} busy={busy} onRemove={onRemove} onClose={() => setManaging(false)} />}
     <MatchStatus game={game} statusText={statusText(game, { busy, canSubmit })} remainingMs={remainingMs} />
     <MiniBoards game={game} onOpen={(id) => { setBoardFocus(id); setView('results'); }} />
     <ViewTabs view={view} setView={setView} />

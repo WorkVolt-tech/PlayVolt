@@ -1,15 +1,22 @@
 // Boots an in-process Postgres (PGlite) with the real Pin & Spin backend SQL.
 // No network or Game DB access: tests exercise the same functions production runs.
 import { PGlite } from '@electric-sql/pglite';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 
 const schema = new URL('../../backend/schema.sql', import.meta.url);
+const migrations = new URL('../../backend/migrations/', import.meta.url);
 
 export async function freshDb() {
   const db = new PGlite();
   // Supabase's API roles, so the schema's grants/revokes apply as in production.
   await db.exec(`create role anon nologin; create role authenticated nologin; create role service_role nologin;`);
+  // Stand-in for the shared PlayVolt profiles table (Dekabess accounts).
+  await db.exec(`create table public.profiles (id uuid primary key, nickname text);`);
   await db.exec(await readFile(schema, 'utf8'));
+  // Then every migration, in order, exactly as applied to Game DB.
+  for (const file of (await readdir(migrations)).filter((f) => f.endsWith('.sql')).sort()) {
+    await db.exec(await readFile(new URL(file, migrations), 'utf8'));
+  }
   return db;
 }
 

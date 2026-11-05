@@ -74,7 +74,10 @@ export function usePinAndSpin() {
       if (!busyRef.current && version === requestVersionRef.current && currentSession === sessionRef.current) updateGame(next);
     } catch (error) {
       if (version !== requestVersionRef.current || currentSession !== sessionRef.current) return;
-      if (/not found|expired|no longer in this room/i.test(error.message || '')) {
+      if (/removed you/i.test(error.message || '')) {
+        forget();
+        notify('The host removed you from the room.');
+      } else if (/not found|expired|no longer in this room/i.test(error.message || '')) {
         forget();
         notify('That room is no longer available.');
       } else if (Date.now() - lastWarningRef.current > 20000) {
