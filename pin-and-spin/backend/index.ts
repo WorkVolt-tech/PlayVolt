@@ -11,6 +11,8 @@ const actions = new Set(['create', 'join', 'state', 'ready', 'start', 'guess', '
 // TV pairing (migration 005): a TV shows a 4-letter code; a player in the room types it.
 const tvActions = new Set(['tv_start', 'tv_check', 'tv_pair']);
 // Leaderboard (migration 006): public, needs no room or session.
+// Solo modes (migration 007): signed-in account only, no room or guest session.
+const soloActions = new Set(['solo_home', 'solo_start', 'solo_guess', 'solo_get']);
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   const reply = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: cors });
@@ -21,11 +23,12 @@ Deno.serve(async (req: Request) => {
     const body = JSON.parse(raw);
     const tv = tvActions.has(body.action);
     const board = body.action === 'leaderboard';
-    if (!board && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
+    const solo = soloActions.has(body.action);
+    if (!board && !solo && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
       return reply({ error: 'Invalid player session' }, 400);
     }
     if (board && !['week', 'all'].includes(body.data?.period)) return reply({ error: 'Choose a leaderboard period' }, 400);
-    if (!['create', 'tv_start', 'tv_check', 'leaderboard'].includes(body.action) && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
+    if (!['create', 'tv_start', 'tv_check', 'leaderboard'].includes(body.action) && !solo && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
       return reply({ error: 'Enter the six-character room code' }, 400);
     }
     const data = body.data ?? {};
@@ -43,6 +46,11 @@ Deno.serve(async (req: Request) => {
       (typeof data.pairCode !== 'string' || !/^[A-Z0-9]{4}$/i.test(data.pairCode))) {
       return reply({ error: 'Enter the 4-letter code shown on the TV' }, 400);
     }
+    if (body.action === 'solo_guess' && (typeof data.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.id) ||
+      !Array.isArray(data.colors) || data.colors.length !== 4 ||
+      !data.colors.every((c: unknown) => Number.isInteger(c) && Number(c) >= 0 && Number(c) <= 5) || !Number.isInteger(data.attempt))) {
+      return reply({ error: 'Choose four colors' }, 400);
+    }
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     // Validate with Supabase Auth; never accept an account ID from the request body.
     let accountId: string | null = null;
@@ -56,15 +64,18 @@ Deno.serve(async (req: Request) => {
       if (!auth.ok || !user.id) return reply({ error: 'ACCOUNT_REQUIRED: Your sign-in expired. Please sign in again.' }, 401);
       accountId = user.id;
     }
+    if (solo && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to play solo.' }, 401);
     const verifiedData = { ...data, _account_id: accountId };
     const address = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(address + key));
     const originHash = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
-    const rpc = board ? 'pin_and_spin_leaderboard' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
+    const rpc = board ? 'pin_and_spin_leaderboard' : solo ? 'pin_and_spin_solo' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/${rpc}`, {
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(board
         ? { p_period: data.period, p_account: accountId }
+        : solo
+        ? { p_action: body.action, p_account: accountId, p_data: data }
         : tv
         ? { p_action: body.action, p_pair: data.pairCode ?? '', p_token: body.token, p_room: body.code ?? '', p_origin_hash: originHash }
         : { p_action: body.action, p_code: body.code ?? '', p_token: body.token, p_data: verifiedData, p_origin_hash: originHash }),

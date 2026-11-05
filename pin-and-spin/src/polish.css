@@ -452,3 +452,42 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .lb-wins{font-weight:900;color:#ffd76a}
 .lb-note{text-align:center}
 .lb-note p{margin:0 0 12px;color:var(--sub);font-size:14px;line-height:1.5}
+
+/* Play Solo */
+.color-palette.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.solo-card{position:relative}
+.solo-card-head{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.solo-card-head h2{margin:0 0 3px;font:700 18px 'Space Grotesk',sans-serif}
+.solo-card-head p{margin:0;color:var(--sub);font-size:12px;line-height:1.4}
+.solo-icon{font-size:28px;line-height:1;flex:none}
+.daily-card{border-color:#8c5ccd;box-shadow:0 0 30px #9c3ef520}
+.solo-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.solo-stats.two{grid-template-columns:repeat(2,1fr)}
+.solo-stats span{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 4px;border-radius:12px;background:#100e22;border:1px solid #2c2446;font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--sub);text-transform:uppercase}
+.solo-stats b{font:800 19px 'Space Grotesk',sans-serif;color:#fff;letter-spacing:0;text-transform:none}
+.solo-levels{display:grid;gap:8px}
+.solo-level{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;text-align:left;padding:12px 14px;border-radius:12px;border:1px solid #4b3d68;background:#15122b;color:#fff;cursor:pointer}
+.solo-level:hover,.solo-level:focus-visible{border-color:#c685ff}
+.solo-level strong{font-size:14px}
+.solo-level small{grid-column:1;color:var(--sub);font-size:11px}
+.solo-level em{grid-column:2;grid-row:1/3;font-style:normal;font-size:11px;font-weight:800;color:#ffd76a}
+.solo-game-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:4px 2px 14px}
+.solo-game-head .eyebrow{margin:0 0 4px}
+.solo-game-head h1{margin:0;font:700 22px 'Space Grotesk',sans-serif}
+.solo-clock{display:flex;align-items:center;gap:10px}
+.solo-score{font:800 20px 'Space Grotesk',sans-serif;color:#ffd76a}
+.solo-flash{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:14px;margin-bottom:12px;animation:slide-in .3s cubic-bezier(.2,.9,.3,1.2)}
+.solo-flash.solved{background:#173a2a;border:1px solid #4fc28b}
+.solo-flash.skipped{background:#3a1f26;border:1px solid #ff8a98}
+.solo-flash .tiny-pegs{gap:5px}
+.solo-flash .tiny-peg{width:24px;height:24px;max-width:none;flex:none}
+.solo-result .secret-reveal{margin-bottom:18px}
+.solo-result .secret-ball .tiny-pegs{display:block}
+.solo-next{margin:12px 0 0!important;font-size:13px}
+.solo-recap{display:grid;gap:6px;margin-top:18px;justify-items:center}
+.solo-recap-row{display:flex;align-items:center;gap:10px}
+.solo-recap-row .tiny-peg{width:22px;height:22px;max-width:none;flex:none}
+.solo-recap-row span{min-width:64px;text-align:left;font-size:12px;letter-spacing:1px}
+.solo-result .solo-recap-row .tiny-pegs{display:flex;gap:6px;flex:none}
+.solo-result .solo-recap-row .tiny-pegs .tiny-peg{width:22px;height:22px;min-width:0;max-width:none;flex:none;border-radius:50%}
+.solo-game-head.sticky{position:sticky;top:0;z-index:12;margin:0 -18px 12px;padding:10px 18px;padding-top:max(10px,env(safe-area-inset-top));background:linear-gradient(#0d0b1df5 80%,#0d0b1d00)}
