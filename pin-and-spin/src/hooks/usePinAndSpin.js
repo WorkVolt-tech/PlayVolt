@@ -74,7 +74,12 @@ export function usePinAndSpin() {
       if (!busyRef.current && version === requestVersionRef.current && currentSession === sessionRef.current) updateGame(next);
     } catch (error) {
       if (version !== requestVersionRef.current || currentSession !== sessionRef.current) return;
-      if (/removed you/i.test(error.message || '')) {
+      if (error.accountRequired) {
+        if (Date.now() - lastWarningRef.current > 20000) {
+          lastWarningRef.current = Date.now();
+          notify(error.message);
+        }
+      } else if (/removed you/i.test(error.message || '')) {
         forget();
         notify('The host removed you from the room.');
       } else if (/not found|expired|no longer in this room/i.test(error.message || '')) {
@@ -138,9 +143,10 @@ export function usePinAndSpin() {
     return () => clearTimeout(timeout);
   }, [toast]);
 
-  async function enter(action) {
+  // accountName: a signed-in player's PlayVolt nickname (the server uses the profile name).
+  async function enter(action, accountName) {
     if (busyRef.current) return;
-    const name = nickname.trim().slice(0, 20);
+    const name = (accountName || nickname).trim().slice(0, 20);
     if (!name) return notify('Please enter a nickname.');
     const create = action === 'create';
     const code = roomCodeInput.trim().toUpperCase();
@@ -158,7 +164,7 @@ export function usePinAndSpin() {
       sessionRef.current = next;
       setSession(next);
       try {
-        localStorage.setItem(NAME_KEY, name);
+        if (!accountName) localStorage.setItem(NAME_KEY, name);
         localStorage.setItem(SESSION_KEY, JSON.stringify(next));
       } catch { notify('Joined. Keep this tab open; your browser cannot save the session.'); }
       resetDraft();

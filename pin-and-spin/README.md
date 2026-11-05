@@ -30,6 +30,18 @@ All Pin & Spin tables begin with `pin_and_spin_`:
 
 The **`pin-and-spin` Supabase Edge Function** is the public game API gateway. Its service credential stays on the server; it is never included in the Vite client. PostgreSQL functions perform protected game actions and scoring.
 
+## Accounts (optional)
+
+Players can play as guests, or sign in / create a **PlayVolt account** — the same Supabase
+Auth accounts and `profiles` table as Dekabess (sign-up creates the profile through the
+existing `handle_new_user` trigger). Signed-in players use their profile nickname; the
+client sends their access token and the Edge Function verifies it with Supabase Auth.
+The browser uses only the public anon key.
+
+For confirmation emails to return players to Pin & Spin, add
+`https://playvolt-pin-and-spin.pages.dev/**` to Supabase → Authentication → URL
+Configuration → Redirect URLs (otherwise the link opens the default Site URL).
+
 ## Modes
 
 - Classic — a random active player starts each game/rematch, then turns proceed in seat order; 4 guesses per player

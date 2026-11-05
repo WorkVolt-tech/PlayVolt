@@ -1,11 +1,14 @@
 import React from 'react';
 import { usePinAndSpin } from './hooks/usePinAndSpin.js';
+import { useAccount } from './hooks/useAccount.js';
+import { AccountScreen } from './screens/AccountScreen.jsx';
 import { EntryScreen } from './screens/EntryScreen.jsx';
 import { Lobby } from './screens/Lobby.jsx';
 import { Match } from './screens/Match.jsx';
 
 export default function App() {
   const state = usePinAndSpin();
+  const account = useAccount();
   const { session, game, busy, toast, notify, form, act, forget } = state;
 
   function removePlayer(player) {
@@ -32,13 +35,15 @@ export default function App() {
     <div className="ambient" aria-hidden="true" />
     <div className={'shell' + (game && game.status !== 'lobby' ? ' match-shell' : '')}>
       <header className="topbar">
-        <a className="home-link" href={import.meta.env.VITE_PLAYVOLT_HUB_URL || "https://github.com/WorkVolt-tech/PlayVolt"} aria-label="Back to PlayVolt">← <span>PLAYVOLT</span></a>
+        <a className="home-link" href={import.meta.env.VITE_PLAYVOLT_HUB_URL || "https://playvolt-hub.pages.dev/"} aria-label="Back to PlayVolt">← <span>PLAYVOLT</span></a>
         <div className="brand">Pin &amp; <span>Spin</span></div>
         <div className="live"><i /><span>{game ? 'ROOM LIVE' : 'PARTY GAME'}</span></div>
       </header>
 
       <main>
-        {!session && <EntryScreen form={form} busy={busy} />}
+        {!session && form.formTab === 'account' && <AccountScreen account={account}
+          onBack={() => form.setFormTab('home')} onDone={(message) => { notify(message); form.setFormTab('home'); }} />}
+        {!session && form.formTab !== 'account' && <EntryScreen form={form} busy={busy || account.loading} account={account} />}
 
         {session && !game && <div className="surface"><p>Reconnecting to your room…</p>
           <button className="outline-btn full" onClick={forget}>BACK TO HOME</button></div>}

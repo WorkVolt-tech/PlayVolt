@@ -189,3 +189,20 @@ body.board-open{overflow:hidden}
 .sheet{width:100%;max-width:520px;max-height:80dvh;overflow-y:auto;margin-bottom:max(0px,env(safe-area-inset-bottom));animation:board-in .25s cubic-bezier(.2,.8,.3,1)}
 .sheet-close{border:1px solid #70518e;background:#30243f;color:#e5d9fa;border-radius:10px;width:36px;height:36px}
 @keyframes fade-in{from{opacity:0}}
+
+/* ---------- PlayVolt account ---------- */
+input[type=email],input[type=password]{display:block;width:100%;background:#18142a;color:var(--text);border:1px solid #654c82;border-radius:10px;padding:14px 15px;margin-bottom:22px;outline:0}
+input[type=email]:focus,input[type=password]:focus{border-color:var(--volt)}
+.account-bar{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 12px;margin:-6px 0 16px;font-size:13px;color:var(--sub)}
+.account-status strong{color:var(--text)}
+.link-btn{background:none;border:0;padding:6px 2px;color:#d9b6ff;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.account-note{text-align:center;color:var(--sub);font-size:13px;line-height:1.5;margin:-10px 0 18px}
+.playing-as{display:flex;flex-direction:column;gap:4px;margin:4px 0 22px;padding:14px 15px;border-radius:12px;border:1px solid #654c82;background:#18142a}
+.playing-as .field-label{margin:0}
+.playing-as strong{font-size:18px}
+.playing-as small{color:var(--sub);font-size:11px}
+.form-error{color:#ff9ab4;font-size:13px;margin:-8px 0 14px}
+.account-sent{text-align:center}
+.account-sent h2{font:700 24px 'Space Grotesk',sans-serif;margin:6px 0 10px}
+.account-sent p{color:var(--sub);font-size:14px;line-height:1.6}
+.account-icon{font-size:40px}
