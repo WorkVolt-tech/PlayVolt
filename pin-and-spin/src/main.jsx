@@ -4,6 +4,7 @@ import App from './App.jsx';
 import { TvApp } from './tv/TvApp.jsx';
 import { isTvLink } from './tv/tvLink.js';
 import { VersionAlert } from './components/VersionAlert.jsx';
+import './pwa.js';
 import '../styles.css';
 import './polish.css';
 

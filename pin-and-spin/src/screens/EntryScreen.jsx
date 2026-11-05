@@ -2,6 +2,7 @@ import React from 'react';
 import { MODES } from '../game/constants.js';
 import { Peg } from '../components/Peg.jsx';
 import { play } from '../sound/sfx.js';
+import { InstallApp } from '../components/InstallApp.jsx';
 
 // Home, How to Play, Create Room and Join Room.
 export function EntryScreen({ form, busy, account }) {
@@ -31,6 +32,7 @@ export function EntryScreen({ form, busy, account }) {
             : <><span className="account-status">Playing as a guest</span>
                 <button type="button" className="link-btn" onClick={() => setFormTab('account')}>Sign in / Create account</button></>}
       </div>
+      <InstallApp />
       <div className="board-legend home-legend"><span><i className="pin-dot" /> Pin: right color + spot</span>
         <span><i className="spin-dot" /> Spin: right color</span></div>
     </> : <>

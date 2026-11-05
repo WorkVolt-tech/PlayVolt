@@ -133,6 +133,14 @@ colors (new balls 6 = orange, 7 = pink in `src/balls/`). Levels and solo games h
 (4 or 5); `pin_and_spin_code_n()` and the logic-puzzle builder work for any size. Multiplayer
 and the other solo modes still use 4 balls and 6 colors.
 
+**Install as an app (like Dekabess):** Pin & Spin is an installable web app (PWA):
+`public/manifest.json`, icons (`scripts/make_app_icons.py` builds `icon-*.png`,
+`icon-maskable-*.png`, `apple-touch-icon.png`, `favicon-32.png` from the logo), the iPhone
+home-screen tags in `index.html`, and `public/sw.js` (network first, cache only as an offline
+fallback; `version.json` and the game server are never cached). `src/pwa.js` registers it
+(not on the TV screen). The home screen shows an **Install** button on Android (the browser's
+install prompt) and **Share → Add to Home Screen** steps on iPhone; nothing once installed.
+
 **How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
 (`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via
 Downloader + `<site>/app`, TV browsers via `<site>/tv`) also appear under Show on TV.
