@@ -5,6 +5,7 @@ import { MiniBoards } from '../shared/MiniBoards.jsx';
 import { Scoreboard } from '../shared/Scoreboard.jsx';
 import { FinishPanel } from './FinishPanel.jsx';
 import { GuessPanel } from './GuessPanel.jsx';
+import { useAdminView, usePeek } from '../admin.js';
 import { MatchRoomBar, MatchStatus, ViewTabs } from './MatchHeader.jsx';
 import { ManagePlayers } from './ManagePlayers.jsx';
 import { ShowOnTv } from './ShowOnTv.jsx';
@@ -20,6 +21,9 @@ export function Match({ state, onShare, onRemove, onLeave }) {
   const [boardFocus, setBoardFocus] = useState('all');
   const [managing, setManaging] = useState(false);
   const [tvOpen, setTvOpen] = useState(false);
+  // Admin view (PlayVolt admins only): the secret shown faintly in your empty slots.
+  const adminOn = useAdminView();
+  const peek = usePeek(adminOn && game.status === 'playing', { code: game.code }, game.puzzle);
   const host = game.hostId === game.me;
   const mine = myGuesses(game);
   const limit = guessLimit(game.mode);
@@ -86,7 +90,7 @@ export function Match({ state, onShare, onRemove, onLeave }) {
       ? <FinishPanel game={game} onViewResults={() => openBoard()}>{playAgain}</FinishPanel>
       : <GuessPanel mine={mine} limit={limit} attempt={attempt} canSubmit={canSubmit}
           draft={draft} selected={selected} onSelect={(i) => { play('tap-ui-tick'); setSelected(i); }}
-          onColor={addColor} onClear={() => { play('swipe'); resetDraft(); }} onSubmit={submitGuess} />}
+          onColor={addColor} onClear={() => { play('swipe'); resetDraft(); }} onSubmit={submitGuess} peek={peek} />}
     {game.status === 'finished' && <div className="surface history-panel">
       <div className="panel-title"><h2>MY GUESSES</h2><span>{mine.length} SUBMITTED</span></div>
       <CodeBoard mine={mine} limit={limit} attempt={attempt} canSubmit={false}

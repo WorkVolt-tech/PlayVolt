@@ -7,6 +7,7 @@ import { formatClock } from '../game/selectors.js';
 import { play } from '../sound/sfx.js';
 import { LEVELS, msToTomorrow, shareText, storyStars } from './solo.js';
 import { useSolo } from './useSolo.js';
+import { useAdminView, usePeek } from '../admin.js';
 
 // 1-player modes: Daily puzzle, Free play and Beat the clock. Signed-in players only.
 export function SoloScreen({ account, notify, onBack, onSignIn }) {
@@ -79,6 +80,9 @@ function SoloHub({ solo, onBack }) {
 export function SoloGame({ solo, notify, story }) {
   const { game, busy, draft, selected, flash, remainingMs, submit, pick, clear, leave, start, setSelected } = solo;
   const playing = game.status === 'playing';
+  const adminOn = useAdminView();
+  // Beat the clock gets a new code after each one is cracked or skipped.
+  const peek = usePeek(adminOn && playing, { id: game.id }, `${game.solved}:${game.lastSecret?.join('')}:${game.guesses.length === 0}`);
   const title = story ? `Level ${story.level.level} · ${story.level.title}` : game.kind === 'daily' ? `Daily Puzzle #${game.number}`
     : game.kind === 'clock' ? 'Beat the Clock' : `Free Play · ${LEVELS[game.level].label}`;
   const timed = game.kind === 'clock' || (game.kind === 'story' && game.deadline);
@@ -115,7 +119,7 @@ export function SoloGame({ solo, notify, story }) {
     {playing
       ? <GuessPanel mine={game.guesses} limit={game.maxTries} attempt={game.guesses.length + 1} canSubmit={!busy}
           draft={draft} selected={selected} onSelect={setSelected} onColor={pick} onClear={clear} onSubmit={() => void submit()}
-          colorCount={game.colors} help={help} />
+          colorCount={game.colors} help={help} peek={peek} />
       : <SoloResult game={game} solo={solo} notify={notify} story={story}
           onAgain={() => (story ? solo.startStory(story.level.level, true) : start(game.kind, game.level, true))} />}
   </section>;

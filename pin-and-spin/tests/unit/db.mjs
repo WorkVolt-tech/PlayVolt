@@ -16,6 +16,8 @@ export async function freshDb() {
   await db.exec(`create table public.friendships (id uuid primary key default gen_random_uuid(), requester uuid, addressee uuid,
       status text, created_at timestamptz default now(), accepted_at timestamptz);
     create table public.blocks (blocker uuid, blocked uuid, created_at timestamptz default now());`);
+  // Stand-in for the shared PlayVolt admins list (read only).
+  await db.exec(`create table public.admins (user_id uuid primary key, added_at timestamptz default now());`);
   // Stand-in for Supabase Realtime's realtime.send(): records broadcasts for assertions.
   await db.exec(`create schema realtime;
     create table realtime.sent (id serial primary key, topic text, event text, private boolean);

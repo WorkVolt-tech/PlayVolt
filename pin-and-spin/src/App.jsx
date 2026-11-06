@@ -10,6 +10,7 @@ import { checkAchievements } from './achievements.js';
 import { FriendsScreen } from './social/FriendsScreen.jsx';
 import { InviteBanner } from './social/InviteBanner.jsx';
 import { inviteFriend } from './social/friends.js';
+import { useAdminView } from './admin.js';
 import { VersionAlert } from './components/VersionAlert.jsx';
 import { Dialog } from './components/Dialog.jsx';
 import { SoundToggle } from './sound/SoundToggle.jsx';
@@ -22,6 +23,7 @@ import { Match } from './screens/Match.jsx';
 export default function App() {
   const state = usePinAndSpin();
   const account = useAccount();
+  useAdminView(); // installs the hidden admin switch (5 taps on the title) on every screen
   useGameSounds(state.game);
   const { session, game, busy, toast, notify, form, act, forget } = state;
   const [dialog, setDialog] = useState(null);

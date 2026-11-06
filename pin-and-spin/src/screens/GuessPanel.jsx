@@ -5,15 +5,15 @@ import { Peg } from '../components/Peg.jsx';
 
 // The phone controller: stacked guess rows, color palette, Clear and Submit.
 // colorCount / help: optional, for solo games (easy mode uses 4 colors with no repeats).
-export function GuessPanel({ mine, limit, attempt, canSubmit, draft, selected, onSelect, onColor, onClear, onSubmit, colorCount = 6, help }) {
+export function GuessPanel({ mine, limit, attempt, canSubmit, draft, selected, onSelect, onColor, onClear, onSubmit, colorCount = 6, help, peek }) {
   return <div className="surface guess-panel">
-    <div className="panel-title"><h2>YOUR GUESS</h2>
+    <div className="panel-title"><h2>YOUR GUESS</h2>{peek && <span className="peek-tag" title="Admin view">🔑</span>}
       <span className="board-legend inline"><span><i className="pin-dot" /> Pin</span><span><i className="spin-dot" /> Spin</span></span>
       <span>TRY {Math.min(attempt, limit)} / {limit}</span></div>
     {/* Only level-specific hints (solo/story); the general rules live under ⓘ. */}
     {help && <p className="field-help">{help}</p>}
     <CodeBoard mine={mine} limit={limit} attempt={attempt} canSubmit={canSubmit}
-      draft={draft} selected={selected} onSelect={onSelect} />
+      draft={draft} selected={selected} onSelect={onSelect} peek={peek} />
     {/* Pinned to the bottom of the screen, so colors and Submit are always in reach. */}
     <div className="guess-dock">
       <div className={'color-palette' + (colorCount === 4 || colorCount >= 7 ? ' four' : '')}>

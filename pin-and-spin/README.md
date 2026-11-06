@@ -155,6 +155,13 @@ Dekabess's own `friend_challenges` (tied to Dekabess rooms) is not used.
 and sends the friend an invite in one step. The lobby's Invite friends button always shows;
 guests get an explanation (sign in first; installed iPhone apps keep their own sign-in).
 
+**Admin view (PlayVolt admins only, like Dekabess):** tap the **Pin & Spin** title at the top 5
+times within 2 seconds to turn it on, twice within 1 second to turn it off (`src/admin.js`). While
+on, the secret of the game being played shows faintly in your empty guess slots (multiplayer,
+and your own solo/daily/story games). Migration `012_admin_peek.sql`: `pin_and_spin_admin_peek()`
+(Edge Function action `admin_peek`) checks the shared `public.admins` list itself (read only);
+normal snapshots never contain the secret, so the switch gives non-admins nothing.
+
 **How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
 (`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via
 Downloader + `<site>/app`, TV browsers via `<site>/tv`) also appear under Show on TV.
