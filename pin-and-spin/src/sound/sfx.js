@@ -3,8 +3,8 @@
 // converted to small MP3s with each sound's volume baked in, because iPhones ignore
 // a web page's per-element volume. Playback approach adapted from SoundWeaver's SoundManager.
 //
-// Phones only allow audio after the player touches the page. On the first touch we
-// "unlock" a small pool of audio elements per sound; later sounds triggered by other
+// Phones only allow audio after the player touches the page. On a touch we "unlock" a small
+// pool of audio elements per sound (see unlock() below); later sounds triggered by other
 // players (a reveal, your turn) reuse those unlocked elements.
 
 const SOUNDS = [
@@ -16,16 +16,11 @@ const SOUNDS = [
 const POOL_SIZE = 3;
 const PREF_KEY = 'pin_and_spin_sound_v1';
 
-function prefersReducedMotion() {
-  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
-}
+// Sound is on unless the player turned it off with the 🔊 button. (It used to start muted for
+// "Reduce Motion" users, which made the installed iPhone app — with its own fresh settings —
+// start silent. Reduce Motion is about animation, not sound.)
 function readMuted() {
-  try {
-    const saved = localStorage.getItem(PREF_KEY);
-    if (saved === 'on') return false;
-    if (saved === 'off') return true;
-  } catch { /* storage disabled */ }
-  return prefersReducedMotion(); // quiet by default for people who ask for reduced motion
+  try { return localStorage.getItem(PREF_KEY) === 'off'; } catch { return false; }
 }
 
 let muted = readMuted();
@@ -47,35 +42,39 @@ function build() {
   }
 }
 
-// Called on the first touch/click/key: create and unlock every pooled element.
+// Phones only allow sound after a tap, and an app added to the iPhone Home Screen is stricter
+// than Safari: each audio element must be started UNMUTED during a tap. So on a tap we start
+// and immediately stop every pooled element (nothing is heard), which unlocks them all.
+// iPhones can lock sound again after the app was in the background, so we unlock again on the
+// next tap after coming back, and whenever a sound is refused.
 function unlock() {
   if (unlocked) return;
-  unlocked = true;
   build();
+  if (!Object.keys(pools).length) return;
+  unlocked = true;
   for (const id of SOUNDS) {
     for (const a of pools[id]) {
-      a.muted = true;
-      a.dataset.unlocking = '1';
-      const done = () => {
-        a.pause(); a.currentTime = 0; a.muted = false; delete a.dataset.unlocking;
-        if (a.dataset.playAfter) { delete a.dataset.playAfter; start(a); }
-      };
-      const p = a.play();
-      if (p && typeof p.then === 'function') p.then(done, done);
-      else done();
+      try {
+        a.muted = false;
+        const p = a.play();
+        a.pause();
+        a.currentTime = 0;
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch { /* keep going: never let sound break the game */ }
     }
   }
 }
+function onGesture() { if (!unlocked) unlock(); }
+function relock() { unlocked = false; } // the next tap unlocks again
 // The Pin & Spin TV app allows sound without a tap, so it unlocks right away.
 export function unlockNow() { unlock(); }
 if (typeof window !== 'undefined') {
-  const once = () => {
-    unlock();
-    window.removeEventListener('pointerdown', once, true);
-    window.removeEventListener('keydown', once, true);
-  };
-  window.addEventListener('pointerdown', once, true);
-  window.addEventListener('keydown', once, true);
+  // Every tap/key checks (cheap when already unlocked), so sound recovers by itself.
+  window.addEventListener('pointerdown', onGesture, true);
+  window.addEventListener('touchend', onGesture, true);
+  window.addEventListener('keydown', onGesture, true);
+  document.addEventListener?.('visibilitychange', () => { if (document.visibilityState === 'visible') relock(); });
+  window.addEventListener('pageshow', relock);
 }
 
 export function play(id) {
@@ -84,7 +83,6 @@ export function play(id) {
   if (!pool) return;
   const a = pool[cursor[id]];
   cursor[id] = (cursor[id] + 1) % pool.length;
-  if (a.dataset.unlocking) { a.dataset.playAfter = '1'; return; } // first tap: play once unlocked
   start(a);
 }
 
@@ -92,7 +90,8 @@ function start(a) {
   try {
     a.currentTime = 0;
     const p = a.play();
-    if (p && typeof p.catch === 'function') p.catch(() => {});
+    // Refused (the phone locked sound again): unlock on the next tap.
+    if (p && typeof p.catch === 'function') p.catch((e) => { if (e?.name === 'NotAllowedError') relock(); });
   } catch { /* never let sound break the game */ }
 }
 
