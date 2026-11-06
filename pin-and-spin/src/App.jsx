@@ -117,10 +117,10 @@ export default function App() {
         {session && game && <section className="screen">
           {game.status === 'lobby'
             ? <Lobby game={game} busy={busy} act={act} pairTv={state.pairTv} signedIn={account.signedIn} onCopy={copyText} onShare={share} onRemove={removePlayer} />
-            : <Match state={state} onShare={share} onRemove={removePlayer} />}
+            : <Match state={state} onShare={share} onRemove={removePlayer} onLeave={leaveRoom} />}
           <button className="leave-link" type="button" disabled={busy}
             onClick={leaveRoom}>
-            ← Leave room
+            🚪 Leave room
           </button>
         </section>}
       </main>

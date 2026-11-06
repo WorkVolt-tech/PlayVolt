@@ -14,7 +14,7 @@ import { play } from '../sound/sfx.js';
 const canFullscreen = typeof document !== 'undefined' && document.fullscreenEnabled;
 
 // An in-progress or finished match on a player's phone: My Board + Everyone's Guesses.
-export function Match({ state, onShare, onRemove }) {
+export function Match({ state, onShare, onRemove, onLeave }) {
   const { game, busy, clock, offset, view, setView, draft, setDraft, selected, setSelected, resetDraft, act, pairTv } = state;
   const [fullscreen, setFullscreen] = useState(false);
   const [boardFocus, setBoardFocus] = useState('all');
@@ -75,7 +75,7 @@ export function Match({ state, onShare, onRemove }) {
 
   return <>
     <MatchAnnouncer game={game} />
-    <MatchRoomBar game={game} onShare={onShare} onPlayers={host ? () => { play('drawer-open'); setManaging(true); } : null}
+    <MatchRoomBar game={game} onShare={onShare} onLeave={onLeave} onPlayers={host ? () => { play('drawer-open'); setManaging(true); } : null}
       onTv={game.displayToken ? () => { play('drawer-open'); setTvOpen(true); } : null} />
     {tvOpen && <ShowOnTv game={game} pairTv={pairTv} onClose={() => { play('drawer-close'); setTvOpen(false); }} />}
     {managing && host && <ManagePlayers game={game} busy={busy} onRemove={onRemove} onClose={() => { play('drawer-close'); setManaging(false); }} />}

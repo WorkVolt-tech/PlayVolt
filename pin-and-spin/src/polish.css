@@ -667,3 +667,10 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .challenge-modes{display:grid;gap:8px}
 .challenge-mode{min-height:0;width:100%;cursor:pointer;color:inherit}
 .friend-row .primary-btn.small-btn{padding:7px 10px}
+
+/* Leave room: a real button (was faint grey text players couldn't find). */
+.leave-link{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;max-width:320px;min-height:46px;margin:20px auto 8px;
+  padding:11px 18px;border-radius:12px;border:1px solid #ff8a98;background:#3a1f2a;color:#ffd5db;font-size:14px;font-weight:800;letter-spacing:.3px;cursor:pointer}
+.leave-link:hover,.leave-link:focus-visible{background:#4a2533;color:#fff}
+.leave-link:disabled{opacity:.5}
+.match-room-bar .leave-top{border-color:#ff8a98;color:#ffd5db;background:#3a1f2a}
