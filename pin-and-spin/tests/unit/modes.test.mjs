@@ -57,23 +57,42 @@ describe('secrecy', () => {
 });
 
 describe('Classic', () => {
-  test('turns rotate, out-of-turn guesses are ignored, and feedback is public at once', async () => {
-    const room = await started('classic', 3);
+  test('turns alternate, out-of-turn guesses are ignored, and feedback is public at once', async () => {
+    const room = await started('classic', 2);
     const first = byId(room, room.state.turnId);
-    const order = [...room.players.slice(room.players.indexOf(first)), ...room.players.slice(0, room.players.indexOf(first))];
-    const outOfTurn = await guess(room, order[1], SECRET, 1);
+    const second = room.players.find((p) => p !== first);
+    const outOfTurn = await guess(room, second, SECRET, 1);
     assert.equal(outOfTurn.guesses.length, 0, 'out-of-turn guess must not be accepted');
     assert.equal(outOfTurn.status, 'playing');
-    let s = await guess(room, order[0], [0, 2, 4, 5], 1);
-    assert.equal(s.turnId, order[1].id);
-    const seen = await state(room, order[2]);
-    assert.deepEqual(seen.guesses[0], { playerId: order[0].id, attempt: 1, colors: [0, 2, 4, 5], pins: 1, spins: 1, revealed: true });
-    s = await guess(room, order[1], WRONG, 1);
-    assert.equal(s.turnId, order[2].id);
+    let s = await guess(room, first, [0, 2, 4, 5], 1);
+    assert.equal(s.turnId, second.id);
+    const seen = await state(room, second);
+    assert.deepEqual(seen.guesses[0], { playerId: first.id, attempt: 1, colors: [0, 2, 4, 5], pins: 1, spins: 1, revealed: true });
+    s = await guess(room, second, WRONG, 1);
+    assert.equal(s.turnId, first.id);
+  });
+
+  test('Classic is for 2 players: a third player cannot join (other modes still can)', async () => {
+    const room = await g.room('classic', 2);
+    await rejects(g.api('join', room.code, tok(70), { name: 'Third' }), /Classic is for 2 players/);
+    // Only Classic: the other modes still take up to 10 (a separate room with its own host).
+    for (const mode of ['reveal', 'timed-reveal', 'rush']) {
+      const code = (await g.api('create', '', tok(80 + mode.length), { name: 'Host', mode })).code;
+      await g.api('join', code, tok(90 + mode.length), { name: 'Second' });
+      const third = await g.api('join', code, tok(100 + mode.length), { name: 'Third' });
+      assert.equal(third.players.filter((p) => p.active).length, 3, mode);
+    }
+  });
+
+  test('a Classic game cannot start with more than 2 players (e.g. a room from before the rule)', async () => {
+    const room = await g.room('classic', 2);
+    await db.query(`insert into public.pin_and_spin_players(room_id, token_hash, name, seat, ready)
+      select id, 'x', 'Old', 3, true from public.pin_and_spin_rooms where code = $1`, [room.code]);
+    await rejects(g.api('start', room.code, room.players[0].token), /Classic is for 2 players/);
   });
 
   test('the first player to solve wins and the match ends', async () => {
-    const room = await started('classic', 3);
+    const room = await started('classic', 2);
     const first = byId(room, room.state.turnId);
     const s = await guess(room, first, SECRET, 1);
     assert.equal(s.status, 'finished');
@@ -103,7 +122,7 @@ describe('Classic', () => {
   });
 
   test('if the current player leaves, the turn passes on', async () => {
-    const room = await started('classic', 3);
+    const room = await started('classic', 2);
     const first = byId(room, room.state.turnId);
     await g.api('leave', room.code, first.token);
     const other = room.players.find((p) => p !== first);
@@ -288,7 +307,7 @@ describe('rooms, reconnects and rematches', () => {
   });
 
   test('only the host starts, and only once everyone is ready', async () => {
-    const room = await g.room('classic', 3);
+    const room = await g.room('reveal', 3);
     await rejects(g.api('start', room.code, room.players[1].token), /host/);
     await g.api('ready', room.code, room.players[2].token, { ready: false });
     await rejects(g.api('start', room.code, room.players[0].token), /ready/);
@@ -300,7 +319,7 @@ describe('rooms, reconnects and rematches', () => {
   });
 
   test('duplicate names are refused, and nobody can join after the match starts', async () => {
-    const room = await g.room('classic', 2);
+    const room = await g.room('reveal', 2);
     await rejects(g.api('join', room.code, tok(60), { name: 'p1' }), /taken/);
     await g.api('start', room.code, room.players[0].token);
     await rejects(g.api('join', room.code, tok(61), { name: 'Late' }), /already started/);
@@ -316,7 +335,7 @@ describe('rooms, reconnects and rematches', () => {
   });
 
   test('the host leaving hands the room to the next player', async () => {
-    const room = await g.room('classic', 3);
+    const room = await g.room('reveal', 3);
     await g.api('leave', room.code, room.players[0].token);
     const s = await state(room, room.players[1]);
     assert.equal(s.hostId, room.players[1].id);
@@ -345,7 +364,7 @@ describe('host controls and presence', () => {
     db.query(`update public.pin_and_spin_players set last_seen=now()-make_interval(secs=>$2) where id=$1`, [player.id, seconds]);
 
   test('only the host can remove a player, and not themselves', async () => {
-    const room = await g.room('classic', 3);
+    const room = await g.room('reveal', 3);
     const [host, b, c] = room.players;
     await rejects(kick(room, b, c), /Only the host/);
     await rejects(kick(room, host, host), /Leave Room/);
@@ -362,7 +381,7 @@ describe('host controls and presence', () => {
   });
 
   test('removing the player whose turn it is passes the Classic turn on', async () => {
-    const room = await started('classic', 3);
+    const room = await started('classic', 2);
     const host = room.players[0];
     let current = byId(room, room.state.turnId);
     if (current === host) current = byId(room, (await guess(room, host, WRONG, 1)).turnId);
@@ -401,7 +420,7 @@ describe('host controls and presence', () => {
   });
 
   test('a host silent for 60 seconds hands the room to the next connected player', async () => {
-    const room = await g.room('classic', 3);
+    const room = await g.room('reveal', 3);
     const [host, b, c] = room.players;
     await silence(host, 65);
     await silence(b, 65);

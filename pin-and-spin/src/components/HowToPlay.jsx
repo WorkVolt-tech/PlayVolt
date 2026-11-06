@@ -74,7 +74,7 @@ function Rules() {
     <section>
       <h3>🕹️ Playing</h3>
       <ol>
-        <li>One player creates a room and shares the 6-character code. Everyone joins on their phone (2–10 players).</li>
+        <li>One player creates a room and shares the 6-character code. Everyone joins on their phone (2–10 players; Classic is a 2-player duel).</li>
         <li>Tap colors to fill the 4 spots (tap a spot to change it), then <b>Submit guess</b>.</li>
         <li>Watch everyone’s guesses on the mini boards, or tap them for the full board. Put it on a TV with <b>📺 Show on TV</b>.</li>
       </ol>

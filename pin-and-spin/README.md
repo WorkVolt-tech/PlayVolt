@@ -71,10 +71,15 @@ the Supabase project's Site URL, the same as for Dekabess — ideally the PlayVo
 
 ## Modes
 
-- Classic — a random active player starts each game/rematch, then turns proceed in seat order; 4 guesses per player
+- Classic — **2 players only**; a random player starts each game/rematch, then turns alternate; 4 guesses per player.
+  (With 3+ players the later players would learn from everyone's guesses before their turn, which is unfair.
+  Migration `013_classic_two_players.sql`: a 3rd player can't join or be invited, and a Classic game won't start
+  with more than 2. The lobby says so and points to Reveal/Rush for bigger groups.)
 - Reveal — simultaneous guesses, 4 rounds
 - Timed Reveal — 3 minutes per round, 4 rounds
 - Rush — 3 minutes total, 8 guesses per player
+
+Reveal, Timed Reveal and Rush take 2–10 players.
 
 **TV mode:** in the lobby (or the 📺 button in a match) a player taps **Show on TV** and
 opens the link on a laptop or smart-TV browser. The link is `/?tv=ROOM#<display token>`

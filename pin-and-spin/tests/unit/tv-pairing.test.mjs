@@ -40,7 +40,7 @@ describe('TV pairing', () => {
   });
 
   test('only active players in the room can connect a TV', async () => {
-    const room = await g.room('classic', 3);
+    const room = await g.room('reveal', 3);
     const { pairCode } = await tv('tv_start');
     await rejects(tv('tv_pair', { pair: pairCode, token: tok(777), room: room.code }), /Join the room/);
     await g.api('start', room.code, room.players[0].token);

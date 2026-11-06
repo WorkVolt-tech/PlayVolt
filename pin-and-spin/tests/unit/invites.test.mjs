@@ -64,6 +64,15 @@ describe('friend invites', () => {
     await rejects(social('invite', { friend: B, code }, A), /waiting to start/);
   });
 
+  test('a full Classic room (2 players) cannot take an invited friend', async () => {
+    const D = '44444444-4444-4444-8444-444444444444';
+    await db.query(`insert into public.profiles(id,nickname) values($1,'Dee')`, [D]);
+    await db.query(`insert into public.friendships(requester,addressee,status) values($1,$2,'accepted')`, [A, D]);
+    const code = await hostRoom();
+    await g.api('join', code, tok(9), { name: 'Second' });
+    await rejects(social('invite', { friend: D, code }, A), /Classic is for 2 players/);
+  });
+
   test('invites are private and server-only', async () => {
     const r = (await db.query(`select has_table_privilege('anon','public.pin_and_spin_invites','select') a,
       has_function_privilege('anon','public.pin_and_spin_social(text,uuid,jsonb)','execute') f`)).rows[0];

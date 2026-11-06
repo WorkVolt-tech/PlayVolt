@@ -74,7 +74,7 @@ export function EntryScreen({ form, busy, account }) {
         <button type="submit" className="primary-btn" disabled={busy}>
           {busy ? 'Connecting…' : formTab === 'create' ? 'Create Room' : 'Join Room'}<span>→</span>
         </button>
-        <div className="bottom-note">{account.signedIn ? 'Signed in' : 'No sign-up needed'} <span>•</span> 2–10 players</div>
+        <div className="bottom-note">{account.signedIn ? 'Signed in' : 'No sign-up needed'} <span>•</span> {formTab === 'create' ? (mode === 'classic' ? '2 players' : '2–10 players') : '2–10 players'}</div>
       </form>}
     </>}
   </section>;
