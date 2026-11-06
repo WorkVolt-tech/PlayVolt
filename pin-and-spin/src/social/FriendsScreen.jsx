@@ -1,10 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { play } from '../sound/sfx.js';
+import { MODES } from '../game/constants.js';
+import { Peg } from '../components/Peg.jsx';
 import { addFriendByCode, friendLink, isOnline, myFriendCode, myFriends, respondFriend } from './friends.js';
 
 // The shared PlayVolt friends list (the same one as Dekabess): your friend code, add a
 // friend by code, answer requests, and see who's online.
-export function FriendsScreen({ account, notify, onBack, onSignIn, startCode = '' }) {
+// onChallenge(friend, mode): create a room in that mode and invite the friend into it.
+export function FriendsScreen({ account, notify, onBack, onSignIn, onChallenge, startCode = '' }) {
+  const [challenging, setChallenging] = useState(null);
   const [list, setList] = useState(null);
   const [code, setCode] = useState('');
   const [add, setAdd] = useState(startCode);
@@ -95,8 +99,24 @@ export function FriendsScreen({ account, notify, onBack, onSignIn, startCode = '
         <span className="friend-avatar">{f.nickname?.[0]?.toUpperCase() || '?'}</span>
         <strong>{f.nickname}</strong>
         <small className={isOnline(f) ? 'online' : ''}>{isOnline(f) ? '● Online' : 'Offline'}</small>
+        {onChallenge && <button type="button" className="primary-btn small-btn" onClick={() => { play('drawer-open'); setChallenging(f); }}>🎮 Challenge</button>}
       </div>)}
       {outgoing.length > 0 && <p className="field-help friend-waiting">Waiting for: {outgoing.map((f) => f.nickname).join(', ')}</p>}
     </div>
+    {challenging && <div className="sheet-backdrop" onClick={() => setChallenging(null)}>
+      <div className="sheet surface" role="dialog" aria-modal="true" aria-label={`Challenge ${challenging.nickname}`} onClick={(e) => e.stopPropagation()}>
+        <div className="panel-title"><h2>🎮 Challenge {challenging.nickname}</h2>
+          <button type="button" className="sheet-close" onClick={() => setChallenging(null)} aria-label="Close">✕</button></div>
+        <p className="field-help">Pick a mode. We’ll open a room and send {challenging.nickname} an invite to join it
+          (they need to be signed in to Pin &amp; Spin). You can invite more friends from the room.</p>
+        <div className="challenge-modes">
+          {Object.entries(MODES).map(([id, m]) => <button type="button" key={id} className="mode-option challenge-mode"
+            onClick={() => { const f = challenging; setChallenging(null); play('click-crisp-primary'); onChallenge(f, id); }}>
+            <Peg value={m.color} tiny />
+            <span className="mode-body"><strong>{m.label}</strong><small>{m.hint}</small></span>
+          </button>)}
+        </div>
+      </div>
+    </div>}
   </section>;
 }

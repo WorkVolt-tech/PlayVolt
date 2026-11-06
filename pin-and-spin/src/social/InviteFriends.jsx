@@ -3,7 +3,20 @@ import { play } from '../sound/sfx.js';
 import { inviteFriend, isOnline, myFriends } from './friends.js';
 
 // Lobby sheet: invite friends from your PlayVolt friends list into this room.
-export function InviteFriends({ game, onClose }) {
+export function InviteFriends({ game, signedIn, onClose }) {
+  if (!signedIn) return <div className="sheet-backdrop" onClick={onClose}>
+    <div className="sheet surface" role="dialog" aria-modal="true" aria-label="Invite friends" onClick={(e) => e.stopPropagation()}>
+      <div className="panel-title"><h2>👥 Invite friends</h2><button type="button" className="sheet-close" onClick={onClose} aria-label="Close">✕</button></div>
+      <p className="field-help">You’re playing as a guest, so your PlayVolt friends list isn’t available here. Sign in on the home
+        screen (before creating the room) to invite friends with one tap. For now, tap <b>↗ Share link</b> to send the room link.</p>
+      <p className="field-help small">On iPhone, an app added to the Home Screen keeps its own sign-in: sign in inside the app.</p>
+      <button type="button" className="outline-btn full" onClick={onClose}>OK</button>
+    </div>
+  </div>;
+  return <InviteFriendsList game={game} onClose={onClose} />;
+}
+
+function InviteFriendsList({ game, onClose }) {
   const [friends, setFriends] = useState(null);
   const [sent, setSent] = useState({});
   const [error, setError] = useState('');

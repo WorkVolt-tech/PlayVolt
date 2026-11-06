@@ -199,7 +199,9 @@ export function usePinAndSpin() {
 
   // accountName: a signed-in player's PlayVolt nickname (the server uses the profile name).
   // codeOverride: join a specific room right away (e.g. from a friend's invite).
-  async function enter(action, accountName, codeOverride) {
+  // modeOverride: create a room in this mode (e.g. challenging a friend).
+  // Returns the room code on success (so a challenge can invite the friend).
+  async function enter(action, accountName, codeOverride, modeOverride) {
     if (busyRef.current) return;
     const name = (accountName || nickname).trim().slice(0, 20);
     if (!name) return notify('Please enter a nickname.');
@@ -215,7 +217,7 @@ export function usePinAndSpin() {
     busyRef.current = true;
     setBusy(true);
     try {
-      const result = await callGame(action, candidate, { name, ...(create ? { mode } : {}) });
+      const result = await callGame(action, candidate, { name, ...(create ? { mode: modeOverride || mode } : {}) });
       const next = { ...candidate, code: result.code };
       sessionRef.current = next;
       setSession(next);
@@ -228,6 +230,7 @@ export function usePinAndSpin() {
       updateGame(result);
       history.replaceState(null, '', location.pathname + '?room=' + encodeURIComponent(result.code));
       notify(create ? 'Room created! Invite your friends.' : 'You joined the room!');
+      return result.code;
     } catch (error) {
       play('invalid-thunk');
       notify(error.message || 'Could not join.');

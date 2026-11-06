@@ -151,6 +151,9 @@ content-free "invited" signal on `pin-and-spin-invites:<user id>`). Invites live
 `pin_and_spin_invites` (10 minutes, lobby only, friends only, blocked = silently dropped) via
 `pin_and_spin_social()` (Edge Function actions `invite_friend`, `my_invites`, `invite_respond`).
 Dekabess's own `friend_challenges` (tied to Dekabess rooms) is not used.
+**Challenge** (Friends → 🎮 Challenge next to a friend → pick a mode) creates a room in that mode
+and sends the friend an invite in one step. The lobby's Invite friends button always shows;
+guests get an explanation (sign in first; installed iPhone apps keep their own sign-in).
 
 **How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
 (`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via

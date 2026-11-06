@@ -9,6 +9,7 @@ import { AchievementsScreen } from './screens/AchievementsScreen.jsx';
 import { checkAchievements } from './achievements.js';
 import { FriendsScreen } from './social/FriendsScreen.jsx';
 import { InviteBanner } from './social/InviteBanner.jsx';
+import { inviteFriend } from './social/friends.js';
 import { VersionAlert } from './components/VersionAlert.jsx';
 import { Dialog } from './components/Dialog.jsx';
 import { SoundToggle } from './sound/SoundToggle.jsx';
@@ -57,6 +58,13 @@ export default function App() {
     setDialog({ title: 'Leave this room?', message, confirmLabel: 'Leave room', danger: true,
       onConfirm: () => { close(); void act('leave'); } });
   }
+  // Challenge a friend: open a room in that mode, then send them an invite to it.
+  async function challenge(friend, mode) {
+    const code = await form.enter('create', accountName, undefined, mode);
+    if (!code) return;
+    try { await inviteFriend(friend.user_id, code); notify(`🎮 Challenge sent to ${friend.nickname}! Wait here for them to join.`); }
+    catch (e) { notify(e.message || `Room ready, but the invite didn’t go through. Use “Invite friends”.`); }
+  }
   async function copyText(text, message) {
     try { await navigator.clipboard.writeText(text); notify(message); }
     catch { setDialog({ title: 'Copy this', copyText: text }); }
@@ -99,6 +107,7 @@ export default function App() {
         {!session && form.formTab === 'achievements' && <AchievementsScreen account={account}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
         {!session && form.formTab === 'friends' && <FriendsScreen account={account} notify={notify} startCode={friendCode}
+          onChallenge={(friend, mode) => void challenge(friend, mode)}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
         {!session && !['account', 'leaderboard', 'solo', 'story', 'achievements', 'friends'].includes(form.formTab) && <EntryScreen form={form} busy={busy || account.loading} account={account} />}
 

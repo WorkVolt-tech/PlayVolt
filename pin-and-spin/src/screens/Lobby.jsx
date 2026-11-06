@@ -21,12 +21,12 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
       <button className="outline-btn" onClick={() => { play('select-item'); onCopy(game.code, 'Room code copied!'); }}>▣ Copy Code</button>
       <button className="outline-btn" onClick={() => { play('select-item'); onShare(); }}>↗ Share link</button>
     </div>
-      {signedIn && <button type="button" className="primary-btn full invite-friends-btn" onClick={() => { play('drawer-open'); setInviting(true); }}>
+      {<button type="button" className="primary-btn full invite-friends-btn" onClick={() => { play('drawer-open'); setInviting(true); }}>
         👥 Invite friends <span>→</span></button>}
       {game.displayToken && <button type="button" className="outline-btn full tv-button" onClick={() => { play('drawer-open'); setTvOpen(true); }}>
         📺 Show on TV</button>}
     </div>
-    {inviting && <InviteFriends game={game} onClose={() => { play('drawer-close'); setInviting(false); }} />}
+    {inviting && <InviteFriends game={game} signedIn={signedIn} onClose={() => { play('drawer-close'); setInviting(false); }} />}
     {tvOpen && <ShowOnTv game={game} pairTv={pairTv} onClose={() => { play('drawer-close'); setTvOpen(false); }} />}
     <div className="surface lobby-mode"><Peg value={MODES[game.mode].color} tiny />
       <div><strong>{MODES[game.mode].label}</strong><p>{MODES[game.mode].hint}</p></div></div>
