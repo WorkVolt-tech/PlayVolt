@@ -7,30 +7,30 @@ import { Peg } from '../components/Peg.jsx';
 // colorCount / help: optional, for solo games (easy mode uses 4 colors with no repeats).
 export function GuessPanel({ mine, limit, attempt, canSubmit, draft, selected, onSelect, onColor, onClear, onSubmit, colorCount = 6, help }) {
   return <div className="surface guess-panel">
-    <div className="panel-title"><h2>YOUR GUESS</h2><span>TRY {Math.min(attempt, limit)} / {limit}</span></div>
-    <p className="field-help">{help || (canSubmit
-      ? 'Tap colors to fill your slots. Repeats are allowed.'
-      : 'View the other players while waiting for your next move.')}</p>
+    <div className="panel-title"><h2>YOUR GUESS</h2>
+      <span className="board-legend inline"><span><i className="pin-dot" /> Pin</span><span><i className="spin-dot" /> Spin</span></span>
+      <span>TRY {Math.min(attempt, limit)} / {limit}</span></div>
+    {/* Only level-specific hints (solo/story); the general rules live under ⓘ. */}
+    {help && <p className="field-help">{help}</p>}
     <CodeBoard mine={mine} limit={limit} attempt={attempt} canSubmit={canSubmit}
       draft={draft} selected={selected} onSelect={onSelect} />
-    <div className="board-legend"><span><i className="pin-dot" /> Pin: right spot</span>
-      <span><i className="spin-dot" /> Spin: right color</span></div>
-    <p className="field-help">Dots count matches; they do not point to particular slots.</p>
-    <p className="field-label colors-label">PICK A COLOR</p>
-    <div className={'color-palette' + (colorCount === 4 || colorCount >= 7 ? ' four' : '')}>
-      {COLORS.slice(0, colorCount).map((color, index) => <button type="button"
-        className="color-choice" style={{ '--color': color.hex }}
-        key={color.name} aria-label={'Choose '+color.name} disabled={!canSubmit}
-        onClick={() => onColor(index)}>
-        <Peg value={index} tiny /><small>{color.name}</small>
-      </button>)}
-    </div>
-    <div className="guess-actions">
-      <button className="outline-btn" type="button" disabled={!canSubmit || draft.every((v) => v === null)}
-        onClick={onClear}>CLEAR</button>
-      <button className="primary-btn" type="button"
-        disabled={!canSubmit || draft.some((v) => v === null)} onClick={onSubmit}>
-        SUBMIT GUESS <span>→</span></button>
+    {/* Pinned to the bottom of the screen, so colors and Submit are always in reach. */}
+    <div className="guess-dock">
+      <div className={'color-palette' + (colorCount === 4 || colorCount >= 7 ? ' four' : '')}>
+        {COLORS.slice(0, colorCount).map((color, index) => <button type="button"
+          className="color-choice" style={{ '--color': color.hex }}
+          key={color.name} aria-label={'Choose ' + color.name} disabled={!canSubmit}
+          onClick={() => onColor(index)}>
+          <Peg value={index} tiny /><small>{color.name}</small>
+        </button>)}
+      </div>
+      <div className="guess-actions">
+        <button className="outline-btn" type="button" disabled={!canSubmit || draft.every((v) => v === null)}
+          onClick={onClear}>CLEAR</button>
+        <button className="primary-btn" type="button"
+          disabled={!canSubmit || draft.some((v) => v === null)} onClick={onSubmit}>
+          SUBMIT GUESS <span>→</span></button>
+      </div>
     </div>
   </div>;
 }

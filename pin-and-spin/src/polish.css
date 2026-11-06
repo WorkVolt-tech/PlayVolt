@@ -592,3 +592,63 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .invite-banner div{flex:1;min-width:0}
 .invite-banner strong{display:block;font-size:14px}
 .invite-banner small{display:block;font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ============ Compact layout: menu fits one screen; colors always in reach ============ */
+/* Home: two buttons up top, the rest in a two-column grid. */
+.home-actions{display:grid;gap:10px}
+.home-actions>.outline-btn.full{margin-top:0}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.home-grid .outline-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:10px 8px;font-size:14px;margin:0}
+.home-grid .outline-btn span{font-size:17px;line-height:1}
+.home-side .account-bar{margin:14px 0 12px}
+.home-side .install-card{margin-bottom:0}
+@media (max-width:640px){
+  .approved-hero{padding:4px 6px 12px}
+  .approved-hero .bunny-logo{margin-bottom:6px}
+  .bunny-logo img{max-height:min(200px,25vh)}
+  .approved-hero .tagline{font-size:18px;margin:6px auto 10px}
+  .players-badge{padding:4px 14px;font-size:12px}
+  .home-actions .primary-btn,.home-actions>.outline-btn.full{min-height:50px}
+}
+/* Computers and tablets in landscape: logo on the left, menu on the right, all on one screen. */
+@media (min-width:900px) and (min-aspect-ratio:1/1){
+  .shell.home-shell{max-width:1040px}
+  .home-layout{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;min-height:calc(100dvh - 150px)}
+  .home-layout .approved-hero{padding:0}
+  .home-layout .bunny-logo img{max-height:min(380px,48vh)}
+  .home-side{width:100%;max-width:460px;justify-self:center}
+}
+
+/* Playing: slimmer header, rows and labels. */
+.match-meta{margin:2px 2px 10px}
+.match-meta strong{font-size:18px}
+.mini-boards{margin-bottom:10px}
+.view-tabs{margin-bottom:10px}
+.view-tab{padding:9px 8px}
+.guess-panel{padding:14px 14px 0}
+.guess-panel .panel-title{margin-bottom:10px;gap:8px}
+.guess-panel .panel-title .board-legend.inline{margin:0 0 0 auto;gap:10px;font-size:10px}
+.guess-panel .field-help{margin-bottom:10px}
+.code-board{gap:7px;margin:8px 0 12px}
+.code-row{min-height:54px;padding:6px 10px}
+.code-slots .tiny-peg{width:38px;height:38px}
+.code-slot{min-width:40px;min-height:40px}
+/* The dock: colors + Clear/Submit stay pinned to the bottom of the screen while you scroll. */
+.guess-dock{position:sticky;bottom:0;z-index:5;margin:0 -14px;padding:10px 14px max(12px,env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,#1c1830f0,#15122bfa);border-top:1px solid #3d3058;border-radius:0 0 20px 20px;backdrop-filter:blur(6px)}
+.guess-dock .color-palette{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.guess-dock .color-palette.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.guess-dock .color-choice{min-height:0;padding:6px 2px;gap:3px;border-radius:12px}
+.guess-dock .color-choice .tiny-peg{width:34px;height:34px;max-width:none;flex:none}
+.guess-dock .color-choice small{font-size:9px}
+.guess-dock .guess-actions .outline-btn,.guess-dock .guess-actions .primary-btn{min-height:44px}
+@media (max-width:500px){
+  .match-room-bar{margin-bottom:8px;gap:6px}
+  .match-room-details{display:none}
+  .match-shell .match-meta strong{font-size:16px}
+  .match-meta span{font-size:10px}
+}
+@media (max-width:370px){
+  .guess-dock .color-choice small{display:none}
+  .code-slots .tiny-peg{width:34px;height:34px}
+}

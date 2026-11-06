@@ -86,7 +86,7 @@ export function SoloGame({ solo, notify, story }) {
   const help = story ? (story.level.kind === 'logic' ? 'Only one code fits every clue above. Work it out, then enter it.'
       : `${game.colors} colors${story.level.repeats ? ', repeats allowed' : ', no repeats'}. ${story.level.intro}`)
     : game.kind === 'clock' ? 'Crack it to score, then a new code appears. 8 tries per code.'
-    : game.level === 'easy' ? '4 colors, and the code never repeats a color.' : 'Tap colors to fill your slots. Repeats are allowed.';
+    : game.level === 'easy' ? '4 colors, and the code never repeats a color.' : '';
 
   return <section className="screen solo-screen">
     <button className="back-button" onClick={() => { play('tap-ui-tick'); if (story) story.onMap(); else leave(); }}>← {story ? 'Map' : 'Solo'}</button>

@@ -9,34 +9,37 @@ export function EntryScreen({ form, busy, account }) {
   const { formTab, setFormTab, nickname, setNickname, roomCodeInput, setRoomCodeInput, mode, setMode, enter } = form;
   const accountName = account.signedIn ? account.profile?.nickname || '' : '';
   return <section className="screen entry-screen">
-    {formTab === 'home' ? <>
+    {formTab === 'home' ? <div className="home-layout">
       <div className="hero approved-hero">
         <h1 className="bunny-logo"><img src="/pin-and-spin-logo.webp" alt="Pin & Spin" width="1536" height="1024" fetchPriority="high" /></h1>
         <p className="tagline">Crack the code.<br />Challenge your friends.</p>
         <span className="players-badge">2–10 players</span>
       </div>
-      <div className="home-actions">
-        <button className="primary-btn" onClick={() => { play('tap-ui-tick'); setFormTab('create'); }}>Create Room <span>＋</span></button>
-        <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('join'); }}>Join Room <span>↗</span></button>
-        <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('story'); }}>Story Mode <span>🗺️</span></button>
-        <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('solo'); }}>Play Solo <span>🎯</span></button>
-        <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('friends'); }}>Friends <span>👥</span></button>
-        <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('leaderboard'); }}>Leaderboard <span>🏆</span></button>
-        <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('achievements'); }}>Achievements <span>🏅</span></button>
-        <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('help'); }}>How to Play <span>?</span></button>
+      <div className="home-side">
+        <div className="home-actions">
+          <button className="primary-btn" onClick={() => { play('tap-ui-tick'); setFormTab('create'); }}>Create Room <span>＋</span></button>
+          <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('join'); }}>Join Room <span>↗</span></button>
+          {/* Everything else in a compact two-column grid so the menu fits on one screen. */}
+          <div className="home-grid">
+            <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('story'); }}><span>🗺️</span> Story Mode</button>
+            <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('solo'); }}><span>🎯</span> Play Solo</button>
+            <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('friends'); }}><span>👥</span> Friends</button>
+            <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('leaderboard'); }}><span>🏆</span> Leaderboard</button>
+            <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('achievements'); }}><span>🏅</span> Achievements</button>
+            <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('help'); }}><span>❓</span> How to Play</button>
+          </div>
+        </div>
+        <div className="account-bar">
+          {account.loading ? <span className="account-status">Checking account…</span>
+            : account.signedIn
+              ? <><span className="account-status">Signed in as <strong>{accountName || account.user.email}</strong></span>
+                  <button type="button" className="link-btn" onClick={() => void account.signOut()}>Sign out</button></>
+              : <><span className="account-status">Playing as a guest</span>
+                  <button type="button" className="link-btn" onClick={() => setFormTab('account')}>Sign in / Create account</button></>}
+        </div>
+        <InstallApp />
       </div>
-      <div className="account-bar">
-        {account.loading ? <span className="account-status">Checking account…</span>
-          : account.signedIn
-            ? <><span className="account-status">Signed in as <strong>{accountName || account.user.email}</strong></span>
-                <button type="button" className="link-btn" onClick={() => void account.signOut()}>Sign out</button></>
-            : <><span className="account-status">Playing as a guest</span>
-                <button type="button" className="link-btn" onClick={() => setFormTab('account')}>Sign in / Create account</button></>}
-      </div>
-      <InstallApp />
-      <div className="board-legend home-legend"><span><i className="pin-dot" /> Pin: right color + spot</span>
-        <span><i className="spin-dot" /> Spin: right color</span></div>
-    </> : <>
+    </div> : <>
       <button className="back-button" onClick={() => { play('tap-ui-tick'); setFormTab('home'); }}>← Back</button>
       <h1 className="page-title">{formTab === 'create' ? 'Choose a mode' : formTab === 'join' ? 'Join your friends' : 'How to Play'}</h1>
       {formTab === 'help' ? <div className="howto help-screen">

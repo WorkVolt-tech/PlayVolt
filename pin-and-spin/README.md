@@ -171,6 +171,11 @@ screen (sound without a click, no "Start sound" button). GitHub builds it on eve
 that folder and publishes the install file; download links `/app` (live) and `/app-preview`
 (preview branches) are in `public/_redirects`. See `firetv/README.md` for sideloading.
 
+**Compact layout:** the home menu fits one screen (Create/Join full width, the rest in a
+two-column grid; on computers the logo sits left of the menu). While guessing, the color
+picker and Clear/Submit sit in a dock pinned to the bottom of the screen (`.guess-dock`), so
+they are always in reach; the general rules live under ⓘ instead of under the board.
+
 The phone board uses stacked horizontal guess rows (four, or eight in Rush), a
 three-by-two palette, green Pin markers and white Spin markers. The selectable
 colors are Blue, Red, Green, Yellow, Purple and White. Mini boards above the tabs show

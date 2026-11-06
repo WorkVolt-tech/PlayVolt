@@ -74,7 +74,7 @@ export default function App() {
 
   return <>
     <div className="ambient" aria-hidden="true" />
-    <div className={'shell' + (game && game.status !== 'lobby' ? ' match-shell' : '')}>
+    <div className={'shell' + (game && game.status !== 'lobby' ? ' match-shell' : '') + (!session && form.formTab === 'home' ? ' home-shell' : '')}>
       <header className="topbar">
         <a className="home-link" href={import.meta.env.VITE_PLAYVOLT_HUB_URL || "https://playvolt-hub.pages.dev/"} aria-label="Back to PlayVolt">← <span>PLAYVOLT</span></a>
         <div className="brand">Pin &amp; <span>Spin</span></div>
