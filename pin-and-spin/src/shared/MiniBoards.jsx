@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EMPTY_GUESS } from '../game/constants.js';
 import { Feedback } from '../components/Feedback.jsx';
 import { PegRow } from '../components/Peg.jsx';
@@ -11,7 +11,36 @@ import { guessLimit, inTurnOrder, playerProgress } from '../game/selectors.js';
 export function MiniBoards({ game, onOpen }) {
   const limit = guessLimit(game.mode);
   const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => !lane.left || lane.guesses.length);
-  return <div className="mini-boards" aria-label="Everyone's guesses, mini view">
+  // On a phone the boards slide sideways: fade the edge that has more players, and slide to
+  // whoever's turn it is. (On wide screens they wrap into rows and nothing is hidden.)
+  const boxRef = useRef(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const measure = useCallback(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const left = box.scrollLeft > 4, right = box.scrollLeft + box.clientWidth < box.scrollWidth - 4;
+    setEdges((e) => (e.left === left && e.right === right ? e : { left, right }));
+  }, []);
+  useEffect(() => {
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure, lanes.length]);
+  const turnId = game.status === 'playing' ? game.turnId : null;
+  useEffect(() => {
+    const box = boxRef.current;
+    const card = turnId && box?.querySelector('.mini-card.turn');
+    if (!card || box.scrollWidth <= box.clientWidth) return;
+    const start = card.offsetLeft - box.offsetLeft, end = start + card.offsetWidth;
+    if (start < box.scrollLeft || end > box.scrollLeft + box.clientWidth) {
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      box.scrollTo({ left: Math.max(0, start - 8), behavior: reduce ? 'auto' : 'smooth' });
+    }
+  }, [turnId]);
+  const hidden = edges.left || edges.right;
+  return <>
+  <div ref={boxRef} onScroll={measure} aria-label="Everyone's guesses, mini view"
+    className={'mini-boards' + (edges.left ? ' more-left' : '') + (edges.right ? ' more-right' : '')}>
     {lanes.map((lane) => {
       const state = lane.won ? 'won' : lane.left ? 'left' : lane.away ? 'away' : lane.isTurn ? 'turn' : lane.sealed ? 'in' : lane.thinking ? 'thinking' : '';
       const label = { won: '🏆', left: 'LEFT', away: 'AWAY', turn: 'TURN', in: '✓', thinking: '…' }[state] || '';
@@ -41,5 +70,7 @@ export function MiniBoards({ game, onOpen }) {
         </span>
       </button>;
     })}
-  </div>;
+  </div>
+  {hidden && <p className="mini-hint" aria-hidden="true">{edges.left ? '‹ ' : ''}Swipe to see all {lanes.length} players{edges.right ? ' ›' : ''}</p>}
+  </>;
 }

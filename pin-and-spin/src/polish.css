@@ -652,3 +652,15 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
   .guess-dock .color-choice small{display:none}
   .code-slots .tiny-peg{width:34px;height:34px}
 }
+
+/* Mini boards with many players. Phone: slide sideways, faded edge + hint where more are hidden. */
+.mini-boards.more-right{-webkit-mask-image:linear-gradient(90deg,#000 82%,transparent);mask-image:linear-gradient(90deg,#000 82%,transparent)}
+.mini-boards.more-left{-webkit-mask-image:linear-gradient(90deg,transparent,#000 18%);mask-image:linear-gradient(90deg,transparent,#000 18%)}
+.mini-boards.more-left.more-right{-webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent)}
+.mini-hint{margin:-6px 0 8px;text-align:center;font-size:10px;font-weight:800;letter-spacing:.06em;color:var(--sub)}
+/* Computers: a wider game screen and the boards wrap into rows, so all 10 players show. */
+@media (min-width:900px) and (hover:hover){
+  .shell.match-shell{max-width:660px}
+  .match-shell .mini-boards{flex-wrap:wrap;justify-content:center;overflow:visible;-webkit-mask-image:none;mask-image:none}
+  .match-shell .mini-hint{display:none}
+}

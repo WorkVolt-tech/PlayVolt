@@ -175,6 +175,9 @@ that folder and publishes the install file; download links `/app` (live) and `/a
 two-column grid; on computers the logo sits left of the menu). While guessing, the color
 picker and Clear/Submit sit in a dock pinned to the bottom of the screen (`.guess-dock`), so
 they are always in reach; the general rules live under ⓘ instead of under the board.
+With many players the mini boards slide sideways on phones (faded edge + "Swipe to see all N
+players", and the row slides to whoever's turn it is); on computers the game screen is wider
+and the mini boards wrap into rows, so all 10 show at once.
 
 The phone board uses stacked horizontal guess rows (four, or eight in Rush), a
 three-by-two palette, green Pin markers and white Spin markers. The selectable
