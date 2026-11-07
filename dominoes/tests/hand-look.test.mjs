@@ -29,9 +29,16 @@ test('a look round-trips through its saved string', () => {
   assert.equal(p.color, NAIL_COLORS.find(c => c.id === 'blue').color)
 })
 
+test('nail colour is for the female hand only', () => {
+  assert.deepEqual(handPictures('male:red', 'slam'), { src: '/handslam.webp', nails: null, color: null })
+  assert.deepEqual(handPictures('male:red', 'knock'), { src: '/handknock.webp', nails: null, color: null })
+  assert.equal(handPictures('female:red', 'slam').nails, '/hands/female-slam-nails.webp')
+  assert.equal(handPictures('female', 'slam').nails, null, 'natural = the white nails as drawn')
+})
+
 test('every hand and nail picture exists', () => {
   for (const h of Object.values(HAND_STYLES)) {
-    for (const f of [h.slam, h.knock, h.slamNails, h.knockNails]) assert.ok(existsSync(pub(f)), f)
+    for (const f of [h.slam, h.knock, h.slamNails, h.knockNails].filter(Boolean)) assert.ok(existsSync(pub(f)), f)
   }
   for (const c of NAIL_COLORS) if (c.color) assert.match(c.color, /^#[0-9a-f]{6}$/i)
 })

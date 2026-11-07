@@ -65,6 +65,7 @@ function HandLookCard({ userId, saved }) {
           </button>
         ))}
       </div>
+      {HAND_STYLES[look.style].slamNails && <>
       <div className="profile-hands-sub">Nail colour</div>
       <div className="profile-nails">
         {NAIL_COLORS.map(c => (
@@ -74,6 +75,7 @@ function HandLookCard({ userId, saved }) {
             onClick={() => choose({ ...look, nails: c.id })} />
         ))}
       </div>
+      </>}
       {error && <div className="profile-error">{error}</div>}
     </div>
   )

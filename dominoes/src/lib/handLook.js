@@ -14,7 +14,7 @@ export const HAND_STYLES = {
   male: {
     label: 'Male',
     slam: '/handslam.webp', knock: '/handknock.webp',
-    slamNails: '/hands/male-slam-nails.webp', knockNails: '/hands/male-knock-nails.webp',
+    slamNails: null, knockNails: null,          // nail colour is for the female hand only
   },
   female: {
     label: 'Female',
@@ -23,7 +23,8 @@ export const HAND_STYLES = {
   },
 }
 
-// 'natural' leaves the nails as they are in the picture.
+// 'natural' leaves the nails as they are in the picture (white on the female hand).
+// Only a hand with nail cut-outs (slamNails/knockNails) takes a colour.
 // The colour is laid over the nail with "multiply", so the nail keeps its shine.
 export const NAIL_COLORS = [
   { id: 'natural', label: 'Natural', color: null },
@@ -57,10 +58,9 @@ export function lookString(look) {
 export function handPictures(value, kind) {
   const look = typeof value === 'string' || value == null ? parseLook(value) : parseLook(lookString(value))
   const h = HAND_STYLES[look.style]
-  const color = NAIL_COLORS.find(c => c.id === look.nails)?.color || null
-  return kind === 'knock'
-    ? { src: h.knock, nails: color ? h.knockNails : null, color }
-    : { src: h.slam, nails: color ? h.slamNails : null, color }
+  const mask = kind === 'knock' ? h.knockNails : h.slamNails
+  const color = mask && NAIL_COLORS.find(c => c.id === look.nails)?.color || null
+  return { src: kind === 'knock' ? h.knock : h.slam, nails: color ? mask : null, color }
 }
 
 // This device's copy of my own look.
