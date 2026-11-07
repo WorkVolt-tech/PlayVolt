@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { db } from './supabase'
+import { rememberHandLook } from './handLook'
 
 export function useAuth() {
   const [user, setUser] = useState(undefined) // undefined = loading
@@ -32,7 +33,12 @@ export function useAuth() {
     setProfile(null)
     if (!userId) return
     db.from('profiles').select('*').eq('id', userId).single()
-      .then(({ data }) => { if (active) setProfile(data) })
+      .then(({ data }) => {
+        if (!active) return
+        setProfile(data)
+        // keep this device's copy of my chosen hand in step with my account
+        if (data) rememberHandLook(data.hand_look)
+      })
       .catch(() => { if (active) setProfile(null) })
     return () => { active = false }
   }, [userId])

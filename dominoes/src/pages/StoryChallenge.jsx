@@ -10,6 +10,7 @@ import Board from '../components/Board'
 import PlayerHand from '../components/PlayerHand'
 import OpponentHands from '../components/OpponentHands'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
+import { myHandLook } from '../lib/handLook'
 import TileBack from '../components/TileBack'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
 import { botsCountForTrophies } from '../lib/trophies'
@@ -279,7 +280,7 @@ export default function StoryChallenge() {
     for (const e of fresh) {
       if (e.action === 'pass') {
         setPassingSeats(prev => new Set(prev).add(e.seat))
-        const k = { name: knockName(e.seat), position: knockPos(e.seat) }
+        const k = { name: knockName(e.seat), position: knockPos(e.seat), look: e.seat === 0 ? myHandLook() : null }
         setKnock(cur => { if (cur) { knockQueue.current.push(k); return cur } return k })
       } else if (e.action === 'play') {
         setPassingSeats(prev => {
@@ -645,6 +646,7 @@ export default function StoryChallenge() {
         <Board
           dekabessKey={boardDek}
           dekabessFrom={st?.winner >= 0 ? ((st?.seats ?? 4) === 2 ? (st.winner === 0 ? 'bottom' : 'top') : ['bottom', 'right', 'top', 'left'][st.winner]) : 'top'}
+          dekabessLook={st?.winner === 0 ? myHandLook() : null}
           onDekabessDone={() => { setBoardDek(null); setShowDek(true) }}
           freshFrom={slideFrom}
           boardData={st?.board}
@@ -680,6 +682,7 @@ export default function StoryChallenge() {
           key={knockKey(knock)}
           playerName={knock.name}
           position={knock.position}
+          look={knock.look}
           onDone={() => setKnock(knockQueue.current.shift() || null)}
         />
       )}

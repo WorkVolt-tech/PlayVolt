@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { canPlayOnSide } from '../hooks/useGameState'
 import { DropZone, useDrag } from './DragDrop'
 import TileFace from './TileFace'
+import HandPicture from './HandPicture'
 import './Board.css'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -689,7 +690,7 @@ const DEK_SLAM_MS = 1300
 // toward the table like the knock: 'bottom' = you.
 const SLAM_TURN = { bottom: '0deg', left: '90deg', top: '180deg', right: '-90deg' }
 
-export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace, freshFrom = null, dekabessKey = null, onDekabessDone = null, dekabessFrom = 'top' }) {
+export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, onDragPlace, freshFrom = null, dekabessKey = null, onDekabessDone = null, dekabessFrom = 'top', dekabessLook = null }) {
   const { draggingRef, endDrag } = useDrag()
 
   // Tap-to-place: tapping a highlighted side places the SELECTED tile there.
@@ -1325,7 +1326,7 @@ export default function Board({ boardData, selectedTile, isMyTurn, onDropZone, o
       {dekPhase === 'slam' && (
         <div className="dek-slam-wrap" style={{ left: dekCenter.x, top: dekCenter.y }} aria-hidden="true">
           <div className="dek-slam-arm" style={{ rotate: SLAM_TURN[dekabessFrom] || SLAM_TURN.top }}>
-            <img className="dek-slam" src="/handslam.webp" alt="" draggable={false} />
+            <HandPicture kind="slam" look={dekabessLook} className="dek-slam" />
           </div>
         </div>
       )}

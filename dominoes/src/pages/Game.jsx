@@ -12,6 +12,7 @@ import PlayerHand from '../components/PlayerHand'
 import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
+import { myHandLook } from '../lib/handLook'
 import OpponentHands from '../components/OpponentHands'
 import './Game.css'
 import GoudCoin from '../components/GoudCoin'
@@ -268,6 +269,9 @@ export default function Game() {
     const eq = getEquipped()
     db.from('domino_players').update({ tile_skin: eq.tile })
       .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat).then(() => {})
+    // my chosen hand (profile → this device) knocks and slams for me at this table
+    db.from('domino_players').update({ hand_look: myHandLook() })
+      .eq('room_id', myInfo.roomId).eq('seat', myInfo.seat).then(() => {})
     // my trophy avatar travels with me, so the others see it on my seat plate
     db.auth.getUser().then(({ data }) => {
       const uid = data?.user?.id
@@ -400,7 +404,7 @@ export default function Game() {
             const p = playersForKnock.current.find(pl => pl.seat === e.player_seat)
             // the knock comes from where that player sits — the same layout as
             // their hand: 2 players across, 3 players right and left, 4 around
-            const knock = { name: p?.nickname || 'Player',
+            const knock = { name: p?.nickname || 'Player', look: p?.hand_look || null,
               position: sideOf(e.player_seat, myInfo?.seat ?? 0, playersForKnock.current.length || 4) }
             // several knocks in a row each get shown, one after another
             setKnockPlayer(cur => {
@@ -557,6 +561,7 @@ export default function Game() {
         <Board
           dekabessKey={boardDek}
           dekabessFrom={roomData ? sideOf(roomData.current_turn, myInfo?.seat ?? 0, roomData.seat_count || players.length) : 'top'}
+          dekabessLook={players.find(p => p.seat === roomData?.current_turn)?.hand_look || null}
           onDekabessDone={() => { setBoardDek(null); setShowDekabess(true) }}
           freshFrom={slideFrom}
           boardData={boardData}
@@ -631,6 +636,7 @@ export default function Game() {
           key={knockKey(knockPlayer)}
           playerName={knockPlayer.name}
           position={knockPlayer.position}
+          look={knockPlayer.look}
           onDone={showNextKnock}
         />
       )}

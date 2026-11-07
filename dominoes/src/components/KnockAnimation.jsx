@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import './KnockAnimation.css'
+import HandPicture from './HandPicture'
 
 // ── The knock ────────────────────────────────────────────────────────────────
 // A hand comes in from the player's side, raps the table twice, and leaves.
@@ -12,8 +13,7 @@ import './KnockAnimation.css'
 // Every knock must be its own element: render it with key={knockKey(knock)},
 // so two knocks in a row each start from the beginning.
 
-// load the hand picture up front, so the first knock isn't waiting on it
-if (typeof Image !== 'undefined') { const img = new Image(); img.src = '/handknock.webp' }
+// (HandPicture loads the hand pictures up front, so the first knock isn't waiting on them)
 
 // A stable, unique key per knock object (each knock is a new object).
 const ids = new WeakMap(); let next = 0
@@ -45,7 +45,8 @@ const PLACE = {
 }
 const DURATION = 1500
 
-export default function KnockAnimation({ playerName, position = 'bottom', onDone }) {
+// look: the knocking player's chosen hand (src/lib/handLook.js); none = the original hand
+export default function KnockAnimation({ playerName, position = 'bottom', look = null, onDone }) {
   const done = useRef(false)
   const finish = () => {
     if (done.current) return
@@ -72,8 +73,8 @@ export default function KnockAnimation({ playerName, position = 'bottom', onDone
   return (
     <div className="knock-wrap" style={{ ...PLACE[pos], ...vars }}>
       {(pos === 'bottom' || pos === 'top') && <div className="knock-name">{playerName} passes</div>}
-      <img
-        src="/handknock.webp" alt="" draggable={false}
+      <HandPicture
+        kind="knock" look={look}
         className="knock-hand-img"
         onAnimationEnd={finish}
       />

@@ -77,6 +77,7 @@ export default function Watch() {
           const n = roomRef.current?.seat_count || playersRef.current.length || 4
           const k = {
             name: playersRef.current.find(x => x.seat === e.player_seat)?.nickname || 'Player',
+            look: playersRef.current.find(x => x.seat === e.player_seat)?.hand_look || null,
             position: sideOf(e.player_seat, 0, n),
           }
           setKnock(cur => { if (cur) { knockQueue.current.push(k); return cur } return k })
@@ -172,6 +173,7 @@ export default function Watch() {
           freshFrom={lastPlacer != null ? sideOf(lastPlacer, 0, n) : null}
           dekabessKey={dekKey}
           dekabessFrom={sideOf(room.current_turn, 0, n)}
+          dekabessLook={players.find(x => x.seat === room.current_turn)?.hand_look || null}
           onDekabessDone={() => setDekKey(null)}
         />
         {roundOver && !dekKey && (
@@ -212,6 +214,7 @@ export default function Watch() {
           key={knockKey(knock)}
           playerName={knock.name}
           position={knock.position}
+          look={knock.look}
           onDone={() => setKnock(knockQueue.current.shift() || null)}
         />
       )}

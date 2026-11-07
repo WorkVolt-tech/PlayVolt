@@ -8,6 +8,8 @@ import { loadPlayerStats } from '../lib/skins'
 import { Medal } from './Trophies'
 import { TrophyAvatar } from '../lib/avatars'
 import { GoudPanel } from '../components/GoudBadge'
+import HandPicture from '../components/HandPicture'
+import { HAND_STYLES, NAIL_COLORS, parseLook, lookString, myHandLook, rememberHandLook } from '../lib/handLook'
 
 const AVATAR_COLORS = ['#c9a84c','#4caa6e','#4c8cca','#c94c4c','#9b59b6','#e67e22','#1abc9c','#e91e63']
 
@@ -30,6 +32,49 @@ function ProfileTrophies({ onOpen }) {
             ))}
           </div>
         : <div className="profile-badges-empty">No trophies yet — play a match to earn your first.</div>)}
+    </div>
+  )
+}
+
+// Your hand at the table: the one that knocks when you pass and slams on a
+// Dekabess. Saved to your account (others at the table see it) and this device.
+function HandLookCard({ userId, saved }) {
+  const [look, setLook] = useState(() => parseLook(saved ?? myHandLook()))
+  useEffect(() => { if (saved !== undefined) setLook(parseLook(saved)) }, [saved])
+  const [error, setError] = useState('')
+  async function choose(next) {
+    const value = lookString(next)
+    setLook(parseLook(value)); setError('')
+    rememberHandLook(value)
+    const { error: e } = await db.from('profiles')
+      .update({ hand_look: value, updated_at: new Date().toISOString() }).eq('id', userId)
+    if (e) setError('Couldn’t save your hand. Try again.')
+  }
+  return (
+    <div className="profile-hands">
+      <div className="profile-hands-head">
+        <span>Your hand</span>
+        <small>Knocks when you pass · slams on a Dekabess</small>
+      </div>
+      <div className="profile-hands-styles">
+        {Object.entries(HAND_STYLES).map(([id, h]) => (
+          <button key={id} className={`profile-hand-choice ${look.style === id ? 'on' : ''}`}
+            aria-pressed={look.style === id} onClick={() => choose({ ...look, style: id })}>
+            <HandPicture kind="slam" look={lookString({ style: id, nails: look.nails })} className="profile-hand-pic" />
+            <span>{h.label}</span>
+          </button>
+        ))}
+      </div>
+      <div className="profile-hands-sub">Nail colour</div>
+      <div className="profile-nails">
+        {NAIL_COLORS.map(c => (
+          <button key={c.id} className={`nail-swatch ${look.nails === c.id ? 'on' : ''} ${c.color ? '' : 'natural'}`}
+            style={c.color ? { background: c.color } : undefined}
+            title={c.label} aria-label={`${c.label} nails`} aria-pressed={look.nails === c.id}
+            onClick={() => choose({ ...look, nails: c.id })} />
+        ))}
+      </div>
+      {error && <div className="profile-error">{error}</div>}
     </div>
   )
 }
@@ -170,6 +215,9 @@ export default function Profile() {
       ) : (
         <button className="profile-btn-outline" onClick={() => setEditing(true)}>✏️ Edit Profile</button>
       )}
+
+      {/* Your hand: the one that knocks and slams for you */}
+      <HandLookCard userId={user.id} saved={profile ? (profile.hand_look ?? null) : undefined} />
 
       {/* Stats */}
       <div className="profile-stats-grid">

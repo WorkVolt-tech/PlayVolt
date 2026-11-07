@@ -1,0 +1,11 @@
+/* A hand picture plus its nail-colour layer (HandPicture.jsx).
+   :where() keeps these at zero strength, so the animation classes
+   (.knock-hand-img, .dek-slam) still decide size and position. */
+:where(.hand-pic) { display: block; position: relative; isolation: isolate; }
+:where(.hand-pic) > img { display: block; width: 100%; height: auto; }
+:where(.hand-pic-nails) {
+  position: absolute; inset: 0; pointer-events: none;
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  mix-blend-mode: multiply;
+}

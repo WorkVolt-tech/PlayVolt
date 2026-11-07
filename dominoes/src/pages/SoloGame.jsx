@@ -10,6 +10,7 @@ import OpponentHands from '../components/OpponentHands'
 import RoundOverlay from '../components/RoundOverlay'
 import DekabessOverlay from '../components/DekabessOverlay'
 import KnockAnimation, { knockKey } from '../components/KnockAnimation'
+import { myHandLook } from '../lib/handLook'
 import ReshuffleOffer, { countDoubles } from '../components/ReshuffleOffer'
 import { TABLE_SKINS, weekStartUTC } from '../lib/skins'
 import './StoryChallenge.css'      // the result card's styles
@@ -193,7 +194,7 @@ export default function SoloGame({ challengeMode = false }) {
     for (const e of fresh) {
       if (e.action === 'pass') {
         setPassingSeats(prev => new Set(prev).add(e.seat))
-        setKnock({ name: names[e.seat], position: sideOf(e.seat, 0, seats) })
+        setKnock({ name: names[e.seat], position: sideOf(e.seat, 0, seats), look: e.seat === 0 ? myHandLook() : null })
       } else if (e.action === 'play') {
         setPassingSeats(prev => {
           if (!prev.has(e.seat)) return prev
@@ -435,6 +436,7 @@ export default function SoloGame({ challengeMode = false }) {
         <Board
           dekabessKey={boardDek}
           dekabessFrom={sideOf(roundEnd?.winner ?? 2, 0, seats)}
+          dekabessLook={roundEnd?.winner === 0 ? myHandLook() : null}
           onDekabessDone={() => { setBoardDek(null); setShowDek(true) }}
           freshFrom={slideFrom}
           boardData={st.board}
@@ -471,6 +473,7 @@ export default function SoloGame({ challengeMode = false }) {
           key={knockKey(knock)}
           playerName={knock.name}
           position={knock.position}
+          look={knock.look}
           onDone={() => setKnock(null)}
         />
       )}

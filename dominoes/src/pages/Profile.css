@@ -253,3 +253,32 @@
   padding-left: calc(1rem + env(safe-area-inset-left, 0px));
   padding-right: calc(1rem + env(safe-area-inset-right, 0px));
 }
+
+/* Your hand (knock / slam) and nail colour */
+.profile-hands {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem;
+  margin: 1.2rem 0 1.5rem;
+}
+.profile-hands-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 0.7rem; }
+.profile-hands-head span { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ivory-dim); }
+.profile-hands-head small { font-size: 0.58rem; color: var(--ivory-dim); opacity: 0.8; }
+.profile-hands-styles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.profile-hand-choice {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: var(--surface2); border: 2px solid transparent; border-radius: 8px;
+  padding: 0.5rem 0.4rem 0.45rem; cursor: pointer;
+  color: var(--ivory-dim); font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em;
+}
+.profile-hand-choice.on { border-color: var(--gold); color: var(--ivory); }
+.profile-hand-pic { width: 84px; }
+.profile-hands-sub { font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ivory-dim); margin: 0.8rem 0 0.45rem; }
+.profile-nails { display: flex; flex-wrap: wrap; gap: 8px; }
+.nail-swatch {
+  width: 28px; height: 28px; border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+  border: 2px solid var(--border); cursor: pointer; padding: 0;
+}
+.nail-swatch.natural { background: linear-gradient(135deg, #f6ece6, #caa294); }
+.nail-swatch.on { border-color: var(--ivory); transform: scale(1.15); }
