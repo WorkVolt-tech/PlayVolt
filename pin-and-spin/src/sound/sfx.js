@@ -28,6 +28,11 @@ let unlocked = false;
 const pools = {};
 const cursor = {};
 const listeners = new Set();
+// Each element's own sound, and the elements still being unlocked (see unlockOne).
+const realSrc = new Map();
+const unlocking = new Map();   // element -> puts its own sound back
+// A twentieth of a second of silence (a tiny WAV), used to unlock elements without a sound.
+const SILENT = 'data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
 
 function build() {
   if (typeof Audio === 'undefined') return;
@@ -36,6 +41,7 @@ function build() {
     pools[id] = Array.from({ length: POOL_SIZE }, () => {
       const a = new Audio(`/sounds/${id}.mp3`);
       a.preload = 'auto';
+      realSrc.set(a, a.src);
       return a;
     });
     cursor[id] = 0;
@@ -43,26 +49,37 @@ function build() {
 }
 
 // Phones only allow sound after a tap, and an app added to the iPhone Home Screen is stricter
-// than Safari: each audio element must be started UNMUTED during a tap. So on a tap we start
-// and immediately stop every pooled element (nothing is heard), which unlocks them all.
+// than Safari: each audio element must be started UNMUTED during a tap. Once started that way,
+// the element stays allowed, even with another sound file. So on a tap every pooled element
+// plays a short SILENT clip, then gets its own sound back.
+// (It used to start and instantly stop each real sound. Once in a while an iPhone ignored the
+// instant stop, and all the sounds played at once while the page stalled.)
 // iPhones can lock sound again after the app was in the background, so we unlock again on the
 // next tap after coming back, and whenever a sound is refused.
+function unlockOne(a) {
+  if (unlocking.has(a)) return;
+  let done = false;
+  const restore = () => {
+    if (done) return;
+    done = true;
+    try { a.pause(); a.src = realSrc.get(a); a.load?.(); } catch { /* never let sound break the game */ }
+    unlocking.delete(a);
+  };
+  unlocking.set(a, restore);
+  try {
+    a.muted = false;
+    a.src = SILENT;
+    const p = a.play();
+    if (p && typeof p.then === 'function') p.then(restore, restore); else restore();
+  } catch { restore(); }
+  setTimeout(restore, 1500); // in case the phone never answers
+}
 function unlock() {
   if (unlocked) return;
   build();
   if (!Object.keys(pools).length) return;
   unlocked = true;
-  for (const id of SOUNDS) {
-    for (const a of pools[id]) {
-      try {
-        a.muted = false;
-        const p = a.play();
-        a.pause();
-        a.currentTime = 0;
-        if (p && typeof p.catch === 'function') p.catch(() => {});
-      } catch { /* keep going: never let sound break the game */ }
-    }
-  }
+  for (const id of SOUNDS) for (const a of pools[id]) unlockOne(a);
 }
 function onGesture() { if (!unlocked) unlock(); }
 function relock() { unlocked = false; } // the next tap unlocks again
@@ -83,6 +100,8 @@ export function play(id) {
   if (!pool) return;
   const a = pool[cursor[id]];
   cursor[id] = (cursor[id] + 1) % pool.length;
+  // still playing the silent clip (a sound in the same tap that unlocked it): give it its sound back first
+  unlocking.get(a)?.();
   start(a);
 }
 

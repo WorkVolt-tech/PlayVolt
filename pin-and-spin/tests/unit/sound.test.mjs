@@ -6,16 +6,22 @@ import assert from 'node:assert/strict';
 const listeners = {};
 let inTap = false;
 let heard = [];
+// missQuickStop: like a real iPhone once in a while, a stop right after a start is ignored.
+let missQuickStop = false;
 class FakeAudio {
   constructor(src) { this.src = src; this.muted = false; this.unlocked = false; this.currentTime = 0; this.paused = true; }
   play() {
-    if (inTap && !this.muted) this.unlocked = true;
+    if (inTap && !this.muted) this.unlocked = true;   // stays allowed, whatever file it plays later
     if (!this.unlocked && !inTap) { const e = new Error('blocked'); e.name = 'NotAllowedError'; return Promise.reject(e); }
     this.paused = false;
-    queueMicrotask(() => { if (!this.paused) heard.push(this.src.split('/').pop()); });
+    this.justStarted = true;
+    queueMicrotask(() => { this.justStarted = false; });
+    const src = this.src;
+    queueMicrotask(() => { if (!this.paused && src.endsWith('.mp3')) heard.push(src.split('/').pop()); });
     return Promise.resolve();
   }
-  pause() { this.paused = true; }
+  pause() { if (missQuickStop && this.justStarted) return; this.paused = true; }
+  load() {}
 }
 const store = {};
 globalThis.Audio = FakeAudio;
@@ -31,8 +37,12 @@ test('sound starts ON, even with Reduce Motion (the installed app has its own fr
 });
 
 test('after one tap, sounds triggered later by the game (not by a tap) are heard', async () => {
+  // The first tap unlocks every sound. Even on a phone that misses a quick stop, nothing is
+  // heard: unlocking plays a silent clip (it used to play every real sound at once).
+  missQuickStop = true;
   tap();
   await tick();
+  missQuickStop = false;
   assert.deepEqual(heard, [], 'unlocking is silent');
   sfx.play('level-up');
   await tick();
