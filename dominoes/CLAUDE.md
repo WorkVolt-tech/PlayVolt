@@ -61,17 +61,14 @@ Back buttons must never sit under the clock.
 
 - Project ref `eybzbtyfafmqbkulyvog`, shared with the other PlayVolt games.
   Never drop, rename, or change the meaning of anything another game might use.
-- All Dekabess database changes go in **one cumulative file,
-  `dekabess_database.sql`**, which the owner runs in the Supabase SQL editor.
-  Don't create separate migration files.
-  - It assumes the original base tables already exist: `domino_rooms`,
-    `domino_players`, `board`, `game_events`, `profiles`, `queue`, `wa_tab_la`.
-  - It must be safe to run again on a database that already has it
-    (`create ... if not exists`, `create or replace`, `drop ... if exists`
-    before re-creating policies/triggers).
-  - It ends with an explicit **grants** section (required by Supabase's
-    Data API change of Oct 30, 2026). Any new table, view or function needs
-    its grants added there.
+- Database changes are made directly in Supabase (there is no SQL file for the
+  owner to run). Each change must:
+  - be safe to run again (`create ... if not exists`, `create or replace`,
+    `drop ... if exists` before re-creating policies/triggers);
+  - give any new table, view or function its grants (required by Supabase's
+    Data API change of Oct 30, 2026);
+  - only add to the original tables (`domino_rooms`, `domino_players`, `board`,
+    `game_events`, `profiles`, `queue`, `wa_tab_la`), never break them.
 - Views should be `security_invoker = true`.
 - Anything involving Goud (the in-game currency) is decided on the server:
   balances live in a server ledger, Goud is earned only, and the client never
