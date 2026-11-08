@@ -143,6 +143,11 @@ colors (new balls 6 = orange, 7 = pink in `src/balls/`). Levels and solo games h
 (4 or 5); `pin_and_spin_code_n()` and the logic-puzzle builder work for any size. Multiplayer
 and the other solo modes still use 4 balls and 6 colors.
 
+**Ball pictures load instantly:** the ball SVGs in `src/balls/` are built into the stylesheet
+(`assetsInlineLimit` in `vite.config.js`), so no color waits for its own download. The service
+worker serves built files (`/assets/…`, renamed on every change) from its stored copy first;
+the page itself stays network-first.
+
 **Install as an app (like Dekabess):** Pin & Spin is an installable web app (PWA):
 `public/manifest.json`, icons (`scripts/make_app_icons.py` builds `icon-*.png`,
 `icon-maskable-*.png`, `apple-touch-icon.png`, `favicon-32.png` from the logo), the iPhone

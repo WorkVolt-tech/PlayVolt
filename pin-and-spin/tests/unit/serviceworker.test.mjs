@@ -43,3 +43,17 @@ test('updating the app keeps the sounds stored on the device', async () => {
   await done;
   assert.deepEqual(deleted, ['pin-and-spin-v1']);
 });
+
+test('built files (/assets/) come from the stored copy without waiting for the network', async () => {
+  const handlers = {};
+  let fetched = 0;
+  const self = { location: { origin: 'https://pin.example' }, addEventListener: (type, fn) => { handlers[type] = fn; }, skipWaiting() {}, clients: { claim() {} } };
+  const stored = { ok: true, stored: true };
+  const caches = { match: async () => stored, open: async () => ({ put() {} }) };
+  vm.runInNewContext(await readFile(new URL('../../public/sw.js', import.meta.url), 'utf8'),
+    { self, caches, fetch: async () => { fetched++; return { ok: true, clone() { return {}; } }; }, URL });
+  let answer;
+  handlers.fetch({ request: { url: 'https://pin.example/assets/index-abc.css', method: 'GET', destination: 'style', headers: { has: () => false } }, respondWith: (p) => { answer = p; } });
+  assert.equal(await answer, stored);
+  assert.equal(fetched, 0);
+});

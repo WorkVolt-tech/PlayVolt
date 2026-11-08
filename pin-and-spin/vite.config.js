@@ -20,5 +20,11 @@ export default defineConfig({
   plugins: [react(), versionFile()],
   define: { __APP_VERSION__: JSON.stringify(buildVersion) },
   server: { allowedHosts: ['terminal.local'] },
-  build: { outDir: 'dist' },
+  build: {
+    outDir: 'dist',
+    // The ball pictures (src/balls) are built into the stylesheet, so every color is there the
+    // moment a ball appears. As separate files, the bigger ones were only fetched the first time
+    // that color showed up, which made those balls appear a moment late.
+    assetsInlineLimit: (file) => (/[\\/]balls[\\/][^\\/]+\.svg$/.test(file) ? true : undefined),
+  },
 });
