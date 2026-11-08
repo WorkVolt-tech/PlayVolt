@@ -680,3 +680,4 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .code-slot .peek-ghost{pointer-events:none}
 .peek-tag{font-size:13px;margin-left:6px;filter:drop-shadow(0 0 6px #ffd76a80)}
 .classic-note{margin:-6px 0 12px;font-size:12px;line-height:1.45;color:#d9b8ff;background:#2a2048;border:1px solid #4b3d68;border-radius:10px;padding:8px 10px}
+.colors-note{display:flex;align-items:center;gap:6px;flex-wrap:wrap}

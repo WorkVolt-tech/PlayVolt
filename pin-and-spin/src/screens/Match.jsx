@@ -90,7 +90,8 @@ export function Match({ state, onShare, onRemove, onLeave }) {
       ? <FinishPanel game={game} onViewResults={() => openBoard()}>{playAgain}</FinishPanel>
       : <GuessPanel mine={mine} limit={limit} attempt={attempt} canSubmit={canSubmit}
           draft={draft} selected={selected} onSelect={(i) => { play('tap-ui-tick'); setSelected(i); }}
-          onColor={addColor} onClear={() => { play('swipe'); resetDraft(); }} onSubmit={submitGuess} peek={peek} />}
+          onColor={addColor} onClear={() => { play('swipe'); resetDraft(); }} onSubmit={submitGuess} peek={peek}
+          colorCount={game.colors === 8 ? 8 : 6} />}
     {game.status === 'finished' && <div className="surface history-panel">
       <div className="panel-title"><h2>MY GUESSES</h2><span>{mine.length} SUBMITTED</span></div>
       <CodeBoard mine={mine} limit={limit} attempt={attempt} canSubmit={false}

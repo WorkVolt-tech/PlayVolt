@@ -489,3 +489,56 @@ describe('instant updates (migration 004)', () => {
     assert.ok(await count() > n, 'timer reveal');
   });
 });
+
+describe('more colors for bigger groups (migration 014)', () => {
+  test('2-3 players: 6 colors; orange and pink are refused', async () => {
+    for (const n of [2, 3]) {
+      db = await freshDb(); g = game(db);
+      const room = await g.room('reveal', n);
+      room.state = await g.api('start', room.code, room.players[0].token, { maxColors: 8 });
+      assert.equal(room.state.colors, 6, `${n} players`);
+      await rejects(guess(room, room.players[0], [6, 7, 0, 1], 1), /Invalid color/);
+    }
+  });
+
+  test('4 or more players: 8 colors, the code can use them, and guesses with them count', async () => {
+    const room = await g.room('rush', 4);
+    room.state = await g.api('start', room.code, room.players[0].token, { maxColors: 8 });
+    assert.equal(room.state.colors, 8);
+    await g.setSecret(room.code, [6, 7, 0, 1]);
+    const s = await guess(room, room.players[1], [6, 7, 0, 1], 1);
+    assert.equal(s.status, 'finished');
+    assert.deepEqual(s.winners, [room.players[1].id]);
+  });
+
+  test('the secret is drawn from the room’s colors (8 with 4+ players)', async () => {
+    const seen = new Set();
+    for (let i = 0; i < 10; i++) {   // 40 balls: missing orange and pink by chance is ~1 in 100,000
+      db = await freshDb(); g = game(db);
+      const room = await g.room('reveal', 5);
+      await g.api('start', room.code, room.players[0].token, { maxColors: 8 });
+      const { rows: [r] } = await db.query('select secret, colors from public.pin_and_spin_rooms where code=$1', [room.code]);
+      assert.equal(r.colors, 8);
+      for (const c of r.secret) { assert.ok(c >= 0 && c <= 7); seen.add(c); }
+    }
+    assert.ok([...seen].some((c) => c >= 6), 'orange or pink shows up in some codes');
+  });
+
+  test('a rematch re-counts the players', async () => {
+    const room = await g.room('rush', 4);
+    await g.api('start', room.code, room.players[0].token, { maxColors: 8 });
+    await g.setSecret(room.code, SECRET);
+    await guess(room, room.players[0], SECRET, 1);                      // game over
+    await g.api('leave', room.code, room.players[3].token);
+    await g.api('replay', room.code, room.players[0].token);
+    for (const p of room.players.slice(1, 3)) await g.api('ready', room.code, p.token, { ready: true });
+    const again = await g.api('start', room.code, room.players[0].token, { maxColors: 8 });
+    assert.equal(again.colors, 6, '3 players left: back to 6 colors');
+  });
+
+  test('a host app from before this update (no maxColors) keeps 6 colors, even with 4+ players', async () => {
+    const room = await g.room('reveal', 5);
+    const s = await g.api('start', room.code, room.players[0].token);
+    assert.equal(s.colors, 6);
+  });
+});

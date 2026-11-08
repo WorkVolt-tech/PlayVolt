@@ -56,7 +56,7 @@ export function attemptsDescending(guesses) {
 
 export function isValidDraft(colors) {
   return Array.isArray(colors) && colors.length === 4 &&
-    colors.every((c) => c === null || Number.isInteger(c) && c >= 0 && c < 6);
+    colors.every((c) => c === null || Number.isInteger(c) && c >= 0 && c < 8); // 8 colors with 4+ players
 }
 
 // Fill the selected slot, then move to the next empty slot (wrapping), else the next slot.

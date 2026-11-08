@@ -57,7 +57,8 @@ test('placing colors fills the next empty slot and allows repeats', () => {
 
 test('saved drafts are validated before restoring', () => {
   assert.equal(isValidDraft([0, null, 5, 2]), true);
-  assert.equal(isValidDraft([0, 6, 1, 1]), false);
+  assert.equal(isValidDraft([0, 6, 7, 1]), true, 'orange and pink (8-color games)');
+  assert.equal(isValidDraft([0, 8, 1, 1]), false);
   assert.equal(isValidDraft([0, 1, 1]), false);
   assert.equal(isValidDraft('x'), false);
 });

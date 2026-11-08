@@ -86,6 +86,12 @@ the Supabase project's Site URL, the same as for Dekabess — ideally the PlayVo
 
 Reveal, Timed Reveal and Rush take 2–10 players.
 
+**More colors for 4+ players (migration 014):** a game that starts with 4 or more players uses
+8 colors (orange and pink join the usual 6), since a shared code was too easy to crack with
+that many guesses and clues. 2-3 players keep 6. The count is fixed at Start (rematches
+re-count) and sent as `colors` in the snapshot; the palette shows that many. The host's app
+asks for it with `start {maxColors: 8}`, so an app open from before this update keeps 6.
+
 **TV mode:** in the lobby (or the 📺 button in a match) a player taps **Show on TV** and
 opens the link on a laptop or smart-TV browser. The link is `/?tv=ROOM#<display token>`
 (the token stays after `#`, so it never reaches the web server). The TV (`src/tv/`) uses
