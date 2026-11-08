@@ -44,12 +44,14 @@ room), keeping the first download small.
 
 22 short sounds from the SoundWeaver library (MIT, `public/sounds/LICENSE-SoundWeaver.txt`),
 converted to small MP3s (47 KB in total) with each sound's volume baked in, since iPhones
-ignore a page's volume settings. `src/sound/sfx.js` plays them; phones allow audio only
-after the first touch, so that touch unlocks a small pool of players for later sounds
-(reveals, your turn) by playing a short silent clip on each, then giving it its own sound
-back a few at a time (starting and instantly stopping the real sounds sometimes played them
-all at once on iPhone; swapping them all back at once made the game feel slow). Two players
-per sound. A 🔊/🔇 button in the header turns sound off and is remembered on the device;
+ignore a page's volume settings. `src/sound/sfx.js` plays them with one Web Audio engine. Each file is downloaded once and
+kept on the device (Cache Storage `pin-and-spin-sounds`, which the service worker keeps
+across updates; a fresh copy is fetched in the background). Phones switch the engine on only
+during a tap: the first tap switches it on, and the next tap after the app was in the
+background switches it back on. Sounds triggered while it is off are dropped, never saved up.
+(Dozens of `<audio>` players unlocked per tap either sometimes played every sound at once or
+stopped working in the iPhone Home Screen app.) Like other iPhone game sound, it follows the
+Silent switch. A 🔊/🔇 button in the header turns sound off and is remembered on the device;
 sound is on unless the player turns it off. Game moments are mapped in
 `src/sound/useGameSounds.js` (start, rounds, your turn, scoring, win/lose, lobby joins).
 

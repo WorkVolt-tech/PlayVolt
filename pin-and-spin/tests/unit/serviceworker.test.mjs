@@ -31,3 +31,15 @@ test('the page itself still goes through it (works offline, installable)', async
   assert.equal(handles('https://pin.example/'), true);
   assert.equal(handles('https://pin.example/assets/index.js', { destination: 'script' }), true);
 });
+
+test('updating the app keeps the sounds stored on the device', async () => {
+  const handlers = {};
+  const deleted = [];
+  const self = { location: { origin: 'https://pin.example' }, addEventListener: (type, fn) => { handlers[type] = fn; }, skipWaiting() {}, clients: { claim() {} } };
+  const caches = { keys: async () => ['pin-and-spin-v1', 'pin-and-spin-v2', 'pin-and-spin-sounds'], delete: async (k) => { deleted.push(k); return true; } };
+  vm.runInNewContext(await readFile(new URL('../../public/sw.js', import.meta.url), 'utf8'), { self, caches, fetch, URL });
+  let done;
+  handlers.activate({ waitUntil: (p) => { done = p; } });
+  await done;
+  assert.deepEqual(deleted, ['pin-and-spin-v1']);
+});

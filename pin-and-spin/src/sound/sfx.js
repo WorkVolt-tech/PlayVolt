@@ -1,11 +1,16 @@
 // Pin & Spin sound effects. Real, pre-rendered audio files only (no synthesis).
 // Sounds come from the SoundWeaver library (MIT, see public/sounds/LICENSE-SoundWeaver.txt),
-// converted to small MP3s with each sound's volume baked in, because iPhones ignore
-// a web page's per-element volume. Playback approach adapted from SoundWeaver's SoundManager.
+// converted to small MP3s with each sound's volume baked in.
 //
-// Phones only allow audio after the player touches the page. On a touch we "unlock" a small
-// pool of audio elements per sound (see unlock() below); later sounds triggered by other
-// players (a reveal, your turn) reuse those unlocked elements.
+// How it plays (the usual way for games on iPhone, including the Home Screen app):
+// - Every sound file is downloaded once and KEPT ON THE DEVICE (the browser's Cache Storage),
+//   so later starts are instant and work offline. A fresh copy is fetched in the background,
+//   so a replaced sound (same file name) still arrives.
+// - One audio engine (Web Audio) plays them all. Phones only switch it on during a tap, so the
+//   first tap switches it on; after the app was in the background, the next tap switches it
+//   back on. Nothing plays while it is off, and nothing is saved up to play later.
+// (Earlier versions used dozens of <audio> players. Unlocking those on iPhone either sometimes
+// played every sound at once, or stopped working in the Home Screen app.)
 
 const SOUNDS = [
   'pop-bubble', 'tap-ui-tick', 'swipe', 'message-sent-swish', 'error-soft-thud', 'success-subtle-ping',
@@ -13,8 +18,8 @@ const SOUNDS = [
   'mention-pop', 'message-incoming-pop', 'drawer-open', 'drawer-close', 'toggle-switch-on',
   'toggle-switch-off', 'click-crisp-primary', 'tab-switch', 'select-item', 'invalid-thunk',
 ];
-const POOL_SIZE = 2;
 const PREF_KEY = 'pin_and_spin_sound_v1';
+export const SOUND_CACHE = 'pin-and-spin-sounds';
 
 // Sound is on unless the player turned it off with the 🔊 button. (It used to start muted for
 // "Reduce Motion" users, which made the installed iPhone app — with its own fresh settings —
@@ -24,109 +29,96 @@ function readMuted() {
 }
 
 let muted = readMuted();
-let unlocked = false;
-const pools = {};
-const cursor = {};
+let ctx = null;              // the audio engine, made on the first tap
+const bytes = {};            // id -> Promise<ArrayBuffer> (the file, from the device or the server)
+const buffers = {};          // id -> decoded sound, ready to play
+const decoding = {};
 const listeners = new Set();
-// Each element's own sound, and the elements still being unlocked (see unlockOne).
-const realSrc = new Map();
-const unlocking = new Map();   // element -> puts its own sound back
-// A twentieth of a second of silence (a tiny WAV), used to unlock elements without a sound.
-const SILENT = 'data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
 
-function build() {
-  if (typeof Audio === 'undefined') return;
-  for (const id of SOUNDS) {
-    if (pools[id]) continue;
-    // No file yet: the first tap starts each element on the silent clip, then gives it its
-    // sound (one download per element, not one that is cut off and started again).
-    pools[id] = Array.from({ length: POOL_SIZE }, () => {
-      const a = new Audio();
-      a.preload = 'auto';
-      realSrc.set(a, `/sounds/${id}.mp3`);
-      return a;
+// The file for one sound: from the device if we have it, else from the server (and kept).
+function fileBytes(id) {
+  if (bytes[id]) return bytes[id];
+  const url = `/sounds/${id}.mp3`;
+  bytes[id] = (async () => {
+    let cache = null;
+    try { cache = await globalThis.caches?.open(SOUND_CACHE); } catch { /* private mode etc. */ }
+    const hit = cache ? await cache.match(url).catch(() => null) : null;
+    const fresh = fetch(url).then((res) => {
+      if (res.ok && cache) cache.put(url, res.clone()).catch(() => {});
+      return res;
     });
-    cursor[id] = 0;
-  }
+    if (hit) { fresh.catch(() => {}); return hit.arrayBuffer(); }
+    const res = await fresh;
+    if (!res.ok) throw new Error(`sound ${id}: ${res.status}`);
+    return res.arrayBuffer();
+  })();
+  bytes[id].catch(() => { delete bytes[id]; }); // try again next time
+  return bytes[id];
 }
 
-// Phones only allow sound after a tap, and an app added to the iPhone Home Screen is stricter
-// than Safari: each audio element must be started UNMUTED during a tap. Once started that way,
-// the element stays allowed, even with another sound file. So on a tap every pooled element
-// plays a short SILENT clip, then gets its own sound back.
-// (It used to start and instantly stop each real sound. Once in a while an iPhone ignored the
-// instant stop, and all the sounds played at once while the page stalled.)
-// iPhones can lock sound again after the app was in the background, so we unlock again on the
-// next tap after coming back, and whenever a sound is refused.
-// Giving the elements their sounds back is spread out, one every few milliseconds, so the
-// phone isn't setting up dozens of players at once (which made the game feel slow).
-const backlog = [];
-let draining = false;
-function drain() {
-  const restore = backlog.shift();
-  if (!restore) { draining = false; return; }
-  restore();
-  setTimeout(drain, 30);
+function decode(data) {
+  // Older iPhones only have the callback form of decodeAudioData.
+  return new Promise((resolve, reject) => {
+    const p = ctx.decodeAudioData(data, resolve, reject);
+    if (p && typeof p.then === 'function') p.then(resolve, reject);
+  });
 }
-function later(restore) {
-  backlog.push(restore);
-  if (!draining) { draining = true; setTimeout(drain, 30); }
+
+function prepare(id) {
+  if (!ctx || buffers[id] || decoding[id]) return;
+  decoding[id] = fileBytes(id)
+    .then((data) => decode(data.slice(0))) // decode a copy: Safari empties the one it is given
+    .then((buffer) => { buffers[id] = buffer; })
+    .catch(() => {})
+    .finally(() => { delete decoding[id]; });
 }
-function unlockOne(a) {
-  if (unlocking.has(a)) return;
-  let done = false;
-  const restore = () => {
-    if (done) return;
-    done = true;
-    unlocking.delete(a);
-    try { a.pause(); a.src = realSrc.get(a); } catch { /* never let sound break the game */ }
-  };
-  unlocking.set(a, restore);
-  try {
-    a.muted = false;
-    a.src = SILENT;
-    const p = a.play();
-    if (p && typeof p.then === 'function') p.then(() => later(restore), () => later(restore)); else later(restore);
-  } catch { later(restore); }
-  setTimeout(() => later(restore), 1500); // in case the phone never answers (a no-op if done)
+
+// Fetch the files soon after the page has loaded (not while it is still loading its pictures).
+if (typeof window !== 'undefined' && typeof fetch === 'function') {
+  const prefetch = () => setTimeout(() => SOUNDS.forEach((id) => fileBytes(id).catch(() => {})), 1500);
+  if (document.readyState === 'complete') prefetch(); else window.addEventListener('load', prefetch, { once: true });
 }
+
+// Switch the engine on. Must run during a tap on phones (or right away in the TV app).
 function unlock() {
-  if (unlocked) return;
-  build();
-  if (!Object.keys(pools).length) return;
-  unlocked = true;
-  for (const id of SOUNDS) for (const a of pools[id]) unlockOne(a);
+  const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
+  if (!AC) return;
+  try {
+    if (!ctx) {
+      ctx = new AC();
+      SOUNDS.forEach(prepare);
+    }
+    if (ctx.state !== 'running') ctx.resume?.().catch(() => {});
+    // iPhone also wants something started during the tap: one silent sample.
+    const src = ctx.createBufferSource();
+    src.buffer = ctx.createBuffer(1, 1, 22050);
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch { /* never let sound break the game */ }
 }
-function onGesture() { if (!unlocked) unlock(); }
-function relock() { unlocked = false; } // the next tap unlocks again
-// The Pin & Spin TV app allows sound without a tap, so it unlocks right away.
+function onGesture() { if (!ctx || ctx.state !== 'running') unlock(); }
+// The Pin & Spin TV app allows sound without a tap, so it switches on right away.
 export function unlockNow() { unlock(); }
 if (typeof window !== 'undefined') {
-  // Every tap/key checks (cheap when already unlocked), so sound recovers by itself.
+  // Every tap/key checks (cheap when already on), so sound recovers by itself after the
+  // phone switched it off (app in the background, a phone call).
   window.addEventListener('pointerdown', onGesture, true);
   window.addEventListener('touchend', onGesture, true);
   window.addEventListener('keydown', onGesture, true);
-  document.addEventListener?.('visibilitychange', () => { if (document.visibilityState === 'visible') relock(); });
-  window.addEventListener('pageshow', relock);
 }
 
 export function play(id) {
-  if (muted || !unlocked) return;
-  const pool = pools[id];
-  if (!pool) return;
-  const a = pool[cursor[id]];
-  cursor[id] = (cursor[id] + 1) % pool.length;
-  // still playing the silent clip (a sound in the same tap that unlocked it): give it its sound back first
-  unlocking.get(a)?.();
-  start(a);
-}
-
-function start(a) {
+  if (muted || !ctx) return;
+  // While the engine is off, play nothing: a sound started now would wait and then play
+  // together with everything else on the next tap.
+  if (ctx.state !== 'running') return;
+  const buffer = buffers[id];
+  if (!buffer) { prepare(id); return; }
   try {
-    a.currentTime = 0;
-    const p = a.play();
-    // Refused (the phone locked sound again): unlock on the next tap.
-    if (p && typeof p.catch === 'function') p.catch((e) => { if (e?.name === 'NotAllowedError') relock(); });
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ctx.destination);
+    src.start(0);
   } catch { /* never let sound break the game */ }
 }
 

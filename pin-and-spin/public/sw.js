@@ -8,7 +8,8 @@ self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys()
-    .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+    // keep the sounds the game stored on the device (src/sound/sfx.js, 'pin-and-spin-sounds')
+    .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== 'pin-and-spin-sounds').map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
@@ -16,8 +17,9 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin || e.request.method !== 'GET') return;
   if (url.pathname === '/version.json') return; // the update banner always asks the server
-  // Sounds and other media go straight to the network. Phones load audio in pieces ("range"
-  // requests); handling those here breaks playback in the installed app, especially on iPhone.
+  // Sounds and other media go straight to the network (the game keeps its own copy of the
+  // sounds, see src/sound/sfx.js). Phones load audio in pieces ("range" requests); handling
+  // those here breaks playback in the installed app, especially on iPhone.
   const d = e.request.destination;
   if (d === 'audio' || d === 'video' || e.request.headers.has('range') || url.pathname.startsWith('/sounds/')) return;
   e.respondWith(fetch(e.request)

@@ -56,12 +56,13 @@ games. Do not touch them from a Pin & Spin task.
   `pin-and-spin:<ROOM CODE>`; never put game data in that signal. Polling remains the
   fallback and the presence heartbeat.
 - Sounds are real files in `public/sounds/` (volume baked in; iPhones ignore page volume).
-  iPhone (especially the Home Screen app) only plays an audio element that was started unmuted
-  during a tap: `sfx.js` unlocks every pooled element that way, with a silent clip (never the
-  real sound, which an iPhone may fail to stop; sounds are given back a few at a time, as
-  doing all at once made the game sluggish), re-unlocks after the app comes
-  back from the background, and sound is ON unless the player muted it. Don't change this
-  without testing on a real iPhone (`tests/unit/sound.test.mjs` simulates the rules).
+  `sfx.js` plays them with ONE Web Audio engine; files are kept on the device (Cache Storage
+  `pin-and-spin-sounds`; `public/sw.js` must not delete it). The engine is switched on during
+  a tap (first tap, and the next tap after the app was in the background); while it is off,
+  sounds are dropped, never queued. Don't go back to pools of `<audio>` elements: unlocking
+  them on iPhone either played every sound at once or broke the Home Screen app. Sound is ON
+  unless the player muted it. Don't change this without testing on a real iPhone
+  (`tests/unit/sound.test.mjs` simulates the rules).
   Replace a sound by keeping its file name. Keep `LICENSE-SoundWeaver.txt` while any
   SoundWeaver sound remains.
 
