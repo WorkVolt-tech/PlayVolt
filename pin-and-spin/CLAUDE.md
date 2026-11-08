@@ -58,7 +58,8 @@ games. Do not touch them from a Pin & Spin task.
 - Sounds are real files in `public/sounds/` (volume baked in; iPhones ignore page volume).
   iPhone (especially the Home Screen app) only plays an audio element that was started unmuted
   during a tap: `sfx.js` unlocks every pooled element that way, with a silent clip (never the
-  real sound, which an iPhone may fail to stop), re-unlocks after the app comes
+  real sound, which an iPhone may fail to stop; sounds are given back a few at a time, as
+  doing all at once made the game sluggish), re-unlocks after the app comes
   back from the background, and sound is ON unless the player muted it. Don't change this
   without testing on a real iPhone (`tests/unit/sound.test.mjs` simulates the rules).
   Replace a sound by keeping its file name. Keep `LICENSE-SoundWeaver.txt` while any

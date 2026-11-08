@@ -8,8 +8,11 @@ let inTap = false;
 let heard = [];
 // missQuickStop: like a real iPhone once in a while, a stop right after a start is ignored.
 let missQuickStop = false;
+const made = [];
 class FakeAudio {
-  constructor(src) { this.src = src; this.muted = false; this.unlocked = false; this.currentTime = 0; this.paused = true; }
+  constructor(src) { this.loads = 0; this.src = src ?? ''; this.muted = false; this.unlocked = false; this.currentTime = 0; this.paused = true; made.push(this); }
+  get src() { return this._src; }
+  set src(v) { this._src = v; if (String(v).endsWith('.mp3')) this.loads++; }
   play() {
     if (inTap && !this.muted) this.unlocked = true;   // stays allowed, whatever file it plays later
     if (!this.unlocked && !inTap) { const e = new Error('blocked'); e.name = 'NotAllowedError'; return Promise.reject(e); }
@@ -44,6 +47,11 @@ test('after one tap, sounds triggered later by the game (not by a tap) are heard
   await tick();
   missQuickStop = false;
   assert.deepEqual(heard, [], 'unlocking is silent');
+  // The real sounds come back a few at a time, never all at once, and each is fetched once.
+  assert.ok(made.filter((a) => a.loads > 0).length < 5, 'not all reloaded at once');
+  await new Promise((r) => setTimeout(r, 2000));
+  assert.ok(made.every((a) => a.src.endsWith('.mp3')), 'every element has its sound back');
+  assert.ok(made.every((a) => a.loads === 1), 'one download each');
   sfx.play('level-up');
   await tick();
   assert.deepEqual(heard, ['level-up.mp3']);

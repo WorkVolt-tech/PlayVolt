@@ -13,7 +13,7 @@ const SOUNDS = [
   'mention-pop', 'message-incoming-pop', 'drawer-open', 'drawer-close', 'toggle-switch-on',
   'toggle-switch-off', 'click-crisp-primary', 'tab-switch', 'select-item', 'invalid-thunk',
 ];
-const POOL_SIZE = 3;
+const POOL_SIZE = 2;
 const PREF_KEY = 'pin_and_spin_sound_v1';
 
 // Sound is on unless the player turned it off with the 🔊 button. (It used to start muted for
@@ -38,10 +38,12 @@ function build() {
   if (typeof Audio === 'undefined') return;
   for (const id of SOUNDS) {
     if (pools[id]) continue;
+    // No file yet: the first tap starts each element on the silent clip, then gives it its
+    // sound (one download per element, not one that is cut off and started again).
     pools[id] = Array.from({ length: POOL_SIZE }, () => {
-      const a = new Audio(`/sounds/${id}.mp3`);
+      const a = new Audio();
       a.preload = 'auto';
-      realSrc.set(a, a.src);
+      realSrc.set(a, `/sounds/${id}.mp3`);
       return a;
     });
     cursor[id] = 0;
@@ -56,23 +58,37 @@ function build() {
 // instant stop, and all the sounds played at once while the page stalled.)
 // iPhones can lock sound again after the app was in the background, so we unlock again on the
 // next tap after coming back, and whenever a sound is refused.
+// Giving the elements their sounds back is spread out, one every few milliseconds, so the
+// phone isn't setting up dozens of players at once (which made the game feel slow).
+const backlog = [];
+let draining = false;
+function drain() {
+  const restore = backlog.shift();
+  if (!restore) { draining = false; return; }
+  restore();
+  setTimeout(drain, 30);
+}
+function later(restore) {
+  backlog.push(restore);
+  if (!draining) { draining = true; setTimeout(drain, 30); }
+}
 function unlockOne(a) {
   if (unlocking.has(a)) return;
   let done = false;
   const restore = () => {
     if (done) return;
     done = true;
-    try { a.pause(); a.src = realSrc.get(a); a.load?.(); } catch { /* never let sound break the game */ }
     unlocking.delete(a);
+    try { a.pause(); a.src = realSrc.get(a); } catch { /* never let sound break the game */ }
   };
   unlocking.set(a, restore);
   try {
     a.muted = false;
     a.src = SILENT;
     const p = a.play();
-    if (p && typeof p.then === 'function') p.then(restore, restore); else restore();
-  } catch { restore(); }
-  setTimeout(restore, 1500); // in case the phone never answers
+    if (p && typeof p.then === 'function') p.then(() => later(restore), () => later(restore)); else later(restore);
+  } catch { later(restore); }
+  setTimeout(() => later(restore), 1500); // in case the phone never answers (a no-op if done)
 }
 function unlock() {
   if (unlocked) return;

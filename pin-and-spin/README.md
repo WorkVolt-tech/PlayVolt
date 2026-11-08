@@ -47,8 +47,9 @@ converted to small MP3s (47 KB in total) with each sound's volume baked in, sinc
 ignore a page's volume settings. `src/sound/sfx.js` plays them; phones allow audio only
 after the first touch, so that touch unlocks a small pool of players for later sounds
 (reveals, your turn) by playing a short silent clip on each, then giving it its own sound
-back (starting and instantly stopping the real sounds sometimes played them all at once on
-iPhone). A 🔊/🔇 button in the header turns sound off and is remembered on the device;
+back a few at a time (starting and instantly stopping the real sounds sometimes played them
+all at once on iPhone; swapping them all back at once made the game feel slow). Two players
+per sound. A 🔊/🔇 button in the header turns sound off and is remembered on the device;
 sound is on unless the player turns it off. Game moments are mapped in
 `src/sound/useGameSounds.js` (start, rounds, your turn, scoring, win/lose, lobby joins).
 
