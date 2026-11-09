@@ -4,14 +4,16 @@ import { Confetti } from '../components/Confetti.jsx';
 import { Feedback } from '../components/Feedback.jsx';
 import { Peg, PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
-import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress } from '../game/selectors.js';
+import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders } from '../game/selectors.js';
 import { tvGrid } from './tvGrid.js';
+import { WinsBadge } from '../components/WinsBadge.jsx';
 
 
 // The live board on the TV. Public data only (revealed guesses, locked-in flags, winners,
 // and the secret once the match is over). Every player gets a lane with one row per try.
 export function TvBoard({ game, remainingMs }) {
   const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
+  const leaders = winLeaders(game.players);
   const limit = guessLimit(game.mode);
   const simultaneous = isSimultaneous(game.mode);
   const playing = game.status === 'playing';
@@ -90,7 +92,7 @@ export function TvBoard({ game, remainingMs }) {
           <header>
             {lane.order && <span className="turn-no" title={`Plays ${ordinal(lane.order)}`}>{lane.order}</span>}
             <PlayerAvatar player={lane.player} />
-            <strong>{lane.player.name}</strong>
+            <strong>{lane.player.name}<WinsBadge player={lane.player} leaders={leaders} /></strong>
             <small>{status}</small>
           </header>
           <ol>

@@ -5,11 +5,14 @@ import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { play } from '../sound/sfx.js';
 import { ShowOnTv } from './ShowOnTv.jsx';
 import { InviteFriends } from '../social/InviteFriends.jsx';
+import { WinsBadge, LeaderLine } from '../components/WinsBadge.jsx';
+import { winLeaders } from '../game/selectors.js';
 
 // Waiting room: code/invite, chosen mode, players and ready/start controls.
 export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRemove }) {
   const activePlayers = (game.players || []).filter((player) => player.active);
   const me = activePlayers.find((player) => player.id === game.me);
+  const leaders = winLeaders(game.players);
   const host = game.hostId === game.me;
   const allReady = activePlayers.length >= 2 && activePlayers.every((player) => player.ready);
   const readyCount = activePlayers.filter((player) => player.ready).length;
@@ -31,6 +34,7 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
     <div className="surface lobby-mode"><Peg value={MODES[game.mode].color} tiny />
       <div><strong>{MODES[game.mode].label}</strong><p>{MODES[game.mode].hint}</p></div></div>
     <div className="surface">
+      <LeaderLine players={activePlayers} leaders={leaders} me={game.me} />
       <div className="panel-title"><h2>Players</h2><span>{readyCount} READY · {activePlayers.length} / {MODES[game.mode].maxPlayers}</span></div>
       {game.mode === 'classic' && <p className="classic-note">↪ Classic is a 2-player duel. For more friends, start a Reveal, Timed Reveal or Rush room.</p>}
       {game.mode !== 'classic' && <p className="classic-note colors-note">{activePlayers.length > 3
@@ -39,7 +43,7 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
       <div className="player-list">
         {activePlayers.map((player) => <div className="player-item" key={player.id}>
           <PlayerAvatar player={player} />
-          <div className="player-info"><div className="player-name">{player.name}{player.id === game.me ? ' (YOU)' : ''}</div>
+          <div className="player-info"><div className="player-name">{player.name}{player.id === game.me ? ' (YOU)' : ''}<WinsBadge player={player} leaders={leaders} /></div>
             <div className="player-description">{player.id === game.hostId ? <span className="host-badge">★ HOST</span> : 'PLAYER ' + player.seat}</div>
           </div>
           {player.away

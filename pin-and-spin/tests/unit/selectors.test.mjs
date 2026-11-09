@@ -114,3 +114,11 @@ test('match events: start, new round, own scored guess, your turn, end — nothi
   assert.deepEqual(matchEvents(base, { ...base, status: 'finished', winners: ['a'] }), [{ type: 'end', won: true }]);
   assert.deepEqual(matchEvents(revealed, { ...base, puzzle: 2 }), [], 'a rematch does not replay old events');
 });
+
+test('who leads on rounds won (crown): most wins among players still here; ties share it', async () => {
+  const { winLeaders } = await import('../../src/game/selectors.js');
+  assert.deepEqual([...winLeaders([{ id: 'a', wins: 0 }, { id: 'b', wins: 0 }])], [], 'nobody until a round is won');
+  assert.deepEqual([...winLeaders([{ id: 'a', wins: 2 }, { id: 'b', wins: 3 }, { id: 'c' }])], ['b']);
+  assert.deepEqual([...winLeaders([{ id: 'a', wins: 2 }, { id: 'b', wins: 2 }])].sort(), ['a', 'b']);
+  assert.deepEqual([...winLeaders([{ id: 'a', wins: 5, active: false }, { id: 'b', wins: 1 }])], ['b'], 'someone who left loses the crown');
+});

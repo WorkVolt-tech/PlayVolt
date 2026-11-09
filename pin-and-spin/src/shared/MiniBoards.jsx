@@ -3,7 +3,8 @@ import { EMPTY_GUESS } from '../game/constants.js';
 import { Feedback } from '../components/Feedback.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
-import { guessLimit, inTurnOrder, playerProgress } from '../game/selectors.js';
+import { guessLimit, inTurnOrder, playerProgress, winLeaders } from '../game/selectors.js';
+import { WinsBadge } from '../components/WinsBadge.jsx';
 
 // A mini view of everyone's guesses: one small card per player with their public
 // guess rows (balls + Pin/Spin dots) and empty rows for tries not yet used.
@@ -11,6 +12,7 @@ import { guessLimit, inTurnOrder, playerProgress } from '../game/selectors.js';
 export function MiniBoards({ game, onOpen }) {
   const limit = guessLimit(game.mode);
   const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => !lane.left || lane.guesses.length);
+  const leaders = winLeaders(game.players);
   // On a phone the boards slide sideways: fade the edge that has more players, and slide to
   // whoever's turn it is. (On wide screens they wrap into rows and nothing is hidden.)
   const boxRef = useRef(null);
@@ -53,6 +55,7 @@ export function MiniBoards({ game, onOpen }) {
           {lane.order && <span className="turn-no" title={`Plays ${lane.order === 1 ? 'first' : `#${lane.order}`}`}>{lane.order}</span>}
           <PlayerAvatar player={lane.player} size="xs" />
           <span className="mini-name">{lane.player.id === game.me ? 'You' : lane.player.name}</span>
+          <WinsBadge player={lane.player} leaders={leaders} />
           {label && <span className="mini-state">{label}</span>}
         </span>
         <span className="mini-rows">

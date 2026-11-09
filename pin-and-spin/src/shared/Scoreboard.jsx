@@ -4,8 +4,9 @@ import { Feedback } from '../components/Feedback.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { Empty } from '../components/Empty.jsx';
-import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress } from '../game/selectors.js';
+import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders } from '../game/selectors.js';
 import { WinnerBanner } from './WinnerBanner.jsx';
+import { WinsBadge } from '../components/WinsBadge.jsx';
 
 // "Everyone's Guesses": the full-screen shared results board.
 // Built for a phone today and a TV later. It renders ONLY public data from the server
@@ -14,6 +15,7 @@ import { WinnerBanner } from './WinnerBanner.jsx';
 export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'all', showFilter = true }) {
   const [focus, setFocus] = useState(initialFocus);
   const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
+  const leaders = winLeaders(game.players);
   const shown = focus === 'all' ? lanes : lanes.filter((lane) => lane.player.id === focus);
   const limit = guessLimit(game.mode);
   const simultaneous = isSimultaneous(game.mode);
@@ -61,7 +63,7 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
           {lane.order && <span className="turn-no" title={`Plays ${ordinal(lane.order)}`}>{lane.order}</span>}
           <PlayerAvatar player={lane.player} />
           <div className="lane-name">
-            <strong>{lane.player.name}{lane.player.id === game.me ? ' (you)' : ''}</strong>
+            <strong>{lane.player.name}{lane.player.id === game.me ? ' (you)' : ''}<WinsBadge player={lane.player} leaders={leaders} /></strong>
             <small>{lane.won ? 'WINNER' : lane.left ? 'LEFT THE ROOM' : lane.away ? 'AWAY · NOT CONNECTED' : lane.isTurn ? 'PLAYING NOW'
               : lane.thinking ? 'THINKING…' : lane.sealed ? 'LOCKED IN' : `${lane.used} / ${limit} TRIES`}</small>
           </div>

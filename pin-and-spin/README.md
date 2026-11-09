@@ -149,6 +149,13 @@ colors (new balls 6 = orange, 7 = pink in `src/balls/`). Levels and solo games h
 (4 or 5); `pin_and_spin_code_n()` and the logic-puzzle builder work for any size. Multiplayer
 and the other solo modes still use 4 balls and 6 colors.
 
+**Rounds won in this room (migration 015):** every player in a room, guests too, has a win
+count (`players[].wins`) that a trigger raises by one each time a round ends with them among the
+winners (a shared win counts for each; it lasts across rematches). The lobby, mini boards,
+Everyone's Guesses, the end-of-round panel and both TV screens show each count, a 👑 on whoever
+leads (ties share it; players who left drop out) and a "👑 … leads · N rounds won" line
+(`src/components/WinsBadge.jsx`, `winLeaders()` in `src/game/selectors.js`).
+
 **Coming back to the app:** game requests never wait more than 4 s for the sign-in library
 (`accessToken()` in `src/game/auth.js`; after that the saved, still-valid token is used), since
 on resume it refreshes the login over a connection the phone may have dropped, which froze the

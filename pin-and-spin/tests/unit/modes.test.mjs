@@ -542,3 +542,37 @@ describe('more colors for bigger groups (migration 014)', () => {
     assert.equal(s.colors, 6);
   });
 });
+
+describe('rounds won in this room (migration 015)', () => {
+  const winsOf = (s) => Object.fromEntries(s.players.map((p) => [p.name, p.wins]));
+  test('each round won adds one to the winner, across rematches; guests count too', async () => {
+    const room = await started('rush', 3);
+    let s = await guess(room, room.players[1], SECRET, 1);
+    assert.deepEqual(winsOf(s), { P1: 0, P2: 1, P3: 0 });
+    for (const winner of [1, 2]) {                                   // two rematches
+      await g.api('replay', room.code, room.players[0].token);
+      for (const p of room.players.slice(1)) await g.api('ready', room.code, p.token, { ready: true });
+      await g.api('start', room.code, room.players[0].token);
+      await g.setSecret(room.code, SECRET);
+      s = await guess(room, room.players[winner], SECRET, 1, (await state(room, room.players[0])).puzzle);
+    }
+    assert.deepEqual(winsOf(s), { P1: 0, P2: 2, P3: 1 });
+    const lobby = await g.api('replay', room.code, room.players[0].token);
+    assert.deepEqual(winsOf(lobby), { P1: 0, P2: 2, P3: 1 }, 'still shown back in the lobby');
+  });
+
+  test('a shared win counts for everyone who shared it; no winner adds nothing', async () => {
+    const room = await started('reveal', 3);
+    await guess(room, room.players[0], SECRET, 1);
+    await guess(room, room.players[1], SECRET, 1);
+    const s = await guess(room, room.players[2], WRONG, 1);
+    assert.equal(s.status, 'finished');
+    assert.deepEqual(winsOf(s), { P1: 1, P2: 1, P3: 0 });
+    db = await freshDb(); g = game(db);
+    const other = await started('rush', 2);
+    for (let t = 1; t <= 8; t++) for (const p of other.players) await guess(other, p, WRONG, t);
+    const end = await state(other, other.players[0]);
+    assert.equal(end.status, 'finished');
+    assert.deepEqual(end.players.map((p) => p.wins), [0, 0]);
+  });
+});

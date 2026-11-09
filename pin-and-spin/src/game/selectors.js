@@ -133,3 +133,11 @@ export function inTurnOrder(game, lanes) {
   return [...ordered, ...bySeat.filter((lane) => lane.left)];
 }
 export const ordinal = (n) => `${n}${n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th'}`;
+
+// Rounds won in this room (migration 015): who leads. The ids of the player(s) with the most
+// wins, among players still in the room; nobody until someone has won a round.
+export function winLeaders(players) {
+  const here = (players || []).filter((p) => p.active !== false);
+  const best = Math.max(0, ...here.map((p) => Number(p.wins) || 0));
+  return best > 0 ? new Set(here.filter((p) => (Number(p.wins) || 0) === best).map((p) => p.id)) : new Set();
+}
