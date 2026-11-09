@@ -41,7 +41,8 @@ games. Do not touch them from a Pin & Spin task.
   base — never edit or re-run it.
 - **Before applying anything to Game DB, check production matches the repo:**
   `npm run db:fingerprint`, then run the query printed at the top of
-  `tests/fingerprint.mjs` on Game DB. If any fingerprint differs, production was changed
+  `tests/fingerprint.mjs` on Game DB (it ignores line endings, so SQL the owner pasted into the
+  Supabase SQL editor still matches). If any fingerprint differs, production was changed
   outside the repo: record that change as a migration first (and make the tests pass),
   then build yours on top. Never overwrite a live change you didn't write.
 - **Edge Function:** `backend/index.ts` must equal the deployed `pin-and-spin` function.

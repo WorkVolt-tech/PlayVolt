@@ -5,14 +5,15 @@
 //
 //   npm run db:fingerprint
 //
-// Matching query to run on Game DB (Supabase SQL editor or MCP execute_sql):
-//   select p.proname, md5(pg_get_functiondef(p.oid)) from pg_proc p
+// Matching query to run on Game DB (Supabase SQL editor or MCP execute_sql). Line endings are
+// ignored: SQL pasted into the Supabase SQL editor can arrive with Windows (CR LF) endings.
+//   select p.proname, md5(replace(pg_get_functiondef(p.oid), chr(13), '')) from pg_proc p
 //   join pg_namespace n on n.oid = p.pronamespace
 //   where n.nspname = 'public' and p.proname like 'pin_and_spin%' order by 1;
 import { freshDb } from './unit/db.mjs';
 
 const db = await freshDb();
-const { rows } = await db.query(`select p.proname, md5(pg_get_functiondef(p.oid)) as md5 from pg_proc p
+const { rows } = await db.query(`select p.proname, md5(replace(pg_get_functiondef(p.oid), chr(13), '')) as md5 from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and p.proname like 'pin_and_spin%' order by 1`);
 for (const row of rows) console.log(row.proname.padEnd(24), row.md5);
