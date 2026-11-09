@@ -19,14 +19,36 @@ export function hasStoredSession() {
 }
 
 // Current access token, refreshed by supabase-js when needed; null for guests.
-export async function accessToken() {
+// Never waits more than a few seconds: when a phone brings the app back from the background,
+// supabase-js first refreshes the sign-in over a connection the phone may have dropped, and
+// that could hold every game request (the game looked frozen). After the wait, the saved
+// token is used if it is still valid; the refresh carries on by itself for later requests.
+export const TOKEN_WAIT_MS = 4000;
+export async function accessToken({ client = getSupabase, wait = TOKEN_WAIT_MS } = {}) {
   if (!hasStoredSession()) return null;
+  const fromClient = (async () => {
+    try {
+      const { data } = await (await client()).auth.getSession();
+      return data.session?.access_token || null;
+    } catch {
+      return null;
+    }
+  })();
+  let timer;
+  const late = new Promise((resolve) => { timer = setTimeout(() => resolve(undefined), wait); });
+  const token = await Promise.race([fromClient, late]);
+  clearTimeout(timer);
+  return token === undefined ? savedToken() : token;
+}
+
+// The token supabase-js saved on this device, if it hasn't expired (10 s margin).
+export function savedToken(now = Date.now()) {
   try {
-    const { data } = await (await getSupabase()).auth.getSession();
-    return data.session?.access_token || null;
-  } catch {
-    return null;
-  }
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    const token = saved?.access_token;
+    if (typeof token === 'string' && (!saved.expires_at || saved.expires_at * 1000 > now + 10000)) return token;
+  } catch { /* unreadable: no token */ }
+  return null;
 }
 
 // Server errors for account problems start with "ACCOUNT_REQUIRED: ".

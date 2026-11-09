@@ -87,6 +87,8 @@ export function usePinAndSpin() {
       if (!busyRef.current && version === requestVersionRef.current && currentSession === sessionRef.current) updateGame(next);
     } catch (error) {
       if (version !== requestVersionRef.current || currentSession !== sessionRef.current) return;
+      // Dropped because the app came back from the background: just ask again, quietly.
+      if (error.resumed) { againRef.current = true; return; }
       if (error.accountRequired) {
         if (Date.now() - lastWarningRef.current > 20000) {
           lastWarningRef.current = Date.now();

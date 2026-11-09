@@ -149,6 +149,12 @@ colors (new balls 6 = orange, 7 = pink in `src/balls/`). Levels and solo games h
 (4 or 5); `pin_and_spin_code_n()` and the logic-puzzle builder work for any size. Multiplayer
 and the other solo modes still use 4 balls and 6 colors.
 
+**Coming back to the app:** game requests never wait more than 4 s for the sign-in library
+(`accessToken()` in `src/game/auth.js`; after that the saved, still-valid token is used), since
+on resume it refreshes the login over a connection the phone may have dropped, which froze the
+game. A request that was under way when the app went to the background is dropped on return
+(`callGame()` in `src/game/api.js`) and the game asks again.
+
 **Ball pictures load instantly:** the ball SVGs in `src/balls/` are built into the stylesheet
 (`assetsInlineLimit` in `vite.config.js`), so no color waits for its own download. The service
 worker serves built files (`/assets/…`, renamed on every change) from its stored copy first;
