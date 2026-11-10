@@ -28,10 +28,10 @@ async function win(level, extraMisses = 0, account = A) {
 }
 
 describe('story mode', () => {
-  test('32 levels in 4 worlds; only level 1 is open at first; signed-in only', async () => {
+  test('42 levels in 5 worlds; only level 1 is open at first; signed-in only', async () => {
     const home = await story('story_home');
-    assert.equal(home.levels.length, 32);
-    assert.deepEqual([...new Set(home.levels.map((l) => l.world))], [1, 2, 3, 4]);
+    assert.equal(home.levels.length, 42);
+    assert.deepEqual([...new Set(home.levels.map((l) => l.world))], [1, 2, 3, 4, 5]);
     assert.deepEqual(home.levels.filter((l) => l.unlocked).map((l) => l.level), [1]);
     assert.equal(home.stars, 0);
     await rejects(story('story_start', { level: 2 }), /Finish the level before/);
@@ -157,5 +157,54 @@ describe('story World 4: 5 balls and 8 colors (migration 010)', () => {
     const g = await solo('solo_start', { kind: 'practice' });
     assert.equal(g.slots, 4);
     assert.equal((await secretOf(g.id)).length, 4);
+  });
+});
+
+describe('story World 5: Hourglass Desert, every level timed (migration 016)', () => {
+  const unlockTo = (n) => db.query(`insert into public.pin_and_spin_story_progress(user_id, level, stars, best_tries)
+    select $1, level, 1, 1 from generate_series(1, $2) level on conflict do nothing`, [A, n]);
+  const allCodes = (colors, slots) => {
+    let codes = [[]];
+    for (let i = 0; i < slots; i++) codes = codes.flatMap((c) => Array.from({ length: colors }, (_, v) => [...c, v]));
+    return codes;
+  };
+  const score8 = (s, g) => {
+    const pins = g.filter((v, i) => v === s[i]).length;
+    let m = 0; for (let c = 0; c < 8; c++) m += Math.min(s.filter((v) => v === c).length, g.filter((v) => v === c).length);
+    return [pins, m - pins];
+  };
+
+  test('10 levels (33-42), all against the clock, the clock set when the level starts', async () => {
+    const levels = (await story('story_home')).levels.filter((l) => l.world === 5);
+    assert.deepEqual(levels.map((l) => l.level), [33, 34, 35, 36, 37, 38, 39, 40, 41, 42]);
+    assert.ok(levels.every((l) => l.seconds >= 60 && l.seconds <= 150), 'every level has a clock');
+    assert.ok(levels.filter((l) => l.kind === 'logic').length >= 3, 'timed logic puzzles too');
+    await unlockTo(32);
+    const g = await story('story_start', { level: 33 });
+    const left = new Date(g.deadline) - new Date(g.serverTime);
+    assert.ok(left > 85000 && left <= 90000, `about 90 s left, got ${left}`);
+  });
+
+  test('timed logic puzzles (5 balls, 7 colors; 4 balls, 8 colors with repeats) have exactly one answer', async () => {
+    await unlockTo(39);
+    for (const [level, colors, slots, repeats] of [[34, 6, 4, true], [37, 7, 5, false], [40, 8, 4, true]]) {
+      const g = await story('story_start', { level, fresh: true });
+      const s = await secretOf(g.id);
+      assert.ok(g.deadline, `level ${level} is timed`);
+      const fits = allCodes(colors, slots).filter((code) => (repeats || new Set(code).size === slots) &&
+        g.clues.every((cl) => { const [p, sp] = score8(code, cl.colors); return p === cl.pins && sp === cl.spins; }));
+      assert.deepEqual(fits, [s], `level ${level}`);
+    }
+  });
+
+  test('running out of time loses a World 5 level; finishing the world earns its badge', async () => {
+    await unlockTo(32);
+    const g = await story('story_start', { level: 33 });
+    await db.query(`update public.pin_and_spin_solo_games set deadline=now()-interval '1 second' where id=$1`, [g.id]);
+    const late = await solo('solo_guess', { id: g.id, colors: await secretOf(g.id), attempt: 1 });
+    assert.equal(late.status, 'lost');
+    for (let level = 33; level <= 42; level++) assert.equal((await win(level)).status, 'won', `level ${level}`);
+    const badges = (await db.query('select public.pin_and_spin_achievements_for($1) r', [A])).rows[0].r.earned;
+    assert.ok(badges.world_5, 'world_5 badge');
   });
 });

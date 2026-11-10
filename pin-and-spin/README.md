@@ -149,6 +149,12 @@ colors (new balls 6 = orange, 7 = pink in `src/balls/`). Levels and solo games h
 (4 or 5); `pin_and_spin_code_n()` and the logic-puzzle builder work for any size. Multiplayer
 and the other solo modes still use 4 balls and 6 colors.
 
+**Story World 5 "Hourglass Desert" (migration 016):** levels 33-42, every one against the clock
+(90 s down to 60 s, up to 2½ min for the biggest vaults), including three timed logic puzzles
+(read the clues and name the code before time runs out). Up to 5 balls and 8 colors. Uses the
+existing level timer (`seconds`); running out loses the level. Finishing the world earns the
+`world_5` badge (Sand Runner). The map marks the last level of each world as its boss.
+
 **Rounds won in this room (migration 015):** every player in a room, guests too, has a win
 count (`players[].wins`) that a trigger raises by one each time a round ends with them among the
 winners (a shared win counts for each; it lasts across rematches). The lobby, mini boards,

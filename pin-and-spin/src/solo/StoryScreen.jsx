@@ -9,11 +9,12 @@ export const WORLDS = {
   2: { name: 'Clockwork Burrow', icon: '⚙️', blurb: 'Deep underground, the vaults have timers. Think fast.' },
   3: { name: 'Moon Maze', icon: '🌙', blurb: 'The vaults under the stars. Experts only.' },
   4: { name: 'Crystal Caves', icon: '💎', blurb: 'Bigger vaults: five balls and two new colors, orange and pink.' },
+  5: { name: 'Hourglass Desert', icon: '⏳', blurb: 'Every vault is against the clock, and the sand runs faster and faster.' },
 };
 
 const formatSeconds = (s) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `0:${String(s).padStart(2, '0')}`);
 
-// Story mode: a level map across three worlds. Signed-in players only.
+// Story mode: a level map across five worlds. Signed-in players only.
 export function StoryScreen({ account, notify, onBack, onSignIn }) {
   const solo = useSolo(notify, account.user?.id);
   const [map, setMap] = useState(null);
@@ -30,7 +31,7 @@ export function StoryScreen({ account, notify, onBack, onSignIn }) {
   if (!account.signedIn) return <section className="screen solo-screen">
     <button className="back-button" onClick={onBack}>← Back</button>
     <h1 className="page-title">🗺️ Story Mode</h1>
-    <div className="surface lb-note"><p>Help Spin the bunny crack 32 locked vaults across four worlds. Your stars are saved to
+    <div className="surface lb-note"><p>Help Spin the bunny crack 42 locked vaults across five worlds. Your stars are saved to
       your PlayVolt account. Sign in (or create a free account) to play.</p>
       <button type="button" className="primary-btn" onClick={onSignIn}>Sign in / Create account <span>→</span></button></div>
   </section>;
@@ -69,7 +70,7 @@ export function StoryScreen({ account, notify, onBack, onSignIn }) {
           <ol className="story-path">
             {inWorld.map((l) => <li key={l.level}>
               <button type="button" disabled={!l.unlocked}
-                className={'story-node' + (l.stars ? ' done' : '') + (l.unlocked && !l.stars ? ' current' : '') + (l.kind === 'logic' ? ' logic' : '') + (l.level % 8 === 0 ? ' boss' : '')}
+                className={'story-node' + (l.stars ? ' done' : '') + (l.unlocked && !l.stars ? ' current' : '') + (l.kind === 'logic' ? ' logic' : '') + (l === inWorld[inWorld.length - 1] ? ' boss' : '')}
                 aria-label={`Level ${l.level}: ${l.title}${l.unlocked ? `, ${l.stars} stars` : ', locked'}`}
                 onClick={() => { play('select-item'); setPicked(l); }}>
                 <b>{l.unlocked ? l.level : '🔒'}</b>

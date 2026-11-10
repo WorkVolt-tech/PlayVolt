@@ -561,6 +561,7 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .story-clues .code-slots .tiny-pegs:has(> :nth-child(5)){gap:6px}
 .story-clues .code-slots .tiny-pegs:has(> :nth-child(5)) .tiny-peg{width:30px;height:30px}
 .story-world.world-4{background:linear-gradient(145deg,#1d2a3a,#0f1724);border-color:#4aa3b8}
+.story-world.world-5{background:linear-gradient(145deg,#3a2a14,#1c140b);border-color:#c9953a}
 
 /* Install as an app (home screen) */
 .install-card{display:flex;align-items:center;gap:12px;padding:14px 16px;margin:4px 0 16px}
