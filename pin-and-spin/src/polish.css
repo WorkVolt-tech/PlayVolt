@@ -689,3 +689,14 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .tvb-head .leader-line,.tv-lobby .leader-line{font-size:clamp(14px,1.6vw,22px);margin:0}
 .mini-head .wins-badge{margin-left:2px;padding:0 3px;font-size:9px;line-height:13px;flex:0 0 auto}
 .tv-mode .leader-line{margin-left:auto;align-self:center}
+/* World 5 has 10 levels: a 5-wide winding path (33-37 along the top, 38-42 back along the bottom). */
+.story-world.world-5 .story-path{grid-template-columns:repeat(5,1fr)}
+.story-world.world-5 .story-path li{grid-row:1;grid-column:auto}
+.story-world.world-5 .story-path li:nth-child(n+6){grid-row:2}
+.story-world.world-5 .story-path li:nth-child(6){grid-column:5}.story-world.world-5 .story-path li:nth-child(7){grid-column:4}
+.story-world.world-5 .story-path li:nth-child(8){grid-column:3}.story-world.world-5 .story-path li:nth-child(9){grid-column:2}
+.story-world.world-5 .story-path li:nth-child(10){grid-column:1}
+.story-world.world-5 .story-path{gap:12px 6px}
+.story-world.world-5 .story-node b{font-size:17px}
+.story-world.world-5 .story-node em{width:19px;height:19px;font-size:11px;top:-5px;right:-5px}
+.story-world.world-5 .story-node.boss b::after{font-size:9px}
