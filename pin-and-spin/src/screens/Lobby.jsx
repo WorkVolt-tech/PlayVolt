@@ -38,8 +38,9 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
       <div className="panel-title"><h2>Players</h2><span>{readyCount} READY · {activePlayers.length} / {MODES[game.mode].maxPlayers}</span></div>
       {game.mode === 'classic' && <p className="classic-note">↪ Classic is a 2-player duel. For more friends, start a Reveal, Timed Reveal or Rush room.</p>}
       {game.mode !== 'classic' && <p className="classic-note colors-note">{activePlayers.length > 3
-        ? <><Peg value={6} tiny /><Peg value={7} tiny /> 4+ players: 8 colors this game (orange and pink join).</>
-        : '4 or more players play with 8 colors instead of 6.'}</p>}
+        ? <><Peg value={6} tiny /><Peg value={7} tiny /> {activePlayers.length >= 9 ? '9+ players: a 6-ball code with 8 colors.'
+            : activePlayers.length >= 7 ? '7+ players: a 5-ball code with 8 colors.' : '4+ players: 8 colors this game (orange and pink join).'}</>
+        : '4+ players: 8 colors. 7+ players: 5-ball code. 9+: 6 balls.'}</p>}
       <div className="player-list">
         {activePlayers.map((player) => <div className="player-item" key={player.id}>
           <PlayerAvatar player={player} />
@@ -72,7 +73,7 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
           {me?.ready ? 'NOT READY' : "I'M READY"}
         </button>}
       {host && <button className="primary-btn" disabled={busy || !allReady}
-          onClick={() => { play('click-crisp-primary'); void act('start', { maxColors: 8 }); }}>Start Game<span>→</span></button>}
+          onClick={() => { play('click-crisp-primary'); void act('start', { maxColors: 8, maxSlots: 6 }); }}>Start Game<span>→</span></button>}
     </div>
   </>;
 }

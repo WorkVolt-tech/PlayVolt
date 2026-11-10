@@ -155,6 +155,13 @@ and the other solo modes still use 4 balls and 6 colors.
 existing level timer (`seconds`); running out loses the level. Finishing the world earns the
 `world_5` badge (Sand Runner). The map marks the last level of each world as its boss.
 
+**Longer codes for big groups (migration 017):** the secret has 4 balls with up to 6 players,
+5 balls with 7-8 and 6 balls with 9-10 (colors as above: 8 from 4 players). Set at Start
+(rematches re-count), sent as `slots`; guesses must have that many balls and every ball a Pin
+wins (`pin_and_spin_advance` checks the room's size for reveals). Guess limits and timers are
+unchanged. The host's app asks with `start {maxSlots: 6}`, so an app from before keeps 4. The
+guess board, mini boards, Everyone's Guesses and TV size themselves to 4-6 balls (`codeSlots()`).
+
 **Rounds won in this room (migration 015):** every player in a room, guests too, has a win
 count (`players[].wins`) that a trigger raises by one each time a round ends with them among the
 winners (a shared win counts for each; it lasts across rematches). The lobby, mini boards,

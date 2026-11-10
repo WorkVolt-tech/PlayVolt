@@ -122,3 +122,11 @@ test('who leads on rounds won (crown): most wins among players still here; ties 
   assert.deepEqual([...winLeaders([{ id: 'a', wins: 2 }, { id: 'b', wins: 2 }])].sort(), ['a', 'b']);
   assert.deepEqual([...winLeaders([{ id: 'a', wins: 5, active: false }, { id: 'b', wins: 1 }])], ['b'], 'someone who left loses the crown');
 });
+
+test('code size from the snapshot (4, or 5-6 in big groups); saved drafts must match it', async () => {
+  const { codeSlots, isValidDraft } = await import('../../src/game/selectors.js');
+  assert.deepEqual([codeSlots({}), codeSlots({ slots: 5 }), codeSlots({ slots: 6 }), codeSlots({ slots: 9 })], [4, 5, 6, 4]);
+  assert.equal(isValidDraft([0, 1, null, 3, 7, 6], 6), true);
+  assert.equal(isValidDraft([0, 1, 2, 3], 6), false, 'a 4-ball draft is not restored into a 6-ball game');
+  assert.equal(isValidDraft([0, 1, 2, 3, 4], 4), false);
+});

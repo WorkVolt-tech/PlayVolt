@@ -48,7 +48,8 @@ function Rules() {
       <div className="guide-colors">{[0, 1, 2, 3, 4, 5].map((c) => <Peg key={c} value={c} tiny />)}</div>
       <p className="guide-note">6 colors. A color can appear more than once (e.g. two reds).</p>
       <div className="guide-colors">{[6, 7].map((c) => <Peg key={c} value={c} tiny />)}</div>
-      <p className="guide-note">With <b>4 or more players</b>, 2 more colors join (orange and pink): 8 colors, so the code is harder to crack together.</p>
+      <p className="guide-note">With <b>4 or more players</b>, 2 more colors join (orange and pink): 8 colors, so the code is harder to crack together.
+        With <b>7 or more</b>, the code has <b>5 balls</b>; with <b>9 or more</b>, <b>6 balls</b>.</p>
     </section>
     <section>
       <h3>🟢 Pin and ⚪ Spin</h3>

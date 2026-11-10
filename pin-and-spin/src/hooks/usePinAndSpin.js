@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { DRAFT_KEY, EMPTY_GUESS, NAME_KEY, SESSION_KEY } from '../game/constants.js';
 import { callGame } from '../game/api.js';
 import { savedName, savedSession, token } from '../game/session.js';
-import { isValidDraft, nextAttempt } from '../game/selectors.js';
+import { codeSlots, isValidDraft, nextAttempt } from '../game/selectors.js';
 import { getSupabase } from '../game/auth.js';
 import { play } from '../sound/sfx.js';
 
@@ -40,7 +40,7 @@ export function usePinAndSpin() {
 
   const notify = useCallback((message) => setToast(message), []);
   const resetDraft = useCallback(() => {
-    setDraft([...EMPTY_GUESS]);
+    setDraft(Array.from({ length: codeSlots(gameRef.current) }, () => null)); // 4, 5 or 6 balls
     setSelected(0);
   }, []);
   const updateGame = useCallback((next) => {
@@ -53,7 +53,7 @@ export function usePinAndSpin() {
       draftIdRef.current = draftId;
       let saved;
       try { saved = JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch { /* Optional draft recovery. */ }
-      if (saved?.id === draftId && isValidDraft(saved.colors)) {
+      if (saved?.id === draftId && isValidDraft(saved.colors, codeSlots(next))) {
         setDraft(saved.colors);
         setSelected(Math.max(0, saved.colors.indexOf(null)));
       } else resetDraft();

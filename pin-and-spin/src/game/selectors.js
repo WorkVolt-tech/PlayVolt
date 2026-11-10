@@ -54,8 +54,13 @@ export function attemptsDescending(guesses) {
   return [...new Set(guesses.map((guess) => guess.attempt))].sort((a, b) => b - a);
 }
 
-export function isValidDraft(colors) {
-  return Array.isArray(colors) && colors.length === 4 &&
+// Balls in this game's code: 4, or 5-6 in big groups (migration 017; 5 in some story levels).
+export function codeSlots(game) {
+  return [5, 6].includes(game?.slots) ? game.slots : 4;
+}
+
+export function isValidDraft(colors, slots = 4) {
+  return Array.isArray(colors) && colors.length === slots &&
     colors.every((c) => c === null || Number.isInteger(c) && c >= 0 && c < 8); // 8 colors with 4+ players
 }
 

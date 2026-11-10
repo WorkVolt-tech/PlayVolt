@@ -700,3 +700,15 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .story-world.world-5 .story-node b{font-size:17px}
 .story-world.world-5 .story-node em{width:19px;height:19px;font-size:11px;top:-5px;right:-5px}
 .story-world.world-5 .story-node.boss b::after{font-size:9px}
+/* Longer codes in big groups (5 or 6 balls) */
+.code-board.slots-6 .code-slots{gap:4px}
+.code-board.slots-6 .code-slots .tiny-peg{width:31px;height:31px}
+.code-board.slots-6 .code-slot{min-width:33px;min-height:36px}
+.mini-boards.slots-5 .mini-row .tiny-peg,.mini-boards.slots-5 .mini-row .sealed-balls i{width:13px;height:13px}
+.mini-boards.slots-5 .mini-row .tiny-pegs,.mini-boards.slots-5 .mini-row .sealed-balls{gap:2px}
+.mini-boards.slots-6 .mini-row .tiny-peg,.mini-boards.slots-6 .mini-row .sealed-balls i{width:11px;height:11px}
+.mini-boards.slots-6 .mini-row .tiny-pegs,.mini-boards.slots-6 .mini-row .sealed-balls{gap:2px}
+.mini-boards.slots-5 .mini-row .feedback-dots,.mini-boards.slots-6 .mini-row .feedback-dots{grid-template-columns:repeat(3,4px);gap:2px;width:16px}
+.mini-boards.slots-5 .mini-row .feedback-dots i,.mini-boards.slots-6 .mini-row .feedback-dots i{width:4px;height:4px}
+.lane-row .feedback-dots.five{grid-template-columns:repeat(3,12px);width:46px}
+.tvb-lane .feedback-dots.five{grid-template-columns:repeat(3,calc(var(--tvb)*.34))}

@@ -576,3 +576,50 @@ describe('rounds won in this room (migration 015)', () => {
     assert.deepEqual(end.players.map((p) => p.wins), [0, 0]);
   });
 });
+
+describe('longer codes for big groups (migration 017)', () => {
+  const NEW_APP = { maxColors: 8, maxSlots: 6 };
+  const begin = async (mode, n, data = NEW_APP) => {
+    db = await freshDb(); g = game(db);
+    const room = await g.room(mode, n);
+    room.state = await g.api('start', room.code, room.players[0].token, data);
+    return room;
+  };
+  const secret = async (code) => (await db.query('select secret from public.pin_and_spin_rooms where code=$1', [code])).rows[0].secret;
+
+  test('players decide the code size: up to 6 → 4 balls, 7-8 → 5, 9-10 → 6 (8 colors from 4)', async () => {
+    for (const [n, slots, colors] of [[3, 4, 6], [6, 4, 8], [7, 5, 8], [8, 5, 8], [9, 6, 8], [10, 6, 8]]) {
+      const room = await begin('rush', n);
+      assert.deepEqual([room.state.slots, room.state.colors], [slots, colors], `${n} players`);
+      assert.equal((await secret(room.code)).length, slots, `${n} players: secret length`);
+    }
+  });
+
+  test('guesses must have the room’s number of balls; all Pins wins (Rush)', async () => {
+    const room = await begin('rush', 9);
+    await rejects(guess(room, room.players[1], [0, 1, 2, 3], 1), /Choose 6 colors/);
+    await g.setSecret(room.code, [0, 1, 2, 3, 4, 5]);
+    const near = await guess(room, room.players[1], [0, 1, 2, 3, 4, 7], 1);
+    assert.equal(near.status, 'playing');
+    assert.deepEqual([near.guesses[0].pins, near.guesses[0].spins], [5, 0]);
+    const s = await guess(room, room.players[2], [0, 1, 2, 3, 4, 5], 1);
+    assert.equal(s.status, 'finished');
+    assert.deepEqual(s.winners, [room.players[2].id]);
+  });
+
+  test('Reveal with 7 players: a 5-ball code is won at the reveal with 5 Pins', async () => {
+    const room = await begin('reveal', 7);
+    await g.setSecret(room.code, [7, 6, 5, 4, 3]);
+    let s;
+    for (const [i, p] of room.players.entries()) s = await guess(room, p, i === 3 ? [7, 6, 5, 4, 3] : [7, 6, 5, 4, 0], 1);
+    assert.equal(s.status, 'finished');
+    assert.deepEqual(s.winners, [room.players[3].id]);
+  });
+
+  test('a host app from before this update keeps 4 balls (and 6 colors), even with 10 players', async () => {
+    const room = await begin('reveal', 10, {});
+    assert.deepEqual([room.state.slots, room.state.colors], [4, 6]);
+    const colorsOnly = await begin('reveal', 10, { maxColors: 8 });
+    assert.deepEqual([colorsOnly.state.slots, colorsOnly.state.colors], [4, 8]);
+  });
+});

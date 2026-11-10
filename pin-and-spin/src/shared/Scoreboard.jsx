@@ -4,7 +4,7 @@ import { Feedback } from '../components/Feedback.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { Empty } from '../components/Empty.jsx';
-import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders } from '../game/selectors.js';
+import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders, codeSlots } from '../game/selectors.js';
 import { WinnerBanner } from './WinnerBanner.jsx';
 import { WinsBadge } from '../components/WinsBadge.jsx';
 
@@ -76,7 +76,7 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
           </li>)}
           {lane.sealed && <li className="lane-row sealed-row">
             <span className="lane-try">R{game.round}</span>
-            <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{[0, 1, 2, 3].map((i) => <i key={i} />)}</span>
+            <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{Array.from({ length: codeSlots(game) }, (_, i) => <i key={i} />)}</span>
             <span className="count-missed">SEALED</span>
           </li>}
           {!lane.guesses.length && !lane.sealed && <li className="lane-empty">No guesses yet</li>}

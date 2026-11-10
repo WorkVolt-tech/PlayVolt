@@ -4,7 +4,7 @@ import { Confetti } from '../components/Confetti.jsx';
 import { Feedback } from '../components/Feedback.jsx';
 import { Peg, PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
-import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders } from '../game/selectors.js';
+import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders, codeSlots } from '../game/selectors.js';
 import { tvGrid } from './tvGrid.js';
 import { WinsBadge } from '../components/WinsBadge.jsx';
 
@@ -20,6 +20,7 @@ export function TvBoard({ game, remainingMs }) {
   const active = lanes.filter((lane) => !lane.left);
   const locked = active.filter((lane) => lane.player.submitted).length;
   const { cols, rows } = tvGrid(lanes.length);
+  const balls = Array.from({ length: codeSlots(game) }, (_, i) => i); // 4, 5 or 6 balls
   // Classic: who plays after the current player (skipping anyone with no tries left).
   const turnAt = active.findIndex((lane) => lane.isTurn);
   const upNext = turnAt < 0 ? null : [...active.slice(turnAt + 1), ...active.slice(0, turnAt)].find((lane) => lane.used < limit)?.player.id;
@@ -39,7 +40,7 @@ export function TvBoard({ game, remainingMs }) {
       const laneH = (height - gap * (rows - 1)) / rows;
       // Lane = header (~1.25 balls) + one row per try (~1.32 balls each) + padding.
       const byHeight = (laneH - laneW * 0.04) / (1.6 + limit * 1.36);
-      const byWidth = laneW / 8.4;
+      const byWidth = laneW / (8.4 + (balls.length - 4) * 1.2); // each extra ball needs ~1.2 ball-widths
       setBall(Math.max(10, Math.floor(Math.min(byHeight, byWidth, window.innerHeight * 0.065))));
     };
     measure();
@@ -47,7 +48,7 @@ export function TvBoard({ game, remainingMs }) {
     observer?.observe(grid);
     window.addEventListener('resize', measure);
     return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
-  }, [cols, rows, limit]);
+  }, [cols, rows, limit, balls.length]);
 
   const players = game.players || [];
   const winners = (game.winners || []).map((id) => players.find((p) => p.id === id)).filter(Boolean);
@@ -100,8 +101,8 @@ export function TvBoard({ game, remainingMs }) {
               <span className="tvb-try">{i + 1}</span>
               {guess?.colors ? <PegRow colors={guess.colors} tiny />
                 : guess ? <span className="tvb-missed">No guess in time</span>
-                : i === sealedAt ? <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{[0, 1, 2, 3].map((k) => <i key={k} />)}</span>
-                : <span className="tvb-empty">{[0, 1, 2, 3].map((k) => <i key={k} />)}</span>}
+                : i === sealedAt ? <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{balls.map((k) => <i key={k} />)}</span>
+                : <span className="tvb-empty">{balls.map((k) => <i key={k} />)}</span>}
               {guess?.colors ? <Feedback guess={guess} /> : <span className="tvb-fb-space" />}
             </li>)}
           </ol>

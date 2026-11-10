@@ -44,7 +44,8 @@ Deno.serve(async (req: Request) => {
     }
     const data = body.data ?? {};
     if (typeof data !== 'object' || Array.isArray(data)) return reply({ error: 'Invalid request' }, 400);
-    if (body.action === 'guess' && (!Array.isArray(data.colors) || data.colors.length !== 4 ||
+    // 4 balls, or 5-6 in big groups (migration 017); the room itself checks its own size.
+    if (body.action === 'guess' && (!Array.isArray(data.colors) || data.colors.length < 4 || data.colors.length > 6 ||
       // 0-7: games with 4+ players use 8 colors (migration 014); the room itself checks its own count.
       !data.colors.every((c: unknown) => Number.isInteger(c) && Number(c) >= 0 && Number(c) <= 7) ||
       !Number.isInteger(data.attempt) || !Number.isInteger(data.puzzle))) {

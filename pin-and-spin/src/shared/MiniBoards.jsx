@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { EMPTY_GUESS } from '../game/constants.js';
 import { Feedback } from '../components/Feedback.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
-import { guessLimit, inTurnOrder, playerProgress, winLeaders } from '../game/selectors.js';
+import { guessLimit, inTurnOrder, playerProgress, winLeaders, codeSlots } from '../game/selectors.js';
 import { WinsBadge } from '../components/WinsBadge.jsx';
 
 // A mini view of everyone's guesses: one small card per player with their public
@@ -13,6 +12,7 @@ export function MiniBoards({ game, onOpen }) {
   const limit = guessLimit(game.mode);
   const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => !lane.left || lane.guesses.length);
   const leaders = winLeaders(game.players);
+  const empty = Array.from({ length: codeSlots(game) }, () => null);
   // On a phone the boards slide sideways: fade the edge that has more players, and slide to
   // whoever's turn it is. (On wide screens they wrap into rows and nothing is hidden.)
   const boxRef = useRef(null);
@@ -42,7 +42,7 @@ export function MiniBoards({ game, onOpen }) {
   const hidden = edges.left || edges.right;
   return <>
   <div ref={boxRef} onScroll={measure} aria-label="Everyone's guesses, mini view"
-    className={'mini-boards' + (edges.left ? ' more-left' : '') + (edges.right ? ' more-right' : '')}>
+    className={'mini-boards' + (empty.length > 4 ? ` slots-${empty.length}` : '') + (edges.left ? ' more-left' : '') + (edges.right ? ' more-right' : '')}>
     {lanes.map((lane) => {
       const state = lane.won ? 'won' : lane.left ? 'left' : lane.away ? 'away' : lane.isTurn ? 'turn' : lane.sealed ? 'in' : lane.thinking ? 'thinking' : '';
       const label = { won: '🏆', left: 'LEFT', away: 'AWAY', turn: 'TURN', in: '✓', thinking: '…' }[state] || '';
@@ -66,9 +66,9 @@ export function MiniBoards({ game, onOpen }) {
               {guess.colors ? <Feedback guess={guess} /> : <span className="mini-gap" />}
             </span>;
             if (i === rows.length && lane.sealed) return <span className="mini-row sealed" key={i}>
-              <span className="sealed-balls">{[0, 1, 2, 3].map((n) => <i key={n} />)}</span><span className="mini-gap" />
+              <span className="sealed-balls">{empty.map((_, n) => <i key={n} />)}</span><span className="mini-gap" />
             </span>;
-            return <span className="mini-row empty" key={i}><PegRow colors={EMPTY_GUESS} tiny /><span className="mini-gap" /></span>;
+            return <span className="mini-row empty" key={i}><PegRow colors={empty} tiny /><span className="mini-gap" /></span>;
           })}
         </span>
       </button>;
