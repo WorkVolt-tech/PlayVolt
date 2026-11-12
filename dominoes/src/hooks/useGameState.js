@@ -6,6 +6,7 @@ import { tableCountsForLeaderboard } from '../lib/trophies'
 import { chooseTile, getPersonality, isExpertBot, pickOpener } from '../lib/botAI'
 import { recordShapeWin } from '../lib/shapeUnlocks'
 import { forgetSeat } from '../lib/activeGame'
+import { nextTurnSerial } from '../lib/turnSerial'
 
 // Turn timing. Off by default; switch it on from the console with
 //   localStorage.setItem('domino_timing','1')   (then reload)
@@ -126,6 +127,10 @@ export function useGameState(myInfo, navigate) {
   // It's never a takeover.
   const TURN_LIMIT_MS = 120000
   const [turnStart, setTurnStart] = useState(() => Date.now())
+  // Each turn change the table receives, counted (src/lib/turnSerial.js), so a turn that
+  // comes straight back to the same seat still counts as a new turn.
+  const [turnSerial, setTurnSerial] = useState(0)
+  const turnSeen = useRef({ last: null, serial: 0 })
   const [timedOutSeat, setTimedOutSeat] = useState(null)
   const timedOutRef = useRef(null)
 
@@ -309,7 +314,7 @@ export function useGameState(myInfo, navigate) {
   const seatAtTurnNow = players.find(p => p.seat === roomData?.current_turn)
   const iActNow = !!roomData && roomData.status === 'playing' && !!myInfo && !roomData.opener_pending
     && (roomData.current_turn === myInfo.seat || (amRunner && !!seatAtTurnNow?.is_ai))
-  const turnKey = `${roomData?.round}:${roomData?.current_turn}:${roomData?.status}`
+  const turnKey = `${roomData?.round}:${roomData?.current_turn}:${roomData?.status}:${turnSerial}`
   const syncKey = `${turnKey}:${resumeTick}`
   const clockSetFor = useRef(null)      // the turn whose clock was last started here
   useEffect(() => {
@@ -382,6 +387,9 @@ export function useGameState(myInfo, navigate) {
         const row = payload.new
         if (!row?.id || row.current_turn === undefined || !row.status) { scheduleReload(); return }
         setRoomData(prev => ({ ...(prev || {}), ...row }))
+        const seen = nextTurnSerial(turnSeen.current, row.current_turn)
+        if (seen.serial !== turnSeen.current.serial) setTurnSerial(seen.serial)
+        turnSeen.current = seen
         tlog(`applied room change (turn ${row.current_turn}, ${row.status})`)
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'board', filter: `room_id=eq.${myInfo.roomId}` }, (payload) => {
@@ -1150,7 +1158,7 @@ export function useGameState(myInfo, navigate) {
     setTurnStart(Date.now())
     setTimedOutSeat(null)
     timedOutRef.current = null
-  }, [roomData?.current_turn, roomData?.round, roomData?.status, roomData?.opener_pending])
+  }, [roomData?.current_turn, roomData?.round, roomData?.status, roomData?.opener_pending, turnSerial])
 
   // Only the table's runner enforces the clock, so a timeout fires once. If
   // two devices ever disagree for a moment, the server's turn guard rejects
@@ -1169,7 +1177,7 @@ export function useGameState(myInfo, navigate) {
       setTimedOutSeat(seat)
     }, wait)
     return () => clearTimeout(t)
-  }, [roomData?.current_turn, roomData?.round, roomData?.status, amRunner, turnStart])
+  }, [roomData?.current_turn, roomData?.round, roomData?.status, amRunner, turnStart, turnSerial])
 
   const standIn = useCallback(async (seat, { auto = false } = {}) => {
     if (!myInfo || stakeRef.current) return      // no bots at a stake table: the server moves for a player out of time

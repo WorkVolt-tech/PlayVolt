@@ -460,11 +460,26 @@ export default function Game() {
           .map(seat => players.find(pl => pl.seat === seat))
           .filter(p => p && !p.stand_in)
         const left = players.filter(p => p.stand_in && p.left_at)
-        if (!dropped.length && !left.length) return null
+        // Players who dropped out and already have a bot playing for them (their name
+        // kept): they can still be replaced for good, like someone who tapped Leave.
+        const covered = players.filter(p => p.stand_in && !p.left_at)
+        if (!dropped.length && !left.length && !covered.length) return null
         const inUse = players.map(p => p.nickname)
         const choices = [...NORMAL_CIRCUIT, ...myExperts].filter(b => !inUse.includes(b))
         const nameOf = seat => players.find(pl => pl.seat === seat)?.nickname || 'someone'
         const isTeam = roomData.game_mode === 'asosye'
+        // Choose a bot to take the seat for good.
+        const replacePicker = p => {
+          const chosen = pick[p.seat] || choices[0] || 'Ti-Djo'
+          return (
+            <span className="away-replace">
+              <select value={chosen} onChange={e => setPick(prev => ({ ...prev, [p.seat]: e.target.value }))}>
+                {choices.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              <button className="btn btn-primary" onClick={() => replaceWithBot(p.seat, chosen)}>Replace</button>
+            </span>
+          )
+        }
         return (
           <div className="away-notice">
             {dropped.map(p => {
@@ -473,8 +488,22 @@ export default function Game() {
                 <div key={'d' + p.seat} className="away-row">
                   <span><strong>{p.nickname}</strong> has dropped out.</span>
                   {d === myInfo.seat
-                    ? <button className="btn btn-primary" onClick={() => standIn(p.seat)}>Let a bot play for them</button>
+                    ? <span className="away-replace">
+                        <button className="btn btn-primary" onClick={() => standIn(p.seat)}>Let a bot play for them</button>
+                        {replacePicker(p)}
+                      </span>
                     : <em className="away-wait">{isTeam ? 'their partner' : 'the host'} ({nameOf(d)}) decides</em>}
+                </div>
+              )
+            })}
+            {covered.map(p => {
+              const d = deciderSeat(p.seat)
+              return (
+                <div key={'c' + p.seat} className="away-row">
+                  <span>A bot is playing for <strong>{p.nickname}</strong>.</span>
+                  {d === myInfo.seat
+                    ? replacePicker(p)
+                    : <em className="away-wait">{isTeam ? 'their partner' : 'the host'} ({nameOf(d)}) can replace them</em>}
                 </div>
               )
             })}
