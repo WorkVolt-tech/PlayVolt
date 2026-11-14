@@ -55,7 +55,7 @@ export default function Auth() {
 
   async function saveNewPassword() {
     setError(''); setLoading(true)
-    const r = await setNewPassword(password, password2)
+    const r = await setNewPassword(password, password2, params.get('token_hash') || '')
     setLoading(false)
     if (!r.ok) { setError(r.message); setExpired(!!r.expired); return }
     setNotice(r.message)

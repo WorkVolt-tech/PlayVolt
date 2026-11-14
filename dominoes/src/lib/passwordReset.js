@@ -25,9 +25,16 @@ export async function requestReset(email) {
   return { ok: true, message: RESET_SENT }
 }
 
-export async function setNewPassword(password, again) {
+// tokenHash: from the reset email's link (…/auth?reset=1&token_hash=…). The link only
+// opens this page; the one-time token is used here, when the player saves, so opening the
+// email twice (or an email app checking the link first) can't use it up.
+export async function setNewPassword(password, again, tokenHash = '') {
   const problem = checkNewPassword(password, again)
   if (problem) return { ok: false, message: problem }
+  if (tokenHash) {
+    const { error } = await db.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+    if (error) return { ok: false, expired: true, message: 'This reset link has expired or was already used. Ask for a new one.' }
+  }
   const { data } = await db.auth.getSession()
   if (!data?.session) return { ok: false, expired: true, message: 'This reset link has expired or was already used. Ask for a new one.' }
   const { error } = await db.auth.updateUser({ password })
