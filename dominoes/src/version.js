@@ -1,4 +1,4 @@
 // The version shown at the bottom of the lobby. Bumped with every delivery,
 // so a glance at the lobby tells you whether the newest code is live.
-export const VERSION = 'v1.64'
-export const VERSION_NOTE = 'Replace a dropped player; no early auto-play'
+export const VERSION = 'v1.65'
+export const VERSION_NOTE = 'Forgot password; replace a dropped player'

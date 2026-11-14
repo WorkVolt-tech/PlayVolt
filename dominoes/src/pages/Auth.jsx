@@ -1,11 +1,17 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { db } from '../lib/supabase'
+import { requestReset, setNewPassword } from '../lib/passwordReset'
 import './Auth.css'
 
 export default function Auth() {
   const navigate = useNavigate()
-  const [mode, setMode] = useState('login') // login | signup
+  const [params] = useSearchParams()
+  // login | signup | forgot (ask for a reset link) | reset (choose a new password, from the emailed link)
+  const [mode, setMode] = useState(params.get('reset') ? 'reset' : params.get('forgot') ? 'forgot' : 'login')
+  const [password2, setPassword2] = useState('')
+  const [notice, setNotice] = useState('')
+  const [expired, setExpired] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [nickname, setNickname] = useState('')
@@ -39,6 +45,66 @@ export default function Auth() {
     }
     setLoading(false)
   }
+
+  async function sendReset() {
+    setError(''); setNotice(''); setLoading(true)
+    const r = await requestReset(email)
+    setLoading(false)
+    if (r.ok) setNotice(r.message); else setError(r.message)
+  }
+
+  async function saveNewPassword() {
+    setError(''); setLoading(true)
+    const r = await setNewPassword(password, password2)
+    setLoading(false)
+    if (!r.ok) { setError(r.message); setExpired(!!r.expired); return }
+    setNotice(r.message)
+    setTimeout(() => navigate('/'), 1500)
+  }
+
+  if (mode === 'forgot') return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-icon">🔑</div>
+        <h2 className="auth-title">Forgot your password?</h2>
+        <p className="auth-sub">Enter the email you signed up with. We’ll send you a link to choose a new password.</p>
+        <div className="auth-field">
+          <label className="auth-label">Email</label>
+          <input className="auth-input" type="email" placeholder="your@email.com" value={email} autoComplete="email"
+            onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendReset()} />
+        </div>
+        {error && <div className="auth-error">{error}</div>}
+        {notice && <div className="auth-notice">{notice}</div>}
+        <button className="auth-btn-primary" onClick={sendReset} disabled={loading}>{loading ? 'Sending…' : 'Send reset link'}</button>
+        <button className="auth-btn-ghost" onClick={() => { setMode('login'); setError(''); setNotice('') }}>← Back to sign in</button>
+      </div>
+    </div>
+  )
+
+  if (mode === 'reset') return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-icon">🔒</div>
+        <h2 className="auth-title">Choose a new password</h2>
+        <p className="auth-sub">At least 6 characters. You’ll use it to sign in to every PlayVolt game.</p>
+        <div className="auth-field">
+          <label className="auth-label">New password</label>
+          <input className="auth-input" type="password" autoComplete="new-password" value={password}
+            onChange={e => setPassword(e.target.value)} />
+        </div>
+        <div className="auth-field">
+          <label className="auth-label">Type it again</label>
+          <input className="auth-input" type="password" autoComplete="new-password" value={password2}
+            onChange={e => setPassword2(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveNewPassword()} />
+        </div>
+        {error && <div className="auth-error">{error}</div>}
+        {notice && <div className="auth-notice">{notice}</div>}
+        {expired
+          ? <button className="auth-btn-primary" onClick={() => { setMode('forgot'); setError(''); setExpired(false) }}>Send me a new link</button>
+          : <button className="auth-btn-primary" onClick={saveNewPassword} disabled={loading || !!notice}>{loading ? 'Saving…' : 'Save new password'}</button>}
+      </div>
+    </div>
+  )
 
   if (done) return (
     <div className="auth-page">
@@ -98,6 +164,10 @@ export default function Auth() {
             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
           />
         </div>
+
+        {mode === 'login' && (
+          <button className="auth-forgot" onClick={() => { setMode('forgot'); setError('') }}>Forgot password?</button>
+        )}
 
         {error && <div className="auth-error">{error}</div>}
 

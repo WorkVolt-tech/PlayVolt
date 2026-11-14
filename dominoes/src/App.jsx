@@ -19,6 +19,7 @@ import Friends from './pages/Friends'
 import Challenge from './pages/Challenge'
 import Stakes from './pages/Stakes'
 import Heartbeat from './components/Heartbeat'
+import ResetWatcher from './components/ResetWatcher'
 import ChallengeBanner from './components/ChallengeBanner'
 import VersionAlert from './components/VersionAlert'
 import './styles/global.css'
@@ -28,6 +29,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Heartbeat />
+      <ResetWatcher />
       <ChallengeBanner />
       <VersionAlert />
       <ShapeDefs />
