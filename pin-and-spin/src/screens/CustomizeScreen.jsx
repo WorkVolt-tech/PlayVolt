@@ -14,6 +14,17 @@ const categories = [
   ['pin', 'Result pin shape', RESULT_PINS],
 ];
 
+function BoardSample({ board, accent, piece, seat }) {
+  return <span className={`customize-board-sample board-theme-${board}`}
+    style={cosmeticStyle({ board, accent }, seat)} aria-hidden="true">
+    <span className="sample-title"><i /> YOUR BOARD</span>
+    <span className="sample-guess">
+      <PegRow colors={[0, 1, 2, 3]} tiny shape={piece} />
+      <span className="sample-result"><i className="pin-dot" /><i className="pin-dot" /><i className="spin-dot" /></span>
+    </span>
+  </span>;
+}
+
 export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, usedAccents = [], inRoom = false, onSave, onBack, busy }) {
   const [choice, setChoice] = useState(() => ({ ...unlockedCosmetics(value, earned),
     accent: inRoom ? normalizeCosmetics(value, seat).accent : unlockedCosmetics(value, earned).accent }));
@@ -45,14 +56,17 @@ export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, us
       <legend>{title}</legend>
       <div className="customize-options">
         {options.map((option) => <button key={option.id} type="button" disabled={!!locked(key, option) || (key === 'accent' && usedAccents.includes(option.id))}
-          className={'customize-option' + (choice[key] === option.id ? ' selected' : '')}
+          className={'customize-option' + (key === 'board' || key === 'accent' ? ' customize-board-option' : '') + (choice[key] === option.id ? ' selected' : '')}
           aria-pressed={choice[key] === option.id}
           onClick={() => setChoice({ ...choice, [key]: option.id })}>
-          <span className="customize-swatch" style={key === 'accent' ? { background: option.hex } : undefined}>
-            {key === 'avatar' ? option.id === 'initial' ? name[0]?.toUpperCase()
-              : ['bunny', 'bear', 'fox', 'wolf', 'cat', 'robot', 'champion', 'royal', 'carrot', 'crystal', 'dragon'].includes(option.id) ? <AvatarArt variant={option.id} /> : option.icon
-              : key === 'board' ? '✦' : key === 'accent' ? '' : option.icon}
-          </span>
+          {key === 'board' || key === 'accent'
+            ? <BoardSample board={key === 'board' ? option.id : choice.board}
+              accent={key === 'accent' ? option.id : choice.accent} piece={choice.piece} seat={seat} />
+            : <span className="customize-swatch">
+              {key === 'avatar' ? option.id === 'initial' ? name[0]?.toUpperCase()
+                : ['bunny', 'bear', 'fox', 'wolf', 'cat', 'robot', 'champion', 'royal', 'carrot', 'crystal', 'dragon'].includes(option.id) ? <AvatarArt variant={option.id} /> : option.icon
+                : option.icon}
+            </span>}
           <span>{option.name}</span>
           {locked(key, option) && <small>🔒 {byCode[option.trophy]?.title || option.trophy}</small>}
           {key === 'accent' && inRoom && option.id === value?.accent && option.trophy && !earned[option.trophy]
