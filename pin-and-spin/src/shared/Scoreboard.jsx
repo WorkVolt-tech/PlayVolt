@@ -7,6 +7,7 @@ import { Empty } from '../components/Empty.jsx';
 import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders, codeSlots } from '../game/selectors.js';
 import { WinnerBanner } from './WinnerBanner.jsx';
 import { WinsBadge } from '../components/WinsBadge.jsx';
+import { cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
 
 // "Everyone's Guesses": the full-screen shared results board.
 // Built for a phone today and a TV later. It renders ONLY public data from the server
@@ -58,7 +59,8 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
 
     <div className="lanes">
       {shown.map((lane) => <section key={lane.player.id}
-        className={'lane' + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
+        style={cosmeticStyle(lane.player.appearance, lane.player.seat)}
+        className={'lane board-theme-' + normalizeCosmetics(lane.player.appearance, lane.player.seat).board + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
         <header className="lane-head">
           {lane.order && <span className="turn-no" title={`Plays ${ordinal(lane.order)}`}>{lane.order}</span>}
           <PlayerAvatar player={lane.player} />
@@ -71,8 +73,8 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
         <ol className="lane-rows">
           {lane.guesses.map((guess, i) => <li className="lane-row" key={guess.attempt} style={{ '--i': i }}>
             <span className="lane-try">{simultaneous ? 'R' : '#'}{guess.attempt}</span>
-            {guess.colors ? <PegRow colors={guess.colors} tiny /> : <span className="missed-row">No guess in time</span>}
-            {guess.colors ? <Feedback guess={guess} /> : <span className="count-missed">MISSED</span>}
+            {guess.colors ? <PegRow colors={guess.colors} tiny shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).piece} /> : <span className="missed-row">No guess in time</span>}
+            {guess.colors ? <Feedback guess={guess} shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).pin} /> : <span className="count-missed">MISSED</span>}
           </li>)}
           {lane.sealed && <li className="lane-row sealed-row">
             <span className="lane-try">R{game.round}</span>

@@ -9,7 +9,7 @@ import { WinsBadge, LeaderLine } from '../components/WinsBadge.jsx';
 import { winLeaders } from '../game/selectors.js';
 
 // Waiting room: code/invite, chosen mode, players and ready/start controls.
-export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRemove }) {
+export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRemove, onCustomize }) {
   const activePlayers = (game.players || []).filter((player) => player.active);
   const me = activePlayers.find((player) => player.id === game.me);
   const leaders = winLeaders(game.players);
@@ -24,6 +24,7 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
       <button className="outline-btn" onClick={() => { play('select-item'); onCopy(game.code, 'Room code copied!'); }}>▣ Copy Code</button>
       <button className="outline-btn" onClick={() => { play('select-item'); onShare(); }}>↗ Share link</button>
     </div>
+    <button className="style-room-button" type="button" onClick={onCustomize}>✦ Customize my board &amp; avatar</button>
       {<button type="button" className="primary-btn full invite-friends-btn" onClick={() => { play('drawer-open'); setInviting(true); }}>
         👥 Invite friends <span>→</span></button>}
       {game.displayToken && <button type="button" className="outline-btn full tv-button" onClick={() => { play('drawer-open'); setTvOpen(true); }}>

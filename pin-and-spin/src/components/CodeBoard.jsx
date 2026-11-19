@@ -5,7 +5,7 @@ import { Feedback } from './Feedback.jsx';
 
 // The player's own stacked guess rows; the current row's slots are tappable.
 // peek (admins only): the secret, shown faintly in the empty slots.
-export function CodeBoard({ mine, limit, attempt, canSubmit, draft, selected, onSelect, peek }) {
+export function CodeBoard({ mine, limit, attempt, canSubmit, draft, selected, onSelect, peek, shape = 'round', pinShape = 'round' }) {
   const empty = draft?.length > 4 ? draft.map(() => null) : EMPTY_GUESS; // 4, 5 or 6 balls
   return <div className={'code-board' + (empty.length > 4 ? ` slots-${empty.length}` : '')} aria-label="Your guess board">
     {Array.from({ length: limit }, (_, i) => {
@@ -20,12 +20,12 @@ export function CodeBoard({ mine, limit, attempt, canSubmit, draft, selected, on
             ? <button type="button" key={index} className={'code-slot' + (selected === index ? ' selected' : '')}
                 aria-label={`Slot ${index + 1}: ${value === null ? 'empty' : COLORS[value].name}`}
                 aria-pressed={selected === index} onClick={() => onSelect(index)}>
-                {value === null && ghost ? <span className="peek-ghost"><Peg value={peek[index]} tiny /></span> : <Peg key={value ?? 'empty'} value={value} tiny />}
+                {value === null && ghost ? <span className="peek-ghost"><Peg value={peek[index]} tiny shape={shape} /></span> : <Peg key={value ?? 'empty'} value={value} tiny shape={shape} />}
               </button>
-            : value === null && ghost ? <span className="peek-ghost" key={index}><Peg value={peek[index]} tiny /></span>
-            : <Peg key={index} value={value} tiny />)}
+            : value === null && ghost ? <span className="peek-ghost" key={index}><Peg value={peek[index]} tiny shape={shape} /></span>
+            : <Peg key={index} value={value} tiny shape={shape} />)}
         </div>
-        <Feedback guess={guess} slots={empty.length} />
+        <Feedback guess={guess} slots={empty.length} shape={pinShape} />
       </div>;
     })}
   </div>;

@@ -19,6 +19,10 @@ import { useGameSounds } from './sound/useGameSounds.js';
 import { EntryScreen } from './screens/EntryScreen.jsx';
 import { Lobby } from './screens/Lobby.jsx';
 import { Match } from './screens/Match.jsx';
+import { CustomizeScreen } from './screens/CustomizeScreen.jsx';
+import { readSavedAppearance, saveAppearance } from './game/appearance.js';
+import { callGame } from './game/api.js';
+import { normalizeCosmetics, unlockedCosmetics } from './cosmetics.js';
 
 export default function App() {
   const state = usePinAndSpin();
@@ -27,6 +31,9 @@ export default function App() {
   useGameSounds(state.game);
   const { session, game, busy, toast, notify, form, act, forget } = state;
   const [dialog, setDialog] = useState(null);
+  const [customizing, setCustomizing] = useState(false);
+  const [appearance, setAppearance] = useState(readSavedAppearance);
+  const [earnedStyles, setEarnedStyles] = useState({});
   // When a match with friends ends, announce any badge it earned (signed-in players).
   const finished = game?.status === 'finished' ? `${game.code}:${game.puzzle}` : null;
   const userId = account.user?.id;
@@ -47,6 +54,32 @@ export default function App() {
     history.replaceState(null, '', location.pathname);
   }, [friendCode, setFormTab]);
   const accountName = account.signedIn ? account.profile?.nickname || '' : '';
+  useEffect(() => {
+    if (!userId) { setEarnedStyles({}); setAppearance(unlockedCosmetics(readSavedAppearance())); return; }
+    let active = true;
+    Promise.all([callGame('cosmetics', {}, { operation: 'get' }), callGame('achievements', {}, {})])
+      .then(([cosmetics, badges]) => { if (active) { setAppearance(unlockedCosmetics(cosmetics.appearance, badges.earned || {})); setEarnedStyles(badges.earned || {}); } })
+      .catch(() => { /* Local preferences still work if the account service is unavailable. */ });
+    return () => { active = false; };
+  }, [userId]);
+  useEffect(() => {
+    if (!customizing || !userId) return;
+    let active = true;
+    callGame('achievements', {}, {}).then(({ earned }) => { if (active) setEarnedStyles(earned || {}); }).catch(() => {});
+    return () => { active = false; };
+  }, [customizing, userId]);
+
+  async function updateAppearance(next) {
+    if (session) {
+      const ok = await act('appearance', { appearance: next });
+      if (!ok) throw new Error('Could not save your style in this room. Try again.');
+    } else if (account.signedIn) {
+      const result = await callGame('cosmetics', {}, { operation: 'save', appearance: next });
+      if (!result.appearance) throw new Error('Could not save your style.');
+    }
+    setAppearance(next);
+    saveAppearance(next);
+  }
 
   function removePlayer(player) {
     setDialog({ title: `Remove ${player.name}?`, message: 'They won’t be able to rejoin this room.',
@@ -96,8 +129,17 @@ export default function App() {
       </header>
 
       <main>
-        <InviteBanner userId={account.signedIn ? userId : null} active={!session} notify={notify}
-          onJoin={(code) => void form.enter('join', accountName, code)} />
+        {!customizing && <InviteBanner userId={account.signedIn ? userId : null} active={!session} notify={notify}
+          onJoin={(code) => void form.enter('join', accountName, code)} />}
+        {customizing && <CustomizeScreen key={game?.me || userId || 'guest'}
+          value={game?.players?.find((p) => p.id === game.me)?.appearance || appearance}
+          earned={earnedStyles} name={game?.players?.find((p) => p.id === game.me)?.name || accountName || form.nickname || 'You'}
+          seat={game?.players?.find((p) => p.id === game.me)?.seat || 1}
+          inRoom={!!game}
+          usedAccents={game?.players?.filter((p) => p.active && p.id !== game.me)
+            .map((p) => normalizeCosmetics(p.appearance, p.seat).accent) || []}
+          busy={busy} onSave={updateAppearance} onBack={() => setCustomizing(false)} />}
+        {!customizing && <>
         {!session && form.formTab === 'account' && <AccountScreen account={account}
           onBack={() => form.setFormTab('home')} onDone={(message) => { notify(message); form.setFormTab(friendCode ? 'friends' : 'home'); }} />}
         {!session && form.formTab === 'leaderboard' && <LeaderboardScreen account={account}
@@ -111,20 +153,21 @@ export default function App() {
         {!session && form.formTab === 'friends' && <FriendsScreen account={account} notify={notify} startCode={friendCode}
           onChallenge={(friend, mode) => void challenge(friend, mode)}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
-        {!session && !['account', 'leaderboard', 'solo', 'story', 'achievements', 'friends'].includes(form.formTab) && <EntryScreen form={form} busy={busy || account.loading} account={account} />}
+        {!session && !['account', 'leaderboard', 'solo', 'story', 'achievements', 'friends'].includes(form.formTab) && <EntryScreen form={form} busy={busy || account.loading} account={account} onCustomize={() => setCustomizing(true)} />}
 
         {session && !game && <div className="surface"><p>Reconnecting to your room…</p>
           <button className="outline-btn full" onClick={forget}>BACK TO HOME</button></div>}
 
         {session && game && <section className="screen">
           {game.status === 'lobby'
-            ? <Lobby game={game} busy={busy} act={act} pairTv={state.pairTv} signedIn={account.signedIn} onCopy={copyText} onShare={share} onRemove={removePlayer} />
-            : <Match state={state} onShare={share} onRemove={removePlayer} onLeave={leaveRoom} />}
+            ? <Lobby game={game} busy={busy} act={act} pairTv={state.pairTv} signedIn={account.signedIn} onCopy={copyText} onShare={share} onRemove={removePlayer} onCustomize={() => setCustomizing(true)} />
+            : <Match state={state} onShare={share} onRemove={removePlayer} onLeave={leaveRoom} onCustomize={() => setCustomizing(true)} />}
           <button className="leave-link" type="button" disabled={busy}
             onClick={leaveRoom}>
             🚪 Leave room
           </button>
         </section>}
+        </>}
       </main>
       <footer className="footer">PIN &amp; SPIN <span>·</span> A PLAYVOLT GAME</footer>
     </div>
