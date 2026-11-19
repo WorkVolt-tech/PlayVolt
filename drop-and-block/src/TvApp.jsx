@@ -3,6 +3,7 @@ import { db } from './supabase.js';
 import { GameArea } from './App.jsx';
 import { VersionAlert } from './VersionAlert.jsx';
 import { readTvLink, buildJoinUrl } from './tvLink.js';
+import {AvatarBadge,ChipDisc} from './looks.jsx';
 
 const modeNames = { classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP', chaos: 'CHAOS', team: 'TEAM BATTLE' };
 const icons = ['', '◆', '●', '▲', '■', '★', '⬡', '✦', '✳', '⬢'];
@@ -57,7 +58,7 @@ export function TvApp() {
       <section className="tv-stage">
         <div className="tv-mode-label">{game ? (modeNames[game.mode] || 'MULTIPLAYER') + ' · MATCH ' + (game.matchNumber || 1) : 'CONNECTING TO YOUR GAME'}</div>
         {game ? <>
-          <GameArea game={game} readOnly onDrop={() => {}} busy />
+          <GameArea game={game} readOnly onDrop={() => {}} busy boardTheme={game.hostBoardTheme}/>
           {game.status === 'lobby' && <div className="tv-waiting">{game.matchNumber > 1 ? 'Rematch lobby · Players getting ready' : 'Waiting for the host to start'} · {game.players.length}/{game.maxPlayers} players</div>}
         </> : <div className="tv-waiting">Waiting for your room's board…</div>}
         {error && <p className="tv-error" role="status">{error}</p>}
@@ -71,7 +72,7 @@ export function TvApp() {
         <h2>PLAYERS</h2>
         {game?.players?.length ? <div className="tv-player-list">{game.players.map(p =>
           <div key={p.seat} className={'tv-player tv-seat-' + p.seat + (p.eliminated?' tv-eliminated':'') + (p.seat === game.turnSeat?' tv-current':'')}>
-            <span className={'tv-marker seat-'+p.seat}>{icons[p.seat]}</span>
+            <AvatarBadge id={p.avatarStyle||'sentinel'} small/><ChipDisc seat={p.seat} style={p.chipStyle||'round'} compact/>
             <span className="tv-player-name">{p.name}</span>
             <strong>{p.eliminated?'OUT':game.mode==='team'?(p.seat%2===1?'GOLD':'BLUE'):game.mode==='territory'?p.score+' pts':game.mode==='chaos'?'⬢'+(p.chaosBlockUsed?'0':'1')+' ✹'+(p.chaosBlastUsed?'0':'1'):p.seat===game.turnSeat?'PLAYING':''}</strong>
           </div>

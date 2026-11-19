@@ -4,12 +4,14 @@ import { emptyBoard, dimensions, playLocalTurn, playChaosTurn, playTeamTurn, tea
 import { VersionAlert } from './VersionAlert.jsx';
 import { ProgressHub, TrophyUnlockNotice } from './ProgressHub.jsx';
 import { buildTvDisplayUrl } from './tvLink.js';
+import {AvatarBadge,ChipDisc,safeBoard} from './looks.jsx';
+import {CustomizeHub} from './CustomizeHub.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
 const hub = 'https://playvolt-hub.pages.dev/';
 
-function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false }) {
+function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy' }) {
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
@@ -19,29 +21,28 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
         disabled={disabled || turn !== me || (moveKind==='blast' ? board[(height-1)*width+col]===0 : board[col] !== 0)}
         onClick={() => onDrop(col)}>{moveKind==='blast'?'✹':moveKind==='block'?'⬢':'▼'}</button>)}
     </div>}
-    <div className="board" style={grid} role="grid" aria-label="Drop & Block game board">
+    <div className={'board board-theme-'+safeBoard(boardTheme)} style={grid} role="grid" aria-label="Drop & Block game board">
       {rows.flatMap(row => columns.map(col => {
         const seat = board[row * width + col] || 0;
         return <div className="board-cell" role="gridcell" key={row + '-' + col}>
-          <div className={'disc ' + (seat ? 'seat-' + seat : 'empty') + (teamMode&&seat>0&&seat<=8?' team-ring-'+teamOfSeat(seat):'')}
-               aria-label={seat ? (teamMode?'Team '+teamOfSeat(seat)+', player ':'Player ') + seat : 'Empty'}>{seat ? icons[seat] : ''}</div>
+          <ChipDisc seat={seat} style={players.find(p=>p.seat===seat)?.chipStyle||'round'} teamMode={teamMode}/>
         </div>;
       }))}
     </div>
   </div>;
 }
 
-function LocalDemo({ onBack, count, mode }) {
+function LocalDemo({ onBack, count, mode, loadout }) {
   const [width, height] = dimensions(count);
   const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false) });
   const [state, setState] = useState(reset);
-  const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i],chaosBlockUsed:state.chaosBlockUsed[i],chaosBlastUsed:state.chaosBlastUsed[i]}));
+  const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i],chaosBlockUsed:state.chaosBlockUsed[i],chaosBlastUsed:state.chaosBlastUsed[i],avatarStyle:i===0?loadout?.avatar:'sentinel',chipStyle:i===0?loadout?.chip:'round'}));
   function play(col,kind='drop') { setState(old => mode==='team'?playTeamTurn(old,col,count,width,height):mode==='chaos'?playChaosTurn(old,col,count,width,height,kind):playLocalTurn(old,col,count,mode,width,height)); return true; }
   return <div className="panel panel-wide">
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
     <h2>{modeName(mode)} · {count} Players</h2>
     <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
-    <GameArea game={{...state,width,height,mode,players,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner}}
+    <GameArea game={{...state,width,height,mode,players,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner}} boardTheme={loadout?.board}
       onDrop={play} busy={false}/>
     <div className="actions"><button className="btn ghost" onClick={onBack}>← Back</button>
       <button className="btn primary" onClick={()=>setState(reset)}>Restart</button></div>
@@ -50,7 +51,7 @@ function LocalDemo({ onBack, count, mode }) {
 
 const modeName = mode => ({ classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop', chaos: 'Chaos', team: 'Team Battle' })[mode] || 'Classic';
 
-export function GameArea({game, onDrop, busy, readOnly = false}) {
+export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
   const [moveKind,setMoveKind]=useState('drop');
   const current=game.players.find(p=>p.seat===game.meSeat);
   const selectColumn=async col=>{
@@ -63,7 +64,7 @@ export function GameArea({game, onDrop, busy, readOnly = false}) {
   const myTurn = !readOnly && game.status==='playing' && game.turnSeat===game.meSeat;
   return <>
     <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'') + (p.eliminated?' eliminated':'')+(game.mode==='team'?' team-roster-'+teamOfSeat(p.seat):'')}>
-      <span className={'tiny-disc seat-' + p.seat}>{icons[p.seat]}</span>
+      <AvatarBadge id={p.avatarStyle||'sentinel'} small/><span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
       <span className="player-label">{p.name}{p.eliminated?' · OUT':game.mode==='team'?' · '+(teamOfSeat(p.seat)===1?'Gold':'Blue'):game.mode==='territory'?' · '+p.score+' pts':''}</span>
     </div>)}</div>
     {game.mode==='team' && <div className="team-scoreline">
@@ -87,7 +88,7 @@ export function GameArea({game, onDrop, busy, readOnly = false}) {
     {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects four to win. Choosing a power uses your turn.'}</p>}
     <Board board={game.board} width={game.width} height={game.height}
       turn={game.turnSeat} me={game.meSeat} onDrop={selectColumn}
-      disabled={busy || game.status!=='playing'} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'}/>
+      disabled={busy || game.status!=='playing'} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}/>
     <div className="board-foot">{game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT 4 TO WIN':game.mode==='team'?'CONNECT FOUR TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
@@ -107,6 +108,8 @@ export default function App() {
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
   const [showProgress,setShowProgress] = useState(false);
+  const [showCustomize,setShowCustomize] = useState(false);
+  const [myLoadout,setMyLoadout] = useState(null);
   const [freshTrophies,setFreshTrophies] = useState([]);
   const [progressRefresh,setProgressRefresh] = useState(0);
 
@@ -125,6 +128,14 @@ export default function App() {
     db.from('profiles').select('nickname').eq('id',user.id).maybeSingle()
       .then(({data})=>{if(active)setProfile(data);}).catch(()=>{if(active)setProfile(null);});
     return ()=>{active=false;};
+  },[user?.id]);
+  useEffect(()=>{
+    if(!user?.id){setMyLoadout(null);return;}
+    let alive=true;
+    db.rpc('drop_block_customization',{p_action:'get',p_category:'',p_item:''})
+     .then(({data,error})=>{if(alive&&!error)setMyLoadout(data.equipped);})
+     .catch(()=>{});
+    return ()=>{alive=false;};
   },[user?.id]);
   // A refresh or new deployment restores online rooms from the URL without starting a new game.
   useEffect(() => {
@@ -246,27 +257,29 @@ export default function App() {
     catch(err){if(err.name!=='AbortError')setMessage('Room code: '+room.code);}
   }
   async function signOut() {
-    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setShowProgress(false);setFreshTrophies([]);
+    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setShowProgress(false);setShowCustomize(false);setMyLoadout(null);setFreshTrophies([]);
     history.replaceState(null,'',location.pathname);
   }
   return <div className="shell">
     <header className="topbar"><a href={hub} className="back">← PLAYVOLT</a>
       <span className="mini-brand">DROP <b>&</b> BLOCK</span>
       <span className="header-right">{user && <>
-        {!demo && <button className="text-btn trophies-nav" onClick={()=>setShowProgress(s=>!s)}>{showProgress?'← Game':'🏆 Trophies & Ranks'}</button>}
+        {!demo && <button className="text-btn custom-nav" onClick={()=>{setShowCustomize(s=>!s);setShowProgress(false);}}>{showCustomize?'← Game':'🎨 Customize'}</button>}
+        {!demo && <button className="text-btn trophies-nav" onClick={()=>{setShowProgress(s=>!s);setShowCustomize(false);}}>{showProgress?'← Game':'🏆 Trophies & Ranks'}</button>}
         <button className="text-btn" onClick={signOut}>Sign out</button>
       </>}</span>
     </header>
     <main className="content">
-      {!room && !demo && !showProgress && <div className="hero">
+      {!room && !demo && !showProgress && !showCustomize && <div className="hero">
         <div className="logo-art" aria-hidden="true"><div className="dot-1">◆</div><div className="dot-2">●</div><div className="dot-3">▲</div><div className="dot-4">■</div></div>
         <div className="section-eyebrow">THE MULTIPLAYER STRATEGY SHOWDOWN</div>
         <h1>DROP <span>&</span> BLOCK</h1>
         <p>Drop smart. Block hard.</p>
       </div>}
       {message && <div className="notification" role="status">{message}</div>}
-      {showProgress ? <ProgressHub userId={user?.id} refreshSignal={progressRefresh} onBack={()=>setShowProgress(false)}/> :
-       demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode}/> :
+      {showCustomize ? <CustomizeHub userId={user?.id} onBack={()=>setShowCustomize(false)} onEquipped={setMyLoadout}/> :
+       showProgress ? <ProgressHub userId={user?.id} refreshSignal={progressRefresh} onBack={()=>setShowProgress(false)}/> :
+       demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode} loadout={myLoadout}/> :
       room ? <section className="panel panel-wide">
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
         <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p></div>
@@ -280,7 +293,7 @@ export default function App() {
         </div>
         {room.status==='lobby' ? <>
           <div className="roster">{room.players.map(p=><div key={p.seat} className={'player-chip seat-border-'+p.seat}>
-            <span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
+            <AvatarBadge id={p.avatarStyle||'sentinel'} small/><span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
             <span>{p.name} {room.mode==='team'?'· Team '+(teamOfSeat(p.seat)===1?'Gold':'Blue'):''} {p.ready?'✓ Ready':'· Not ready'}</span></div>)}</div>
           {room.mode==='team' && <div className="team-lobby-note">Players alternate into Gold and Blue teams by join order. Wait for 4, 6, or 8 players so both teams have the same size.</div>}
           <p className="sub lobby-note">{room.matchNumber > 1
@@ -291,7 +304,7 @@ export default function App() {
                 onClick={()=>perform('start')}>Start match</button>
             : <button className="btn primary full" disabled={busy} onClick={()=>perform('ready',{ready:!room.players.find(p=>p.seat===room.meSeat)?.ready})}>
                 {room.players.find(p=>p.seat===room.meSeat)?.ready?'Cancel ready':'I’m ready!'}</button>}
-        </> : <GameArea game={room} onDrop={(col,kind)=>perform('drop',{column:col,kind})} busy={busy}/>}
+        </> : <GameArea game={room} onDrop={(col,kind)=>perform('drop',{column:col,kind})} busy={busy} boardTheme={myLoadout?.board}/>}
         {room.status==='finished' && <div className="rematch-panel">
           <div className="rematch-copy"><strong>Match {room.matchNumber || 1} complete</strong>
             <span>Keep this room and all the same players. Results and match history are saved.</span></div>
@@ -302,7 +315,8 @@ export default function App() {
             : <span className="rematch-waiting">Waiting for the host to start the next match…</span>}
         </div>}
         <div className="actions">
-          <button className="btn secondary" onClick={()=>setShowProgress(true)}>🏆 Trophies & Ranks</button>
+          <button className="btn secondary" onClick={()=>{setShowCustomize(true);setShowProgress(false);}}>🎨 Customize</button>
+          <button className="btn secondary" onClick={()=>{setShowProgress(true);setShowCustomize(false);}}>🏆 Trophies & Ranks</button>
           <button className="btn ghost" onClick={exitRoom}>← Back to menu</button>
         </div>
       </section> :
@@ -324,6 +338,7 @@ export default function App() {
           </select></label>
           <button className="btn primary full" disabled={busy||!user} onClick={()=>perform('create',{mode,maxPlayers})}>Create online room</button>
           <button className="btn secondary full" onClick={()=>setDemo(true)}>Try local demo</button>
+          {user&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>}
         </section>
         <section className="panel">
           <div className="section-eyebrow">PLAY WITH FRIENDS</div>

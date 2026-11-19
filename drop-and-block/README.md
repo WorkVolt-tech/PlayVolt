@@ -140,3 +140,16 @@ browser. Database: apply `006_trophies_leaderboard.sql` after `005`.
 - Existing Classic, Territory, Elimination, Bottom Drop and Chaos rules are
   unchanged. Team-mode table values are computed from seat parity; no new
   shared-account tables or destructive changes are required.
+
+## Customization (preview; migration 008)
+Every PlayVolt account begins with only Classic Navy, Round Chip and Sentinel
+avatar unlocked. The 28 cosmetics are stored in `drop_block_cosmetic_items`;
+all other styles require trophies in `drop_block_achievements`.
+Players can preview **locked and unlocked** items in a sticky mini-board beside
+the choices; only unlocked items may be equipped.
+`drop_block_customization` checks trophies before saving selections in the
+private `drop_block_cosmetic_loadouts` table. Direct browser writes are denied.
+Chosen chips and avatars are rendered for everyone in the game and TV spectator
+screens, retaining seat colors/symbols; each player sees their chosen board
+theme locally, while the TV uses the host's board theme.
+No existing Dekabess, Pin & Spin, PlayVolt Auth, or live hub tables are changed.
