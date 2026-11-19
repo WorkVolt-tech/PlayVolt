@@ -86,6 +86,12 @@ own board and shapes. A room uses ten distinct board accents; a taken accent can
 selected, and a saved accent that is taken is replaced with an available one upon joining.
 Trophy styles are validated against `pin_and_spin_achievements` by the database. Shape
 changes never alter the colors sent for guesses, scoring, or secret reveal rules.
+Migration `019_cosmetic_unlocks.sql` makes the default board, round pieces and round
+feedback free, with the Bunny and classic initials as starter avatars. Other choices
+unlock through Pin & Spin trophies and completed story worlds. Each extra board accent
+is earned for manual selection; rooms may still assign any unused accent automatically
+so ten players always have distinct colors. Older preferences that predate these gates
+fall back to unlocked choices when loaded.
 
 ## Modes
 
