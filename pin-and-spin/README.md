@@ -92,6 +92,9 @@ unlock through Pin & Spin trophies and completed story worlds. Each extra board 
 is earned for manual selection; rooms may still assign any unused accent automatically
 so ten players always have distinct colors. Older preferences that predate these gates
 fall back to unlocked choices when loaded.
+Migration `020_avatar_variety.sql` adds a free Bear and trophy/story unlocks for Wolf,
+Gear Bot and Dragon. Champion, Royal and Crystal now have lion, owl and golem artwork;
+their saved avatar IDs and unlock conditions stay the same.
 
 ## Modes
 
