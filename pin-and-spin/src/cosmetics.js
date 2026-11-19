@@ -15,12 +15,16 @@ export const ACCENTS = [
 export const AVATARS = [
   { id: 'initial', name: 'Classic', icon: '●' },
   { id: 'bunny', name: 'Bunny', icon: '🐰' },
+  { id: 'bear', name: 'Bear', icon: '🐻' },
   { id: 'fox', name: 'Rogue Fox', icon: '🦊', trophy: 'first_win' },
+  { id: 'wolf', name: 'Silver Wolf', icon: '🐺', trophy: 'first_try' },
   { id: 'cat', name: 'Shadow Cat', icon: '🐱', trophy: 'hard_win' },
-  { id: 'champion', name: 'Champion', icon: '🏆', trophy: 'wins_10' },
-  { id: 'royal', name: 'Royal', icon: '👑', trophy: 'wins_50' },
+  { id: 'robot', name: 'Gear Bot', icon: '🤖', trophy: 'world_2' },
+  { id: 'champion', name: 'Champion Lion', icon: '🦁', trophy: 'wins_10' },
+  { id: 'royal', name: 'Royal Owl', icon: '🦉', trophy: 'wins_50' },
   { id: 'carrot', name: 'Carrot Keeper', icon: '🥕', trophy: 'world_1' },
-  { id: 'crystal', name: 'Crystal Clear', icon: '💎', trophy: 'world_4' },
+  { id: 'crystal', name: 'Crystal Golem', icon: '💎', trophy: 'world_4' },
+  { id: 'dragon', name: 'Desert Dragon', icon: '🐉', trophy: 'world_5' },
 ];
 export const BOARDS = [
   { id: 'nebula', name: 'Nebula' },
