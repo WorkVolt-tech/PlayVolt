@@ -143,3 +143,12 @@ footer span{color:#ffcb56}
 .rematch-copy span{color:#b8c8e4;font-size:12px;line-height:1.5}
 .rematch-waiting{color:#f4cd80;font-size:12px;font-weight:800}
 @media(max-width:640px){.rematch-panel{flex-direction:column;align-items:stretch}.rematch-panel .btn{width:100%}}
+
+/* Chaos-only power palette; neutral chips never form lines. */
+.seat-9{background:linear-gradient(135deg,#6d7e99,#2d3a50);color:#f9f7ed;border:2px solid #c5cedf;box-shadow:inset 0 0 0 3px #17283a,0 2px 5px #0008}
+.chaos-powers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:8px 0 3px}
+.chaos-power{min-width:0;padding:12px 6px;background:#1c2b4b;border:1px solid #45608b;border-radius:11px;color:#e7efff;font-weight:900;font-size:clamp(10px,1.7vw,14px)}
+.chaos-power.selected{color:#0d1c32;background:linear-gradient(120deg,#ffd768,#ffad58);border-color:#ffdb79;box-shadow:0 0 0 2px #fff2}
+.chaos-power:disabled{opacity:.4}
+.chaos-tip{text-align:center;color:#b9c5e5;line-height:1.5;font-size:12px;margin:8px 0 12px}
+@media(max-width:560px){.chaos-power{font-size:10px;padding:12px 3px}.chaos-powers{gap:5px}}

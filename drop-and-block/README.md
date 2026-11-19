@@ -1,7 +1,7 @@
 # Drop & Block — PlayVolt
 
 Independent game in the PlayVolt monorepo; does **not** modify Dekabess or Pin & Spin.
-Two to eight players, real-time-ish polling, Classic / Territory / Elimination / Bottom Drop game modes, and a
+Two to eight players, real-time-ish polling, Classic / Territory / Elimination / Bottom Drop / Chaos game modes, and a
 gravity board. Uses the **same Game DB** (eybzbtyfafmqbkulyvog), Supabase Auth, and
 public.profiles as Dekabess and Pin & Spin: no duplicate accounts.
 
@@ -87,3 +87,21 @@ The TV screen shows the match number and changes back to a rematch lobby.
 
 Database: apply migration `004_rematch_history.sql` after `003`.
 Rooms still expire 24 hours after initial creation, as they did before.
+
+## Chaos Mode (preview)
+Each signed-in player receives exactly **one Barrier** and **one Blast** per match.
+A normal chip drop remains unlimited. Every move, including a power, consumes a turn.
+- **Barrier**: drop a neutral gray `⬢` piece into a non-full column. It blocks
+  connections for every player and counts toward filling the board.
+- **Blast**: remove the *bottommost* piece in a nonempty column. All remaining
+  pieces in that column fall by one row. It can remove an opponent's chip, your
+  own chip, or a neutral Barrier. A Blast itself does **not** award a win.
+- Only a **normal drop** can complete four in a row and win. A completely full
+  board ends in a draw. Every player's power inventory resets for a rematch.
+- On phones, choose Normal Drop, Barrier, or Blast, then select the target
+  column. The TV displays the neutral piece and remaining powers.
+
+All powers are checked atomically on the game server via `drop_block_action`.
+Move history records `move_kind`, and the game server rejects repeated uses,
+wrong turns, invalid targets, and power calls in other game modes.
+Database: apply `backend/migrations/005_chaos_mode.sql` after `004`.

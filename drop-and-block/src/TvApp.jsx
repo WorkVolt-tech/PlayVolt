@@ -4,8 +4,8 @@ import { GameArea } from './App.jsx';
 import { VersionAlert } from './VersionAlert.jsx';
 import { readTvLink, buildJoinUrl } from './tvLink.js';
 
-const modeNames = { classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP' };
-const icons = ['', '◆', '●', '▲', '■', '★', '⬡', '✦', '✳'];
+const modeNames = { classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP', chaos: 'CHAOS' };
+const icons = ['', '◆', '●', '▲', '■', '★', '⬡', '✦', '✳', '⬢'];
 
 export function TvApp() {
   const [link] = useState(() => readTvLink(window.location));
@@ -73,7 +73,7 @@ export function TvApp() {
           <div key={p.seat} className={'tv-player tv-seat-' + p.seat + (p.eliminated?' tv-eliminated':'') + (p.seat === game.turnSeat?' tv-current':'')}>
             <span className={'tv-marker seat-'+p.seat}>{icons[p.seat]}</span>
             <span className="tv-player-name">{p.name}</span>
-            <strong>{p.eliminated?'OUT':game.mode==='territory'?p.score+' pts':p.seat===game.turnSeat?'PLAYING':''}</strong>
+            <strong>{p.eliminated?'OUT':game.mode==='territory'?p.score+' pts':game.mode==='chaos'?'⬢'+(p.chaosBlockUsed?'0':'1')+' ✹'+(p.chaosBlastUsed?'0':'1'):p.seat===game.turnSeat?'PLAYING':''}</strong>
           </div>
         )}</div> : <p className="tv-empty">Players will appear here when they join.</p>}
         <div className="tv-status">{game?.status==='playing'?'● MATCH LIVE':game?.status==='finished'?'✓ MATCH FINISHED':'◌ WAITING IN LOBBY'}</div>

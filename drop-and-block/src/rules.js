@@ -2,7 +2,7 @@
 export function emptyBoard(width, height) { return Array(width * height).fill(0); }
 export function drop(board, width, height, column, seat) {
   if (!Number.isInteger(column) || column < 0 || column >= width) return null;
-  if (!Number.isInteger(seat) || seat < 1 || seat > 8) return null;
+  if (!Number.isInteger(seat) || seat < 1 || seat > 9) return null; // 9 = neutral Chaos Barrier
   let row = -1;
   for (let y = height - 1; y >= 0; y--) {
     if (board[y * width + column] === 0) { row = y; break; }
@@ -19,7 +19,7 @@ export function drop(board, width, height, column, seat) {
         count++; x += dx * sign; y += dy * sign;
       }
     }
-    if (count >= 4) points++;
+    if (count >= 4 && seat <= 8) points++; // neutral Barriers never score
   }
   return { board: next, row, points };
 }
@@ -84,4 +84,44 @@ export function playLocalTurn(old, col, count, mode, width, height) {
     return { ...base, status: 'finished', winner, turn: null };
   }
   return { ...base, turn: old.turn % count + 1 };
+}
+
+/** Pure Chaos mechanics for the same-device demo; Supabase validates online turns. */
+export function blastColumn(board,width,height,column) {
+  if (!Number.isInteger(column) || column<0 || column>=width) return null;
+  if (!board[(height-1)*width+column]) return null;
+  const next=[...board];
+  for(let y=height-1;y>=1;y--) next[y*width+column]=next[(y-1)*width+column];
+  next[column]=0;
+  return next;
+}
+export function playChaosTurn(old,column,count,width,height,kind='drop') {
+  if (old.status!=='playing' || !Number.isInteger(old.turn)) return old;
+  if (!['drop','block','blast'].includes(kind)) return old;
+  const blockUsed=[...(old.chaosBlockUsed||Array(count).fill(false))];
+  const blastUsed=[...(old.chaosBlastUsed||Array(count).fill(false))];
+  let board,points=0,lastEvent='';
+  if(kind==='blast') {
+    if(blastUsed[old.turn-1]) return old;
+    board=blastColumn(old.board,width,height,column);
+    if(!board)return old;
+    blastUsed[old.turn-1]=true;
+    lastEvent='Player '+old.turn+' used Blast — a bottom chip vanished!';
+  }else if(kind==='block'){
+    if(blockUsed[old.turn-1]) return old;
+    const placed=drop(old.board,width,height,column,9);
+    if(!placed)return old;
+    board=placed.board;
+    blockUsed[old.turn-1]=true;
+    lastEvent='Player '+old.turn+' dropped a Barrier!';
+  }else{
+    const placed=drop(old.board,width,height,column,old.turn);
+    if(!placed)return old;
+    board=placed.board;points=placed.points;
+  }
+  const scores=[...old.scores];scores[old.turn-1]+=points;
+  const winner=points?old.turn:null;
+  const done=Boolean(winner) || board.every(Boolean);
+  return {...old,board,scores,chaosBlockUsed:blockUsed,chaosBlastUsed:blastUsed,lastEvent,
+    status:done?'finished':'playing',winner,turn:done?null:old.turn%count+1};
 }

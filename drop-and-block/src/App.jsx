@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { db, action } from './supabase.js';
-import { emptyBoard, dimensions, playLocalTurn } from './rules.js';
+import { emptyBoard, dimensions, playLocalTurn, playChaosTurn } from './rules.js';
 import { VersionAlert } from './VersionAlert.jsx';
 import { buildTvDisplayUrl } from './tvLink.js';
 
-const icons = ['','◆','●','▲','■','★','⬡','✦','✳'];
+const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
 const hub = 'https://playvolt-hub.pages.dev/';
 
-function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false }) {
+function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop' }) {
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
   return <div className="board-wrap">
     {!readOnly && <div className="board-controls" style={grid}>
       {columns.map(col => <button key={col} className="drop-arrow" aria-label={'Drop in column ' + (col+1)}
-        disabled={disabled || turn !== me || board[col] !== 0}
-        onClick={() => onDrop(col)}>▼</button>)}
+        disabled={disabled || turn !== me || (moveKind==='blast' ? board[(height-1)*width+col]===0 : board[col] !== 0)}
+        onClick={() => onDrop(col)}>{moveKind==='blast'?'✹':moveKind==='block'?'⬢':'▼'}</button>)}
     </div>}
     <div className="board" style={grid} role="grid" aria-label="Drop & Block game board">
       {rows.flatMap(row => columns.map(col => {
@@ -32,10 +32,10 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
 
 function LocalDemo({ onBack, count, mode }) {
   const [width, height] = dimensions(count);
-  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'' });
+  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false) });
   const [state, setState] = useState(reset);
-  const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i]}));
-  function play(col) { setState(old => playLocalTurn(old, col, count, mode, width, height)); }
+  const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i],chaosBlockUsed:state.chaosBlockUsed[i],chaosBlastUsed:state.chaosBlastUsed[i]}));
+  function play(col,kind='drop') { setState(old => mode==='chaos'?playChaosTurn(old,col,count,width,height,kind):playLocalTurn(old,col,count,mode,width,height)); return true; }
   return <div className="panel panel-wide">
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
     <h2>{modeName(mode)} · {count} Players</h2>
@@ -47,9 +47,16 @@ function LocalDemo({ onBack, count, mode }) {
   </div>;
 }
 
-const modeName = mode => ({ classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop' })[mode] || 'Classic';
+const modeName = mode => ({ classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop', chaos: 'Chaos' })[mode] || 'Classic';
 
 export function GameArea({game, onDrop, busy, readOnly = false}) {
+  const [moveKind,setMoveKind]=useState('drop');
+  const current=game.players.find(p=>p.seat===game.meSeat);
+  const selectColumn=async col=>{
+    const kind=game.mode==='chaos'?moveKind:'drop';
+    const ok=await onDrop(col,kind);
+    if(ok!==false)setMoveKind('drop');
+  };
   const turnPlayer = game.players.find(p=>p.seat===game.turnSeat);
   const winner = game.players.find(p=>p.seat===game.winnerSeat);
   const myTurn = !readOnly && game.status==='playing' && game.turnSeat===game.meSeat;
@@ -58,6 +65,7 @@ export function GameArea({game, onDrop, busy, readOnly = false}) {
       <span className={'tiny-disc seat-' + p.seat}>{icons[p.seat]}</span>
       <span className="player-label">{p.name}{p.eliminated?' · OUT':game.mode==='territory'?' · '+p.score+' pts':''}</span>
     </div>)}</div>
+    {game.mode==='chaos' && <div className="mode-status">CHAOS MODE · ONE BARRIER AND ONE BLAST PER PLAYER PER MATCH</div>}
     {game.mode==='elimination' && <div className="mode-status">ROUND {game.roundNumber || 1} · {game.players.filter(p=>!p.eliminated).length} SURVIVORS</div>}
     {game.mode==='collapse' && <div className="mode-status">BOTTOM ROW DROPS: {game.floorClears || 0} · TRIGGER AT SECOND ROW FROM TOP</div>}
     {game.lastEvent && <div className="round-event" role="status">{game.lastEvent}</div>}
@@ -65,10 +73,16 @@ export function GameArea({game, onDrop, busy, readOnly = false}) {
       {game.status==='finished' ? (winner ? winner.name+' wins!' : 'Match finished · Draw')
         : myTurn ? 'Your turn — choose a column' : readOnly ? (turnPlayer?.name || 'A player') + ' is playing' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
     </div>
+    {game.mode==='chaos' && !readOnly && <div className="chaos-powers" role="group" aria-label="Choose a Chaos move">
+      <button type="button" className={'chaos-power'+(moveKind==='drop'?' selected':'')} onClick={()=>setMoveKind('drop')} disabled={busy}>▼ Normal Drop</button>
+      <button type="button" className={'chaos-power'+(moveKind==='block'?' selected':'')} onClick={()=>setMoveKind('block')} disabled={busy||!current||current.chaosBlockUsed||game.status!=='playing'}>⬢ Barrier {current?.chaosBlockUsed?'USED':'1×'}</button>
+      <button type="button" className={'chaos-power'+(moveKind==='blast'?' selected':'')} onClick={()=>setMoveKind('blast')} disabled={busy||!current||current.chaosBlastUsed||game.status!=='playing'}>✹ Blast {current?.chaosBlastUsed?'USED':'1×'}</button>
+    </div>}
+    {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects four to win. Choosing a power uses your turn.'}</p>}
     <Board board={game.board} width={game.width} height={game.height}
-      turn={game.turnSeat} me={game.meSeat} onDrop={onDrop}
-      disabled={busy || game.status!=='playing'} readOnly={readOnly}/>
-    <div className="board-foot">{game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
+      turn={game.turnSeat} me={game.meSeat} onDrop={selectColumn}
+      disabled={busy || game.status!=='playing'} readOnly={readOnly} moveKind={moveKind}/>
+    <div className="board-foot">{game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT 4 TO WIN':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
 
@@ -221,7 +235,7 @@ export default function App() {
                 onClick={()=>perform('start')}>Start match</button>
             : <button className="btn primary full" disabled={busy} onClick={()=>perform('ready',{ready:!room.players.find(p=>p.seat===room.meSeat)?.ready})}>
                 {room.players.find(p=>p.seat===room.meSeat)?.ready?'Cancel ready':'I’m ready!'}</button>}
-        </> : <GameArea game={room} onDrop={col=>perform('drop',{column:col})} busy={busy}/>}
+        </> : <GameArea game={room} onDrop={(col,kind)=>perform('drop',{column:col,kind})} busy={busy}/>}
         {room.status==='finished' && <div className="rematch-panel">
           <div className="rematch-copy"><strong>Match {room.matchNumber || 1} complete</strong>
             <span>Keep this room and all the same players. Results and match history are saved.</span></div>
@@ -242,8 +256,9 @@ export default function App() {
             <option value="territory">Territory · Score until board is full</option>
             <option value="elimination">Elimination · Connect 4 to knock out a rival</option>
             <option value="collapse">Bottom Drop · Clear the floor when stacks rise</option>
+            <option value="chaos">Chaos · Drop, Barrier and Blast</option>
           </select></label>
-          <p className="mode-explainer">{mode==='elimination'?'Connect four to eliminate the next active rival. The board resets each round; last player standing wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Connect four to win.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':'Be the first to connect four in any direction.'}</p>
+          <p className="mode-explainer">{mode==='elimination'?'Connect four to eliminate the next active rival. The board resets each round; last player standing wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Connect four to win.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to connect four wins.':'Be the first to connect four in any direction.'}</p>
           <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
             {[2,3,4,5,6,7,8].map(n=><option key={n} value={n}>{n} players</option>)}
           </select></label>
