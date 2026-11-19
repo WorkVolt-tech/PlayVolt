@@ -4,6 +4,7 @@ import { PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { guessLimit, inTurnOrder, playerProgress, winLeaders, codeSlots } from '../game/selectors.js';
 import { WinsBadge } from '../components/WinsBadge.jsx';
+import { cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
 
 // A mini view of everyone's guesses: one small card per player with their public
 // guess rows (balls + Pin/Spin dots) and empty rows for tries not yet used.
@@ -44,12 +45,14 @@ export function MiniBoards({ game, onOpen }) {
   <div ref={boxRef} onScroll={measure} aria-label="Everyone's guesses, mini view"
     className={'mini-boards' + (empty.length > 4 ? ` slots-${empty.length}` : '') + (edges.left ? ' more-left' : '') + (edges.right ? ' more-right' : '')}>
     {lanes.map((lane) => {
+      const appearance = normalizeCosmetics(lane.player.appearance, lane.player.seat);
       const state = lane.won ? 'won' : lane.left ? 'left' : lane.away ? 'away' : lane.isTurn ? 'turn' : lane.sealed ? 'in' : lane.thinking ? 'thinking' : '';
       const label = { won: '🏆', left: 'LEFT', away: 'AWAY', turn: 'TURN', in: '✓', thinking: '…' }[state] || '';
       const rows = [...lane.guesses];
       const total = Math.max(limit, rows.length + (lane.sealed ? 1 : 0));
       return <button type="button" key={lane.player.id} onClick={() => onOpen?.(lane.player.id)}
-        className={'mini-card ' + state + (lane.player.id === game.me ? ' me' : '')}
+        className={'mini-card board-theme-' + appearance.board + ' ' + state + (lane.player.id === game.me ? ' me' : '')}
+        style={cosmeticStyle(appearance, lane.player.seat)}
         aria-label={`${lane.player.name}: ${lane.used} of ${limit} tries${label ? ', ' + state : ''}. Open Everyone's Guesses`}>
         <span className="mini-head">
           {lane.order && <span className="turn-no" title={`Plays ${lane.order === 1 ? 'first' : `#${lane.order}`}`}>{lane.order}</span>}
@@ -62,8 +65,8 @@ export function MiniBoards({ game, onOpen }) {
           {Array.from({ length: total }, (_, i) => {
             const guess = rows[i];
             if (guess) return <span className="mini-row" key={i}>
-              {guess.colors ? <PegRow colors={guess.colors} tiny /> : <span className="mini-missed">missed</span>}
-              {guess.colors ? <Feedback guess={guess} /> : <span className="mini-gap" />}
+              {guess.colors ? <PegRow colors={guess.colors} tiny shape={appearance.piece} /> : <span className="mini-missed">missed</span>}
+              {guess.colors ? <Feedback guess={guess} shape={appearance.pin} /> : <span className="mini-gap" />}
             </span>;
             if (i === rows.length && lane.sealed) return <span className="mini-row sealed" key={i}>
               <span className="sealed-balls">{empty.map((_, n) => <i key={n} />)}</span><span className="mini-gap" />

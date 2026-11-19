@@ -1,15 +1,15 @@
 import React from 'react';
-import { COLORS } from '../game/constants.js';
-
-// Each seat gets a color ball (with its pattern) so players are easy to tell apart.
-export function avatarColor(seat) {
-  return (Math.max(1, Number(seat) || 1) - 1) % 6; // player colors: the six classic balls
-}
+import { AVATARS, cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
+import { AvatarArt } from './AvatarArt.jsx';
 
 export function PlayerAvatar({ player, size = 'md' }) {
-  const color = avatarColor(player?.seat);
-  return <span className={`avatar avatar-${size} patterned-peg color-${color}`}
-    style={{ '--color': COLORS[color].hex }} aria-hidden="true">
-    <b>{(player?.name || '?').slice(0, 1).toUpperCase()}</b>
+  const appearance = normalizeCosmetics(player?.appearance, player?.seat);
+  const avatar = AVATARS.find((item) => item.id === appearance.avatar);
+  return <span className={`avatar avatar-${size} avatar-style-${appearance.avatar}`}
+    style={cosmeticStyle(appearance, player?.seat)}
+    role="img" aria-label={`${player?.name || 'Player'} avatar: ${avatar?.name || 'Classic'}`}>
+    {['bunny', 'champion', 'royal', 'carrot', 'crystal'].includes(appearance.avatar)
+      ? <AvatarArt variant={appearance.avatar} />
+      : <b>{appearance.avatar === 'initial' ? (player?.name || '?').slice(0, 1).toUpperCase() : avatar?.icon}</b>}
   </span>;
 }

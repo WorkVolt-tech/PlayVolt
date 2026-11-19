@@ -1,0 +1,63 @@
+import React, { useState } from 'react';
+import { AVATARS, BOARDS, PIECES, RESULT_PINS, ACCENTS, cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
+import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
+import { PegRow } from '../components/Peg.jsx';
+import { Feedback } from '../components/Feedback.jsx';
+import { AvatarArt } from '../components/AvatarArt.jsx';
+
+const categories = [
+  ['avatar', 'Choose your avatar', AVATARS],
+  ['board', 'Board style', BOARDS],
+  ['accent', 'Board color', ACCENTS],
+  ['piece', 'Guess piece shape', PIECES],
+  ['pin', 'Result pin shape', RESULT_PINS],
+];
+
+export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, usedAccents = [], onSave, onBack, busy }) {
+  const [choice, setChoice] = useState(() => normalizeCosmetics(value, seat));
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const preview = { name, seat, appearance: choice };
+  const locked = (option) => option.trophy && !earned[option.trophy];
+  async function save() {
+    setError(''); setSaving(true);
+    try { await onSave(choice); onBack(); }
+    catch (e) { setError(e.message || 'Could not save your style. Try again.'); }
+    finally { setSaving(false); }
+  }
+  return <section className="screen customize-screen">
+    <button className="back-button" type="button" onClick={onBack}>← Back</button>
+    <h1 className="page-title">Make it yours</h1>
+    <p className="customize-intro">Your avatar, board, and shapes appear on your phone and beside your guesses on the shared TV.</p>
+    <div className={`customize-preview board-theme-${choice.board} pin-shape-${choice.pin}`}
+      style={cosmeticStyle(choice, seat)}>
+      <header><PlayerAvatar player={preview} /><strong>{name}</strong><small>LIVE PREVIEW</small></header>
+      <div className="customize-example piece-preview" data-piece={choice.piece}>
+        <PegRow colors={[0, 1, 2, 3]} tiny shape={choice.piece} />
+        <Feedback guess={{ colors: [0, 1, 2, 3], pins: 2, spins: 1, revealed: true }} shape={choice.pin} />
+      </div>
+    </div>
+    {categories.map(([key, title, options]) => <fieldset className="surface customize-group" key={key}>
+      <legend>{title}</legend>
+      <div className="customize-options">
+        {options.map((option) => <button key={option.id} type="button" disabled={!!locked(option) || (key === 'accent' && usedAccents.includes(option.id))}
+          className={'customize-option' + (choice[key] === option.id ? ' selected' : '')}
+          aria-pressed={choice[key] === option.id}
+          onClick={() => setChoice({ ...choice, [key]: option.id })}>
+          <span className="customize-swatch" style={key === 'accent' ? { background: option.hex } : undefined}>
+            {key === 'avatar' ? option.id === 'initial' ? name[0]?.toUpperCase()
+              : ['bunny', 'champion', 'royal', 'carrot', 'crystal'].includes(option.id) ? <AvatarArt variant={option.id} /> : option.icon
+              : key === 'board' ? '✦' : key === 'accent' ? '' : option.icon}
+          </span>
+          <span>{option.name}</span>
+          {locked(option) && <small>🔒 Trophy: {option.trophy.replaceAll('_', ' ')}</small>}
+          {key === 'accent' && usedAccents.includes(option.id) && <small>In use</small>}
+        </button>)}
+      </div>
+    </fieldset>)}
+    {error && <p className="form-error" role="alert">{error}</p>}
+    <button className="primary-btn full" type="button" disabled={saving || busy} onClick={save}>
+      {saving ? 'Saving…' : 'Save my style'}
+    </button>
+  </section>;
+}

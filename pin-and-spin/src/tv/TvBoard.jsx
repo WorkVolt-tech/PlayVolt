@@ -7,6 +7,7 @@ import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders, codeSlots } from '../game/selectors.js';
 import { tvGrid } from './tvGrid.js';
 import { WinsBadge } from '../components/WinsBadge.jsx';
+import { cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
 
 
 // The live board on the TV. Public data only (revealed guesses, locked-in flags, winners,
@@ -89,7 +90,8 @@ export function TvBoard({ game, remainingMs }) {
         const tries = Array.from({ length: limit }, (_, i) => lane.guesses.find((g) => g.attempt === i + 1) || null);
         const sealedAt = !lane.sealed ? -1 : simultaneous ? game.round - 1 : lane.guesses.length;
         return <section key={lane.player.id}
-          className={'tvb-lane' + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.player.id === upNext ? ' next' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
+          style={cosmeticStyle(lane.player.appearance, lane.player.seat)}
+          className={'tvb-lane board-theme-' + normalizeCosmetics(lane.player.appearance, lane.player.seat).board + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.player.id === upNext ? ' next' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
           <header>
             {lane.order && <span className="turn-no" title={`Plays ${ordinal(lane.order)}`}>{lane.order}</span>}
             <PlayerAvatar player={lane.player} />
@@ -99,11 +101,11 @@ export function TvBoard({ game, remainingMs }) {
           <ol>
             {tries.map((guess, i) => <li key={i} className={guess ? 'played' : i === sealedAt ? 'sealed' : 'open'} style={{ '--i': i }}>
               <span className="tvb-try">{i + 1}</span>
-              {guess?.colors ? <PegRow colors={guess.colors} tiny />
+              {guess?.colors ? <PegRow colors={guess.colors} tiny shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).piece} />
                 : guess ? <span className="tvb-missed">No guess in time</span>
                 : i === sealedAt ? <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{balls.map((k) => <i key={k} />)}</span>
                 : <span className="tvb-empty">{balls.map((k) => <i key={k} />)}</span>}
-              {guess?.colors ? <Feedback guess={guess} /> : <span className="tvb-fb-space" />}
+              {guess?.colors ? <Feedback guess={guess} shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).pin} /> : <span className="tvb-fb-space" />}
             </li>)}
           </ol>
         </section>;

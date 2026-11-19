@@ -7,6 +7,7 @@ import { savedName, savedSession, token } from '../game/session.js';
 import { codeSlots, isValidDraft, nextAttempt } from '../game/selectors.js';
 import { getSupabase } from '../game/auth.js';
 import { play } from '../sound/sfx.js';
+import { readSavedAppearance } from '../game/appearance.js';
 
 // Backup polling: fast when the live signal is unavailable, slow while it is connected.
 // Polling also serves as the presence heartbeat (AWAY after 45 seconds of silence).
@@ -124,9 +125,11 @@ export function usePinAndSpin() {
         if (action === 'replay') setView('play');
         updateGame(result);
       }
+      return true;
     } catch (error) {
       play('invalid-thunk');
       notify(error.message || 'The game request failed.');
+      return false;
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -219,7 +222,7 @@ export function usePinAndSpin() {
     busyRef.current = true;
     setBusy(true);
     try {
-      const result = await callGame(action, candidate, { name, ...(create ? { mode: modeOverride || mode } : {}) });
+      const result = await callGame(action, candidate, { name, appearance: readSavedAppearance(), ...(create ? { mode: modeOverride || mode } : {}) });
       const next = { ...candidate, code: result.code };
       sessionRef.current = next;
       setSession(next);

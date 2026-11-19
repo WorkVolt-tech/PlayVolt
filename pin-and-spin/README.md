@@ -27,6 +27,7 @@ All Pin & Spin tables begin with `pin_and_spin_`:
 - `pin_and_spin_rooms` — rooms, modes, hidden combinations and match status.
 - `pin_and_spin_players` — guests, seats, readiness.
 - `pin_and_spin_guesses` — player attempts and Pin/Spin scores.
+- `pin_and_spin_cosmetics` — signed-in players' Pin & Spin avatar and board choices (separate from shared `profiles`).
 
 The **`pin-and-spin` Supabase Edge Function** is the public game API gateway. Its service credential stays on the server; it is never included in the Vite client. PostgreSQL functions perform protected game actions and scoring.
 
@@ -73,6 +74,18 @@ The browser uses only the public anon key.
 
 Account emails (only sent if email confirmation is ever turned on; it is off today) go to
 the Supabase project's Site URL, the same as for Dekabess — ideally the PlayVolt hub.
+
+## Player styles
+
+**Customize** on the home screen, lobby, or during a match previews and saves an avatar,
+board style, board accent, guess-piece shape, and Pin/Spin marker shape. Guests keep their
+choice on this device; signed-in players keep it in `pin_and_spin_cosmetics` across devices.
+Migration `018_player_cosmetics.sql` also saves each room's current appearance in
+`pin_and_spin_players`, so other phones and the read-only TV display see each player's
+own board and shapes. A room uses ten distinct board accents; a taken accent cannot be
+selected, and a saved accent that is taken is replaced with an available one upon joining.
+Trophy styles are validated against `pin_and_spin_achievements` by the database. Shape
+changes never alter the colors sent for guesses, scoring, or secret reveal rules.
 
 ## Modes
 

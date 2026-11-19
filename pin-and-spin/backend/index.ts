@@ -7,7 +7,7 @@ const cors = {
   'Cache-Control': 'no-store',
   'Content-Type': 'application/json',
 };
-const actions = new Set(['create', 'join', 'state', 'ready', 'start', 'guess', 'leave', 'replay', 'display', 'kick']);
+const actions = new Set(['create', 'join', 'state', 'ready', 'start', 'guess', 'leave', 'replay', 'display', 'kick', 'appearance']);
 // TV pairing (migration 005): a TV shows a 4-letter code; a player in the room types it.
 const tvActions = new Set(['tv_start', 'tv_check', 'tv_pair']);
 // Leaderboard (migration 006): public, needs no room or session.
@@ -29,21 +29,27 @@ Deno.serve(async (req: Request) => {
     const board = body.action === 'leaderboard';
     // Achievements (migration 009): the signed-in player's badges.
     const badges = body.action === 'achievements';
+    const cosmetics = body.action === 'cosmetics';
     const social = Object.hasOwn(socialActions, body.action);
     // Admin peek (migration 012): the database itself checks the PlayVolt admins list.
     const peek = body.action === 'admin_peek';
     const story = storyActions.has(body.action);
     const solo = soloActions.has(body.action) || story;
-    if (!board && !solo && !badges && !social && !peek && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
+    if (!board && !solo && !badges && !cosmetics && !social && !peek && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
       return reply({ error: 'Invalid player session' }, 400);
     }
     if (board && !['week', 'all'].includes(body.data?.period)) return reply({ error: 'Choose a leaderboard period' }, 400);
     if (board && !['multi', 'daily', 'clock', 'story', undefined].includes(body.data?.board)) return reply({ error: 'Choose a leaderboard' }, 400);
-    if (!['create', 'tv_start', 'tv_check', 'leaderboard', 'achievements'].includes(body.action) && !solo && !social && !peek && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
+    if (!['create', 'tv_start', 'tv_check', 'leaderboard', 'achievements', 'cosmetics'].includes(body.action) && !solo && !social && !peek && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
       return reply({ error: 'Enter the six-character room code' }, 400);
     }
     const data = body.data ?? {};
     if (typeof data !== 'object' || Array.isArray(data)) return reply({ error: 'Invalid request' }, 400);
+    if (cosmetics && !['get', 'save'].includes(data.operation)) return reply({ error: 'Choose a style action' }, 400);
+    if ((body.action === 'appearance' || (cosmetics && data.operation === 'save')) &&
+      (!data.appearance || typeof data.appearance !== 'object' || Array.isArray(data.appearance))) {
+      return reply({ error: 'Choose a valid style' }, 400);
+    }
     // 4 balls, or 5-6 in big groups (migration 017); the room itself checks its own size.
     if (body.action === 'guess' && (!Array.isArray(data.colors) || data.colors.length < 4 || data.colors.length > 6 ||
       // 0-7: games with 4+ players use 8 colors (migration 014); the room itself checks its own count.
@@ -81,12 +87,13 @@ Deno.serve(async (req: Request) => {
     if (peek && !accountId) return reply({ error: 'Not available' }, 401);
     if (social && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to invite friends.' }, 401);
     if (badges && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to see your achievements.' }, 401);
+    if (cosmetics && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to save your style.' }, 401);
     if (solo && !accountId) return reply({ error: `ACCOUNT_REQUIRED: Sign in to play ${story ? 'story mode' : 'solo'}.` }, 401);
     const verifiedData = { ...data, _account_id: accountId };
     const address = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(address + key));
     const originHash = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
-    const rpc = peek ? 'pin_and_spin_admin_peek' : social ? 'pin_and_spin_social' : badges ? 'pin_and_spin_achievements_for' : board ? 'pin_and_spin_leaderboard' : story ? 'pin_and_spin_story' : solo ? 'pin_and_spin_solo' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
+    const rpc = peek ? 'pin_and_spin_admin_peek' : social ? 'pin_and_spin_social' : badges ? 'pin_and_spin_achievements_for' : cosmetics ? 'pin_and_spin_cosmetic_preferences' : board ? 'pin_and_spin_leaderboard' : story ? 'pin_and_spin_story' : solo ? 'pin_and_spin_solo' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/${rpc}`, {
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(peek
@@ -95,6 +102,8 @@ Deno.serve(async (req: Request) => {
         ? { p_action: socialActions[body.action], p_account: accountId, p_data: data }
         : badges
         ? { p_account: accountId }
+        : cosmetics
+        ? { p_action: data.operation, p_account: accountId, p_data: data }
         : board
         ? { p_period: data.period, p_account: accountId, p_board: data.board ?? 'multi' }
         : solo

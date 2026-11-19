@@ -15,7 +15,7 @@ import { play } from '../sound/sfx.js';
 const canFullscreen = typeof document !== 'undefined' && document.fullscreenEnabled;
 
 // An in-progress or finished match on a player's phone: My Board + Everyone's Guesses.
-export function Match({ state, onShare, onRemove, onLeave }) {
+export function Match({ state, onShare, onRemove, onLeave, onCustomize }) {
   const { game, busy, clock, offset, view, setView, draft, setDraft, selected, setSelected, resetDraft, act, pairTv } = state;
   const [fullscreen, setFullscreen] = useState(false);
   const [boardFocus, setBoardFocus] = useState('all');
@@ -26,6 +26,7 @@ export function Match({ state, onShare, onRemove, onLeave }) {
   const peek = usePeek(adminOn && game.status === 'playing', { code: game.code }, game.puzzle);
   const host = game.hostId === game.me;
   const mine = myGuesses(game);
+  const appearance = game.players?.find((p) => p.id === game.me)?.appearance;
   const limit = guessLimit(game.mode);
   const attempt = nextAttempt(game);
   const remainingMs = remainingTime(game, clock, offset);
@@ -81,6 +82,7 @@ export function Match({ state, onShare, onRemove, onLeave }) {
     <MatchAnnouncer game={game} />
     <MatchRoomBar game={game} onShare={onShare} onLeave={onLeave} onPlayers={host ? () => { play('drawer-open'); setManaging(true); } : null}
       onTv={game.displayToken ? () => { play('drawer-open'); setTvOpen(true); } : null} />
+    <button className="style-room-button" type="button" onClick={onCustomize}>✦ Customize my board</button>
     {tvOpen && <ShowOnTv game={game} pairTv={pairTv} onClose={() => { play('drawer-close'); setTvOpen(false); }} />}
     {managing && host && <ManagePlayers game={game} busy={busy} onRemove={onRemove} onClose={() => { play('drawer-close'); setManaging(false); }} />}
     <MatchStatus game={game} statusText={statusText(game, { busy, canSubmit })} remainingMs={remainingMs} />
@@ -91,11 +93,11 @@ export function Match({ state, onShare, onRemove, onLeave }) {
       : <GuessPanel mine={mine} limit={limit} attempt={attempt} canSubmit={canSubmit}
           draft={draft} selected={selected} onSelect={(i) => { play('tap-ui-tick'); setSelected(i); }}
           onColor={addColor} onClear={() => { play('swipe'); resetDraft(); }} onSubmit={submitGuess} peek={peek}
-          colorCount={game.colors === 8 ? 8 : 6} />}
+          colorCount={game.colors === 8 ? 8 : 6} appearance={appearance} />}
     {game.status === 'finished' && <div className="surface history-panel">
       <div className="panel-title"><h2>MY GUESSES</h2><span>{mine.length} SUBMITTED</span></div>
       <CodeBoard mine={mine} limit={limit} attempt={attempt} canSubmit={false}
-        draft={draft} selected={selected} onSelect={setSelected} />
+        draft={draft} selected={selected} onSelect={setSelected} shape={appearance?.piece} pinShape={appearance?.pin} />
     </div>}
     {boardOpen && <Scoreboard key={boardFocus} initialFocus={boardFocus} game={game} remainingMs={remainingMs} actions={playAgain}
       nav={<div className="board-nav">

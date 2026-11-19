@@ -5,7 +5,7 @@ import { play } from '../sound/sfx.js';
 import { InstallApp } from '../components/InstallApp.jsx';
 
 // Home, How to Play, Create Room and Join Room.
-export function EntryScreen({ form, busy, account }) {
+export function EntryScreen({ form, busy, account, onCustomize }) {
   const { formTab, setFormTab, nickname, setNickname, roomCodeInput, setRoomCodeInput, mode, setMode, enter } = form;
   const accountName = account.signedIn ? account.profile?.nickname || '' : '';
   return <section className="screen entry-screen">
@@ -26,6 +26,7 @@ export function EntryScreen({ form, busy, account }) {
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('friends'); }}><span>👥</span> Friends</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('leaderboard'); }}><span>🏆</span> Leaderboard</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('achievements'); }}><span>🏅</span> Achievements</button>
+            <button className="outline-btn" onClick={onCustomize}><span>✦</span> Customize</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('help'); }}><span>❓</span> How to Play</button>
           </div>
         </div>
