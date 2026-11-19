@@ -2,6 +2,28 @@ import React from 'react';
 
 // Original little game bunny in collectible outfits, rendered crisply at TV and phone sizes.
 export function AvatarArt({ variant }) {
+  if (variant === 'fox') return <svg className="avatar-art" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <path d="M5 10 24 18 32 13 40 18 59 10 54 37 61 47 43 58 32 55 21 58 3 47 10 37Z"
+      fill="#ca6138" stroke="#402039" strokeWidth="3" strokeLinejoin="round" />
+    <path d="M7 13 20 22 12 34ZM57 13 44 22 52 34Z" fill="#432c3f" />
+    <path d="M10 38 20 27 29 33 32 40 35 33 44 27 54 38 45 53 32 57 19 53Z" fill="#f4cc9b" />
+    <path d="M11 34 23 29 29 35 21 39 12 38ZM53 34 41 29 35 35 43 39 52 38Z" fill="#402039" />
+    <path d="M21 34h5m12 0h5" stroke="#f7dc8b" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="m27 43 5-3 5 3-5 4Z" fill="#39243c" />
+    <path d="M32 47v4m0 0-5 2m5-2 5 2" fill="none" stroke="#432c3f" strokeWidth="2" strokeLinecap="round" />
+    <path d="M22 54 32 59 42 54" fill="none" stroke="#7d3550" strokeWidth="3" strokeLinecap="round" />
+  </svg>;
+  if (variant === 'cat') return <svg className="avatar-art" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <path d="M7 8 22 17q10-5 20 0L57 8l-3 29q8 11 2 17-6 8-24 8T8 54Q2 48 10 37Z"
+      fill="#3c465d" stroke="#1e2038" strokeWidth="3" strokeLinejoin="round" />
+    <path d="M10 13 20 22 12 32ZM54 13 44 22 52 32Z" fill="#a45982" />
+    <path d="M13 40q19-10 38 0l4 12q-7 10-23 10T9 52Z" fill="#252d45" />
+    <path d="m14 34 14-5-2 10-12 1Zm36 0-14-5 2 10 12 1Z" fill="#121b30" />
+    <path d="m19 35 7-2m19 2-7-2" stroke="#87e9d4" strokeWidth="3" strokeLinecap="round" />
+    <path d="m27 43 5-3 5 3-5 4Z" fill="#b7949d" />
+    <path d="M32 47v5m0 0-5 2m5-2 5 2" fill="none" stroke="#a9b6ca" strokeWidth="2" strokeLinecap="round" />
+    <path d="m10 47 13-1m-13 6 13-3m31-2-13-1m13 6-13-3" stroke="#8294aa" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>;
   const royal = variant === 'royal';
   const champion = variant === 'champion';
   const carrot = variant === 'carrot';
