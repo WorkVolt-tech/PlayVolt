@@ -1,8 +1,8 @@
-import { DEFAULT_COSMETICS, normalizeCosmetics } from '../cosmetics.js';
+import { DEFAULT_COSMETICS, normalizeCosmetics, unlockedCosmetics } from '../cosmetics.js';
 
 const STORAGE = 'pin_and_spin_cosmetics_v1';
 export function readSavedAppearance() {
-  try { return normalizeCosmetics(JSON.parse(localStorage.getItem(STORAGE)), 1); }
+  try { return unlockedCosmetics(JSON.parse(localStorage.getItem(STORAGE))); }
   catch { return DEFAULT_COSMETICS; }
 }
 export function saveAppearance(value) {
