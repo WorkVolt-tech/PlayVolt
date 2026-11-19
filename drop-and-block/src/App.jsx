@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { db, action } from './supabase.js';
 import { emptyBoard, dimensions, playLocalTurn, playChaosTurn } from './rules.js';
 import { VersionAlert } from './VersionAlert.jsx';
+import { ProgressHub, TrophyUnlockNotice } from './ProgressHub.jsx';
 import { buildTvDisplayUrl } from './tvLink.js';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
@@ -100,6 +101,9 @@ export default function App() {
   const [demo,setDemo] = useState(false);
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
+  const [showProgress,setShowProgress] = useState(false);
+  const [freshTrophies,setFreshTrophies] = useState([]);
+  const [progressRefresh,setProgressRefresh] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -127,6 +131,48 @@ export default function App() {
       .catch(err => { if(active)setMessage('Could not reconnect to room: ' + err.message); });
     return () => { active = false; };
   }, [user?.id]);
+  // Remember previously earned trophies when signing in, to avoid announcing
+  // historical trophies as if they were new on a fresh device.
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    db.rpc('drop_block_progress', { p_mode:'all', p_period:'all', p_limit:25 })
+      .then(({data,error}) => {
+        if (!active || error || !data) return;
+        const key = 'drop_block_trophies_seen_' + user.id;
+        try {
+          if (localStorage.getItem(key) === null) {
+            localStorage.setItem(key, JSON.stringify(data.earned.map(t => t.code)));
+          }
+        } catch { /* storage is optional */ }
+      });
+    return () => {active=false;};
+  }, [user?.id]);
+
+  // Trophy unlocks are awarded on the server when the match finishes. Fetch
+  // only once per finished match; 2-second room polling won't repeat notices.
+  useEffect(() => {
+    if (!user?.id || room?.status !== 'finished') return;
+    let active=true;
+    const key='drop_block_trophies_seen_' + user.id;
+    db.rpc('drop_block_progress', {p_mode:'all',p_period:'all',p_limit:25})
+      .then(({data,error}) => {
+        if (!active || error || !data) return;
+        const earned=data.earned.map(t => t.code);
+        let seen=[];
+        try {
+          const saved=localStorage.getItem(key);
+          if (saved) seen=JSON.parse(saved);
+          localStorage.setItem(key, JSON.stringify(earned));
+        } catch { /* optional local notification state */ }
+        if (!Array.isArray(seen)) seen=[];
+        const newest=earned.filter(code => !seen.includes(code));
+        if (newest.length) setFreshTrophies(newest);
+        setProgressRefresh(n=>n+1);
+      });
+    return () => {active=false;};
+  }, [user?.id,room?.code,room?.matchNumber,room?.status]);
+
   useEffect(()=>{
     if(!user || !room?.code) return undefined;
     let alive=true;
@@ -195,23 +241,27 @@ export default function App() {
     catch(err){if(err.name!=='AbortError')setMessage('Room code: '+room.code);}
   }
   async function signOut() {
-    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');
+    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setShowProgress(false);setFreshTrophies([]);
     history.replaceState(null,'',location.pathname);
   }
   return <div className="shell">
     <header className="topbar"><a href={hub} className="back">← PLAYVOLT</a>
       <span className="mini-brand">DROP <b>&</b> BLOCK</span>
-      <span className="header-right">{user && <button className="text-btn" onClick={signOut}>Sign out</button>}</span>
+      <span className="header-right">{user && <>
+        {!demo && <button className="text-btn trophies-nav" onClick={()=>setShowProgress(s=>!s)}>{showProgress?'← Game':'🏆 Trophies & Ranks'}</button>}
+        <button className="text-btn" onClick={signOut}>Sign out</button>
+      </>}</span>
     </header>
     <main className="content">
-      {!room && !demo && <div className="hero">
+      {!room && !demo && !showProgress && <div className="hero">
         <div className="logo-art" aria-hidden="true"><div className="dot-1">◆</div><div className="dot-2">●</div><div className="dot-3">▲</div><div className="dot-4">■</div></div>
         <div className="section-eyebrow">THE MULTIPLAYER STRATEGY SHOWDOWN</div>
         <h1>DROP <span>&</span> BLOCK</h1>
         <p>Drop smart. Block hard.</p>
       </div>}
       {message && <div className="notification" role="status">{message}</div>}
-      {demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode}/> :
+      {showProgress ? <ProgressHub userId={user?.id} refreshSignal={progressRefresh} onBack={()=>setShowProgress(false)}/> :
+       demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode}/> :
       room ? <section className="panel panel-wide">
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
         <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p></div>
@@ -245,7 +295,10 @@ export default function App() {
               </button>
             : <span className="rematch-waiting">Waiting for the host to start the next match…</span>}
         </div>}
-        <div className="actions"><button className="btn ghost" onClick={exitRoom}>← Back to menu</button></div>
+        <div className="actions">
+          <button className="btn secondary" onClick={()=>setShowProgress(true)}>🏆 Trophies & Ranks</button>
+          <button className="btn ghost" onClick={exitRoom}>← Back to menu</button>
+        </div>
       </section> :
       <div className="home-grid">
         <section className="panel">
@@ -290,5 +343,7 @@ export default function App() {
     </main>
     <footer>DROP & BLOCK <span>·</span> A PLAYVOLT GAME</footer>
     <VersionAlert />
+    <TrophyUnlockNotice codes={freshTrophies} onClose={()=>setFreshTrophies([])}
+      onView={()=>{setFreshTrophies([]);setShowProgress(true);}} />
   </div>;
 }

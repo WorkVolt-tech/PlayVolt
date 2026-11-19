@@ -36,7 +36,7 @@ public.profiles as Dekabess and Pin & Spin: no duplicate accounts.
   reload, online players rejoin the current match from the URL; local demos reset.
 - Each player's piece shows both a color and a symbol.
 - Room codes expire after 24 hours; reloading a room link allows re-entry for
-  existing participants. The first release does not have guest access, Chaos powers, or abandonment/time-out handling.
+  existing participants. The first release does not have guest online access or abandonment/time-out handling.
 
 ## Security
 Only authenticated players can invoke drop_block_action(). All four new tables
@@ -105,3 +105,21 @@ All powers are checked atomically on the game server via `drop_block_action`.
 Move history records `move_kind`, and the game server rejects repeated uses,
 wrong turns, invalid targets, and power calls in other game modes.
 Database: apply `backend/migrations/005_chaos_mode.sql` after `004`.
+
+## Trophies and Leaderboards (preview)
+Trophies and rankings use the **existing PlayVolt profile ID** but have their own
+Drop & Block tables (`drop_block_results` and `drop_block_achievements`).
+An internal DB trigger awards twelve trophies after each server-recorded finished
+online match; local same-device demo games cannot award anything. Awards are
+idempotent and backfill finished online matches recorded before migration 006.
+The browser has no direct access to either source table. Signed-in players use
+read-only `drop_block_progress(mode,period,limit)` to get a filtered top-25
+leaderboard, all-time personal wins/matches, and their server-awarded trophies.
+Filters: all or a specific mode, all time or last seven days. Wins, then win
+percentage, then matches played determine leaderboard order. Rematches count as
+separate completed matches. The same login identity is used across PlayVolt.
+
+The gallery uses black/gold medals with locked/earned states. Players see a
+server-verified unlock popup after an online match; historic trophies already
+seen on a different day/device are not announced again on first visit to that
+browser. Database: apply `006_trophies_leaderboard.sql` after `005`.
