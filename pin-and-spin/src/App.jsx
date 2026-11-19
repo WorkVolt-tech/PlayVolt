@@ -22,7 +22,7 @@ import { Match } from './screens/Match.jsx';
 import { CustomizeScreen } from './screens/CustomizeScreen.jsx';
 import { readSavedAppearance, saveAppearance } from './game/appearance.js';
 import { callGame } from './game/api.js';
-import { normalizeCosmetics } from './cosmetics.js';
+import { normalizeCosmetics, unlockedCosmetics } from './cosmetics.js';
 
 export default function App() {
   const state = usePinAndSpin();
@@ -55,10 +55,10 @@ export default function App() {
   }, [friendCode, setFormTab]);
   const accountName = account.signedIn ? account.profile?.nickname || '' : '';
   useEffect(() => {
-    if (!userId) { setEarnedStyles({}); setAppearance(readSavedAppearance()); return; }
+    if (!userId) { setEarnedStyles({}); setAppearance(unlockedCosmetics(readSavedAppearance())); return; }
     let active = true;
     Promise.all([callGame('cosmetics', {}, { operation: 'get' }), callGame('achievements', {}, {})])
-      .then(([cosmetics, badges]) => { if (active) { setAppearance(cosmetics.appearance); setEarnedStyles(badges.earned || {}); } })
+      .then(([cosmetics, badges]) => { if (active) { setAppearance(unlockedCosmetics(cosmetics.appearance, badges.earned || {})); setEarnedStyles(badges.earned || {}); } })
       .catch(() => { /* Local preferences still work if the account service is unavailable. */ });
     return () => { active = false; };
   }, [userId]);
@@ -135,6 +135,7 @@ export default function App() {
           value={game?.players?.find((p) => p.id === game.me)?.appearance || appearance}
           earned={earnedStyles} name={game?.players?.find((p) => p.id === game.me)?.name || accountName || form.nickname || 'You'}
           seat={game?.players?.find((p) => p.id === game.me)?.seat || 1}
+          inRoom={!!game}
           usedAccents={game?.players?.filter((p) => p.active && p.id !== game.me)
             .map((p) => normalizeCosmetics(p.appearance, p.seat).accent) || []}
           busy={busy} onSave={updateAppearance} onBack={() => setCustomizing(false)} />}
