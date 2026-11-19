@@ -1,7 +1,7 @@
 # Drop & Block — PlayVolt
 
 Independent game in the PlayVolt monorepo; does **not** modify Dekabess or Pin & Spin.
-Two to eight players, real-time-ish polling, Classic / Territory game modes, and a
+Two to eight players, real-time-ish polling, Classic / Territory / Elimination / Bottom Drop game modes, and a
 gravity board. Uses the **same Game DB** (eybzbtyfafmqbkulyvog), Supabase Auth, and
 public.profiles as Dekabess and Pin & Spin: no duplicate accounts.
 
@@ -24,6 +24,16 @@ public.profiles as Dekabess and Pin & Spin: no duplicate accounts.
 - Classic: first to connect 4 horizontally, vertically or diagonally wins.
 - Territory: every newly completed direction scores a point; most points when
   board is full wins. Exact-score ties finish as a tie.
+- Elimination: connect four to knock out the **next active opponent** in turn
+  order; the board resets each round and removed players sit out. If the board
+  fills with no connection, reset the board without eliminating anyone.
+  The last remaining player wins.
+- Bottom Drop: first to connect four wins, but if a newly placed chip reaches
+  the **second row from the top**, the bottom row clears and all higher chips
+  move down one row. This happens after checking the completed line.
+- Every build publishes a fresh `version.json`. Browsers check on load, every
+  minute and on focus and offer the same Update Now banner as Pin & Spin. On
+  reload, online players rejoin the current match from the URL; local demos reset.
 - Each player's piece shows both a color and a symbol.
 - Room codes expire after 24 hours; reloading a room link allows re-entry for
   existing participants. The first release does not have guest access, TV
@@ -39,3 +49,8 @@ does not modify existing PlayVolt auth, game rewards or other tables.
 ## Development
 React + Vite. Versioned dependencies in package.json. Local tests for the
 pure gravity/scoring rules are in tests/. Cloudflare builds this folder only.
+
+## New migration
+Run `backend/migrations/002_modes_elimination_bottom_drop.sql` after the
+existing `001` migration. It extends only `drop_block_*` objects and supports
+existing Classic/Territory rooms without resetting them.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyBoard, drop, dimensions } from '../src/rules.js';
+import { emptyBoard, drop, dimensions, playLocalTurn, clearBottomRow } from '../src/rules.js';
 
 test('boards expand from 2 to 8 players', () => {
   assert.deepEqual(dimensions(2), [7, 6]);
@@ -43,4 +43,57 @@ test('horizontal, vertical, and diagonal connections score', () => {
 test('empty cells cannot be played from outside the board', () => {
   assert.equal(drop(emptyBoard(7,6),7,6,-1,1),null);
   assert.equal(drop(emptyBoard(7,6),7,6,7,1),null);
+});
+
+
+test('elimination removes the next active opponent, skipping eliminated players', () => {
+  const board = emptyBoard(7, 6);
+  for (let col = 0; col < 3; col++) board[5 * 7 + col] = 1;
+  const state = { board, scores: [0, 0, 0, 0], turn: 1, winner: null,
+    status: 'playing', eliminated: [false, false, true, false], roundNumber: 1, floorClears: 0 };
+  const next = playLocalTurn(state, 3, 4, 'elimination', 7, 6);
+  assert.deepEqual(next.eliminated, [false, true, true, false]);
+  assert.deepEqual(next.board, emptyBoard(7, 6));
+  assert.equal(next.roundNumber, 2);
+  assert.equal(next.turn, 4);
+  assert.equal(next.status, 'playing');
+  assert.equal(next.scores[0], 1);
+});
+test('elimination ends with a single survivor', () => {
+  const board = emptyBoard(7, 6);
+  for (let col = 0; col < 3; col++) board[5 * 7 + col] = 1;
+  const state = { board, scores: [0, 0], turn: 1, winner: null,
+    status: 'playing', eliminated: [false, false], roundNumber: 1 };
+  const next = playLocalTurn(state, 3, 2, 'elimination', 7, 6);
+  assert.equal(next.status, 'finished');
+  assert.equal(next.winner, 1);
+  assert.deepEqual(next.eliminated, [false, true]);
+});
+test('collapse clears the bottom row only on reaching second-highest row', () => {
+  const board = emptyBoard(7, 6);
+  for (let row = 2; row < 6; row++) board[row * 7] = row % 2 ? 1 : 2;
+  const state = { board, scores: [0,0], turn: 1, winner: null, status: 'playing',
+    eliminated: [false,false], roundNumber: 1, floorClears: 0 };
+  const next = playLocalTurn(state, 0, 2, 'collapse', 7, 6);
+  assert.equal(next.floorClears, 1);
+  assert.deepEqual(next.board.slice(0, 7), Array(7).fill(0));
+  assert.equal(next.board[5 * 7], board[4 * 7]);
+  assert.equal(next.board[2 * 7], 1);
+  assert.equal(next.status, 'playing');
+});
+test('collapse preserves chips above the cleared row and permits continued play', () => {
+  const board=emptyBoard(7,6);
+  board[4*7+3]=2; board[5*7+3]=1;
+  const next=clearBottomRow(board,7,6);
+  assert.equal(next[5*7+3],2);
+  assert.equal(next[4*7+3],0);
+  assert.equal(next.length,42);
+});
+test('collapse finishes normally on a connecting move before clearing the floor', () => {
+  const board = emptyBoard(7, 6);
+  for (let col = 0; col < 3; col++) board[5*7+col]=2;
+  const s={board,scores:[0,0],turn:2,status:'playing',winner:null,eliminated:[false,false],floorClears:0};
+  const next=playLocalTurn(s,3,2,'collapse',7,6);
+  assert.equal(next.winner,2);
+  assert.equal(next.floorClears,0);
 });

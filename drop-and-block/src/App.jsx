@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db, action } from './supabase.js';
-import { emptyBoard, drop, dimensions } from './rules.js';
+import { emptyBoard, dimensions, playLocalTurn } from './rules.js';
+import { VersionAlert } from './VersionAlert.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
@@ -30,42 +31,35 @@ function Board({ board, width, height, turn, me, onDrop, disabled }) {
 
 function LocalDemo({ onBack, count, mode }) {
   const [width, height] = dimensions(count);
-  const [state, setState] = useState(() => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing',winner:null }));
-  const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i]}));
-  function play(col) {
-    setState(old => {
-      if (old.status !== 'playing') return old;
-      const move = drop(old.board,width,height,col,old.turn);
-      if (!move) return old;
-      const scores = [...old.scores];
-      scores[old.turn-1] += move.points;
-      const done = mode==='classic' && move.points>0 || move.board.every(Boolean);
-      const high = Math.max(...scores);
-      const winner = mode==='classic' && move.points>0 ? old.turn
-        : move.board.every(Boolean) && scores.filter(s=>s===high).length===1 ? scores.indexOf(high)+1 : null;
-      return {board:move.board,scores,status:done?'finished':'playing',winner,turn:done?null:old.turn%count+1};
-    });
-  }
+  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'' });
+  const [state, setState] = useState(reset);
+  const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i]}));
+  function play(col) { setState(old => playLocalTurn(old, col, count, mode, width, height)); }
   return <div className="panel panel-wide">
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
-    <h2>{mode==='classic'?'Classic':'Territory'} · {count} Players</h2>
+    <h2>{modeName(mode)} · {count} Players</h2>
     <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
     <GameArea game={{...state,width,height,mode,players,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner}}
       onDrop={play} busy={false}/>
     <div className="actions"><button className="btn ghost" onClick={onBack}>← Back</button>
-      <button className="btn primary" onClick={()=>setState({board:emptyBoard(width,height),turn:1,scores:Array(count).fill(0),status:'playing',winner:null})}>Restart</button></div>
+      <button className="btn primary" onClick={()=>setState(reset)}>Restart</button></div>
   </div>;
 }
+
+const modeName = mode => ({ classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop' })[mode] || 'Classic';
 
 function GameArea({game, onDrop, busy}) {
   const turnPlayer = game.players.find(p=>p.seat===game.turnSeat);
   const winner = game.players.find(p=>p.seat===game.winnerSeat);
   const myTurn = game.status==='playing' && game.turnSeat===game.meSeat;
   return <>
-    <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'')}>
+    <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'') + (p.eliminated?' eliminated':'')}>
       <span className={'tiny-disc seat-' + p.seat}>{icons[p.seat]}</span>
-      <span className="player-label">{p.name}{game.mode==='territory'?' · '+p.score+' pts':''}</span>
+      <span className="player-label">{p.name}{p.eliminated?' · OUT':game.mode==='territory'?' · '+p.score+' pts':''}</span>
     </div>)}</div>
+    {game.mode==='elimination' && <div className="mode-status">ROUND {game.roundNumber || 1} · {game.players.filter(p=>!p.eliminated).length} SURVIVORS</div>}
+    {game.mode==='collapse' && <div className="mode-status">BOTTOM ROW DROPS: {game.floorClears || 0} · TRIGGER AT SECOND ROW FROM TOP</div>}
+    {game.lastEvent && <div className="round-event" role="status">{game.lastEvent}</div>}
     <div className={'turn-notice' + (myTurn?' is-me':'')}>
       {game.status==='finished' ? (winner ? winner.name+' wins!' : 'Match finished · Draw')
         : myTurn ? 'Your turn — choose a column' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
@@ -73,7 +67,7 @@ function GameArea({game, onDrop, busy}) {
     <Board board={game.board} width={game.width} height={game.height}
       turn={game.turnSeat} me={game.meSeat} onDrop={onDrop}
       disabled={busy || game.status!=='playing'}/>
-    <div className="board-foot">CONNECT 4 TO WIN {game.mode==='territory'?'POINTS':'THE MATCH'} · {game.width} × {game.height}</div>
+    <div className="board-foot">{game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
 
@@ -108,6 +102,16 @@ export default function App() {
       .then(({data})=>{if(active)setProfile(data);}).catch(()=>{if(active)setProfile(null);});
     return ()=>{active=false;};
   },[user?.id]);
+  // A refresh or new deployment restores online rooms from the URL without starting a new game.
+  useEffect(() => {
+    if (!user?.id) return;
+    const code = new URLSearchParams(window.location.search).get('room')?.toUpperCase();
+    if (!code || !/^[A-F0-9]{6}$/.test(code)) return;
+    let active = true;
+    action('join', code).then(next => { if(active){setRoom(next);setJoinCode(next.code);} })
+      .catch(err => { if(active)setMessage('Could not reconnect to room: ' + err.message); });
+    return () => { active = false; };
+  }, [user?.id]);
   useEffect(()=>{
     if(!user || !room?.code) return undefined;
     let alive=true;
@@ -176,7 +180,7 @@ export default function App() {
       {demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode}/> :
       room ? <section className="panel panel-wide">
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
-        <h2>{room.code}</h2><p className="sub">{room.mode==='classic'?'Classic':'Territory'} · {room.players.length}/{room.maxPlayers} players</p></div>
+        <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · {room.players.length}/{room.maxPlayers} players</p></div>
         <button className="btn secondary" onClick={shareRoom}>Invite friends</button></div>
         {room.status==='lobby' ? <>
           <div className="roster">{room.players.map(p=><div key={p.seat} className={'player-chip seat-border-'+p.seat}>
@@ -198,7 +202,10 @@ export default function App() {
           <label>Game mode<select value={mode} onChange={e=>setMode(e.target.value)}>
             <option value="classic">Classic · First to connect four</option>
             <option value="territory">Territory · Score until board is full</option>
+            <option value="elimination">Elimination · Connect 4 to knock out a rival</option>
+            <option value="collapse">Bottom Drop · Clear the floor when stacks rise</option>
           </select></label>
+          <p className="mode-explainer">{mode==='elimination'?'Connect four to eliminate the next active rival. The board resets each round; last player standing wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Connect four to win.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':'Be the first to connect four in any direction.'}</p>
           <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
             {[2,3,4,5,6,7,8].map(n=><option key={n} value={n}>{n} players</option>)}
           </select></label>
@@ -229,5 +236,6 @@ export default function App() {
       </div>}
     </main>
     <footer>DROP & BLOCK <span>·</span> A PLAYVOLT GAME</footer>
+    <VersionAlert />
   </div>;
 }
