@@ -92,6 +92,19 @@
 .customize-option{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;min-height:82px;padding:8px 3px;border:1px solid #615079;border-radius:12px;background:#151329;color:#f7edff;font-size:12px;font-weight:700;line-height:1.15;text-align:center}
 .customize-option.selected{border:2px solid #d7a8ff;box-shadow:0 0 13px #b36dff6b;background:#302047}
 .customize-option:disabled{opacity:.58}
+.customize-board-option{min-height:112px;padding:7px 6px;gap:6px}
+.customize-board-option:disabled{opacity:.82}
+.customize-board-sample{display:flex;flex-direction:column;justify-content:center;gap:5px;width:100%;max-width:180px;min-height:57px;padding:5px 6px;border:2px solid var(--cosmetic-accent);border-radius:8px;box-shadow:inset 0 0 8px #0005}
+.sample-title{display:flex;align-items:center;gap:4px;overflow:hidden;white-space:nowrap;font-size:7px;letter-spacing:.6px;color:#fff}
+.sample-title i{width:7px;height:7px;flex:none;border-radius:50%;background:var(--cosmetic-accent)}
+.sample-guess{display:flex;align-items:center;justify-content:space-between;gap:3px;padding:4px;border:1px solid #ffffff3d;border-radius:5px;background:#0e0e21bb}
+.sample-guess .tiny-pegs{display:flex;gap:2px;min-width:0}
+.sample-guess .tiny-peg{width:clamp(9px,2vw,17px);height:clamp(9px,2vw,17px);min-width:0;flex:none}
+.sample-result{display:grid;grid-template-columns:repeat(2,5px);gap:2px;flex:none}
+.sample-result i{width:5px;height:5px}
+.sample-result .pin-dot{border-radius:50%;background:var(--pin,#4ee49a)}
+.sample-result .spin-dot{border-radius:50%;background:#f4f1ff}
+@media(max-width:390px){.customize-board-option{padding:6px 3px}.customize-board-sample{padding:4px 3px}.sample-guess{padding:3px}.sample-guess .tiny-peg{width:10px;height:10px}}
 .customize-option small{font-size:10px;color:#ffda83}
 .customize-swatch{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;font-size:25px;line-height:1}
 .customize-option:has(.customize-swatch[style]) .customize-swatch{border:2px solid #ffffff9c;border-radius:50%}
