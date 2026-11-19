@@ -7,6 +7,7 @@ import { buildTvDisplayUrl } from './tvLink.js';
 import {AvatarBadge,ChipDisc,safeBoard} from './looks.jsx';
 import {CustomizeHub} from './CustomizeHub.jsx';
 import {TurnClock} from './TurnClock.jsx';
+import {canCloseLobby,canEndStalled,canRematch,isNoContest,isClosedLobby} from './hostControls.js';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
@@ -81,7 +82,8 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     {game.lastEvent && <div className="round-event" role="status">{game.lastEvent}</div>}
     <TurnClock game={game}/>
     <div className={'turn-notice' + (myTurn?' is-me':'')}>
-      {game.status==='finished' ? (game.mode==='team' ? (game.winnerTeam || winner ? 'Team '+((game.winnerTeam || teamOfSeat(winner?.seat))===1?'Gold':'Blue')+' wins!' : 'Match finished · Draw') : (winner ? winner.name+' wins!' : 'Match finished · Draw'))
+      {game.status==='cancelled' ? (isNoContest(game) ? 'No Contest · Match ended without a winner' : 'Room closed by the host')
+        : game.status==='finished' ? (game.mode==='team' ? (game.winnerTeam || winner ? 'Team '+((game.winnerTeam || teamOfSeat(winner?.seat))===1?'Gold':'Blue')+' wins!' : 'Match finished · Draw') : (winner ? winner.name+' wins!' : 'Match finished · Draw'))
         : myTurn ? 'Your turn — choose a column' : readOnly ? (turnPlayer?.name || 'A player') + ' is playing' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
     </div>
     {game.mode==='chaos' && !readOnly && <div className="chaos-powers" role="group" aria-label="Choose a Chaos move">
@@ -311,11 +313,35 @@ export default function App() {
                 onClick={()=>perform('start')}>Start match</button>
             : <button className="btn primary full" disabled={busy} onClick={()=>perform('ready',{ready:!room.players.find(p=>p.seat===room.meSeat)?.ready})}>
                 {room.players.find(p=>p.seat===room.meSeat)?.ready?'Cancel ready':'I’m ready!'}</button>}
-        </> : <GameArea game={room} onDrop={(col,kind)=>perform('drop',{column:col,kind})} busy={busy} boardTheme={myLoadout?.board}/>}
-        {room.status==='finished' && <div className="rematch-panel">
-          <div className="rematch-copy"><strong>Match {room.matchNumber || 1} complete</strong>
-            <span>Keep this room and all the same players. Results and match history are saved.</span></div>
-          {room.host
+          {canCloseLobby(room)&&<div className="host-room-control">
+            <div><strong>Host controls · Close this lobby</strong>
+              <span>Unused room? Close it so nobody else can join. No game results are recorded.</span></div>
+            <button type="button" className="btn ghost host-danger-btn" disabled={busy}
+             onClick={()=>{if(window.confirm('Close this room? Players will no longer be able to join using this code. No wins or trophies will be awarded.'))void perform('cancel');}}>
+             Close lobby</button>
+          </div>}
+        </> : isClosedLobby(room)
+          ? <div className="closed-room-state" role="status">
+              <strong>Room closed by the host</strong>
+              <p>This room code is no longer accepting players. No results or trophies were recorded.</p>
+              <button type="button" className="btn secondary" onClick={exitRoom}>Return to menu</button>
+            </div>
+          : <GameArea game={room} onDrop={(col,kind)=>perform('drop',{column:col,kind})} busy={busy} boardTheme={myLoadout?.board}/>}
+        {room.host&&room.status==='playing'&&<div className="host-room-control">
+          <div><strong>Host controls · Abandoned match</strong>
+            <span>To prevent unfair cancellations, No Contest becomes available after 3 minutes without a move, plus another player away for 90 seconds or two missed turns.</span>
+            <small>{room.canNoContest ? 'This match qualifies for No Contest. No result will be recorded.' : 'Match is still active or does not meet the abandonment rules.'}</small></div>
+          <button type="button" className="btn ghost host-danger-btn" disabled={busy||!canEndStalled(room)}
+            onClick={()=>{if(window.confirm('End this stalled match as No Contest? No winner, leaderboard points, or trophies will be awarded. You can start a rematch in the same room.'))void perform('cancel');}}>
+            End match · No Contest</button>
+        </div>}
+        {(room.status==='finished'||isNoContest(room)) && <div className="rematch-panel">
+          <div className="rematch-copy">
+            <strong>{isNoContest(room)?'No Contest · Match '+(room.matchNumber||1):'Match '+(room.matchNumber||1)+' complete'}</strong>
+            <span>{isNoContest(room)
+              ? 'The game ended without a winner or results. All players keep their seats for another match.'
+              : 'Keep this room and all the same players. Results and match history are saved.'}</span></div>
+          {canRematch(room)
             ? <button className="btn primary" disabled={busy} onClick={()=>perform('rematch')}>
                 Play again · Same players
               </button>

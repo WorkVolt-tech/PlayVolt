@@ -58,15 +58,21 @@ export function TvApp() {
       <section className="tv-stage">
         <div className="tv-mode-label">{game ? (modeNames[game.mode] || 'MULTIPLAYER') + ' · MATCH ' + (game.matchNumber || 1) : 'CONNECTING TO YOUR GAME'}</div>
         {game ? <>
-          <GameArea game={game} readOnly onDrop={() => {}} busy boardTheme={game.hostBoardTheme}/>
+          {game.status==='cancelled'&&game.endReason==='closed_lobby'
+            ? <div className="tv-closed-state">This room was closed by the host.</div>
+            : <GameArea game={game} readOnly onDrop={() => {}} busy boardTheme={game.hostBoardTheme}/>}
           {game.status === 'lobby' && <div className="tv-waiting">{game.matchNumber > 1 ? 'Rematch lobby · Players getting ready' : 'Waiting for the host to start'} · {game.players.length}/{game.maxPlayers} players</div>}
+          {game.status==='cancelled'&&game.endReason==='stalled_no_contest'&&
+            <div className="tv-waiting">No Contest · No winner or trophies awarded. The host may start a rematch.</div>}
         </> : <div className="tv-waiting">Waiting for your room's board…</div>}
         {error && <p className="tv-error" role="status">{error}</p>}
       </section>
       <aside className="tv-sidebar">
         <span className="tv-side-label">JOIN FROM YOUR PHONE</span>
         <div className="tv-room-code">{link?.code || '------'}</div>
-        <p>Open Drop &amp; Block on your phone, sign in with PlayVolt, and enter this room code.</p>
+        {game?.status==='cancelled'
+          ? <p>This room is not accepting moves or new players. {game.endReason==='stalled_no_contest'?'The host may start a rematch.':'The room is closed.'}</p>
+          : <p>Open Drop &amp; Block on your phone, sign in with PlayVolt, and enter this room code.</p>}
         {joinUrl && <a className="tv-join-address" href={joinUrl}>{new URL(joinUrl).host}</a>}
         <div className="tv-divider" />
         <h2>PLAYERS</h2>
@@ -79,7 +85,7 @@ export function TvApp() {
             <strong>{p.eliminated?'OUT':game.mode==='team'?(p.seat%2===1?'GOLD':'BLUE'):game.mode==='territory'?p.score+' pts':game.mode==='chaos'?'⬢'+(p.chaosBlockUsed?'0':'1')+' ✹'+(p.chaosBlastUsed?'0':'1'):p.seat===game.turnSeat?'PLAYING':''}</strong>
           </div>
         )}</div> : <p className="tv-empty">Players will appear here when they join.</p>}
-        <div className="tv-status">{game?.status==='playing'?'● MATCH LIVE':game?.status==='finished'?'✓ MATCH FINISHED':'◌ WAITING IN LOBBY'}</div>
+        <div className="tv-status">{game?.status==='playing'?'● MATCH LIVE':game?.status==='finished'?'✓ MATCH FINISHED':game?.status==='cancelled'?(game.endReason==='stalled_no_contest'?'⊘ NO CONTEST':'⊘ ROOM CLOSED'):'◌ WAITING IN LOBBY'}</div>
         <span className="tv-footer-note">Read-only TV view · All moves stay on players’ phones</span>
       </aside>
     </main>

@@ -177,3 +177,25 @@ Only a real participant accessing the room causes expired turns to advance;
 there is no continuously running background cron for an empty room.
 A normal game still has the original 24-hour room expiry. Local demos have
 no timers. Only Drop & Block tables, RPCs, and preview UI are changed.
+
+## Host room controls (migration 010)
+
+**Close lobby:** A host may close an unused lobby immediately. Its invitation
+code stops admitting new players. A closed lobby is terminal; the host must
+create a new room to invite others again. There is no win, draw or trophy.
+
+**End abandoned match — No Contest:** A host can end a playing match only
+after **three minutes since the last valid move** AND at least one of:
+an opponent has not been seen in the room for **90 seconds**, or the match
+has already recorded **two missed turns**. The database evaluates this and
+rejects early or non-host requests; browser time cannot bypass the safeguard.
+The host must confirm in the UI. Both players and TV see the no-contest reason.
+A No Contest has no winner and writes **no** `drop_block_results`, so it never
+increases matches played, awards trophy unlocks, or changes the leaderboard.
+Previously completed matches in the same room remain preserved.
+
+After a stalled No Contest, the host may start a rematch in the **same room**,
+keeping all players and the invitation code, with a fresh turn timer and
+ready checks. The status `cancelled` with `ended_reason` distinguishes closed
+lobbies from abandoned games. The original 24-hour room expiry still applies.
+All changes are isolated to `drop_block_*` objects and the preview branch.
