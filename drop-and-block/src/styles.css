@@ -201,3 +201,18 @@ footer span{color:#ffcb56}
 .trophy-popup-item>div:last-child{display:grid;gap:6px}.trophy-popup-item strong{color:#ffda84;font-size:17px}.trophy-popup-item span{color:#b8c7df;font-size:12px}
 .trophy-popup-actions{display:flex;justify-content:center;gap:12px;margin-top:19px}
 @media(max-width:620px){.header-right{gap:7px}.header-right .text-btn{font-size:10px}.progress-head{flex-direction:column}.progress-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.trophy-collection{grid-template-columns:1fr}.trophy-progress-head{align-items:flex-start;flex-direction:column}.leaderboard-headings,.leaderboard-row{grid-template-columns:minmax(0,1fr) 40px 42px 56px;gap:6px}.leaderboard-row{padding:10px 7px;font-size:11px}.leaderboard-headings{font-size:9px;padding:6px 4px}.rank-number{min-width:25px}.rank-name{gap:4px}.trophy-medal{width:60px;height:60px}.trophy-popup{padding:18px}}
+
+/* Team Battle: every seat keeps its own chip style; rings identify the team. */
+.team-ring-1{outline:3px solid #ffce60;outline-offset:-3px}
+.team-ring-2{outline:3px solid #66e5fb;outline-offset:-3px}
+.team-roster-1{box-shadow:inset 0 -3px 0 #ffce60aa}
+.team-roster-2{box-shadow:inset 0 -3px 0 #66e5fbaa}
+.team-scoreline{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:8px;align-items:center;margin:18px 0 10px}
+.team-scoreline>b{text-align:center;color:#c9d5ed;font-size:13px}
+.team-side{border-radius:13px;padding:11px;background:#17223e;border:1px solid #526385;min-width:0;display:grid;gap:5px;text-align:center}
+.team-side strong{font-size:clamp(12px,2.3vw,18px);letter-spacing:.06em}
+.team-side small{font-size:11px;color:#bac8e3;white-space:normal;line-height:1.5}
+.team-side.team-gold{border-color:#dbaf59aa}.team-side.team-gold strong{color:#ffdf91}
+.team-side.team-blue{border-color:#58cfea99}.team-side.team-blue strong{color:#7ce6ff}
+.team-lobby-note{color:#d9cba8;background:#42382160;border:1px solid #d2b06877;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5}
+@media(max-width:560px){.team-scoreline{gap:4px;grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr)}.team-side{padding:9px 4px}.team-side small{font-size:9px}.team-ring-1,.team-ring-2{outline-width:2px}}

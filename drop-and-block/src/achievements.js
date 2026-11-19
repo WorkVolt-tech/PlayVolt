@@ -8,11 +8,12 @@ export const TROPHIES = [
  {code:'territory_win',title:'Territory Titan',icon:'🗺️',tier:'Silver',description:'Win a Territory match.'},
  {code:'collapse_win',title:'Floor Survivor',icon:'🧱',tier:'Silver',description:'Win a Bottom Drop match.'},
  {code:'elimination_win',title:'Last One Standing',icon:'💀',tier:'Silver',description:'Survive and win an Elimination match.'},
- {code:'party_win',title:'Crowd Controller',icon:'🎉',tier:'Gold',description:'Win an online match against at least three others.'},
+ {code:'party_win',title:'Crowd Controller',icon:'🎉',tier:'Gold',description:'Win an online match with at least four players.'},
+ {code:'team_win',title:'Teamwork Triumph',icon:'🤝',tier:'Silver',description:'Win Team Battle as a member of the winning team.'},
  {code:'wins_5',title:'Five Alive',icon:'✋',tier:'Silver',description:'Win five online matches.'},
  {code:'streak_3',title:'Triple Threat',icon:'🔥',tier:'Gold',description:'Win three online matches consecutively.'},
  {code:'wins_20',title:'Block Royalty',icon:'👑',tier:'Gold',description:'Win twenty online matches.'},
- {code:'five_modes',title:'Master of Five',icon:'💎',tier:'Platinum',description:'Win at least once in every game mode.'},
+ {code:'five_modes',title:'Five-Mode Master',icon:'💎',tier:'Platinum',description:'Win in five different game modes.'},
 ];
 export const TROPHY_BY_CODE = Object.fromEntries(TROPHIES.map(t=>[t.code,t]));
 export const MODES = [
@@ -22,4 +23,5 @@ export const MODES = [
  {value:'elimination',label:'Elimination'},
  {value:'collapse',label:'Bottom Drop'},
  {value:'chaos',label:'Chaos'},
+ {value:'team',label:'Team Battle'},
 ];

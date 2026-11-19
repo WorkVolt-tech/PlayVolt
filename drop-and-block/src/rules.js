@@ -125,3 +125,40 @@ export function playChaosTurn(old,column,count,width,height,kind='drop') {
   return {...old,board,scores,chaosBlockUsed:blockUsed,chaosBlastUsed:blastUsed,lastEvent,
     status:done?'finished':'playing',winner,turn:done?null:old.turn%count+1};
 }
+
+
+/** Team Battle: odd seats share Team Gold, even seats share Team Blue.
+ *  Individual shapes and colors remain identifiable. Neutral pieces never count. */
+export function teamOfSeat(seat) {
+  return Number.isInteger(seat) && seat>=1 && seat<=8 ? (seat%2===1?1:2) : null;
+}
+export function teamLinePoints(board,width,height,column,row,seat) {
+  const team=teamOfSeat(seat);
+  if(team===null)return 0;
+  let points=0;
+  for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1]]) {
+    let length=1;
+    for(const direction of [-1,1]) {
+      let x=column+dx*direction,y=row+dy*direction;
+      while(x>=0&&x<width&&y>=0&&y<height&&teamOfSeat(board[y*width+x])===team){
+        length++;x+=dx*direction;y+=dy*direction;
+      }
+    }
+    if(length>=4)points++;
+  }
+  return points;
+}
+export function playTeamTurn(old,column,count,width,height) {
+  if(old.status!=='playing'||old.turn===null||count<4||count%2!==0)return old;
+  const placed=drop(old.board,width,height,column,old.turn);
+  if(!placed)return old;
+  const points=teamLinePoints(placed.board,width,height,column,placed.row,old.turn);
+  const scores=[...old.scores];
+  scores[old.turn-1]+=points;
+  const winner=points>0?old.turn:null;
+  const full=placed.board.every(Boolean);
+  const finished=Boolean(winner)||full;
+  return {...old,board:placed.board,scores,status:finished?'finished':'playing',
+    winner,winnerTeam:winner?teamOfSeat(winner):null,
+    turn:finished?null:old.turn%count+1};
+}

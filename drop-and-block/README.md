@@ -123,3 +123,20 @@ The gallery uses black/gold medals with locked/earned states. Players see a
 server-verified unlock popup after an online match; historic trophies already
 seen on a different day/device are not announced again on first visit to that
 browser. Database: apply `006_trophies_leaderboard.sql` after `005`.
+
+## Team Battle (preview; migration 007)
+- Team Battle is for **4, 6 or 8 players** (2v2 / 3v3 / 4v4). The host can
+  start once there are at least four players and an even number have joined.
+- Seats 1,3,5,7 are **Team Gold**; seats 2,4,6,8 are **Team Blue**.
+  Joining order determines teams, and existing seats persist across rematches.
+- Each player keeps their individual chip color and symbol, with a gold or blue
+  ring identifying its team. Differently colored teammates' chips may connect
+  into a shared four-in-a-row horizontally, vertically, or diagonally.
+- The first team to make a line of four wins. The winning team's *all* members
+  receive a server-recorded victory, ranking credit and normal win trophies.
+  A full board with no winning team is a draw. TV viewers see both teams.
+- Team wins also unlock the **Teamwork Triumph** trophy. The Five-Mode Master
+  trophy still requires victories in any **five different modes**.
+- Existing Classic, Territory, Elimination, Bottom Drop and Chaos rules are
+  unchanged. Team-mode table values are computed from seat parity; no new
+  shared-account tables or destructive changes are required.
