@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { AVATARS, BOARDS, PIECES, RESULT_PINS, ACCENTS, cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
+import { AVATARS, BOARDS, PIECES, RESULT_PINS, ACCENTS, cosmeticStyle, normalizeCosmetics, unlockedCosmetics } from '../cosmetics.js';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { Feedback } from '../components/Feedback.jsx';
 import { AvatarArt } from '../components/AvatarArt.jsx';
+import { byCode } from '../achievements.js';
 
 const categories = [
   ['avatar', 'Choose your avatar', AVATARS],
@@ -13,12 +14,14 @@ const categories = [
   ['pin', 'Result pin shape', RESULT_PINS],
 ];
 
-export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, usedAccents = [], onSave, onBack, busy }) {
-  const [choice, setChoice] = useState(() => normalizeCosmetics(value, seat));
+export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, usedAccents = [], inRoom = false, onSave, onBack, busy }) {
+  const [choice, setChoice] = useState(() => ({ ...unlockedCosmetics(value, earned),
+    accent: inRoom ? normalizeCosmetics(value, seat).accent : unlockedCosmetics(value, earned).accent }));
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const preview = { name, seat, appearance: choice };
-  const locked = (option) => option.trophy && !earned[option.trophy];
+  const locked = (key, option) => option.trophy && !earned[option.trophy]
+    && !(key === 'accent' && inRoom && option.id === value?.accent);
   async function save() {
     setError(''); setSaving(true);
     try { await onSave(choice); onBack(); }
@@ -29,6 +32,7 @@ export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, us
     <button className="back-button" type="button" onClick={onBack}>← Back</button>
     <h1 className="page-title">Make it yours</h1>
     <p className="customize-intro">Your avatar, board, and shapes appear on your phone and beside your guesses on the shared TV.</p>
+    <p className="customize-intro">Earn trophies and finish story worlds to unlock styles. Rooms can assign a unique board color even before you unlock it for choosing.</p>
     <div className={`customize-preview board-theme-${choice.board} pin-shape-${choice.pin}`}
       style={cosmeticStyle(choice, seat)}>
       <header><PlayerAvatar player={preview} /><strong>{name}</strong><small>LIVE PREVIEW</small></header>
@@ -40,7 +44,7 @@ export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, us
     {categories.map(([key, title, options]) => <fieldset className="surface customize-group" key={key}>
       <legend>{title}</legend>
       <div className="customize-options">
-        {options.map((option) => <button key={option.id} type="button" disabled={!!locked(option) || (key === 'accent' && usedAccents.includes(option.id))}
+        {options.map((option) => <button key={option.id} type="button" disabled={!!locked(key, option) || (key === 'accent' && usedAccents.includes(option.id))}
           className={'customize-option' + (choice[key] === option.id ? ' selected' : '')}
           aria-pressed={choice[key] === option.id}
           onClick={() => setChoice({ ...choice, [key]: option.id })}>
@@ -50,7 +54,9 @@ export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, us
               : key === 'board' ? '✦' : key === 'accent' ? '' : option.icon}
           </span>
           <span>{option.name}</span>
-          {locked(option) && <small>🔒 Trophy: {option.trophy.replaceAll('_', ' ')}</small>}
+          {locked(key, option) && <small>🔒 {byCode[option.trophy]?.title || option.trophy}</small>}
+          {key === 'accent' && inRoom && option.id === value?.accent && option.trophy && !earned[option.trophy]
+            && <small>Assigned in this room</small>}
           {key === 'accent' && usedAccents.includes(option.id) && <small>In use</small>}
         </button>)}
       </div>
