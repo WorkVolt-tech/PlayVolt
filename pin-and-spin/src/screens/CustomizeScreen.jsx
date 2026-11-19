@@ -50,7 +50,7 @@ export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, us
           onClick={() => setChoice({ ...choice, [key]: option.id })}>
           <span className="customize-swatch" style={key === 'accent' ? { background: option.hex } : undefined}>
             {key === 'avatar' ? option.id === 'initial' ? name[0]?.toUpperCase()
-              : ['bunny', 'fox', 'cat', 'champion', 'royal', 'carrot', 'crystal'].includes(option.id) ? <AvatarArt variant={option.id} /> : option.icon
+              : ['bunny', 'bear', 'fox', 'wolf', 'cat', 'robot', 'champion', 'royal', 'carrot', 'crystal', 'dragon'].includes(option.id) ? <AvatarArt variant={option.id} /> : option.icon
               : key === 'board' ? '✦' : key === 'accent' ? '' : option.icon}
           </span>
           <span>{option.name}</span>
