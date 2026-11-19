@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
 const CHECK_EVERY_MS = 60 * 1000;
 
-export function VersionAlert() {
+export function VersionAlert({ autoUpdate = false }) {
   const [latestVersion, setLatestVersion] = useState(null);
   const [updating, setUpdating] = useState(false);
   const lastCheck = useRef(0);
@@ -36,6 +36,16 @@ export function VersionAlert() {
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [checkVersion]);
+
+  useEffect(() => {
+    if (!autoUpdate || !latestVersion) return undefined;
+    try {
+      if (sessionStorage.getItem('drop_block_tv_auto_update') === latestVersion) return undefined;
+      sessionStorage.setItem('drop_block_tv_auto_update', latestVersion);
+    } catch { /* private mode still allows a refresh */ }
+    const timer = window.setTimeout(() => window.location.reload(), 4000);
+    return () => window.clearTimeout(timer);
+  }, [autoUpdate, latestVersion]);
 
   if (!latestVersion) return null;
   return <div className="version-alert" role="alert" aria-live="assertive">

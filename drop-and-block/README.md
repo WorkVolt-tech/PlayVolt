@@ -36,8 +36,7 @@ public.profiles as Dekabess and Pin & Spin: no duplicate accounts.
   reload, online players rejoin the current match from the URL; local demos reset.
 - Each player's piece shows both a color and a symbol.
 - Room codes expire after 24 hours; reloading a room link allows re-entry for
-  existing participants. The first release does not have guest access, TV
-  view, rematches, Chaos powers, or abandonment/time-out handling.
+  existing participants. The first release does not have guest access, rematches, Chaos powers, or abandonment/time-out handling.
 
 ## Security
 Only authenticated players can invoke drop_block_action(). All four new tables
@@ -54,3 +53,21 @@ pure gravity/scoring rules are in tests/. Cloudflare builds this folder only.
 Run `backend/migrations/002_modes_elimination_bottom_drop.sql` after the
 existing `001` migration. It extends only `drop_block_*` objects and supports
 existing Classic/Territory rooms without resetting them.
+
+## TV Party Mode (preview)
+From any signed-in room, choose **Open TV** or **Copy TV link**.
+Open the link on a TV browser, laptop connected to a TV, or large tablet.
+The TV is a **read-only spectator**; all moves stay on individual phones.
+It shows the live board, whose turn it is, player names, eliminations and scores.
+Players join the room with the six-character code shown on the TV.
+
+The TV link contains a cryptographically random 64-character secret in the URL
+fragment, not in the server request. Only room participants receive this link.
+Sharing it gives read-only access, not permission to play. TV state is fetched
+by `drop_block_tv_state` without requiring the TV to sign in. Tokens expire
+when their rooms expire after 24 hours. No existing PlayVolt tables are changed.
+The TV refreshes automatically when a new preview build is deployed; phones
+still receive the **Update Now** prompt.
+
+Database: apply migration `003_tv_shared_display.sql` after `002`.
+Cloudflare builds only `drop-and-block/` from the preview branch.

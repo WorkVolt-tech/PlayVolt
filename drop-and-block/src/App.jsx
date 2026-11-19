@@ -2,21 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { db, action } from './supabase.js';
 import { emptyBoard, dimensions, playLocalTurn } from './rules.js';
 import { VersionAlert } from './VersionAlert.jsx';
+import { buildTvDisplayUrl } from './tvLink.js';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
 const hub = 'https://playvolt-hub.pages.dev/';
 
-function Board({ board, width, height, turn, me, onDrop, disabled }) {
+function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false }) {
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
   return <div className="board-wrap">
-    <div className="board-controls" style={grid}>
+    {!readOnly && <div className="board-controls" style={grid}>
       {columns.map(col => <button key={col} className="drop-arrow" aria-label={'Drop in column ' + (col+1)}
         disabled={disabled || turn !== me || board[col] !== 0}
         onClick={() => onDrop(col)}>▼</button>)}
-    </div>
+    </div>}
     <div className="board" style={grid} role="grid" aria-label="Drop & Block game board">
       {rows.flatMap(row => columns.map(col => {
         const seat = board[row * width + col] || 0;
@@ -48,10 +49,10 @@ function LocalDemo({ onBack, count, mode }) {
 
 const modeName = mode => ({ classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop' })[mode] || 'Classic';
 
-function GameArea({game, onDrop, busy}) {
+export function GameArea({game, onDrop, busy, readOnly = false}) {
   const turnPlayer = game.players.find(p=>p.seat===game.turnSeat);
   const winner = game.players.find(p=>p.seat===game.winnerSeat);
-  const myTurn = game.status==='playing' && game.turnSeat===game.meSeat;
+  const myTurn = !readOnly && game.status==='playing' && game.turnSeat===game.meSeat;
   return <>
     <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'') + (p.eliminated?' eliminated':'')}>
       <span className={'tiny-disc seat-' + p.seat}>{icons[p.seat]}</span>
@@ -62,11 +63,11 @@ function GameArea({game, onDrop, busy}) {
     {game.lastEvent && <div className="round-event" role="status">{game.lastEvent}</div>}
     <div className={'turn-notice' + (myTurn?' is-me':'')}>
       {game.status==='finished' ? (winner ? winner.name+' wins!' : 'Match finished · Draw')
-        : myTurn ? 'Your turn — choose a column' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
+        : myTurn ? 'Your turn — choose a column' : readOnly ? (turnPlayer?.name || 'A player') + ' is playing' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
     </div>
     <Board board={game.board} width={game.width} height={game.height}
       turn={game.turnSeat} me={game.meSeat} onDrop={onDrop}
-      disabled={busy || game.status!=='playing'}/>
+      disabled={busy || game.status!=='playing'} readOnly={readOnly}/>
     <div className="board-foot">{game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
@@ -153,6 +154,25 @@ export default function App() {
     setRoom(null);setMessage('');
     history.replaceState(null,'',location.pathname);
   }
+  function tvUrl() {
+    if (!room?.displayToken) return null;
+    return buildTvDisplayUrl(window.location, room.code, room.displayToken);
+  }
+  async function copyTvUrl() {
+    const url = tvUrl();
+    if (!url) { setMessage('TV display is not available for this room yet.'); return; }
+    try {
+      await navigator.clipboard.writeText(url);
+      setMessage('TV link copied. Open it on a TV, computer or tablet.');
+    } catch {
+      window.prompt('Copy the TV link to open on your TV:', url);
+    }
+  }
+  function openTv() {
+    const url = tvUrl();
+    if (!url) { setMessage('TV display is not available for this room yet.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
   async function shareRoom() {
     if(!room)return;
     const link=location.origin+location.pathname+'?room='+room.code;
@@ -182,6 +202,13 @@ export default function App() {
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
         <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · {room.players.length}/{room.maxPlayers} players</p></div>
         <button className="btn secondary" onClick={shareRoom}>Invite friends</button></div>
+        <div className="tv-launch">
+          <span><b>TV Party Mode</b><small>Show the board on your TV; everyone plays on their phone.</small></span>
+          <div className="tv-launch-actions">
+            <button type="button" className="btn secondary" onClick={openTv} disabled={!room.displayToken}>Open TV</button>
+            <button type="button" className="btn ghost" onClick={copyTvUrl} disabled={!room.displayToken}>Copy TV link</button>
+          </div>
+        </div>
         {room.status==='lobby' ? <>
           <div className="roster">{room.players.map(p=><div key={p.seat} className={'player-chip seat-border-'+p.seat}>
             <span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
