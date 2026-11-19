@@ -84,3 +84,20 @@ test('an automatically assigned color can be kept, but choosing a locked color i
     await rejects(g.api('appearance', host.code, tok(20), { appearance: { accent: 'gold' } }), /trophy/);
   } finally { await db.close(); }
 });
+
+test('new character silhouettes include a free Bear and trophy/story avatars', async () => {
+  const db = await freshDb();
+  try {
+    const user = '33333333-3333-4333-8333-333333333333';
+    await db.query('insert into public.profiles(id,nickname) values ($1,$2)', [user, 'Artist']);
+    const check = (avatar) => db.query('select public.pin_and_spin_valid_cosmetics($1::jsonb,$2) as style',
+      [JSON.stringify({ avatar }), user]);
+    assert.equal((await check('bear')).rows[0].style.avatar, 'bear');
+    for (const [avatar, trophy] of [['wolf', 'first_try'], ['robot', 'world_2'], ['dragon', 'world_5']]) {
+      await rejects(check(avatar), /trophy/);
+      await db.query('insert into public.pin_and_spin_achievements(user_id,code) values ($1,$2)', [user, trophy]);
+      assert.equal((await check(avatar)).rows[0].style.avatar, avatar);
+    }
+    await rejects(check('champion'), /trophy/);
+  } finally { await db.close(); }
+});
