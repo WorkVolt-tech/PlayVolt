@@ -153,3 +153,27 @@ Chosen chips and avatars are rendered for everyone in the game and TV spectator
 screens, retaining seat colors/symbols; each player sees their chosen board
 theme locally, while the TV uses the host's board theme.
 No existing Dekabess, Pin & Spin, PlayVolt Auth, or live hub tables are changed.
+
+## Timed turns and reconnecting (migration 009)
+Every **online match** uses a 60-second server-owned turn limit. Each accepted
+move and new turn sets a fresh deadline. If the deadline expires, the first
+authenticated participant polling the room resolves it **transactionally**:
+the current turn is passed to the next eligible seat. No chip is dropped, no
+victory is awarded, and the skipped player is **not eliminated**. The timeout
+is counted per player and per match; a rematch clears all timeout counters.
+A late move after the server deadline does not land on the board.
+
+The read-only TV gets the same authoritative deadline but **cannot trigger**
+turn transitions or submit any move. The mobile and TV views show a locally
+animated countdown derived from a server timestamp, so device clock errors
+cannot decide the result. The countdown is informational; all enforcement is
+in `drop_block_action`.
+
+An online player is marked **Away** after ~25 seconds with no room activity;
+routine participant polling marks them Online again on return. This status is
+informational and does not forfeit the match. Refreshing/reopening the same
+invitation link restores existing room membership and allows play to continue.
+Only a real participant accessing the room causes expired turns to advance;
+there is no continuously running background cron for an empty room.
+A normal game still has the original 24-hour room expiry. Local demos have
+no timers. Only Drop & Block tables, RPCs, and preview UI are changed.

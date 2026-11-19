@@ -305,3 +305,19 @@ footer span{color:#ffcb56}
  .custom-preview-copy span,.custom-preview-copy small{font-size:10px}
  .header-right{flex-wrap:wrap;gap:4px}.header-right .text-btn{font-size:9px}
 }
+
+/* Online-only timed turns and lightweight connection status. */
+.turn-clock{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:9px 13px;margin:8px 0 11px;border:1px solid #78d0f16b;background:linear-gradient(100deg,#153b55aa,#14253eaa);border-radius:12px;color:#cfeafb}
+.turn-clock>span:first-child{font-size:12px;font-weight:900;display:flex;align-items:center;gap:8px}
+.clock-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#7fefc0;box-shadow:0 0 10px #7fefc088}
+.turn-clock strong{font-size:clamp(19px,3.3vw,27px);font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:.05em;color:#acf7f2}
+.turn-clock .clock-rules{font-size:11px;color:#b3c8dc}
+.turn-clock.clock-urgent{border-color:#efad60;background:linear-gradient(120deg,#573020bf,#342239bf)}
+.turn-clock.clock-urgent strong{color:#ffbf7b}
+.turn-clock.clock-urgent .clock-dot{background:#ffab75;box-shadow:0 0 12px #ffb06e}
+.player-presence{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.02em;white-space:normal}
+.player-label .player-presence{display:block;margin:4px 0 0}
+.player-presence.online{color:#86e5b2}.player-presence.away{color:#f2b87c}
+.tv-player-name .player-presence{display:block;font-size:9px;margin-top:4px}
+.online-timer-note{color:#c0d2e7;font-size:11px;border-left:3px solid #79d6f4;padding:7px 10px;margin:13px 0;background:#16415b42;line-height:1.5}
+@media(max-width:580px){.turn-clock{gap:5px;padding:8px 10px}.turn-clock>span:first-child{font-size:11px}.turn-clock .clock-rules{flex-basis:100%;font-size:10px;text-align:center}}

@@ -73,7 +73,9 @@ export function TvApp() {
         {game?.players?.length ? <div className="tv-player-list">{game.players.map(p =>
           <div key={p.seat} className={'tv-player tv-seat-' + p.seat + (p.eliminated?' tv-eliminated':'') + (p.seat === game.turnSeat?' tv-current':'')}>
             <AvatarBadge id={p.avatarStyle||'sentinel'} small/><ChipDisc seat={p.seat} style={p.chipStyle||'round'} compact/>
-            <span className="tv-player-name">{p.name}</span>
+            <span className="tv-player-name">{p.name}
+              {p.online!==undefined&&<small className={'player-presence '+(p.online?'online':'away')}>{p.online?'● Online':'○ Away'}{p.timedOutTurns?' · '+p.timedOutTurns+' missed':''}</small>}
+            </span>
             <strong>{p.eliminated?'OUT':game.mode==='team'?(p.seat%2===1?'GOLD':'BLUE'):game.mode==='territory'?p.score+' pts':game.mode==='chaos'?'⬢'+(p.chaosBlockUsed?'0':'1')+' ✹'+(p.chaosBlastUsed?'0':'1'):p.seat===game.turnSeat?'PLAYING':''}</strong>
           </div>
         )}</div> : <p className="tv-empty">Players will appear here when they join.</p>}
