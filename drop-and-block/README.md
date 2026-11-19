@@ -36,7 +36,7 @@ public.profiles as Dekabess and Pin & Spin: no duplicate accounts.
   reload, online players rejoin the current match from the URL; local demos reset.
 - Each player's piece shows both a color and a symbol.
 - Room codes expire after 24 hours; reloading a room link allows re-entry for
-  existing participants. The first release does not have guest access, rematches, Chaos powers, or abandonment/time-out handling.
+  existing participants. The first release does not have guest access, Chaos powers, or abandonment/time-out handling.
 
 ## Security
 Only authenticated players can invoke drop_block_action(). All four new tables
@@ -71,3 +71,19 @@ still receive the **Update Now** prompt.
 
 Database: apply migration `003_tv_shared_display.sql` after `002`.
 Cloudflare builds only `drop-and-block/` from the preview branch.
+
+## Rematches and saved match history (preview)
+After a match finishes, **only the host** can select **Play again · Same players**.
+Every player stays in the existing room and keeps their seat; nobody needs a new invite.
+The game returns to the lobby, resets the board, round, eliminations and scores,
+and asks the other players to ready up. The host can then start the next match.
+First player rotates by match number to avoid giving one seat every first turn.
+
+The server tracks `match_number`, a continuously increasing `total_moves` count,
+and the separate `move_count` of the current match. Move history uses global
+sequence numbers while results have a composite (room, match, player) key, so
+previous scores/winners and moves are not overwritten on rematch.
+The TV screen shows the match number and changes back to a rematch lobby.
+
+Database: apply migration `004_rematch_history.sql` after `003`.
+Rooms still expire 24 hours after initial creation, as they did before.

@@ -135,3 +135,11 @@ footer span{color:#ffcb56}
 @media(max-width:940px){.tv-layout{grid-template-columns:minmax(0,1fr) 200px}.tv-sidebar{padding:12px}.tv-room-code{font-size:30px}.tv-sidebar p{font-size:12px}}
 @media(max-width:650px){.tv-layout{grid-template-columns:1fr}.tv-sidebar{order:-1}.tv-player-list{grid-template-columns:repeat(2,minmax(0,1fr))}.tv-readonly{font-size:9px}.tv-stage{padding:10px}.tv-launch{flex-direction:column;align-items:stretch}.tv-launch-actions .btn{flex:1}}
 @media(prefers-reduced-motion:reduce){.tv-shell *{animation:none!important;transition:none!important}}
+
+/* Post-match room continuation: reuse the same game code for subsequent matches. */
+.rematch-panel{margin:18px 0 4px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;border:1px solid #e9b45d66;background:linear-gradient(105deg,#372b28c4,#1d2849c4);border-radius:14px}
+.rematch-copy{display:grid;gap:4px;min-width:0}
+.rematch-copy strong{color:#ffdc8b;font-size:15px}
+.rematch-copy span{color:#b8c8e4;font-size:12px;line-height:1.5}
+.rematch-waiting{color:#f4cd80;font-size:12px;font-weight:800}
+@media(max-width:640px){.rematch-panel{flex-direction:column;align-items:stretch}.rematch-panel .btn{width:100%}}

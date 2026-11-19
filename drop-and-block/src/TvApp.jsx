@@ -55,10 +55,10 @@ export function TvApp() {
     </header>
     <main className="tv-layout">
       <section className="tv-stage">
-        <div className="tv-mode-label">{game ? modeNames[game.mode] || 'MULTIPLAYER' : 'CONNECTING TO YOUR GAME'}</div>
+        <div className="tv-mode-label">{game ? (modeNames[game.mode] || 'MULTIPLAYER') + ' · MATCH ' + (game.matchNumber || 1) : 'CONNECTING TO YOUR GAME'}</div>
         {game ? <>
           <GameArea game={game} readOnly onDrop={() => {}} busy />
-          {game.status === 'lobby' && <div className="tv-waiting">Waiting for the host to start · {game.players.length}/{game.maxPlayers} players</div>}
+          {game.status === 'lobby' && <div className="tv-waiting">{game.matchNumber > 1 ? 'Rematch lobby · Players getting ready' : 'Waiting for the host to start'} · {game.players.length}/{game.maxPlayers} players</div>}
         </> : <div className="tv-waiting">Waiting for your room's board…</div>}
         {error && <p className="tv-error" role="status">{error}</p>}
       </section>

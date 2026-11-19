@@ -200,7 +200,7 @@ export default function App() {
       {demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode}/> :
       room ? <section className="panel panel-wide">
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
-        <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · {room.players.length}/{room.maxPlayers} players</p></div>
+        <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p></div>
         <button className="btn secondary" onClick={shareRoom}>Invite friends</button></div>
         <div className="tv-launch">
           <span><b>TV Party Mode</b><small>Show the board on your TV; everyone plays on their phone.</small></span>
@@ -213,13 +213,24 @@ export default function App() {
           <div className="roster">{room.players.map(p=><div key={p.seat} className={'player-chip seat-border-'+p.seat}>
             <span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
             <span>{p.name} {p.ready?'✓ Ready':'· Not ready'}</span></div>)}</div>
-          <p className="sub lobby-note">Invite friends using the room code. Each person joins on their own phone with the same PlayVolt login they already use.</p>
+          <p className="sub lobby-note">{room.matchNumber > 1
+            ? 'Rematch ready! Everyone keeps their seat, and the starting player rotates. Confirm you are ready, then the host can start.'
+            : 'Invite friends using the room code. Each person joins on their own phone with the same PlayVolt login they already use.'}</p>
           {room.host
             ? <button className="btn primary full" disabled={busy||room.players.length<2||room.players.some(p=>!p.ready)}
                 onClick={()=>perform('start')}>Start match</button>
             : <button className="btn primary full" disabled={busy} onClick={()=>perform('ready',{ready:!room.players.find(p=>p.seat===room.meSeat)?.ready})}>
                 {room.players.find(p=>p.seat===room.meSeat)?.ready?'Cancel ready':'I’m ready!'}</button>}
         </> : <GameArea game={room} onDrop={col=>perform('drop',{column:col})} busy={busy}/>}
+        {room.status==='finished' && <div className="rematch-panel">
+          <div className="rematch-copy"><strong>Match {room.matchNumber || 1} complete</strong>
+            <span>Keep this room and all the same players. Results and match history are saved.</span></div>
+          {room.host
+            ? <button className="btn primary" disabled={busy} onClick={()=>perform('rematch')}>
+                Play again · Same players
+              </button>
+            : <span className="rematch-waiting">Waiting for the host to start the next match…</span>}
+        </div>}
         <div className="actions"><button className="btn ghost" onClick={exitRoom}>← Back to menu</button></div>
       </section> :
       <div className="home-grid">
