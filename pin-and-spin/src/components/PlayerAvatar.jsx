@@ -8,7 +8,7 @@ export function PlayerAvatar({ player, size = 'md' }) {
   return <span className={`avatar avatar-${size} avatar-style-${appearance.avatar}`}
     style={cosmeticStyle(appearance, player?.seat)}
     role="img" aria-label={`${player?.name || 'Player'} avatar: ${avatar?.name || 'Classic'}`}>
-    {['bunny', 'fox', 'cat', 'champion', 'royal', 'carrot', 'crystal'].includes(appearance.avatar)
+    {['bunny', 'bear', 'fox', 'wolf', 'cat', 'robot', 'champion', 'royal', 'carrot', 'crystal', 'dragon'].includes(appearance.avatar)
       ? <AvatarArt variant={appearance.avatar} />
       : <b>{appearance.avatar === 'initial' ? (player?.name || '?').slice(0, 1).toUpperCase() : avatar?.icon}</b>}
   </span>;
