@@ -15,8 +15,8 @@ export const ACCENTS = [
 export const AVATARS = [
   { id: 'initial', name: 'Classic', icon: '●' },
   { id: 'bunny', name: 'Bunny', icon: '🐰' },
-  { id: 'fox', name: 'Fox', icon: '🦊' },
-  { id: 'cat', name: 'Cat', icon: '🐱' },
+  { id: 'fox', name: 'Rogue Fox', icon: '🦊' },
+  { id: 'cat', name: 'Shadow Cat', icon: '🐱' },
   { id: 'champion', name: 'Champion', icon: '🏆', trophy: 'first_win' },
   { id: 'royal', name: 'Royal', icon: '👑', trophy: 'wins_10' },
   { id: 'carrot', name: 'Carrot Keeper', icon: '🥕', trophy: 'world_1' },
