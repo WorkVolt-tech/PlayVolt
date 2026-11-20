@@ -10,6 +10,7 @@ import {TurnClock} from './TurnClock.jsx';
 import {ReplayHub} from './ReplayHub.jsx';
 import {TvReplayControls} from './TvReplayControls.jsx';
 import {canCloseLobby,canEndStalled,canRematch,isNoContest,isClosedLobby} from './hostControls.js';
+import {canPlayColumn,wideBoardMinWidth} from './boardInteraction.js';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
@@ -19,20 +20,41 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
+  const minWidth=wideBoardMinWidth(width,readOnly);
+  const available=col=>canPlayColumn(board,width,height,col,moveKind,disabled||turn!==me);
+  const actionLabel=moveKind==='blast'?'Blast':'Place '+(moveKind==='block'?'barrier':'chip');
   return <div className="board-wrap">
-    {!readOnly && <div className="board-controls" style={grid}>
-      {columns.map(col => <button key={col} className="drop-arrow" aria-label={'Drop in column ' + (col+1)}
-        disabled={disabled || turn !== me || (moveKind==='blast' ? board[(height-1)*width+col]===0 : board[col] !== 0)}
-        onClick={() => onDrop(col)}>{moveKind==='blast'?'✹':moveKind==='block'?'⬢':'▼'}</button>)}
-    </div>}
-    <div className={'board board-theme-'+safeBoard(boardTheme)} style={grid} role="grid" aria-label="Drop & Block game board">
-      {rows.flatMap(row => columns.map(col => {
-        const seat = board[row * width + col] || 0;
-        return <div className="board-cell" role="gridcell" key={row + '-' + col}>
-          <ChipDisc seat={seat} style={players.find(p=>p.seat===seat)?.chipStyle||'round'} teamMode={teamMode}/>
-        </div>;
-      }))}
+    <div className={'board-scroll'+(minWidth?' is-wide':'')}
+      role={minWidth?'region':undefined} aria-label={minWidth?'Swipe horizontally to view the entire game board':undefined}
+      tabIndex={minWidth?0:undefined}>
+      <div className="board-inner" style={minWidth?{minWidth:minWidth+'px'}:undefined}>
+        {!readOnly&&<div className="board-controls" style={grid}>
+          {columns.map(col=><button type="button" key={col} className="drop-arrow"
+            aria-label={actionLabel+' in column '+(col+1)}
+            disabled={!available(col)} onClick={()=>onDrop(col)}>
+            {moveKind==='blast'?'✹':moveKind==='block'?'⬢':'▼'}
+          </button>)}
+        </div>}
+        <div className="board-tap-area">
+          <div className={'board board-theme-'+safeBoard(boardTheme)} style={grid} role="grid" aria-label="Drop & Block game board">
+            {rows.flatMap(row=>columns.map(col=>{
+              const seat=board[row*width+col]||0;
+              return <div className="board-cell" role="gridcell" key={row+'-'+col}>
+                <ChipDisc seat={seat} style={players.find(p=>p.seat===seat)?.chipStyle||'round'} teamMode={teamMode}/>
+              </div>;
+            }))}
+          </div>
+          {!readOnly&&<div className="board-tap-columns" style={grid} role="group" aria-label="Tap a board column to place a piece">
+            {columns.map(col=><button type="button" key={col} className="board-tap-column"
+              aria-label={actionLabel+' in column '+(col+1)} disabled={!available(col)}
+              onClick={()=>onDrop(col)}/>)}
+          </div>}
+        </div>
+      </div>
     </div>
+    {!readOnly&&<p className="board-mobile-hint">
+      Tap anywhere in a column to play{minWidth?' · Swipe sideways to see the whole board':''}
+    </p>}
   </div>;
 }
 
@@ -118,6 +140,8 @@ export default function App() {
   const [showProgress,setShowProgress] = useState(false);
   const [showCustomize,setShowCustomize] = useState(false);
   const [showHistory,setShowHistory] = useState(false);
+  const [menuOpen,setMenuOpen] = useState(false);
+  const [syncStatus,setSyncStatus] = useState('connected');
   const [myLoadout,setMyLoadout] = useState(null);
   const [freshTrophies,setFreshTrophies] = useState([]);
   const [progressRefresh,setProgressRefresh] = useState(0);
@@ -202,14 +226,31 @@ export default function App() {
     if(!user || !room?.code) return undefined;
     let alive=true;
     const refresh=async()=>{
-      try { const next=await action('get',room.code); if(alive)setRoom(next); }
-      catch { /* temporary network errors must not erase the current match */ }
+      try {
+        const next=await action('get',room.code);
+        if(alive){setRoom(next);setSyncStatus('connected');}
+      } catch {
+        // Retain current match information while the connection is down.
+        if(alive)setSyncStatus('reconnecting');
+      }
     };
     const timer=setInterval(refresh,2000);
     const resume=()=>{if(!document.hidden)void refresh();};
+    const onOnline=()=>void refresh();
     document.addEventListener('visibilitychange',resume);
-    return ()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',resume);};
+    window.addEventListener('online',onOnline);
+    return ()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',resume);
+      window.removeEventListener('online',onOnline);};
   },[user?.id,room?.code]);
+
+  useEffect(()=>{
+    if(!menuOpen)return undefined;
+    const onKeyDown=e=>{if(e.key==='Escape')setMenuOpen(false);};
+    const onOutside=e=>{if(!e.target.closest?.('.mobile-nav'))setMenuOpen(false);};
+    document.addEventListener('keydown',onKeyDown);
+    document.addEventListener('pointerdown',onOutside);
+    return ()=>{document.removeEventListener('keydown',onKeyDown);document.removeEventListener('pointerdown',onOutside);};
+  },[menuOpen]);
 
   async function auth(e) {
     e.preventDefault();
@@ -230,14 +271,30 @@ export default function App() {
     setBusy(true);setMessage('');
     try {
       const next=await action(type,code,data);
-      setRoom(next);setJoinCode(next.code);
+      setRoom(next);setJoinCode(next.code);setSyncStatus('connected');
       history.replaceState(null,'',location.pathname+'?room='+next.code);
       return true;
     } catch(err) {setMessage(err.message);return false;} finally{setBusy(false);}
   }
   function exitRoom() {
-    setRoom(null);setMessage('');
+    setRoom(null);setMessage('');setSyncStatus('connected');setMenuOpen(false);
     history.replaceState(null,'',location.pathname);
+  }
+  function openSection(section) {
+    setShowProgress(section==='progress');
+    setShowCustomize(section==='customize');
+    setShowHistory(section==='history');
+    setMenuOpen(false);
+    if(section!=='game')setDemo(false);
+  }
+  async function copyRoomCode(){
+    if(!room?.code)return;
+    try{
+      await navigator.clipboard.writeText(room.code);
+      setMessage('Room code '+room.code+' copied. Share it with your friends.');
+    }catch{
+      window.prompt('Copy your Drop & Block room code:',room.code);
+    }
   }
   function tvUrl() {
     if (!room?.displayToken) return null;
@@ -266,17 +323,32 @@ export default function App() {
     catch(err){if(err.name!=='AbortError')setMessage('Room code: '+room.code);}
   }
   async function signOut() {
-    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setShowProgress(false);setShowCustomize(false);setShowHistory(false);setMyLoadout(null);setFreshTrophies([]);
+    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setShowProgress(false);setShowCustomize(false);setShowHistory(false);setMenuOpen(false);setMyLoadout(null);setFreshTrophies([]);
     history.replaceState(null,'',location.pathname);
   }
   return <div className="shell">
     <header className="topbar"><a href={hub} className="back">← PLAYVOLT</a>
       <span className="mini-brand">DROP <b>&</b> BLOCK</span>
       <span className="header-right">{user && <>
-        {!demo && <button className="text-btn custom-nav" onClick={()=>{setShowCustomize(s=>!s);setShowProgress(false);setShowHistory(false);}}>{showCustomize?'← Game':'🎨 Customize'}</button>}
-        {!demo && <button className="text-btn history-nav" onClick={()=>{setShowHistory(s=>!s);setShowProgress(false);setShowCustomize(false);}}>{showHistory?'← Game':'↺ Match History'}</button>}
-        {!demo && <button className="text-btn trophies-nav" onClick={()=>{setShowProgress(s=>!s);setShowCustomize(false);setShowHistory(false);}}>{showProgress?'← Game':'🏆 Trophies & Ranks'}</button>}
-        <button className="text-btn" onClick={signOut}>Sign out</button>
+        <nav className="desktop-game-nav" aria-label="PlayVolt game navigation">
+          {!demo&&<button className="text-btn custom-nav" onClick={()=>openSection(showCustomize?'game':'customize')}>{showCustomize?'← Game':'🎨 Customize'}</button>}
+          {!demo&&<button className="text-btn history-nav" onClick={()=>openSection(showHistory?'game':'history')}>{showHistory?'← Game':'↺ Match History'}</button>}
+          {!demo&&<button className="text-btn trophies-nav" onClick={()=>openSection(showProgress?'game':'progress')}>{showProgress?'← Game':'🏆 Trophies & Ranks'}</button>}
+          <button className="text-btn" onClick={signOut}>Sign out</button>
+        </nav>
+        <div className="mobile-nav">
+          <button type="button" className="mobile-menu-toggle" aria-expanded={menuOpen}
+            aria-controls="drop-block-mobile-menu" onClick={()=>setMenuOpen(v=>!v)}>
+            <span>Menu</span><span aria-hidden="true">{menuOpen?'✕':'☰'}</span>
+          </button>
+          {menuOpen&&<nav id="drop-block-mobile-menu" className="mobile-menu-panel" aria-label="Mobile game navigation">
+            <button type="button" onClick={()=>{setDemo(false);openSection('game');}}>🎮 Back to game</button>
+            <button type="button" onClick={()=>openSection('customize')}>🎨 Customize</button>
+            <button type="button" onClick={()=>openSection('history')}>↺ Match History</button>
+            <button type="button" onClick={()=>openSection('progress')}>🏆 Trophies & Ranks</button>
+            <button type="button" className="mobile-signout" onClick={signOut}>Sign out</button>
+          </nav>}
+        </div>
       </>}</span>
     </header>
     <main className="content">
@@ -295,7 +367,18 @@ export default function App() {
       room ? <section className="panel panel-wide">
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
         <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p></div>
-        <button className="btn secondary" onClick={shareRoom}>Invite friends</button></div>
+        <div className="room-share-actions">
+          <button type="button" className="btn ghost" onClick={copyRoomCode}>Copy code</button>
+          <button type="button" className="btn secondary" onClick={shareRoom}>Invite friends</button>
+        </div></div>
+        <div className={'room-sync '+(syncStatus==='connected'?'is-connected':'is-reconnecting')} role="status">
+          <span aria-hidden="true">{syncStatus==='connected'?'●':'◌'}</span>
+          {syncStatus==='connected'?'Room connected · Live updates':'Connection interrupted · Trying to reconnect'}
+          {syncStatus!=='connected'&&<button type="button" onClick={async()=>{
+             try{const next=await action('get',room.code);setRoom(next);setSyncStatus('connected');}
+             catch{setMessage('Still offline. Check your connection and try again.');}
+          }}>Retry now</button>}
+        </div>
         <div className="tv-launch">
           <span><b>TV Party Mode</b><small>Show the board on your TV; everyone plays on their phone.</small></span>
           <div className="tv-launch-actions">
@@ -385,10 +468,19 @@ export default function App() {
         <section className="panel">
           <div className="section-eyebrow">PLAY WITH FRIENDS</div>
           <h2>Join a room</h2>
-          <label>Six-character code<input value={joinCode} maxLength={6} placeholder="A1B2C3"
-            onChange={e=>setJoinCode(e.target.value.toUpperCase().replace(/[^A-F0-9]/g,''))}/></label>
-          <button className="btn primary full" disabled={busy||!user||joinCode.length!==6}
-            onClick={()=>perform('join',{},joinCode)}>Join game</button>
+          <form className="join-room-form" onSubmit={e=>{
+            e.preventDefault();
+            if(!busy&&user&&joinCode.length===6)void perform('join',{},joinCode);
+          }}>
+            <label htmlFor="drop-block-room-code">Six-character code</label>
+            <input id="drop-block-room-code" value={joinCode} maxLength={6} placeholder="A1B2C3"
+              autoCapitalize="characters" autoComplete="off" spellCheck={false}
+              inputMode="text" enterKeyHint="join"
+              onChange={e=>setJoinCode(e.target.value.toUpperCase().replace(/[^A-F0-9]/g,''))}/>
+            <button type="submit" className="btn primary full" disabled={busy||!user||joinCode.length!==6}>
+              Join game
+            </button>
+          </form>
           {user===undefined ? <p className="sub">Checking your PlayVolt account…</p>
            : user ? <p className="sub">Signed in as <b>{profile?.nickname||user.email}</b> · Shared PlayVolt account</p>
            : <div className="auth-area">

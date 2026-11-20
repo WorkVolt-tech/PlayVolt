@@ -54,22 +54,44 @@ export function TvApp() {
   const replaySession=game?.status!=='playing'&&game?.tvReplay?.active
     ? game.tvReplay.startedAt : null;
   useEffect(()=>{
-    if(!link||!replaySession){setReplay(null);setReplayError('');return;}
-    let alive=true;
+    if(!link||!replaySession){setReplay(null);setReplayError('');return undefined;}
+    let alive=true,fetching=false;
     setReplay(null);setReplayError('');
-    db.rpc('drop_block_tv_replay_state',{p_code:link.code,p_token:link.token})
-     .then(({data,error:e})=>{if(!alive)return;if(e)throw e;
-        if(data?.active)setReplay(data);else setReplayError('Replay is no longer available.');})
-     .catch(e=>{if(alive)setReplayError(e.message||'Could not load TV replay');});
-    return ()=>{alive=false;};
+    const fetchReplay=async()=>{
+      if(!alive||fetching)return;
+      fetching=true;
+      try{
+        const {data,error:e}=await db.rpc('drop_block_tv_replay_state',{
+          p_code:link.code,p_token:link.token
+        });
+        if(e)throw e;
+        if(!alive)return;
+        if(data?.active&&data.startedAt===replaySession){
+          setReplay(data);setReplayError('');
+          window.clearInterval(timer);
+        }else setReplayError('The selected replay is not available yet.');
+      }catch(e){
+        if(alive)setReplayError(e.message||'Reconnecting to the TV replay…');
+      }finally{fetching=false;}
+    };
+    const timer=window.setInterval(fetchReplay,5000);
+    const onFocus=()=>{if(!document.hidden)void fetchReplay();};
+    void fetchReplay();
+    window.addEventListener('focus',onFocus);
+    return ()=>{alive=false;window.clearInterval(timer);window.removeEventListener('focus',onFocus);};
   },[link?.code,link?.token,replaySession]);
   const showReplay=Boolean(replaySession);
   const replayReady=showReplay&&replay?.active&&replay.startedAt===replaySession;
   const joinUrl = link ? buildJoinUrl(window.location, link.code) : null;
-  return <div className="tv-shell">
+  return <div className={'tv-shell'+(game?.status==='lobby'?' tv-lobby':'')}>
     <header className="tv-topbar">
       <span className="tv-logo">DROP <em>&</em> BLOCK <small>BY PLAYVOLT</small></span>
-      <span className="tv-readonly">TV DISPLAY · VIEW ONLY</span>
+      <div className="tv-topbar-status">
+        <span className={'tv-connection'+(error?' is-away':' is-live')} role="status">
+          {error?(!link?'◌ Link required':'◌ Reconnecting'):lastUpdated?'● Live updates':'◌ Connecting'}
+        </span>
+        <span className="tv-readonly">TV DISPLAY · VIEW ONLY</span>
+      </div>
     </header>
     <main className="tv-layout">
       <section className="tv-stage">
@@ -80,7 +102,9 @@ export function TvApp() {
           {showReplay
             ? replayReady
                ? <TvReplayScreen key={replaySession} detail={replay}/>
-               : <div className="tv-waiting" role="status">Loading {game.tvReplay.mode==='highlights'?'party highlights':'full match replay'}…</div>
+               : <div className="tv-waiting" role="status">{replayError
+                  ? 'Replay connection interrupted · Retrying automatically…'
+                  : 'Loading '+(game.tvReplay.mode==='highlights'?'party highlights':'full match replay')+'…'}</div>
             : game.status==='cancelled'&&game.endReason==='closed_lobby'
             ? <div className="tv-closed-state">This room was closed by the host.</div>
             : <GameArea game={game} readOnly onDrop={() => {}} busy boardTheme={game.hostBoardTheme}/>}

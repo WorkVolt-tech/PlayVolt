@@ -235,3 +235,26 @@ possible across rematches because the match number is part of the move key.
   the TV replay. The TV's 64-character read-only display capability can only
   read a host-selected completed match in its own room and never control it.
   No other PlayVolt games, authentication, or live hub paths are modified.
+
+## Mobile and TV polish (preview)
+- Phone navigation uses a **Menu** with one-tap destinations for Game,
+  Customize, Match History, Trophies and Sign Out; tap outside or press Escape
+  to close. Desktop navigation stays visible.
+- Phone board supports **tap anywhere in a valid column**, not just the tiny
+  arrows. Full columns and invalid Chaos Blast targets are disabled from both
+  input surfaces. For 12- or 14-column games, the board scrolls horizontally
+  with accessible 40px columns instead of shrinking to nearly untappable cells.
+  TV board remains fully fitted and read-only.
+- The lobby offers **Copy code** and **Invite friends**, the join form works
+  with the mobile keyboard's Join action, and the room has a connection-status
+  indicator with manual retry during an outage. Existing room membership and
+  game states are preserved through transient network loss.
+- Spectator TV puts the **board before the player sidebar** on narrow screens
+  during games and replays; lobby TV shows the join code first. On phones,
+  12- and 14-column archived replay boards scroll rather than shrinking.
+- These are client-only interface enhancements. They do **not** change the
+  Supabase rules, award logic, PlayVolt hub, Dekabess or Pin & Spin.
+
+- The unattended TV shows a clear **Live / Reconnecting** indicator.
+  Interrupted replay loads retry automatically, rather than permanently
+  leaving the TV stuck on the loading screen.

@@ -13,7 +13,7 @@ function ReplayBoard({detail,frame}) {
  const grid={gridTemplateColumns:'repeat('+detail.width+',minmax(0,1fr))'};
  const players=detail.players||[];
  return <div className="replay-board-wrap">
-  <div className="board board-theme-deep-navy replay-board" style={grid} role="grid"
+  <div className="board board-theme-deep-navy replay-board" style={{...grid,minWidth:detail.width>=12?detail.width*34+'px':undefined}} role="grid"
     aria-label={'Recorded board after '+frame.step+' moves'}>
    {(frame.board||[]).map((seat,i)=><div className="board-cell" key={i} role="gridcell">
      <ChipDisc seat={seat} teamMode={detail.mode==='team'}
