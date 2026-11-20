@@ -5,6 +5,7 @@ import { VersionAlert } from './VersionAlert.jsx';
 import { readTvLink, buildJoinUrl } from './tvLink.js';
 import {AvatarBadge,ChipDisc} from './looks.jsx';
 import {TvReplayScreen} from './TvReplayScreen.jsx';
+import {watchRoomPulse,reconcileRoom,createRefreshCoordinator} from './roomRealtime.js';
 
 const modeNames = { speed: 'SPEED ROUND', classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP', chaos: 'CHAOS', team: 'TEAM BATTLE' };
 const icons = ['', '◆', '●', '▲', '■', '★', '⬡', '✦', '✳', '⬢'];
@@ -14,42 +15,54 @@ export function TvApp() {
   const [game, setGame] = useState(null);
   const [error, setError] = useState(link ? '' : 'Open TV Display from a Drop & Block room to get a secure screen link.');
   const [lastUpdated, setLastUpdated] = useState(0);
+  const [transport,setTransport] = useState('connecting');
   const [replay,setReplay]=useState(null);
   const [replayError,setReplayError]=useState('');
 
+  // The display is read-only: room broadcasts only invalidate the board.
+  // All state still comes through the bearer-token TV RPC, never the socket.
   useEffect(() => {
     if (!link) return undefined;
-    let active = true;
-    let fetching = false;
-    const refresh = async () => {
-      if (fetching || !active) return;
-      fetching = true;
-      try {
-        const { data, error: rpcError } = await db.rpc('drop_block_tv_state', {
-          p_code: link.code, p_token: link.token
+    let active=true,live=false,lastAttempt=0;
+    const refresh=async()=>{
+      lastAttempt=Date.now();
+      try{
+        const {data,error:rpcError}=await db.rpc('drop_block_tv_state',{
+          p_code:link.code,p_token:link.token
         });
-        if (rpcError) throw rpcError;
-        if (active) {
-          setGame(data);
+        if(rpcError)throw rpcError;
+        if(active){
+          setGame(current=>reconcileRoom(current,data));
           setError('');
           setLastUpdated(Date.now());
         }
-      } catch (e) {
-        if (active) setError(e.message || 'Connection lost. Reconnecting…');
-      } finally { fetching = false; }
+      }catch(e){
+        if(active)setError(e.message||'Connection lost. Reconnecting…');
+      }
     };
-    void refresh();
-    const timer = setInterval(refresh, 1600);
-    const onFocus = () => { if (!document.hidden) void refresh(); };
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onFocus);
-    return () => {
-      active = false;
-      clearInterval(timer);
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onFocus);
+    const gate=createRefreshCoordinator(refresh,{delay:110});
+    const stop=watchRoomPulse(db,link.token,gate.request,status=>{
+      if(!active)return;
+      live=status==='SUBSCRIBED';
+      setTransport(live?'live':'fallback');
+      if(live)gate.request();
+    });
+    const timer=window.setInterval(()=>{
+      const fallbackMs=live?18000:3500;
+      if(!document.hidden&&Date.now()-lastAttempt>=fallbackMs)gate.request();
+    },1000);
+    const onFocus=()=>{if(!document.hidden)gate.request();};
+    window.addEventListener('focus',onFocus);
+    document.addEventListener('visibilitychange',onFocus);
+    window.addEventListener('online',onFocus);
+    gate.request();
+    return ()=>{
+      active=false;stop();gate.dispose();window.clearInterval(timer);
+      window.removeEventListener('focus',onFocus);
+      document.removeEventListener('visibilitychange',onFocus);
+      window.removeEventListener('online',onFocus);
     };
-  }, [link?.code, link?.token]);
+  },[link?.code,link?.token]);
 
   const replaySession=game?.status!=='playing'&&game?.tvReplay?.active
     ? game.tvReplay.startedAt : null;
@@ -88,7 +101,7 @@ export function TvApp() {
       <span className="tv-logo">DROP <em>&</em> BLOCK <small>BY PLAYVOLT</small></span>
       <div className="tv-topbar-status">
         <span className={'tv-connection'+(error?' is-away':' is-live')} role="status">
-          {error?(!link?'◌ Link required':'◌ Reconnecting'):lastUpdated?'● Live updates':'◌ Connecting'}
+          {error?(!link?'◌ Link required':'◌ Reconnecting'):!lastUpdated?'◌ Connecting':transport==='live'?'● Instant updates':'◌ Auto-refresh'}
         </span>
         <span className="tv-readonly">TV DISPLAY · VIEW ONLY</span>
       </div>

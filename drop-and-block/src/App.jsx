@@ -15,6 +15,7 @@ import {lastMoveCell,winningCells} from './boardFeedback.js';
 import {MatchSpotlight} from './MatchSpotlight.jsx';
 import {speedRoundState} from './speedRound.js';
 import {SpeedStartSignal,useSpeedStartSignal} from './SpeedStartSignal.jsx';
+import {watchRoomPulse,reconcileRoom,createRefreshCoordinator} from './roomRealtime.js';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
@@ -217,6 +218,7 @@ export default function App() {
   const [showHistory,setShowHistory] = useState(false);
   const [menuOpen,setMenuOpen] = useState(false);
   const [syncStatus,setSyncStatus] = useState('connected');
+  const [roomTransport,setRoomTransport] = useState('connecting');
   const [myLoadout,setMyLoadout] = useState(null);
   const [freshTrophies,setFreshTrophies] = useState([]);
   const [progressRefresh,setProgressRefresh] = useState(0);
@@ -297,26 +299,67 @@ export default function App() {
     return () => {active=false;};
   }, [user?.id,room?.code,room?.matchNumber,room?.status]);
 
+  // Broadcast only tells the phone "refresh": room state is always read
+  // through the existing authenticated server RPC. A slow interval remains
+  // in case the WebSocket is unavailable or the browser was suspended.
   useEffect(()=>{
-    if(!user || !room?.code) return undefined;
-    let alive=true;
+    if(!user?.id || !room?.code || !room?.displayToken)return undefined;
+    let alive=true,live=false,lastAttempt=0;
+    const code=room.code;
     const refresh=async()=>{
-      try {
-        const next=await action('get',room.code);
-        if(alive){setRoom(next);setSyncStatus('connected');}
-      } catch {
-        // Retain current match information while the connection is down.
+      lastAttempt=Date.now();
+      try{
+        const next=await action('get',code);
+        if(alive){
+          setRoom(current=>reconcileRoom(current,next));
+          setSyncStatus('connected');
+        }
+      }catch{
         if(alive)setSyncStatus('reconnecting');
       }
     };
-    const timer=setInterval(refresh,room?.mode==='speed'?1100:2000);
-    const resume=()=>{if(!document.hidden)void refresh();};
-    const onOnline=()=>void refresh();
+    const gate=createRefreshCoordinator(refresh,{delay:110});
+    const stop=watchRoomPulse(db,room.displayToken,gate.request,status=>{
+      if(!alive)return;
+      live=status==='SUBSCRIBED';
+      setRoomTransport(live?'live':'fallback');
+      if(live)gate.request();
+    });
+    const timer=window.setInterval(()=>{
+      if(document.hidden)return;
+      const fallbackMs=live?15000:room.mode==='speed'?3500:6000;
+      if(Date.now()-lastAttempt>=fallbackMs)gate.request();
+    },1000);
+    const resume=()=>{if(!document.hidden)gate.request();};
+    const onOnline=()=>gate.request();
     document.addEventListener('visibilitychange',resume);
     window.addEventListener('online',onOnline);
-    return ()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',resume);
-      window.removeEventListener('online',onOnline);};
-  },[user?.id,room?.code,room?.mode]);
+    gate.request();
+    return ()=>{
+      alive=false;stop();gate.dispose();window.clearInterval(timer);
+      document.removeEventListener('visibilitychange',resume);
+      window.removeEventListener('online',onOnline);
+    };
+  },[user?.id,room?.code,room?.displayToken,room?.mode]);
+
+  // Without rapid polling, a present player still has to resolve an expired
+  // server deadline. The GET RPC is allowed to advance exactly one turn/round.
+  useEffect(()=>{
+    if(!user?.id||room?.status!=='playing'||!room?.code||
+       !room?.turnDeadline||!room?.serverNow)return undefined;
+    const ms=Date.parse(room.turnDeadline)-Date.parse(room.serverNow);
+    if(!Number.isFinite(ms))return undefined;
+    let active=true;
+    const timer=window.setTimeout(()=>{
+      action('get',room.code).then(next=>{
+        if(active){
+          setRoom(current=>reconcileRoom(current,next));
+          setSyncStatus('connected');
+        }
+      }).catch(()=>{if(active)setSyncStatus('reconnecting');});
+    },Math.max(250,Math.min(75000,ms+240)));
+    return ()=>{active=false;window.clearTimeout(timer);};
+  },[user?.id,room?.code,room?.status,room?.turnDeadline,room?.matchNumber]);
 
   useEffect(()=>{
     if(!menuOpen)return undefined;
@@ -346,13 +389,14 @@ export default function App() {
     setBusy(true);setMessage('');
     try {
       const next=await action(type,code,data);
-      setRoom(next);setJoinCode(next.code);setSyncStatus('connected');
+      setRoom(current=>current?.code===next.code?reconcileRoom(current,next):next);
+      setJoinCode(next.code);setSyncStatus('connected');
       history.replaceState(null,'',location.pathname+'?room='+next.code);
       return true;
     } catch(err) {setMessage(err.message);return false;} finally{setBusy(false);}
   }
   function exitRoom() {
-    setRoom(null);setMessage('');setSyncStatus('connected');setMenuOpen(false);
+    setRoom(null);setMessage('');setSyncStatus('connected');setRoomTransport('connecting');setMenuOpen(false);
     history.replaceState(null,'',location.pathname);
   }
   function openSection(section) {
@@ -398,7 +442,7 @@ export default function App() {
     catch(err){if(err.name!=='AbortError')setMessage('Room code: '+room.code);}
   }
   async function signOut() {
-    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setShowProgress(false);setShowCustomize(false);setShowHistory(false);setMenuOpen(false);setMyLoadout(null);setFreshTrophies([]);
+    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setRoomTransport('connecting');setShowProgress(false);setShowCustomize(false);setShowHistory(false);setMenuOpen(false);setMyLoadout(null);setFreshTrophies([]);
     history.replaceState(null,'',location.pathname);
   }
   return <div className="shell">
@@ -448,9 +492,9 @@ export default function App() {
         </div></div>
         <div className={'room-sync '+(syncStatus==='connected'?'is-connected':'is-reconnecting')} role="status">
           <span aria-hidden="true">{syncStatus==='connected'?'●':'◌'}</span>
-          {syncStatus==='connected'?'Room connected · Live updates':'Connection interrupted · Trying to reconnect'}
+          {syncStatus==='connected'?(roomTransport==='live'?'Room connected · Instant updates':'Room connected · Automatic refresh'):'Connection interrupted · Trying to reconnect'}
           {syncStatus!=='connected'&&<button type="button" onClick={async()=>{
-             try{const next=await action('get',room.code);setRoom(next);setSyncStatus('connected');}
+             try{const next=await action('get',room.code);setRoom(current=>reconcileRoom(current,next));setSyncStatus('connected');}
              catch{setMessage('Still offline. Check your connection and try again.');}
           }}>Retry now</button>}
         </div>

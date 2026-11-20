@@ -322,3 +322,40 @@ when several people tap the same column simultaneously. Earlier matches keep
 their existing replay history; the migration backfills accepted move numbers
 for any Speed Round submissions previously recorded. This is a Speed Round-only
 improvement; Classic and all other modes retain their existing turn logic.
+
+## Realtime room/TV updates (preview; migration 017)
+
+Online Drop & Block now listens for **Supabase Realtime Broadcast** notifications.
+All seven game modes, including Speed Round, use the same low-latency update
+path, and the read-only TV view subscribes without requiring a PlayVolt login.
+
+- A server-owned trigger on `drop_block_rooms` sends an **empty invalidation**
+  when a match, round or replay changes. A separate `drop_block_players`
+  trigger handles joins, readiness, scores and elimination. Routine
+  `last_seen_at` presence heartbeats are deliberately excluded to avoid
+  read/notification loops.
+- The broadcast topic is derived solely from the existing 256-bit
+  `display_token` bearer secret shared with joined players and their TV.
+  It carries **no board state, code, player names, user IDs, or scores**.
+  Clients never trust a socket payload as a legal move, never send a game
+  broadcast, and always fetch authoritative room state through the existing
+  authenticated `drop_block_action('get')` or token-checked
+  `drop_block_tv_state` read-only endpoint.
+- Bursts of server events become a single coalesced refresh, with one trailing
+  fetch if updates arrive during the request. Older HTTP responses cannot
+  roll the board backward over a newer move, round, win or rematch.
+- On a working WebSocket, phones perform a 15-second maintenance refresh and
+  TVs an 18-second refresh instead of checking every 1–2 seconds.
+  Disconnected sockets automatically fall back to 3.5-second refreshes for
+  Speed Round/TV, or 6 seconds for other modes. Returning to the tab or
+  reconnecting also triggers an immediate refresh.
+- Player clients schedule a server check around an approaching turn or round
+  deadline so that timeout-skips work without needing a rapid polling loop.
+  A spectator TV cannot trigger any gameplay action, even at the deadline.
+- The UI distinguishes **Instant updates** from **Automatic refresh**, and
+  shows a reconnection warning if the authoritative RPC itself fails.
+  No additional direct table access, new login, or privileges were granted.
+
+A broadcast is best-effort and can arrive later than an opponent's HTTP
+request; fairness, move order and timers remain governed by the existing
+transactional SQL. Test with at least two different devices plus the TV.
