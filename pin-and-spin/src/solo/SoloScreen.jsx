@@ -8,9 +8,10 @@ import { play } from '../sound/sfx.js';
 import { LEVELS, msToTomorrow, shareText, storyStars } from './solo.js';
 import { useSolo } from './useSolo.js';
 import { useAdminView, usePeek } from '../admin.js';
+import { cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
 
 // 1-player modes: Daily puzzle, Free play and Beat the clock. Signed-in players only.
-export function SoloScreen({ account, notify, onBack, onSignIn }) {
+export function SoloScreen({ account, notify, onBack, onSignIn, appearance }) {
   const solo = useSolo(notify, account.user?.id);
   const { loadHome } = solo;
   useEffect(() => { if (account.signedIn) void loadHome(); }, [account.signedIn, loadHome]);
@@ -23,7 +24,7 @@ export function SoloScreen({ account, notify, onBack, onSignIn }) {
       <button type="button" className="primary-btn" onClick={onSignIn}>Sign in / Create account <span>→</span></button></div>
   </section>;
 
-  return solo.game ? <SoloGame solo={solo} notify={notify} /> : <SoloHub solo={solo} onBack={onBack} />;
+  return solo.game ? <SoloGame solo={solo} notify={notify} appearance={appearance} /> : <SoloHub solo={solo} onBack={onBack} />;
 }
 
 function SoloHub({ solo, onBack }) {
@@ -77,7 +78,8 @@ function SoloHub({ solo, onBack }) {
 }
 
 // story (optional): { level, next, onNext, onMap } when playing a story level.
-export function SoloGame({ solo, notify, story }) {
+export function SoloGame({ solo, notify, story, appearance }) {
+  const style = normalizeCosmetics(appearance);
   const { game, busy, draft, selected, flash, remainingMs, submit, pick, clear, leave, start, setSelected } = solo;
   const playing = game.status === 'playing';
   const adminOn = useAdminView();
@@ -104,28 +106,28 @@ export function SoloGame({ solo, notify, story }) {
 
     {flash && <div className={'solo-flash ' + flash.result} role="status">
       <strong>{flash.result === 'solved' ? 'Cracked! +1' : 'Out of tries — new code'}</strong>
-      <PegRow colors={flash.code} tiny />
+      <PegRow colors={flash.code} tiny shape={style.piece} />
     </div>}
 
-    {game.clues?.length > 0 && <div className="surface story-clues">
+    {game.clues?.length > 0 && <div className={`surface story-clues board-theme-${style.board}`} style={cosmeticStyle(style)}>
       <div className="panel-title"><h2>🧩 CLUES</h2><span>{game.clues.length} GUESSES</span></div>
       {game.clues.map((clue, i) => <div className="code-row played" key={i}>
         <span className="attempt-number">{String.fromCharCode(65 + i)}</span>
-        <div className="code-slots"><PegRow colors={clue.colors} tiny /></div>
-        <Feedback guess={{ revealed: true, colors: clue.colors, pins: clue.pins, spins: clue.spins }} />
+        <div className="code-slots"><PegRow colors={clue.colors} tiny shape={style.piece} /></div>
+        <Feedback guess={{ revealed: true, colors: clue.colors, pins: clue.pins, spins: clue.spins }} shape={style.pin} />
       </div>)}
     </div>}
 
     {playing
       ? <GuessPanel mine={game.guesses} limit={game.maxTries} attempt={game.guesses.length + 1} canSubmit={!busy}
           draft={draft} selected={selected} onSelect={setSelected} onColor={pick} onClear={clear} onSubmit={() => void submit()}
-          colorCount={game.colors} help={help} peek={peek} />
-      : <SoloResult game={game} solo={solo} notify={notify} story={story}
+          colorCount={game.colors} help={help} peek={peek} appearance={style} />
+      : <SoloResult game={game} solo={solo} notify={notify} story={story} appearance={style}
           onAgain={() => (story ? solo.startStory(story.level.level, true) : start(game.kind, game.level, true))} />}
   </section>;
 }
 
-function SoloResult({ game, notify, onAgain, solo, story }) {
+function SoloResult({ game, notify, onAgain, solo, story, appearance }) {
   const won = game.status === 'won';
   const [left, setLeft] = useState(msToTomorrow());
   useEffect(() => {
@@ -144,7 +146,8 @@ function SoloResult({ game, notify, onAgain, solo, story }) {
   const hours = Math.floor(left / 3600000), mins = Math.floor(left / 60000) % 60, secs = Math.floor(left / 1000) % 60;
   const pad = (n) => String(n).padStart(2, '0');
 
-  return <div className={'surface finish-panel solo-result' + (won || game.kind === 'clock' ? ' has-winner' : '')}>
+  return <div className={'surface finish-panel solo-result board-theme-' + appearance.board + (won || game.kind === 'clock' ? ' has-winner' : '')}
+    style={cosmeticStyle(appearance)}>
     {(won || (game.kind === 'clock' && game.solved > 0)) && <Confetti />}
     <span className="trophy" aria-hidden="true">{game.kind === 'clock' ? '⏱️' : won ? '🏆' : '✦'}</span>
     {story && won && <div className="story-stars" aria-label={`${storyStars(story.level, game.guesses.length)} of 3 stars`}>
@@ -157,7 +160,7 @@ function SoloResult({ game, notify, onAgain, solo, story }) {
           <p>{game.deadline && new Date(game.deadline) <= new Date(game.serverTime) ? 'The clock ran out.' : 'Out of tries.'} Here’s the code:</p></>}
     {game.answer && <>
       <p className="field-label">{game.kind === 'clock' ? 'LAST CODE' : 'SECRET COMBINATION'}</p>
-      <div className="secret-reveal">{game.answer.map((v, i) => <span className="secret-ball" key={i} style={{ '--i': i }}><PegRow colors={[v]} tiny /></span>)}</div>
+      <div className="secret-reveal">{game.answer.map((v, i) => <span className="secret-ball" key={i} style={{ '--i': i }}><PegRow colors={[v]} tiny shape={appearance.piece} /></span>)}</div>
     </>}
     {story
       ? <div className="story-actions">
@@ -174,8 +177,8 @@ function SoloResult({ game, notify, onAgain, solo, story }) {
         </>
       : <button type="button" className="primary-btn" disabled={solo.busy} onClick={onAgain}>Play again <span>↻</span></button>}
     {game.guesses.length > 0 && game.kind !== 'clock' && <div className="solo-recap">
-      {game.guesses.map((g) => <div key={g.attempt} className="solo-recap-row"><PegRow colors={g.colors} tiny />
-        <span>{'🟢'.repeat(g.pins)}{'⚪'.repeat(g.spins)}</span></div>)}
+      {game.guesses.map((g) => <div key={g.attempt} className="solo-recap-row"><PegRow colors={g.colors} tiny shape={appearance.piece} />
+        <Feedback guess={{ ...g, revealed: true }} shape={appearance.pin} /></div>)}
     </div>}
   </div>;
 }

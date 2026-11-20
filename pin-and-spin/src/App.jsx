@@ -144,9 +144,9 @@ export default function App() {
           onBack={() => form.setFormTab('home')} onDone={(message) => { notify(message); form.setFormTab(friendCode ? 'friends' : 'home'); }} />}
         {!session && form.formTab === 'leaderboard' && <LeaderboardScreen account={account}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
-        {!session && form.formTab === 'solo' && <SoloScreen account={account} notify={notify}
+        {!session && form.formTab === 'solo' && <SoloScreen account={account} notify={notify} appearance={appearance}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
-        {!session && form.formTab === 'story' && <StoryScreen account={account} notify={notify}
+        {!session && form.formTab === 'story' && <StoryScreen account={account} notify={notify} appearance={appearance}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
         {!session && form.formTab === 'achievements' && <AchievementsScreen account={account}
           onBack={() => form.setFormTab('home')} onSignIn={() => form.setFormTab('account')} />}
