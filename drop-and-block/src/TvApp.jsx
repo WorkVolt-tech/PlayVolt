@@ -4,6 +4,7 @@ import { GameArea } from './App.jsx';
 import { VersionAlert } from './VersionAlert.jsx';
 import { readTvLink, buildJoinUrl } from './tvLink.js';
 import {AvatarBadge,ChipDisc} from './looks.jsx';
+import {TvReplayScreen} from './TvReplayScreen.jsx';
 
 const modeNames = { classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP', chaos: 'CHAOS', team: 'TEAM BATTLE' };
 const icons = ['', '◆', '●', '▲', '■', '★', '⬡', '✦', '✳', '⬢'];
@@ -13,6 +14,8 @@ export function TvApp() {
   const [game, setGame] = useState(null);
   const [error, setError] = useState(link ? '' : 'Open TV Display from a Drop & Block room to get a secure screen link.');
   const [lastUpdated, setLastUpdated] = useState(0);
+  const [replay,setReplay]=useState(null);
+  const [replayError,setReplayError]=useState('');
 
   useEffect(() => {
     if (!link) return undefined;
@@ -48,6 +51,20 @@ export function TvApp() {
     };
   }, [link?.code, link?.token]);
 
+  const replaySession=game?.status!=='playing'&&game?.tvReplay?.active
+    ? game.tvReplay.startedAt : null;
+  useEffect(()=>{
+    if(!link||!replaySession){setReplay(null);setReplayError('');return;}
+    let alive=true;
+    setReplay(null);setReplayError('');
+    db.rpc('drop_block_tv_replay_state',{p_code:link.code,p_token:link.token})
+     .then(({data,error:e})=>{if(!alive)return;if(e)throw e;
+        if(data?.active)setReplay(data);else setReplayError('Replay is no longer available.');})
+     .catch(e=>{if(alive)setReplayError(e.message||'Could not load TV replay');});
+    return ()=>{alive=false;};
+  },[link?.code,link?.token,replaySession]);
+  const showReplay=Boolean(replaySession);
+  const replayReady=showReplay&&replay?.active&&replay.startedAt===replaySession;
   const joinUrl = link ? buildJoinUrl(window.location, link.code) : null;
   return <div className="tv-shell">
     <header className="tv-topbar">
@@ -56,12 +73,19 @@ export function TvApp() {
     </header>
     <main className="tv-layout">
       <section className="tv-stage">
-        <div className="tv-mode-label">{game ? (modeNames[game.mode] || 'MULTIPLAYER') + ' · MATCH ' + (game.matchNumber || 1) : 'CONNECTING TO YOUR GAME'}</div>
+        <div className="tv-mode-label">{showReplay
+           ? 'TV PARTY REPLAY · MATCH '+(game.tvReplay.matchNumber||1)
+           : game ? (modeNames[game.mode] || 'MULTIPLAYER') + ' · MATCH ' + (game.matchNumber || 1) : 'CONNECTING TO YOUR GAME'}</div>
         {game ? <>
-          {game.status==='cancelled'&&game.endReason==='closed_lobby'
+          {showReplay
+            ? replayReady
+               ? <TvReplayScreen key={replaySession} detail={replay}/>
+               : <div className="tv-waiting" role="status">Loading {game.tvReplay.mode==='highlights'?'party highlights':'full match replay'}…</div>
+            : game.status==='cancelled'&&game.endReason==='closed_lobby'
             ? <div className="tv-closed-state">This room was closed by the host.</div>
             : <GameArea game={game} readOnly onDrop={() => {}} busy boardTheme={game.hostBoardTheme}/>}
-          {game.status === 'lobby' && <div className="tv-waiting">{game.matchNumber > 1 ? 'Rematch lobby · Players getting ready' : 'Waiting for the host to start'} · {game.players.length}/{game.maxPlayers} players</div>}
+          {replayError&&showReplay&&<div className="tv-error" role="status">{replayError}</div>}
+          {!showReplay&&game.status === 'lobby' && <div className="tv-waiting">{game.matchNumber > 1 ? 'Rematch lobby · Players getting ready' : 'Waiting for the host to start'} · {game.players.length}/{game.maxPlayers} players</div>}
           {game.status==='cancelled'&&game.endReason==='stalled_no_contest'&&
             <div className="tv-waiting">No Contest · No winner or trophies awarded. The host may start a rematch.</div>}
         </> : <div className="tv-waiting">Waiting for your room's board…</div>}
@@ -85,7 +109,7 @@ export function TvApp() {
             <strong>{p.eliminated?'OUT':game.mode==='team'?(p.seat%2===1?'GOLD':'BLUE'):game.mode==='territory'?p.score+' pts':game.mode==='chaos'?'⬢'+(p.chaosBlockUsed?'0':'1')+' ✹'+(p.chaosBlastUsed?'0':'1'):p.seat===game.turnSeat?'PLAYING':''}</strong>
           </div>
         )}</div> : <p className="tv-empty">Players will appear here when they join.</p>}
-        <div className="tv-status">{game?.status==='playing'?'● MATCH LIVE':game?.status==='finished'?'✓ MATCH FINISHED':game?.status==='cancelled'?(game.endReason==='stalled_no_contest'?'⊘ NO CONTEST':'⊘ ROOM CLOSED'):'◌ WAITING IN LOBBY'}</div>
+        <div className="tv-status">{showReplay?'★ TV PARTY REPLAY':game?.status==='playing'?'● MATCH LIVE':game?.status==='finished'?'✓ MATCH FINISHED':game?.status==='cancelled'?(game.endReason==='stalled_no_contest'?'⊘ NO CONTEST':'⊘ ROOM CLOSED'):'◌ WAITING IN LOBBY'}</div>
         <span className="tv-footer-note">Read-only TV view · All moves stay on players’ phones</span>
       </aside>
     </main>

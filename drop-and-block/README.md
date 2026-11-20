@@ -219,3 +219,19 @@ Older completed matches recorded before this migration may lack snapshots:
 player/result history is still shown, but the UI explicitly disables playback
 rather than guessing past special effects. Replaying historical matches remains
 possible across rematches because the match number is part of the move key.
+
+## Party Highlights and TV Replay (preview; migration 012)
+- After a completed online match, the **room host** has a TV Party Replay
+  selector. It lists completed matches in that room with complete snapshots.
+  The host can start **★ Show Highlights on TV**, play the **Full Replay**, or
+  **Stop Replay**. The existing read-only TV link automatically switches over.
+- A highlights reel picks scoring lines, Chaos Barrier/Blast moves, Elimination
+  rounds, Bottom Drop clears, and the deciding move, with context. The normal
+  replay shows every recorded move. TV playback animates automatically and
+  repeats highlights, while full replays finish on the final board.
+- Phone Match History also offers highlights and clickable key-moment chips.
+- The replay controller refuses non-hosts, incomplete/no-contest matches and
+  attempts during a running game. Starting a live match **immediately cancels**
+  the TV replay. The TV's 64-character read-only display capability can only
+  read a host-selected completed match in its own room and never control it.
+  No other PlayVolt games, authentication, or live hub paths are modified.

@@ -1,7 +1,7 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useMemo,useState} from 'react';
 import {db} from './supabase.js';
 import {ChipDisc,AvatarBadge} from './looks.jsx';
-import {clampStep,replayFrame,canPlayReplay,outcomeLabel,modeLabels} from './replayModel.js';
+import {clampStep,replayFrame,canPlayReplay,outcomeLabel,modeLabels,highlightSteps,replayTimeline,highlightLabel} from './replayModel.js';
 
 const PAGE=20;
 function dateLabel(iso) {
@@ -31,6 +31,7 @@ export function ReplayHub({userId,onBack}) {
  const [error,setError]=useState('');
  const [step,setStep]=useState(0);
  const [playing,setPlaying]=useState(false);
+ const [highlightMode,setHighlightMode]=useState(false);
  useEffect(()=>{
   if(!userId||selected)return;
   let alive=true;
@@ -44,7 +45,7 @@ export function ReplayHub({userId,onBack}) {
  useEffect(()=>{
   if(!userId||!selected)return;
   let alive=true;
-  setDetail(null);setStep(0);setPlaying(false);setLoading(true);setError('');
+  setDetail(null);setStep(0);setPlaying(false);setHighlightMode(false);setLoading(true);setError('');
   db.rpc('drop_block_match_history',{p_action:'detail',
     p_code:selected.code,p_match:selected.matchNumber,p_offset:0})
    .then(({data,error:e})=>{if(!alive)return;if(e)throw e;setDetail(data);})
@@ -54,16 +55,22 @@ export function ReplayHub({userId,onBack}) {
  },[userId,selected]);
  const moves=detail?.moves||[];
  const replayable=canPlayReplay(detail);
+ const highlights=useMemo(()=>highlightSteps(detail),[detail]);
+ const timeline=useMemo(()=>replayTimeline(detail,highlightMode?'highlights':'full'),[detail,highlightMode]);
+ const lastPlayable=timeline.length?timeline[timeline.length-1]:0;
  const frame=detail?replayFrame(detail,step):null;
  useEffect(()=>{
   if(!playing||!replayable)return undefined;
-  const timer=window.setInterval(()=>setStep(prev=>Math.min(prev+1,moves.length)),1000);
+  const timer=window.setInterval(()=>setStep(prev=>{
+   const following=timeline.find(n=>n>prev);
+   return following??prev;
+  }),highlightMode?1800:1000);
   return ()=>window.clearInterval(timer);
- },[playing,replayable,moves.length]);
+ },[playing,replayable,timeline,highlightMode]);
  useEffect(()=>{
-  if(step>=moves.length)setPlaying(false);
- },[step,moves.length]);
- function backToList() {setSelected(null);setDetail(null);setPlaying(false);setStep(0);setError('');}
+  if(step>=lastPlayable)setPlaying(false);
+ },[step,lastPlayable]);
+ function backToList() {setSelected(null);setDetail(null);setPlaying(false);setHighlightMode(false);setStep(0);setError('');}
  const winners=detail?.players?.filter(p=>p.won)||[];
  const winnerText=winners.length?winners.map(p=>p.name).join(', '):'Draw · No winner';
  return <section className="panel replay-hub">
@@ -140,12 +147,24 @@ export function ReplayHub({userId,onBack}) {
        </div>
       </div>
       <div className="replay-controls">
+       <div className="replay-view-modes" role="group" aria-label="Replay type">
+        <button type="button" className={'btn '+(!highlightMode?'primary':'ghost')}
+          onClick={()=>{setPlaying(false);setHighlightMode(false);setStep(0);}}>▶ Every Move</button>
+        <button type="button" className={'btn '+(highlightMode?'primary':'ghost')}
+          onClick={()=>{setPlaying(false);setHighlightMode(true);setStep(0);}}>★ Highlights ({highlights.length})</button>
+       </div>
+       {highlightMode&&<div className="replay-highlights" aria-label="Important moments">
+        {highlights.map(n=><button type="button" key={n} onClick={()=>{setPlaying(false);setStep(n);}}
+          className={'replay-highlight-chip'+(step===n?' selected':'')}>
+          <b>#{n}</b> {highlightLabel(detail,n)}
+        </button>)}
+       </div>}
        <div className="replay-controls-buttons">
         <button className="btn ghost" onClick={()=>{setPlaying(false);setStep(0);}} disabled={step===0}>⏮ Start</button>
-        <button className="btn ghost" onClick={()=>{setPlaying(false);setStep(clampStep(step-1,moves.length));}} disabled={step===0}>← Back</button>
-        <button className="btn primary" onClick={()=>{if(step>=moves.length)setStep(0);setPlaying(v=>!v);}}>{playing?'Ⅱ Pause':'▶ Play'}</button>
-        <button className="btn ghost" onClick={()=>{setPlaying(false);setStep(clampStep(step+1,moves.length));}} disabled={step===moves.length}>Next →</button>
-        <button className="btn ghost" onClick={()=>{setPlaying(false);setStep(moves.length);}} disabled={step===moves.length}>End ⏭</button>
+        <button className="btn ghost" onClick={()=>{setPlaying(false);setStep([...timeline].reverse().find(n=>n<step)??0);}} disabled={step===0}>← Back</button>
+        <button className="btn primary" onClick={()=>{if(step>=lastPlayable)setStep(0);setPlaying(v=>!v);}}>{playing?'Ⅱ Pause':highlightMode?'▶ Play Highlights':'▶ Play'}</button>
+        <button className="btn ghost" onClick={()=>{setPlaying(false);setStep(timeline.find(n=>n>step)??step);}} disabled={step>=lastPlayable}>Next →</button>
+        <button className="btn ghost" onClick={()=>{setPlaying(false);setStep(lastPlayable);}} disabled={step>=lastPlayable}>End ⏭</button>
        </div>
        <label className="replay-slider-label">Move {step} / {moves.length}
          <input type="range" min={0} max={moves.length} step={1} value={step}

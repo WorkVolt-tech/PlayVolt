@@ -8,6 +8,7 @@ import {AvatarBadge,ChipDisc,safeBoard} from './looks.jsx';
 import {CustomizeHub} from './CustomizeHub.jsx';
 import {TurnClock} from './TurnClock.jsx';
 import {ReplayHub} from './ReplayHub.jsx';
+import {TvReplayControls} from './TvReplayControls.jsx';
 import {canCloseLobby,canEndStalled,canRematch,isNoContest,isClosedLobby} from './hostControls.js';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
@@ -302,6 +303,8 @@ export default function App() {
             <button type="button" className="btn ghost" onClick={copyTvUrl} disabled={!room.displayToken}>Copy TV link</button>
           </div>
         </div>
+        {room.host&&['finished','lobby'].includes(room.status)&&
+          <TvReplayControls room={room} onRefresh={()=>perform('get')}/>}
         {room.status==='lobby' ? <>
           <div className="roster">{room.players.map(p=><div key={p.seat} className={'player-chip seat-border-'+p.seat}>
             <AvatarBadge id={p.avatarStyle||'sentinel'} small/><span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
