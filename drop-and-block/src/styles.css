@@ -864,3 +864,108 @@ footer span{color:#ffcb56}
 @media(max-width:700px){
   .tv-replay-board-outer{--arcade-gap:2px;--arcade-pad:4px}
 }
+
+/* Arcade Visual Pass 2: lightweight impact particles, celebrations and sound UI.
+   These are entirely decorative; no game-state or collision behavior changes. */
+.arcade-sound-tray{
+ display:flex;align-items:center;justify-content:flex-end;gap:8px;
+ margin:8px 0 12px;min-height:37px;
+}
+.arcade-sound-tray>span:first-child{
+ font-size:20px;color:#ffe48b;text-shadow:0 0 12px #ffdb69;
+}
+.arcade-sound-label{
+ font-size:10px;letter-spacing:.14em;font-weight:950;color:#a8bad9;
+}
+.arcade-sound-toggle{
+ display:inline-flex;align-items:center;justify-content:center;gap:7px;
+ min-height:36px;padding:6px 13px;border-radius:12px;
+ background:linear-gradient(120deg,#233550,#19243c);
+ border:1px solid #7a8eab;color:#d1def2;font-size:10px;font-weight:950;
+ letter-spacing:.055em;white-space:nowrap;cursor:pointer;
+ box-shadow:inset 0 1px 0 #fff2,0 3px 7px #0005;
+}
+.arcade-sound-toggle:hover{background:#334764;border-color:#c2d6fa}
+.arcade-sound-toggle:focus-visible{outline:3px solid #ffdb82;outline-offset:3px}
+.arcade-sound-toggle.on{
+ background:linear-gradient(130deg,#215848,#173b4b);
+ border-color:#85e4b1;color:#c9ffe3;
+ box-shadow:inset 0 1px 0 #cfffdc33,0 0 13px #61ebb04a;
+}
+.arcade-sound-toggle>span:first-child{font-size:15px}
+.arcade-impact-sparks{
+ position:absolute;inset:0;pointer-events:none;z-index:4;overflow:visible;
+}
+.arcade-impact-sparks i{
+ position:absolute;left:50%;top:50%;width:6px;height:6px;
+ background:var(--spark-tone);border-radius:2px;opacity:0;
+ box-shadow:0 0 8px var(--spark-tone),0 0 14px var(--spark-tone);
+ transform:rotate(var(--spark-direction)) translateY(0) scale(.2);
+ animation:arcade-impact-spark .48s ease-out var(--spark-impact) both;
+ will-change:transform,opacity;
+}
+@keyframes arcade-impact-spark{
+ 0%{transform:rotate(var(--spark-direction)) translateY(0) scale(.1);opacity:0}
+ 14%{opacity:1}
+ 80%{opacity:1}
+ 100%{transform:rotate(var(--spark-direction)) translateY(calc(-1 * var(--spark-distance))) scale(.55);opacity:0}
+}
+.match-spotlight:not(.is-draw)::before{
+ content:"";position:absolute;inset:-25% 28%;border-radius:50%;pointer-events:none;
+ background:radial-gradient(circle,#ffec9273 0%,#f9c75d35 32%,transparent 73%);
+ animation:arcade-victory-blast 1.3s ease-out both;
+}
+@keyframes arcade-victory-blast{
+ from{transform:scale(.4);opacity:0}
+ 20%{opacity:1}
+ to{transform:scale(1.5);opacity:.55}
+}
+.arcade-confetti{
+ position:absolute;inset:0;z-index:0;overflow:hidden;
+ pointer-events:none;isolation:isolate;border-radius:inherit;
+}
+.arcade-confetti i{
+ display:block;position:absolute;top:-12px;left:var(--confetti-x);
+ width:8px;height:13px;opacity:0;
+ border-radius:2px;
+ background:hsl(var(--confetti-hue) 95% 67%);
+ box-shadow:0 1px 4px #070c1a52;
+ animation:arcade-confetti-fall var(--confetti-duration) cubic-bezier(.18,.52,.44,1)
+   var(--confetti-delay) 1 both;
+}
+@keyframes arcade-confetti-fall{
+ 0%{transform:translate3d(0,-18px,0) rotate(-45deg) scale(.65);opacity:0}
+ 12%{opacity:1}
+ 78%{opacity:1}
+ 100%{transform:translate3d(var(--confetti-drift),190px,0) rotate(var(--confetti-rotate)) scale(1);opacity:0}
+}
+.match-spotlight-mark,.match-spotlight-copy,.match-winner-avatars{
+ position:relative;z-index:1;
+}
+.match-spotlight:not(.is-draw) .match-spotlight-mark{
+ animation:arcade-trophy-pop .65s cubic-bezier(.18,1.4,.38,1) both;
+}
+@keyframes arcade-trophy-pop{
+ 0%{transform:translateY(8px) scale(.45);opacity:.35}
+ 62%{transform:translateY(-5px) scale(1.17)}
+ 100%{transform:translateY(0) scale(1);opacity:1}
+}
+.tv-replay-banner{position:relative;overflow:hidden;isolation:isolate}
+.tv-replay-banner>.tv-replay-sound,
+.tv-replay-banner>.tv-replay-kicker,
+.tv-replay-banner>strong,
+.tv-replay-banner>.tv-replay-winners{position:relative;z-index:1}
+.tv-replay-sound{display:flex;justify-content:flex-end;width:100%}
+.tv-stage .arcade-sound-tray{margin:1px 0 10px}
+@media(max-width:650px){
+ .arcade-sound-tray{justify-content:center;gap:6px;flex-wrap:wrap}
+ .arcade-sound-label{font-size:9px}
+ .arcade-sound-toggle{min-height:40px;font-size:10px}
+ .arcade-impact-sparks i{width:4px;height:4px}
+ .arcade-confetti i{width:6px;height:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .arcade-impact-sparks,.arcade-confetti{display:none!important}
+ .match-spotlight:not(.is-draw)::before{animation:none!important}
+ .match-spotlight:not(.is-draw) .match-spotlight-mark{animation:none!important}
+}

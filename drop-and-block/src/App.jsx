@@ -17,12 +17,13 @@ import {speedRoundState} from './speedRound.js';
 import {SpeedStartSignal,useSpeedStartSignal} from './SpeedStartSignal.jsx';
 import {watchRoomPulse,reconcileRoom,createRefreshCoordinator} from './roomRealtime.js';
 import {useArcadeFallingChips,ArcadeFallingChips} from './ArcadeFallingChips.jsx';
+import {useArcadeSound,SoundToggle,useArcadeLandingSounds,useArcadeMatchSounds} from './ArcadeSounds.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
 const hub = 'https://playvolt-hub.pages.dev/';
 
-function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic', matchNumber=1,moveCount=0,floorClears=0,speedOrder=[],speedPreviousOrder=[] }) {
+function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic', matchNumber=1,moveCount=0,floorClears=0,speedOrder=[],speedPreviousOrder=[],soundEnabled=false }) {
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
@@ -37,6 +38,7 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
     board,width,height,matchNumber,moveCount,floorClears,lastMove,mode,
     speedOrder,speedPreviousOrder
   });
+  useArcadeLandingSounds(flights,soundEnabled);
   return <div className="board-wrap">
     <div className={'board-scroll'+(minWidth?' is-wide':'')}
       role={minWidth?'region':undefined} aria-label={minWidth?'Swipe horizontally to view the entire game board':undefined}
@@ -132,11 +134,18 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
   const isSpeed=game.mode==='speed';
   const speedState=speedRoundState(game,game.meSeat);
   const speedSignal=useSpeedStartSignal(game);
+  const arcadeSound=useArcadeSound();
+  useArcadeMatchSounds(game,speedSignal,arcadeSound.enabled);
   const submitted=speedState.submitted;
   const iSubmitted=isSpeed&&speedState.alreadyPlayed;
   const myTurn=!readOnly&&game.status==='playing'&&
     (isSpeed?speedState.canSubmit&&speedSignal.phase!=='countdown':game.turnSeat===game.meSeat);
   return <>
+    <div className="arcade-sound-tray">
+      <span aria-hidden="true">✦</span>
+      <span className="arcade-sound-label">ARCADE EFFECTS</span>
+      <SoundToggle enabled={arcadeSound.enabled} onToggle={arcadeSound.toggle}/>
+    </div>
     <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'')+(isSpeed&&submitted.has(p.seat)?' speed-submitted':'') + (p.eliminated?' eliminated':'')+(game.mode==='team'?' team-roster-'+teamOfSeat(p.seat):'')}>
       <AvatarBadge id={p.avatarStyle||'sentinel'} small/><span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
       <span className="player-label">{p.name}{p.eliminated?' · OUT':game.mode==='team'?' · '+(teamOfSeat(p.seat)===1?'Gold':'Blue'):game.mode==='territory'?' · '+p.score+' pts':''}
@@ -204,7 +213,8 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
       disabled={busy || game.status!=='playing'||iSubmitted||(isSpeed&&speedSignal.phase==='countdown')} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
       lastMove={game.lastMove} winnerSeat={game.winnerSeat} status={game.status} mode={game.mode}
       matchNumber={game.matchNumber||1} moveCount={game.moveCount||0} floorClears={game.floorClears||0}
-      speedOrder={game.speedOrder||[]} speedPreviousOrder={game.speedPreviousOrder||[]}/>
+      speedOrder={game.speedOrder||[]} speedPreviousOrder={game.speedPreviousOrder||[]}
+      soundEnabled={arcadeSound.enabled}/>
     <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST SERVER-ACCEPTED DROP GOES FIRST · CONNECT FOUR TO WIN':game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT 4 TO WIN':game.mode==='team'?'CONNECT FOUR TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }

@@ -385,3 +385,20 @@ wins, timers, rankings, account access or shared PlayVolt applications.
   high-player-count mobile scrolling and TV displays, with motion disabled for
   people who request reduced motion at the operating-system/browser level.
   No extra database migration, table, or permissions are needed for visuals.
+
+## Arcade Visual Pass 2 — Original Sounds & Celebration (preview only)
+
+The live phone/TV game now includes a **sound control** (off by default).
+The user's explicit On/Off choice is stored locally on their device; browsers
+that restrict audio still play normally. No audio downloads or licensed songs
+are used: a small built-in Web Audio synthesizer generates each original,
+short cue for chip landing, barrier, Blast, Speed Round ticks and GO, and a win.
+The TV party replay has its own visible sound switch and chip impact cues.
+
+Newly accepted chips emit a small **particle burst on impact**. Genuine match
+wins show a colorful, one-shot confetti shower and trophy pop above the
+existing victory panel. Draws, host-cancelled matches and lobby closures never
+display a false win celebration. All effects ignore pointer input, work with
+existing skins and chip shapes, and respect the OS/browser
+`prefers-reduced-motion` setting. No changes to gameplay, Supabase
+tables/RPCs, scoring, player accounts, or the live PlayVolt hub.

@@ -1,6 +1,8 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {ChipDisc,AvatarBadge,safeBoard} from './looks.jsx';
 import {useArcadeFallingChips,ArcadeFallingChips} from './ArcadeFallingChips.jsx';
+import {useArcadeSound,SoundToggle,useArcadeLandingSounds} from './ArcadeSounds.jsx';
+import {ArcadeConfetti} from './ArcadeConfetti.jsx';
 import {canPlayReplay,replayFrame,replayTimeline,highlightLabel,modeLabels} from './replayModel.js';
 
 // Entirely read-only playback. The host starts and stops the session from a
@@ -30,10 +32,17 @@ export function TvReplayScreen({detail}) {
   floorClears:frame.floorClears||0,lastMove:last,
   mode:detail.gameMode||'classic'
  });
+ const arcadeSound=useArcadeSound();
+ useArcadeLandingSounds(flights,arcadeSound.enabled);
  const actor=detail.players.find(p=>p.seat===frame.seat);
  const winners=detail.players.filter(p=>p.won).map(p=>p.name).join(' & ')||'Draw';
  return <div className="tv-replay-screen" aria-label="Read-only TV match replay">
    <div className="tv-replay-banner">
+    {idx===detail.moves.length&&detail.players.some(p=>p.won)&&
+      <ArcadeConfetti matchNumber={detail.matchNumber||1}
+        winnerSeat={detail.players.find(p=>p.won)?.seat||0}/>}
+    <div className="tv-replay-sound"><SoundToggle enabled={arcadeSound.enabled}
+      onToggle={arcadeSound.toggle}/></div>
     <span className="tv-replay-kicker">{highlights?'★ PARTY HIGHLIGHTS':'▶ FULL MATCH REPLAY'}</span>
     <strong>{modeLabels[detail.gameMode]||'Drop & Block'} · Match {detail.matchNumber}</strong>
     <span className="tv-replay-winners">{winners}</span>

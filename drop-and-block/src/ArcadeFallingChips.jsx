@@ -67,6 +67,14 @@ export function ArcadeFallingChips({flights,width,height,players=[],teamMode=fal
       <ChipDisc seat={f.seat}
         style={players.find(p=>p.seat===f.seat)?.chipStyle||'round'}
         teamMode={teamMode}/>
+      <span className="arcade-impact-sparks">
+        {Array.from({length:8},(_,i)=><i key={i} style={{
+          '--spark-direction':i*45+'deg',
+          '--spark-distance':(24+(i%3)*11)+'px',
+          '--spark-impact':(f.delay+Math.floor(f.duration*.68))+'ms',
+          '--spark-tone':i%2?'#91f6ff':'#ffe58e'
+        }}/>)}
+      </span>
     </div>;
    })}
  </div>;
