@@ -608,3 +608,259 @@ footer span{color:#ffcb56}
  .speed-previous-standings>div{gap:5px}
  .speed-previous-standings span{font-size:10px;padding:5px 7px}}
 @media(prefers-reduced-motion:reduce){.speed-start-signal.go>strong{animation:none}}
+
+/* ===============================================================
+   ARCADE VISUAL PASS 1 · Drop & Block preview only
+   Server-accepted chips remain authoritative. Animated chips are
+   a purely visual overlay and never interfere with touch input.
+   =============================================================== */
+.shell{
+  background:
+    radial-gradient(ellipse at 14% 9%,#194c8052,transparent 38%),
+    radial-gradient(ellipse at 92% 62%,#672a9470,transparent 47%),
+    linear-gradient(180deg,#080f24 0%,#080d1f 55%,#121129 100%);
+}
+.hero h1{
+  text-shadow:0 3px 0 #070b20,0 9px 33px #6c5af15b;
+}
+.hero h1 span{
+  text-shadow:0 0 20px #ffb83878,0 0 46px #ffad2642;
+}
+.panel{
+  background:linear-gradient(147deg,#213053f2,#101c34f6 55%,#13132df7);
+  border-color:#7a93c844;
+  box-shadow:inset 0 1px 0 #ffffff19,0 17px 42px #0106168a;
+}
+.btn.primary:not(:disabled){
+  background:linear-gradient(135deg,#ffe48c 0%,#ffbc57 53%,#f19053 100%);
+  box-shadow:inset 0 2px 0 #fff7c6a9,0 6px 0 #8a4d2b8f,0 11px 24px #ffad3055;
+}
+.btn.primary:not(:disabled):hover{
+  filter:brightness(1.08);
+}
+.tv-shell{
+  background:
+    radial-gradient(ellipse at 9% 3%,#17497875,transparent 46%),
+    radial-gradient(ellipse at 100% 80%,#65329a72,transparent 52%),
+    repeating-linear-gradient(90deg,#8cadff08 0 1px,transparent 1px 88px),
+    #090c1d;
+}
+.tv-stage{
+  background:linear-gradient(155deg,#192c4bd9,#10172fd9 62%,#161431d9);
+  box-shadow:inset 0 1px 0 #b6d5ff20,0 11px 33px #020511a6;
+}
+.board-tap-area{
+  --arcade-gap:5px;
+  --arcade-pad:9px;
+  --arcade-border:5px;
+  isolation:isolate;
+}
+.board.arcade-board{
+  position:relative;
+  gap:var(--arcade-gap);
+  padding:var(--arcade-pad);
+  border-width:var(--arcade-border);
+  box-shadow:
+    inset 0 0 0 2px #ffffff13,
+    inset 0 7px 17px #d5f6ff1f,
+    inset 0 -12px 22px #000c,
+    0 0 0 3px #02091b9c,
+    0 14px 0 #060a19b0,
+    0 22px 35px #000a,
+    0 0 31px #3679c85e;
+}
+.board.arcade-board::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  z-index:1;
+  box-shadow:inset 0 2px 0 #ffffff44,inset 2px 0 0 #ffffff20,inset -3px -6px 9px #0209196b;
+}
+.board.arcade-board .board-cell{
+  position:relative;
+  background:radial-gradient(circle at 47% 47%,#142b51 0%,#061023 62%,#020816 100%);
+  box-shadow:inset 0 4px 10px #01040fbf,inset 0 -1px 0 #b0cafe24,
+    0 1px 1px #ffffff17;
+}
+.board.arcade-board .disc:not(.empty),
+.arcade-flying-chip .disc:not(.empty){
+  background-image:
+    radial-gradient(ellipse at 28% 20%,#ffffffac 0%,#ffffff58 7%,transparent 32%),
+    linear-gradient(153deg,#ffffff4d 0%,transparent 41%,#07112942 100%);
+  box-shadow:
+    inset 0 3px 2px #ffffff8c,
+    inset 4px 1px 4px #ffffff3d,
+    inset -5px -7px 8px #07102680,
+    0 2px 0 #080d217e,
+    0 4px 9px #0008;
+}
+.board.arcade-board .disc.shape-square:not(.empty),
+.board.arcade-board .disc.shape-diamond:not(.empty),
+.board.arcade-board .disc.shape-hex:not(.empty){
+  box-shadow:inset 2px 3px 4px #ffffff65,inset -5px -6px 6px #050d1880,0 3px 7px #0008;
+}
+.board.arcade-board .board-cell.arcade-under-flight>.disc{
+  visibility:hidden;
+}
+.arcade-fall-layer{
+  position:absolute;
+  inset:0;
+  display:grid;
+  gap:var(--arcade-gap);
+  padding:var(--arcade-pad);
+  border:var(--arcade-border) solid transparent;
+  border-radius:inherit;
+  box-sizing:border-box;
+  pointer-events:none;
+  z-index:5;
+  overflow:visible;
+}
+.arcade-flying-chip{
+  display:grid;
+  place-items:center;
+  position:relative;
+  min-width:0;
+  min-height:0;
+  aspect-ratio:1;
+  pointer-events:none;
+  isolation:isolate;
+  animation:arcade-chip-drop var(--arcade-flight-duration) cubic-bezier(.22,.65,.16,1)
+    var(--arcade-flight-delay) both;
+  will-change:transform;
+}
+.arcade-flying-chip>.disc{
+  z-index:2;
+  width:91%;
+  height:auto;
+}
+.arcade-flying-chip::after{
+  content:"";
+  position:absolute;
+  inset:5%;
+  border:3px solid #fff5b6;
+  border-radius:50%;
+  opacity:0;
+  z-index:1;
+  box-shadow:0 0 17px #ffd878;
+  pointer-events:none;
+  animation:arcade-impact-ring var(--arcade-flight-duration) ease-out
+    var(--arcade-flight-delay) both;
+}
+@keyframes arcade-chip-drop{
+  0%{transform:translate3d(0,var(--arcade-flight-start),0) scale(.94);opacity:1}
+  64%{transform:translate3d(0,0,0) scale(1);opacity:1}
+  73%{transform:translate3d(0,13%,0) scale(1.035,.91)}
+  83%{transform:translate3d(0,-15%,0) scale(.97,1.05)}
+  92%{transform:translate3d(0,5%,0) scale(1.025,.97)}
+  100%{transform:translate3d(0,0,0) scale(1);opacity:1}
+}
+@keyframes arcade-impact-ring{
+  0%,60%{opacity:0;transform:scale(.5)}
+  71%{opacity:.9;transform:scale(1)}
+  99%,100%{opacity:0;transform:scale(1.55)}
+}
+/* Transparent touch targets remain above the decorative flying chips. */
+.board-tap-columns{z-index:7}
+.board.arcade-board .board-cell.last-played-slot:not(.winning-slot){
+  box-shadow:inset 0 0 0 3px #ffe7a0,0 0 0 2px #fbd271,
+    0 0 19px #ffde827c;
+}
+.board.arcade-board .board-cell.winning-slot{
+  z-index:2;
+  animation:arcade-winning-line 1.1s ease-in-out infinite alternate;
+}
+@keyframes arcade-winning-line{
+  0%{box-shadow:inset 0 0 0 2px #fffcd0,0 0 0 2px #ffd861,0 0 10px #fbd273aa}
+  100%{box-shadow:inset 0 0 0 5px #fffbd9,0 0 0 4px #ffe680,0 0 26px 7px #fff09ad7}
+}
+.match-spotlight{
+  position:relative;
+  overflow:hidden;
+  border-color:#ffdc85e0;
+  box-shadow:inset 0 2px 0 #fff9d75c,0 0 30px #ebb54b44,0 15px 23px #0009;
+}
+.match-spotlight::after{
+  content:"";
+  position:absolute;
+  inset:-120% -70%;
+  pointer-events:none;
+  background:linear-gradient(110deg,transparent 44%,#ffffff0b 48%,#ffe69a49 50%,#ffffff0d 52%,transparent 56%);
+  transform:translateX(-36%) rotate(-12deg);
+  animation:arcade-victory-sweep 3.5s linear infinite;
+}
+@keyframes arcade-victory-sweep{
+  0%{transform:translateX(-44%) rotate(-12deg)}
+  100%{transform:translateX(44%) rotate(-12deg)}
+}
+.speed-start-signal{
+  position:relative;
+  overflow:hidden;
+  border:3px solid #94d4ffbd;
+  box-shadow:inset 0 2px 0 #ffffff4d,0 12px 0 #091128a3,
+    0 0 33px #52b5f15a;
+}
+.speed-start-signal::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:repeating-linear-gradient(0deg,transparent 0 8px,#ffffff0c 8px 9px);
+  opacity:.35;
+  pointer-events:none;
+}
+.speed-start-signal>span,.speed-start-signal>strong,.speed-start-signal>small{position:relative;z-index:1}
+.arcade-start-lamps{
+  display:flex;
+  gap:13px;
+  justify-content:center;
+  margin-bottom:4px;
+  z-index:2;
+}
+.arcade-start-lamps i{
+  display:block;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  border:2px solid #6d80a2;
+  background:radial-gradient(circle at 35% 24%,#687d99,#18223c 70%);
+  box-shadow:inset 0 -3px 4px #0008;
+}
+.arcade-start-lamps i.lit{
+  background:radial-gradient(circle at 34% 25%,#fff8d0,#ffc547 44%,#ff783b 100%);
+  border-color:#ffe7a5;
+  box-shadow:0 0 12px #ffc858,0 0 24px #ef873e9c;
+}
+.speed-start-signal.go{
+  border-color:#88ffb4;
+  box-shadow:0 0 0 3px #64f7a633,0 0 40px #54f19a7a,0 13px 0 #08281e;
+}
+.speed-start-signal.go>strong{
+  text-shadow:0 0 14px #9affcf,0 0 47px #48f4a4b3;
+}
+@media(max-width:720px){
+  .board-tap-area{--arcade-gap:2px;--arcade-pad:5px;--arcade-border:3px}
+  .board.arcade-board{box-shadow:inset 0 1px 0 #ffffff30,0 7px 0 #08102cb0,0 12px 18px #0009,0 0 20px #427dc65a}
+  .arcade-flying-chip::after{border-width:2px}
+  .arcade-start-lamps i{width:18px;height:18px}
+}
+.tv-stage .board-tap-area{--arcade-gap:clamp(2px,.42vw,7px)}
+@media(prefers-reduced-motion:reduce){
+  .arcade-flying-chip,.arcade-flying-chip::after,.match-spotlight::after,
+  .board.arcade-board .board-cell.winning-slot{
+    animation:none!important;
+  }
+  .arcade-flying-chip{transform:none!important}
+}
+
+/* Match replay uses the same moving chips and grid geometry as the live board. */
+.tv-replay-board-outer{
+  position:relative;
+  isolation:isolate;
+  --arcade-gap:4px;
+  --arcade-pad:9px;
+  --arcade-border:5px;
+}
+@media(max-width:700px){
+  .tv-replay-board-outer{--arcade-gap:2px;--arcade-pad:4px}
+}

@@ -359,3 +359,29 @@ path, and the read-only TV view subscribes without requiring a PlayVolt login.
 A broadcast is best-effort and can arrive later than an opponent's HTTP
 request; fairness, move order and timers remain governed by the existing
 transactional SQL. Test with at least two different devices plus the TV.
+
+## Arcade Visual Pass 1 (preview only)
+
+This pass refreshes the Drop & Block presentation without changing movement,
+wins, timers, rankings, account access or shared PlayVolt applications.
+
+- Confirmed newly placed chips **fall visibly down their column** and land
+  with a small squash-and-bounce and luminous impact ring. The server remains
+  the authority for every chip's final row/seat. On Speed Round updates with
+  several new chips, the animation queue uses server-accepted positions when
+  supplied and staggers the falls, including stacked chips in the same column.
+- The live multiplayer phone board, read-only shared TV and TV match replay
+  all use the same decorative overlay; it never intercepts taps or changes the
+  saved board. Opening an existing game or loading a saved board does **not**
+  replay historical drops. A rematch's cleared board does not trigger fake
+  falls; Chaos Blast and Bottom Drop clear effects are not misrepresented as
+  new chips. If a reconnect jumps over many moves, the board snaps to its
+  confirmed position instead of pretending to know the missing animation.
+- Existing trophy-earned board themes and chip shapes are preserved. Boards
+  gain recessed arcade slots, illuminated frame edges, chip gloss and
+  layered shadows. Winning connections and victory panels get a brighter
+  glow. The Speed Round 3–2–1–GO countdown adds rising start lamps.
+- Uses lightweight CSS transforms instead of a physics engine. It supports
+  high-player-count mobile scrolling and TV displays, with motion disabled for
+  people who request reduced motion at the operating-system/browser level.
+  No extra database migration, table, or permissions are needed for visuals.

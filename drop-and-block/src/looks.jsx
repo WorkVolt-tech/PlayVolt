@@ -17,7 +17,7 @@ const SAMPLE=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,2,3,0,0,2,1,3,1,2,
 export function BoardLookPreview({board='deep-navy',chip='round',avatar='sentinel'}) {
  return <div className="look-preview">
   <div className="look-preview-heading"><AvatarBadge id={avatar}/><div><strong>YOUR PLAYER LOOK</strong><small>Changes instantly as you select</small></div></div>
-  <div className={'board look-demo-board board-theme-'+safeBoard(board)} style={{gridTemplateColumns:'repeat(7,minmax(0,1fr))'}}>
+  <div className={'board arcade-board look-demo-board board-theme-'+safeBoard(board)} style={{gridTemplateColumns:'repeat(7,minmax(0,1fr))'}}>
    {SAMPLE.map((seat,i)=><div className="board-cell" key={i}><ChipDisc seat={seat} style={seat===1?chip:'round'}/></div>)}
   </div>
   <small className="look-preview-foot">Your board · Your avatar · Your chip style</small>

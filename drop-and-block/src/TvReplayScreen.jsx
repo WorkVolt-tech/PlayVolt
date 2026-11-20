@@ -1,5 +1,6 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {ChipDisc,AvatarBadge,safeBoard} from './looks.jsx';
+import {useArcadeFallingChips,ArcadeFallingChips} from './ArcadeFallingChips.jsx';
 import {canPlayReplay,replayFrame,replayTimeline,highlightLabel,modeLabels} from './replayModel.js';
 
 // Entirely read-only playback. The host starts and stops the session from a
@@ -22,6 +23,13 @@ export function TvReplayScreen({detail}) {
  if(!canPlayReplay(detail))return <div className="tv-waiting">Recorded replay is not available for this match.</div>;
  const idx=timeline[Math.min(cursor,timeline.length-1)]??0;
  const frame=replayFrame(detail,idx);
+ const last=idx>0?detail.moves[idx-1]:null;
+ const {flights,hidden}=useArcadeFallingChips({
+  board:frame.board,width:detail.width,height:detail.height,
+  matchNumber:detail.matchNumber||1,moveCount:idx,
+  floorClears:frame.floorClears||0,lastMove:last,
+  mode:detail.gameMode||'classic'
+ });
  const actor=detail.players.find(p=>p.seat===frame.seat);
  const winners=detail.players.filter(p=>p.won).map(p=>p.name).join(' & ')||'Draw';
  return <div className="tv-replay-screen" aria-label="Read-only TV match replay">
@@ -35,13 +43,16 @@ export function TvReplayScreen({detail}) {
     <span>{idx>0?(actor?.name||'Player '+frame.seat)+' · Column '+(frame.column+1):'Watch the key plays unfold'}</span>
    </div>
    <div className="tv-replay-board-outer">
-     <div className={'board tv-replay-board board-theme-'+safeBoard(detail.boardTheme)}
+     <div className={'board arcade-board tv-replay-board board-theme-'+safeBoard(detail.boardTheme)}
        style={{gridTemplateColumns:'repeat('+detail.width+',minmax(0,1fr))'}} role="grid">
-       {frame.board.map((seat,i)=><div className="board-cell" role="gridcell" key={i}>
+       {frame.board.map((seat,i)=><div className={'board-cell'+(hidden.has(i)?' arcade-under-flight':'')}
+         role="gridcell" key={i}>
         <ChipDisc seat={seat} teamMode={detail.gameMode==='team'}
          style={detail.players.find(p=>p.seat===seat)?.chipStyle||'round'}/>
        </div>)}
      </div>
+     <ArcadeFallingChips flights={flights} width={detail.width} height={detail.height}
+       players={detail.players} teamMode={detail.gameMode==='team'}/>
    </div>
    {frame.event&&<div className="tv-replay-event">{frame.event}</div>}
    <div className="tv-replay-bottom">

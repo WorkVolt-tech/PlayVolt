@@ -20,8 +20,11 @@ export function SpeedStartSignal({signal,round}){
  const waiting=signal.phase==='countdown';
  return <div className={'speed-start-signal '+(waiting?'counting':'go')}
     role="status" aria-label={waiting?'Round '+round+' starts in '+signal.count:'GO. Drop your chip!'}>
+   <div className="arcade-start-lamps" aria-hidden="true">
+     {[0,1,2].map(i=><i key={i} className={!waiting||i>=signal.count-1?'lit':''}/>)}
+   </div>
    <span>{waiting?'READY · ROUND '+round:'⚡ SPEED ROUND '+round}</span>
    <strong aria-live="off">{waiting?signal.count:'GO!'}</strong>
-   <small>{waiting?'Get set. Everyone drops on GO.':'FIRST CHIP WINS THE RACE TO THE BOTTOM'}</small>
+   <small>{waiting?'GET SET · WAIT FOR GO!':'FIRST ACCEPTED CHIP LANDS FIRST · DROP NOW!'}</small>
  </div>;
 }

@@ -16,12 +16,13 @@ import {MatchSpotlight} from './MatchSpotlight.jsx';
 import {speedRoundState} from './speedRound.js';
 import {SpeedStartSignal,useSpeedStartSignal} from './SpeedStartSignal.jsx';
 import {watchRoomPulse,reconcileRoom,createRefreshCoordinator} from './roomRealtime.js';
+import {useArcadeFallingChips,ArcadeFallingChips} from './ArcadeFallingChips.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
 const hub = 'https://playvolt-hub.pages.dev/';
 
-function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic' }) {
+function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic', matchNumber=1,moveCount=0,floorClears=0,speedOrder=[],speedPreviousOrder=[] }) {
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
@@ -32,6 +33,10 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
   const winning=new Set(status==='finished'?winningCells(board,width,height,winnerSeat,mode,lastMove):[]);
   const effectColumn=lastMove?.column!==undefined&&(lastMove.kind==='blast'||lastCell===null)
     ?lastMove.column:null;
+  const {flights,hidden}=useArcadeFallingChips({
+    board,width,height,matchNumber,moveCount,floorClears,lastMove,mode,
+    speedOrder,speedPreviousOrder
+  });
   return <div className="board-wrap">
     <div className={'board-scroll'+(minWidth?' is-wide':'')}
       role={minWidth?'region':undefined} aria-label={minWidth?'Swipe horizontally to view the entire game board':undefined}
@@ -45,19 +50,22 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
           </button>)}
         </div>}
         <div className="board-tap-area">
-          <div className={'board board-theme-'+safeBoard(boardTheme)} style={grid} role="grid" aria-label="Drop & Block game board">
+          <div className={'board arcade-board board-theme-'+safeBoard(boardTheme)} style={grid} role="grid" aria-label="Drop & Block game board">
             {rows.flatMap(row=>columns.map(col=>{
               const seat=board[row*width+col]||0;
               const index=row*width+col;
               const isWinner=winning.has(index),isRecent=lastCell===index;
               return <div className={'board-cell'+(isWinner?' winning-slot':'')+
-                (isRecent?' last-played-slot':'')+(effectColumn===col?' move-effect-column':'')}
+                (isRecent?' last-played-slot':'')+(effectColumn===col?' move-effect-column':'')+
+                (hidden.has(index)?' arcade-under-flight':'')}
                 role="gridcell" key={row+'-'+col}
                 title={isWinner?'Winning connection':isRecent?'Most recent chip':undefined}>
                 <ChipDisc seat={seat} style={players.find(p=>p.seat===seat)?.chipStyle||'round'} teamMode={teamMode}/>
               </div>;
             }))}
           </div>
+          <ArcadeFallingChips flights={flights} width={width} height={height}
+             players={players} teamMode={teamMode}/>
           {!readOnly&&<div className="board-tap-columns" style={grid} role="group" aria-label="Tap a board column to place a piece">
             {columns.map(col=><button type="button" key={col} className="board-tap-column"
               aria-label={actionLabel+' in column '+(col+1)} disabled={!available(col)}
@@ -194,7 +202,9 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     <Board board={game.board} width={game.width} height={game.height}
       turn={isSpeed?game.meSeat:game.turnSeat} me={game.meSeat} onDrop={selectColumn}
       disabled={busy || game.status!=='playing'||iSubmitted||(isSpeed&&speedSignal.phase==='countdown')} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
-      lastMove={game.lastMove} winnerSeat={game.winnerSeat} status={game.status} mode={game.mode}/>
+      lastMove={game.lastMove} winnerSeat={game.winnerSeat} status={game.status} mode={game.mode}
+      matchNumber={game.matchNumber||1} moveCount={game.moveCount||0} floorClears={game.floorClears||0}
+      speedOrder={game.speedOrder||[]} speedPreviousOrder={game.speedPreviousOrder||[]}/>
     <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST SERVER-ACCEPTED DROP GOES FIRST · CONNECT FOUR TO WIN':game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT 4 TO WIN':game.mode==='team'?'CONNECT FOUR TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
