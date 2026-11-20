@@ -25,7 +25,7 @@ export function TrophyUnlockNotice({codes,onClose,onView}) {
  </div>;
 }
 
-export function ProgressHub({userId,onBack,refreshSignal=0}) {
+export function ProgressHub({userId,onBack,onHistory,refreshSignal=0}) {
  const [tab,setTab]=useState('leaderboard');
  const [mode,setMode]=useState('all');
  const [period,setPeriod]=useState('all');
@@ -52,7 +52,10 @@ export function ProgressHub({userId,onBack,refreshSignal=0}) {
   <div className="progress-head">
    <div><div className="section-eyebrow">PLAYVOLT PLAYER ACHIEVEMENTS</div><h2>Trophies &amp; Leaderboards</h2>
     <p className="sub">Rankings and achievements count finished online games, not the local demo.</p></div>
-   <button className="btn ghost" onClick={onBack}>← Back to game</button>
+   <div className="progress-head-actions">
+     {onHistory&&<button className="btn secondary" onClick={onHistory}>↺ Match History</button>}
+     <button className="btn ghost" onClick={onBack}>← Back to game</button>
+   </div>
   </div>
   <div className="progress-stats">
    <div className="progress-stat"><span>Matches played</span><strong>{stats?.played??'—'}</strong></div>

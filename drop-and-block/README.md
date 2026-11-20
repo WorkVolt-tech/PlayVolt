@@ -199,3 +199,23 @@ keeping all players and the invitation code, with a fresh turn timer and
 ready checks. The status `cancelled` with `ended_reason` distinguishes closed
 lobbies from abandoned games. The original 24-hour room expiry still applies.
 All changes are isolated to `drop_block_*` objects and the preview branch.
+
+## Match History & Replay (preview; migration 011)
+
+Only signed-in PlayVolt players can read their **own completed online matches**.
+Open **↺ Match History** from the header, from a match, or through Trophies &
+Ranks. List shows outcome, mode, players, date and moves, with pagination.
+Open a match to step backward or forward, play/pause, or scrub through exact
+stored snapshots. Each accepted move persists its full post-effect board and
+player state transactionally, after **Chaos Blast/Barrier**, **Elimination**
+knockouts/round resets, **Bottom Drop** row clears and score changes. This
+is a read-only viewer; no replay button calls a gameplay action.
+
+The `drop_block_match_history` RPC checks the authenticated user's presence
+in the specific completed match's server-written results and refuses any
+non-participant. Raw move rows remain private. No Contest matches, unfinished
+matches, and local demos have no ranked results and are excluded.
+Older completed matches recorded before this migration may lack snapshots:
+player/result history is still shown, but the UI explicitly disables playback
+rather than guessing past special effects. Replaying historical matches remains
+possible across rematches because the match number is part of the move key.

@@ -7,6 +7,7 @@ import { buildTvDisplayUrl } from './tvLink.js';
 import {AvatarBadge,ChipDisc,safeBoard} from './looks.jsx';
 import {CustomizeHub} from './CustomizeHub.jsx';
 import {TurnClock} from './TurnClock.jsx';
+import {ReplayHub} from './ReplayHub.jsx';
 import {canCloseLobby,canEndStalled,canRematch,isNoContest,isClosedLobby} from './hostControls.js';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
@@ -115,6 +116,7 @@ export default function App() {
   const [message,setMessage] = useState('');
   const [showProgress,setShowProgress] = useState(false);
   const [showCustomize,setShowCustomize] = useState(false);
+  const [showHistory,setShowHistory] = useState(false);
   const [myLoadout,setMyLoadout] = useState(null);
   const [freshTrophies,setFreshTrophies] = useState([]);
   const [progressRefresh,setProgressRefresh] = useState(0);
@@ -263,28 +265,31 @@ export default function App() {
     catch(err){if(err.name!=='AbortError')setMessage('Room code: '+room.code);}
   }
   async function signOut() {
-    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setShowProgress(false);setShowCustomize(false);setMyLoadout(null);setFreshTrophies([]);
+    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setShowProgress(false);setShowCustomize(false);setShowHistory(false);setMyLoadout(null);setFreshTrophies([]);
     history.replaceState(null,'',location.pathname);
   }
   return <div className="shell">
     <header className="topbar"><a href={hub} className="back">← PLAYVOLT</a>
       <span className="mini-brand">DROP <b>&</b> BLOCK</span>
       <span className="header-right">{user && <>
-        {!demo && <button className="text-btn custom-nav" onClick={()=>{setShowCustomize(s=>!s);setShowProgress(false);}}>{showCustomize?'← Game':'🎨 Customize'}</button>}
-        {!demo && <button className="text-btn trophies-nav" onClick={()=>{setShowProgress(s=>!s);setShowCustomize(false);}}>{showProgress?'← Game':'🏆 Trophies & Ranks'}</button>}
+        {!demo && <button className="text-btn custom-nav" onClick={()=>{setShowCustomize(s=>!s);setShowProgress(false);setShowHistory(false);}}>{showCustomize?'← Game':'🎨 Customize'}</button>}
+        {!demo && <button className="text-btn history-nav" onClick={()=>{setShowHistory(s=>!s);setShowProgress(false);setShowCustomize(false);}}>{showHistory?'← Game':'↺ Match History'}</button>}
+        {!demo && <button className="text-btn trophies-nav" onClick={()=>{setShowProgress(s=>!s);setShowCustomize(false);setShowHistory(false);}}>{showProgress?'← Game':'🏆 Trophies & Ranks'}</button>}
         <button className="text-btn" onClick={signOut}>Sign out</button>
       </>}</span>
     </header>
     <main className="content">
-      {!room && !demo && !showProgress && !showCustomize && <div className="hero">
+      {!room && !demo && !showProgress && !showCustomize && !showHistory && <div className="hero">
         <div className="logo-art" aria-hidden="true"><div className="dot-1">◆</div><div className="dot-2">●</div><div className="dot-3">▲</div><div className="dot-4">■</div></div>
         <div className="section-eyebrow">THE MULTIPLAYER STRATEGY SHOWDOWN</div>
         <h1>DROP <span>&</span> BLOCK</h1>
         <p>Drop smart. Block hard.</p>
       </div>}
       {message && <div className="notification" role="status">{message}</div>}
-      {showCustomize ? <CustomizeHub userId={user?.id} onBack={()=>setShowCustomize(false)} onEquipped={setMyLoadout}/> :
-       showProgress ? <ProgressHub userId={user?.id} refreshSignal={progressRefresh} onBack={()=>setShowProgress(false)}/> :
+      {showHistory ? <ReplayHub userId={user?.id} onBack={()=>setShowHistory(false)}/> :
+       showCustomize ? <CustomizeHub userId={user?.id} onBack={()=>setShowCustomize(false)} onEquipped={setMyLoadout}/> :
+       showProgress ? <ProgressHub userId={user?.id} refreshSignal={progressRefresh}
+          onBack={()=>setShowProgress(false)} onHistory={()=>{setShowHistory(true);setShowProgress(false);}}/> :
        demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode} loadout={myLoadout}/> :
       room ? <section className="panel panel-wide">
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
@@ -348,8 +353,9 @@ export default function App() {
             : <span className="rematch-waiting">Waiting for the host to start the next match…</span>}
         </div>}
         <div className="actions">
-          <button className="btn secondary" onClick={()=>{setShowCustomize(true);setShowProgress(false);}}>🎨 Customize</button>
-          <button className="btn secondary" onClick={()=>{setShowProgress(true);setShowCustomize(false);}}>🏆 Trophies & Ranks</button>
+          <button className="btn secondary" onClick={()=>{setShowCustomize(true);setShowProgress(false);setShowHistory(false);}}>🎨 Customize</button>
+          <button className="btn secondary" onClick={()=>{setShowHistory(true);setShowProgress(false);setShowCustomize(false);}}>↺ Match History</button>
+          <button className="btn secondary" onClick={()=>{setShowProgress(true);setShowCustomize(false);setShowHistory(false);}}>🏆 Trophies & Ranks</button>
           <button className="btn ghost" onClick={exitRoom}>← Back to menu</button>
         </div>
       </section> :
