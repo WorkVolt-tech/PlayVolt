@@ -1,0 +1,160 @@
+import React, { useEffect, useState } from 'react';
+import { db } from './supabase.js';
+import { GameArea } from './App.jsx';
+import { VersionAlert } from './VersionAlert.jsx';
+import { readTvLink, buildJoinUrl } from './tvLink.js';
+import {AvatarBadge,ChipDisc} from './looks.jsx';
+import {TvReplayScreen} from './TvReplayScreen.jsx';
+import {watchRoomPulse,reconcileRoom,createRefreshCoordinator} from './roomRealtime.js';
+
+const modeNames = { speed: 'SPEED ROUND', classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP', chaos: 'CHAOS', team: 'TEAM BATTLE' };
+const icons = ['', '◆', '●', '▲', '■', '★', '⬡', '✦', '✳', '⬢'];
+
+export function TvApp() {
+  const [link] = useState(() => readTvLink(window.location));
+  const [game, setGame] = useState(null);
+  const [error, setError] = useState(link ? '' : 'Open TV Display from a Drop & Block room to get a secure screen link.');
+  const [lastUpdated, setLastUpdated] = useState(0);
+  const [transport,setTransport] = useState('connecting');
+  const [replay,setReplay]=useState(null);
+  const [replayError,setReplayError]=useState('');
+
+  // The display is read-only: room broadcasts only invalidate the board.
+  // All state still comes through the bearer-token TV RPC, never the socket.
+  useEffect(() => {
+    if (!link) return undefined;
+    let active=true,live=false,lastAttempt=0;
+    const refresh=async()=>{
+      lastAttempt=Date.now();
+      try{
+        const {data,error:rpcError}=await db.rpc('drop_block_tv_state',{
+          p_code:link.code,p_token:link.token
+        });
+        if(rpcError)throw rpcError;
+        if(active){
+          setGame(current=>reconcileRoom(current,data));
+          setError('');
+          setLastUpdated(Date.now());
+        }
+      }catch(e){
+        if(active)setError(e.message||'Connection lost. Reconnecting…');
+      }
+    };
+    const gate=createRefreshCoordinator(refresh,{delay:110});
+    const stop=watchRoomPulse(db,link.token,gate.request,status=>{
+      if(!active)return;
+      live=status==='SUBSCRIBED';
+      setTransport(live?'live':'fallback');
+      if(live)gate.request();
+    });
+    const timer=window.setInterval(()=>{
+      const fallbackMs=live?18000:3500;
+      if(!document.hidden&&Date.now()-lastAttempt>=fallbackMs)gate.request();
+    },1000);
+    const onFocus=()=>{if(!document.hidden)gate.request();};
+    window.addEventListener('focus',onFocus);
+    document.addEventListener('visibilitychange',onFocus);
+    window.addEventListener('online',onFocus);
+    gate.request();
+    return ()=>{
+      active=false;stop();gate.dispose();window.clearInterval(timer);
+      window.removeEventListener('focus',onFocus);
+      document.removeEventListener('visibilitychange',onFocus);
+      window.removeEventListener('online',onFocus);
+    };
+  },[link?.code,link?.token]);
+
+  const replaySession=game?.status!=='playing'&&game?.tvReplay?.active
+    ? game.tvReplay.startedAt : null;
+  useEffect(()=>{
+    if(!link||!replaySession){setReplay(null);setReplayError('');return undefined;}
+    let alive=true,fetching=false;
+    setReplay(null);setReplayError('');
+    const fetchReplay=async()=>{
+      if(!alive||fetching)return;
+      fetching=true;
+      try{
+        const {data,error:e}=await db.rpc('drop_block_tv_replay_state',{
+          p_code:link.code,p_token:link.token
+        });
+        if(e)throw e;
+        if(!alive)return;
+        if(data?.active&&data.startedAt===replaySession){
+          setReplay(data);setReplayError('');
+          window.clearInterval(timer);
+        }else setReplayError('The selected replay is not available yet.');
+      }catch(e){
+        if(alive)setReplayError(e.message||'Reconnecting to the TV replay…');
+      }finally{fetching=false;}
+    };
+    const timer=window.setInterval(fetchReplay,5000);
+    const onFocus=()=>{if(!document.hidden)void fetchReplay();};
+    void fetchReplay();
+    window.addEventListener('focus',onFocus);
+    return ()=>{alive=false;window.clearInterval(timer);window.removeEventListener('focus',onFocus);};
+  },[link?.code,link?.token,replaySession]);
+  const showReplay=Boolean(replaySession);
+  const replayReady=showReplay&&replay?.active&&replay.startedAt===replaySession;
+  const joinUrl = link ? buildJoinUrl(window.location, link.code) : null;
+  return <div className={'tv-shell'+(game?.status==='lobby'?' tv-lobby':'')}>
+    <header className="tv-topbar">
+      <span className="tv-logo">DROP <em>&</em> BLOCK <small>BY PLAYVOLT</small></span>
+      <div className="tv-topbar-status">
+        <span className={'tv-connection'+(error?' is-away':' is-live')} role="status">
+          {error?(!link?'◌ Link required':'◌ Reconnecting'):!lastUpdated?'◌ Connecting':transport==='live'?'● Instant updates':'◌ Auto-refresh'}
+        </span>
+        <span className="tv-readonly">TV DISPLAY · VIEW ONLY</span>
+      </div>
+    </header>
+    <main className="tv-layout">
+      <section className="tv-stage">
+        <div className="tv-mode-label">{showReplay
+           ? 'TV PARTY REPLAY · MATCH '+(game.tvReplay.matchNumber||1)
+           : game ? (modeNames[game.mode] || 'MULTIPLAYER') + ' · MATCH ' + (game.matchNumber || 1) : 'CONNECTING TO YOUR GAME'}</div>
+        {game ? <>
+          {showReplay
+            ? replayReady
+               ? <TvReplayScreen key={replaySession} detail={replay}/>
+               : <div className="tv-waiting" role="status">{replayError
+                  ? 'Replay connection interrupted · Retrying automatically…'
+                  : 'Loading '+(game.tvReplay.mode==='highlights'?'party highlights':'full match replay')+'…'}</div>
+            : game.status==='cancelled'&&game.endReason==='closed_lobby'
+            ? <div className="tv-closed-state">This room was closed by the host.</div>
+            : <GameArea game={game} readOnly onDrop={() => {}} busy boardTheme={game.hostBoardTheme}/>}
+          {replayError&&showReplay&&<div className="tv-error" role="status">{replayError}</div>}
+          {!showReplay&&game.status === 'lobby' && <div className="tv-waiting">{game.matchNumber > 1 ? 'Rematch lobby · Players getting ready' : 'Waiting for the host to start'} · {game.players.length}/{game.maxPlayers} players</div>}
+          {game.status==='cancelled'&&game.endReason==='stalled_no_contest'&&
+            <div className="tv-waiting">No Contest · No winner or trophies awarded. The host may start a rematch.</div>}
+        </> : <div className="tv-waiting">Waiting for your room's board…</div>}
+        {error && <p className="tv-error" role="status">{error}</p>}
+      </section>
+      <aside className="tv-sidebar">
+        <span className="tv-side-label">JOIN FROM YOUR PHONE</span>
+        <div className="tv-room-code">{link?.code || '------'}</div>
+        {game?.status==='cancelled'
+          ? <p>This room is not accepting moves or new players. {game.endReason==='stalled_no_contest'?'The host may start a rematch.':'The room is closed.'}</p>
+          : <p>Open Drop &amp; Block on your phone, sign in with PlayVolt, and enter this room code.</p>}
+        {joinUrl && <a className="tv-join-address" href={joinUrl}>{new URL(joinUrl).host}</a>}
+        <div className="tv-divider" />
+        <h2>PLAYERS</h2>
+        {game?.players?.length ? <div className="tv-player-list">{game.players.map(p =>
+          <div key={p.seat} className={'tv-player tv-seat-' + p.seat + (p.eliminated?' tv-eliminated':'') + (p.seat === game.turnSeat?' tv-current':'')}>
+            <AvatarBadge id={p.avatarStyle||'sentinel'} small/><ChipDisc seat={p.seat} style={p.chipStyle||'round'} compact/>
+            <span className="tv-player-name">{p.name}
+              {p.online!==undefined&&<small className={'player-presence '+(p.online?'online':'away')}>{p.online?'● Online':'○ Away'}{p.timedOutTurns?' · '+p.timedOutTurns+' missed':''}</small>}
+            </span>
+            <strong>{p.eliminated?'OUT':game.mode==='speed'
+              ? game.status==='finished'?(p.seat===game.winnerSeat?'WINNER':'FINISHED')
+                :game.speedPlayedSeats?.includes(p.seat)
+                 ? '#'+(game.speedOrder?.find(row=>row.seat===p.seat)?.place||'?')+' DROPPED'
+                 : '⚡ READY'
+              :game.mode==='team'?(p.seat%2===1?'GOLD':'BLUE'):game.mode==='territory'?p.score+' pts':game.mode==='chaos'?'⬢'+(p.chaosBlockUsed?'0':'1')+' ✹'+(p.chaosBlastUsed?'0':'1'):p.seat===game.turnSeat?'PLAYING':''}</strong>
+          </div>
+        )}</div> : <p className="tv-empty">Players will appear here when they join.</p>}
+        <div className="tv-status">{showReplay?'★ TV PARTY REPLAY':game?.status==='playing'?'● MATCH LIVE':game?.status==='finished'?'✓ MATCH FINISHED':game?.status==='cancelled'?(game.endReason==='stalled_no_contest'?'⊘ NO CONTEST':'⊘ ROOM CLOSED'):'◌ WAITING IN LOBBY'}</div>
+        <span className="tv-footer-note">Read-only TV view · All moves stay on players’ phones</span>
+      </aside>
+    </main>
+    <VersionAlert autoUpdate />
+  </div>;
+}
