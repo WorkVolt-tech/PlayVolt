@@ -15,7 +15,7 @@ export const WORLDS = {
 const formatSeconds = (s) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `0:${String(s).padStart(2, '0')}`);
 
 // Story mode: a level map across five worlds. Signed-in players only.
-export function StoryScreen({ account, notify, onBack, onSignIn }) {
+export function StoryScreen({ account, notify, onBack, onSignIn, appearance }) {
   const solo = useSolo(notify, account.user?.id);
   const [map, setMap] = useState(null);
   const [error, setError] = useState('');
@@ -40,7 +40,7 @@ export function StoryScreen({ account, notify, onBack, onSignIn }) {
   if (solo.game?.kind === 'story') {
     const level = levels.find((l) => l.level === solo.game.storyLevel);
     const next = levels.find((l) => l.level === (level?.level || 0) + 1);
-    if (level) return <SoloGame solo={solo} notify={notify} story={{
+    if (level) return <SoloGame solo={solo} notify={notify} appearance={appearance} story={{
       level, next,
       onNext: () => { void solo.startStory(next.level); },
       onMap: () => { solo.leave(); setPicked(null); void load(); },
