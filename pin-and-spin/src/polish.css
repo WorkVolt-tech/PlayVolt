@@ -276,6 +276,9 @@ input[type=email]:focus,input[type=password]:focus{border-color:var(--volt)}
    Each color keeps its own pattern for color-blind players:
    blue waves, red spiral, green honeycomb, yellow sunburst, purple diamonds, white dots. */
 .patterned-peg,.code-slots .patterned-peg,.answer-slots .patterned-peg.slot.filled{background:var(--ball) center/100% 100% no-repeat!important;border:0!important;border-radius:50%;box-shadow:0 3px 6px #0007!important}
+/* Fill the shape with the ball's patterned center. At 100%, the SVG's circular
+   silhouette leaves rounded/transparent corners inside square and hex pieces. */
+:is(.patterned-peg,.code-slots .patterned-peg,.answer-slots .patterned-peg.slot.filled):not(.piece-shape-round){background-size:160% 160%!important;background-color:var(--color)!important}
 .patterned-peg:before,.patterned-peg:after,.mini-row .tiny-peg.patterned-peg:after{display:none!important}
 .patterned-peg.color-0{--ball:url('./balls/ball-0-blue.svg')}
 .patterned-peg.color-1{--ball:url('./balls/ball-1-red.svg')}
