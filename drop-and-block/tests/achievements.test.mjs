@@ -11,5 +11,5 @@ test('all unique server trophy codes are represented in the game gallery',()=>{
  }
 });
 test('every ranked mode uses a database-compatible filter',()=>{
- assert.deepEqual(MODES.map(x=>x.value),['all','classic','territory','elimination','collapse','chaos','team']);
+ assert.deepEqual(MODES.map(x=>x.value),['all','classic','speed','territory','elimination','collapse','chaos','team']);
 });

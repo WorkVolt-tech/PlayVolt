@@ -20,7 +20,7 @@ test('scrub is clamped and malformed archived moves cannot mislead players',()=>
  assert.equal(canPlayReplay({...detail,completeSnapshots:false}),false);
  assert.equal(canPlayReplay({...detail,moves:[{boardAfter:[1,0]}]}),false);
 });
-test('outcomes and all six modes remain readable',()=>{
+test('outcomes and all seven modes remain readable',()=>{
  assert.equal(outcomeLabel('win'),'Victory');assert.equal(outcomeLabel('loss'),'Defeat');
- assert.equal(outcomeLabel('draw'),'Draw');assert.equal(Object.keys(modeLabels).length,6);
+ assert.equal(outcomeLabel('draw'),'Draw');assert.equal(Object.keys(modeLabels).length,7);
 });
