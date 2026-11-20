@@ -14,6 +14,7 @@ import {canPlayColumn,wideBoardMinWidth} from './boardInteraction.js';
 import {lastMoveCell,winningCells} from './boardFeedback.js';
 import {MatchSpotlight} from './MatchSpotlight.jsx';
 import {speedRoundState} from './speedRound.js';
+import {SpeedStartSignal,useSpeedStartSignal} from './SpeedStartSignal.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
@@ -121,16 +122,17 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     game.lastMove?.kind==='block'?'placed a Barrier in':'played';
   const isSpeed=game.mode==='speed';
   const speedState=speedRoundState(game,game.meSeat);
+  const speedSignal=useSpeedStartSignal(game);
   const submitted=speedState.submitted;
   const iSubmitted=isSpeed&&speedState.alreadyPlayed;
   const myTurn=!readOnly&&game.status==='playing'&&
-    (isSpeed?speedState.canSubmit:game.turnSeat===game.meSeat);
+    (isSpeed?speedState.canSubmit&&speedSignal.phase!=='countdown':game.turnSeat===game.meSeat);
   return <>
     <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'')+(isSpeed&&submitted.has(p.seat)?' speed-submitted':'') + (p.eliminated?' eliminated':'')+(game.mode==='team'?' team-roster-'+teamOfSeat(p.seat):'')}>
       <AvatarBadge id={p.avatarStyle||'sentinel'} small/><span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
       <span className="player-label">{p.name}{p.eliminated?' · OUT':game.mode==='team'?' · '+(teamOfSeat(p.seat)===1?'Gold':'Blue'):game.mode==='territory'?' · '+p.score+' pts':''}
        {isSpeed&&game.status==='playing'&&<small className={'speed-roster-status'+(submitted.has(p.seat)?' placed':' waiting')}>
-          {submitted.has(p.seat)?'✓ Dropped this round':'⚡ Ready to drop'}
+          {submitted.has(p.seat)?'#'+(speedState.positionBySeat.get(p.seat)||'')+' · Dropped':'⚡ Ready to drop'}
         </small>}
        {p.online!==undefined&&<small className={'player-presence '+(p.online?'online':'away')}>{p.online?'● Online':'○ Away'}{p.timedOutTurns>0?' · '+p.timedOutTurns+' missed':''}</small>}
       </span>
@@ -142,10 +144,17 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
       </div>
       <div className="speed-round-players">
         {game.players.map(p=><span key={p.seat} className={'speed-player'+(submitted.has(p.seat)?' done':'')}>
-          {submitted.has(p.seat)?'✓':'⚡'} {p.name}
+          {submitted.has(p.seat)?'#'+(speedState.positionBySeat.get(p.seat)||'?'):'⚡'} {p.name}
         </span>)}
       </div>
-      <p>Everyone drops at once. First accepted chip lands first. One chip per player; next round starts after everyone plays.</p>
+      {game.speedPreviousRound&&speedState.previousOrder.length>0&&
+        <div className="speed-previous-standings">
+          <strong>PREVIOUS ROUND {game.speedPreviousRound} · FINISH ORDER</strong>
+          <div>{speedState.previousOrder.map(row=><span key={row.seat}>
+            <b>#{row.place}</b> {game.players.find(p=>p.seat===row.seat)?.name||'Player '+row.seat}
+          </span>)}</div>
+        </div>}
+      <p>Everyone races on GO. The first server-accepted chip goes in first. One drop each, then the next round begins.</p>
     </div>}
     {game.mode==='team' && <div className="team-scoreline">
       <div className="team-side team-gold"><strong>TEAM GOLD</strong><small>{game.players.filter(p=>teamOfSeat(p.seat)===1).map(p=>p.name).join(' · ')}</small></div>
@@ -156,7 +165,9 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     {game.mode==='elimination' && <div className="mode-status">ROUND {game.roundNumber || 1} · {game.players.filter(p=>!p.eliminated).length} SURVIVORS</div>}
     {game.mode==='collapse' && <div className="mode-status">BOTTOM ROW DROPS: {game.floorClears || 0} · TRIGGER AT SECOND ROW FROM TOP</div>}
     {game.lastEvent && <div className="round-event" role="status">{game.lastEvent}</div>}
-    <TurnClock game={game}/>
+    {isSpeed&&<SpeedStartSignal signal={speedSignal} round={game.roundNumber||1}/>}
+    {(!isSpeed||speedSignal.phase!=='countdown')&&<TurnClock game={game}/>}
+
     {game.lastMove&&<div className="last-move-caption">
       <span className="last-move-tag">LAST MOVE</span>
       <span>{lastPlayer?.name||'Player '+game.lastMove.seat} {lastMoveLabel} column {game.lastMove.column+1}
@@ -166,7 +177,8 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
       {game.status==='cancelled' ? (isNoContest(game) ? 'No Contest · Match ended without a winner' : 'Room closed by the host')
         : game.status==='finished' ? (game.mode==='team' ? (game.winnerTeam || winner ? 'Team '+((game.winnerTeam || teamOfSeat(winner?.seat))===1?'Gold':'Blue')+' wins!' : 'Match finished · Draw') : (winner ? winner.name+' wins!' : 'Match finished · Draw'))
         : isSpeed
-          ? readOnly?'ALL PLAYERS CAN DROP NOW · FIRST CHIP GOES FIRST'
+          ? speedSignal.phase==='countdown'?'GET READY · DROP ONLY WHEN YOU SEE GO!'
+            : readOnly?'ALL PLAYERS CAN DROP NOW · FIRST CHIP GOES FIRST'
             : iSubmitted?'✓ CHIP LOCKED IN · WAITING FOR EVERYONE ELSE'
             : '⚡ DROP NOW · FIRST ACCEPTED CHIP LANDS FIRST!'
           : myTurn ? 'Your turn — choose a column' : readOnly ? (turnPlayer?.name || 'A player') + ' is playing' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
@@ -180,7 +192,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects four to win. Choosing a power uses your turn.'}</p>}
     <Board board={game.board} width={game.width} height={game.height}
       turn={isSpeed?game.meSeat:game.turnSeat} me={game.meSeat} onDrop={selectColumn}
-      disabled={busy || game.status!=='playing'||iSubmitted} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
+      disabled={busy || game.status!=='playing'||iSubmitted||(isSpeed&&speedSignal.phase==='countdown')} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
       lastMove={game.lastMove} winnerSeat={game.winnerSeat} status={game.status} mode={game.mode}/>
     <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST SERVER-ACCEPTED DROP GOES FIRST · CONNECT FOUR TO WIN':game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT 4 TO WIN':game.mode==='team'?'CONNECT FOUR TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
   </>;

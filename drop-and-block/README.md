@@ -302,3 +302,23 @@ Each accepted drop still writes the regular move log and replay snapshot,
 so match history, win recording and TV playback work as before.
 Local hot-seat demo is disabled for this mode, since simultaneous inputs need
 separate devices. **All six existing game modes remain turn-based and unchanged.**
+
+## Speed Round start signal and race positions (preview; migration 016)
+
+Speed Round now has a synchronized **3–2–1–GO** before the first drop of
+**every** round, including after everyone has submitted or after a 60-second
+round timeout. The server records the round's opening timestamp and refuses
+early drops; a device animation cannot start the match prematurely. The
+60-second play window begins at GO, not when the countdown starts. The
+previously deployed 60-second timeout skipping rules remain intact.
+
+Accepted Speed Round submissions are ranked **#1, #2, #3, …** by their
+server-written global move numbers (never by unreliable client timestamps).
+Phones and the shared read-only TV display the accepted order beside player
+names. After the last player submits, the board advances to a new countdown
+and displays the previous round's finishing order while the next one gets
+ready. Unique server move numbers guarantee deterministic stacking and rank
+when several people tap the same column simultaneously. Earlier matches keep
+their existing replay history; the migration backfills accepted move numbers
+for any Speed Round submissions previously recorded. This is a Speed Round-only
+improvement; Classic and all other modes retain their existing turn logic.

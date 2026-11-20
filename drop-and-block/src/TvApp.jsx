@@ -132,7 +132,9 @@ export function TvApp() {
             </span>
             <strong>{p.eliminated?'OUT':game.mode==='speed'
               ? game.status==='finished'?(p.seat===game.winnerSeat?'WINNER':'FINISHED')
-                :game.speedPlayedSeats?.includes(p.seat)?'✓ DROPPED':'⚡ READY'
+                :game.speedPlayedSeats?.includes(p.seat)
+                 ? '#'+(game.speedOrder?.find(row=>row.seat===p.seat)?.place||'?')+' DROPPED'
+                 : '⚡ READY'
               :game.mode==='team'?(p.seat%2===1?'GOLD':'BLUE'):game.mode==='territory'?p.score+' pts':game.mode==='chaos'?'⬢'+(p.chaosBlockUsed?'0':'1')+' ✹'+(p.chaosBlastUsed?'0':'1'):p.seat===game.turnSeat?'PLAYING':''}</strong>
           </div>
         )}</div> : <p className="tv-empty">Players will appear here when they join.</p>}

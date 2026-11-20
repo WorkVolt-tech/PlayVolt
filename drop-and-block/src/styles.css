@@ -579,3 +579,32 @@ footer span{color:#ffcb56}
 .player-chip.speed-submitted{border-color:#6bddb0!important;background:#17493855}
 @media(max-width:630px){.speed-round-panel{padding:11px}.speed-round-players{gap:5px}
  .speed-player{font-size:10px;padding:6px 7px}.speed-round-header span{font-size:10px}}
+
+/* Speed Round synced server GO signal and saved previous-round finishing order. */
+.speed-start-signal{display:grid;place-items:center;gap:6px;text-align:center;
+  margin:14px auto;padding:16px 12px;max-width:650px;border:2px solid #b7dff7aa;
+  border-radius:18px;background:radial-gradient(circle at 50% 12%,#4087a66b,transparent 70%),#142a42;
+  box-shadow:0 8px 22px #0006}
+.speed-start-signal>span{font-size:12px;letter-spacing:.17em;font-weight:950;color:#c4e5f5}
+.speed-start-signal>strong{font-size:clamp(48px,10vw,98px);line-height:1;font-weight:1000;
+  color:#fef4bc;text-shadow:0 2px 14px #e3b24470;font-variant-numeric:tabular-nums}
+.speed-start-signal>small{font-size:11px;letter-spacing:.1em;font-weight:900;color:#d3eaf6}
+.speed-start-signal.go{border-color:#7ff8bd;background:radial-gradient(circle,#235c4b,#102a3c);
+  box-shadow:0 0 25px #66edb458}
+.speed-start-signal.go>strong{color:#c3ffdb;animation:speed-go-pulse .55s ease-out 1}
+@keyframes speed-go-pulse{0%{transform:scale(.75);opacity:.7}80%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.speed-previous-standings{display:grid;gap:8px;margin:13px 0 3px;padding:11px;
+  border-radius:11px;background:#0d2139a8;border:1px solid #89b9ca62}
+.speed-previous-standings>strong{font-size:10px;letter-spacing:.09em;color:#c0dfed}
+.speed-previous-standings>div{display:flex;flex-wrap:wrap;gap:7px}
+.speed-previous-standings span{display:inline-flex;gap:6px;align-items:center;
+  font-size:11px;color:#e4f2ff;font-weight:800;background:#213950;
+  border:1px solid #7697b477;border-radius:8px;padding:7px 9px}
+.speed-previous-standings b{font-size:13px;color:#ffdf94}
+.speed-roster-status.placed{color:#b9efca}
+@media(max-width:650px){.speed-start-signal{padding:11px 9px;border-width:1px}
+ .speed-start-signal>strong{font-size:clamp(42px,14vw,75px)}
+ .speed-start-signal>small{font-size:9px}
+ .speed-previous-standings>div{gap:5px}
+ .speed-previous-standings span{font-size:10px;padding:5px 7px}}
+@media(prefers-reduced-motion:reduce){.speed-start-signal.go>strong{animation:none}}
