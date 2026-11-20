@@ -41,7 +41,7 @@ test('Territory scores at three but continues until final score',()=>{
 });
 test('Elimination at four players knocks out a rival and resets the round',()=>{
  const r=playLocalTurn(state(line(1,2),4),2,4,'elimination',9,8);
- assert.deepEqual(r.eliminated,[false,true,false,false]);
+ assert.deepEqual(r.eliminated,[false,false,false,true]);
  assert.deepEqual(r.board,board());
  assert.equal(r.roundNumber,2);
 });

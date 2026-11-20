@@ -17,13 +17,14 @@ import {speedRoundState} from './speedRound.js';
 import {SpeedStartSignal,useSpeedStartSignal} from './SpeedStartSignal.jsx';
 import {watchRoomPulse,reconcileRoom,createRefreshCoordinator} from './roomRealtime.js';
 import {useArcadeFallingChips,ArcadeFallingChips} from './ArcadeFallingChips.jsx';
+import {useEliminationReset,EliminationBoardReset} from './EliminationReset.jsx';
 import {useArcadeSound,SoundToggle,useArcadeLandingSounds,useArcadeMatchSounds} from './ArcadeSounds.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
 const hub = 'https://playvolt-hub.pages.dev/';
 
-function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic', matchNumber=1,moveCount=0,floorClears=0,speedOrder=[],speedPreviousOrder=[],soundEnabled=false,winLength=4 }) {
+function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic', matchNumber=1,moveCount=0,floorClears=0,speedOrder=[],speedPreviousOrder=[],soundEnabled=false,winLength=4,eliminationGame=null,eliminationReset=null }) {
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
@@ -68,6 +69,10 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
           </div>
           <ArcadeFallingChips flights={flights} width={width} height={height}
              players={players} teamMode={teamMode}/>
+          {eliminationReset?.active&&<EliminationBoardReset
+             game={eliminationGame} reset={eliminationReset}
+             width={width} height={height} players={players} winLength={winLength}/>}
+
           {!readOnly&&<div className="board-tap-columns" style={grid} role="group" aria-label="Tap a board column to place a piece">
             {columns.map(col=><button type="button" key={col} className="board-tap-column"
               aria-label={actionLabel+' in column '+(col+1)} disabled={!available(col)}
@@ -84,11 +89,13 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
 
 function LocalDemo({ onBack, count, mode, loadout }) {
   const [width, height] = dimensions(count);
-  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false) });
+  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false), eliminationRoundOpensAt:null,eliminationPreviousBoard:null,eliminationTargetSeat:null,eliminationScorerSeat:null });
   const [state, setState] = useState(reset);
   const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i],chaosBlockUsed:state.chaosBlockUsed[i],chaosBlastUsed:state.chaosBlastUsed[i],avatarStyle:i===0?loadout?.avatar:'sentinel',chipStyle:i===0?loadout?.chip:'round'}));
   function play(col,kind='drop') {
     setState(old=>{
+      if(mode==='elimination'&&old.eliminationRoundOpensAt&&
+         Date.now()<Date.parse(old.eliminationRoundOpensAt))return old;
       const next=mode==='team'?playTeamTurn(old,col,count,width,height):
         mode==='chaos'?playChaosTurn(old,col,count,width,height,kind):
         playLocalTurn(old,col,count,mode,width,height);
@@ -135,11 +142,12 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
   const winLength=game.winLength===3?3:4;
   const speedState=speedRoundState(game,game.meSeat);
   const speedSignal=useSpeedStartSignal(game);
+  const eliminationReset=useEliminationReset(game);
   const arcadeSound=useArcadeSound();
   useArcadeMatchSounds(game,speedSignal,arcadeSound.enabled);
   const submitted=speedState.submitted;
   const iSubmitted=isSpeed&&speedState.alreadyPlayed;
-  const myTurn=!readOnly&&game.status==='playing'&&
+  const myTurn=!readOnly&&game.status==='playing'&&!eliminationReset.active&&
     (isSpeed?speedState.canSubmit&&speedSignal.phase!=='countdown':game.turnSeat===game.meSeat);
   return <>
     <div className="arcade-sound-tray">
@@ -183,9 +191,11 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     {game.mode==='chaos' && <div className="mode-status">CHAOS MODE · ONE BARRIER AND ONE BLAST PER PLAYER PER MATCH</div>}
     {game.mode==='elimination' && <div className="mode-status">ROUND {game.roundNumber || 1} · {game.players.filter(p=>!p.eliminated).length} SURVIVORS</div>}
     {game.mode==='collapse' && <div className="mode-status">BOTTOM ROW DROPS: {game.floorClears || 0} · TRIGGER AT SECOND ROW FROM TOP</div>}
-    {game.lastEvent && <div className="round-event" role="status">{game.lastEvent}</div>}
+    {game.lastEvent&&!eliminationReset.active&&
+      !(game.mode==='elimination'&&game.eliminationRoundOpensAt)&&
+      <div className="round-event" role="status">{game.lastEvent}</div>}
     {isSpeed&&<SpeedStartSignal signal={speedSignal} round={game.roundNumber||1}/>}
-    {(!isSpeed||speedSignal.phase!=='countdown')&&<TurnClock game={game}/>}
+    {!eliminationReset.active&&(!isSpeed||speedSignal.phase!=='countdown')&&<TurnClock game={game}/>} 
 
     {game.lastMove&&<div className="last-move-caption">
       <span className="last-move-tag">LAST MOVE</span>
@@ -195,6 +205,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     <div className={'turn-notice' + (myTurn?' is-me':'')}>
       {game.status==='cancelled' ? (isNoContest(game) ? 'No Contest · Match ended without a winner' : 'Room closed by the host')
         : game.status==='finished' ? (game.mode==='team' ? (game.winnerTeam || winner ? 'Team '+((game.winnerTeam || teamOfSeat(winner?.seat))===1?'Gold':'Blue')+' wins!' : 'Match finished · Draw') : (winner ? winner.name+' wins!' : 'Match finished · Draw'))
+        : eliminationReset.active?'ARENA RESET · NEXT ROUND IN '+eliminationReset.seconds+'…'
         : isSpeed
           ? speedSignal.phase==='countdown'?'GET READY · DROP ONLY WHEN YOU SEE GO!'
             : readOnly?'ALL PLAYERS CAN DROP NOW · FIRST CHIP GOES FIRST'
@@ -211,12 +222,13 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects '+winLength+' to win. Choosing a power uses your turn.'}</p>}
     <Board board={game.board} width={game.width} height={game.height}
       turn={isSpeed?game.meSeat:game.turnSeat} me={game.meSeat} onDrop={selectColumn}
-      disabled={busy || game.status!=='playing'||iSubmitted||(isSpeed&&speedSignal.phase==='countdown')} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
+      disabled={busy || game.status!=='playing'||iSubmitted||eliminationReset.active||(isSpeed&&speedSignal.phase==='countdown')} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
       lastMove={game.lastMove} winnerSeat={game.winnerSeat} status={game.status} mode={game.mode}
       matchNumber={game.matchNumber||1} moveCount={game.moveCount||0} floorClears={game.floorClears||0}
       speedOrder={game.speedOrder||[]} speedPreviousOrder={game.speedPreviousOrder||[]}
-      soundEnabled={arcadeSound.enabled} winLength={winLength}/>
-    <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST ACCEPTED DROP GOES FIRST · CONNECT '+winLength+' TO WIN':game.mode==='territory'?'CONNECT '+winLength+' TO SCORE':game.mode==='elimination'?'CONNECT '+winLength+' TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT '+winLength+' TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT '+winLength+' TO WIN':game.mode==='team'?'CONNECT 4 TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT '+winLength+' TO WIN'} · {game.width} × {game.height}</div>
+      soundEnabled={arcadeSound.enabled} winLength={winLength}
+      eliminationReset={eliminationReset} eliminationGame={game}/>
+    <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST ACCEPTED DROP GOES FIRST · CONNECT '+winLength+' TO WIN':game.mode==='territory'?'CONNECT '+winLength+' TO SCORE':game.mode==='elimination'?'CONNECT '+winLength+' · PREVIOUS ACTIVE PLAYER IS ELIMINATED':game.mode==='collapse'?'CONNECT '+winLength+' TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT '+winLength+' TO WIN':game.mode==='team'?'CONNECT 4 TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT '+winLength+' TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
 
@@ -607,7 +619,7 @@ export default function App() {
             : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
           <p className="mode-explainer">{mode==='speed'
             ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
-            :mode==='elimination'?'Connect 3 with 4+ players, or Connect 4 with 2–3, to eliminate the next active rival. The board resets each round; last player standing wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
+            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
           <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
             {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
           </select></label>

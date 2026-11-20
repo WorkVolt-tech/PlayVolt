@@ -24,9 +24,13 @@ public.profiles as Dekabess and Pin & Spin: no duplicate accounts.
 - Classic: first to connect 4 horizontally, vertically or diagonally wins.
 - Territory: every newly completed direction scores a point; most points when
   board is full wins. Exact-score ties finish as a tie.
-- Elimination: connect four to knock out the **next active opponent** in turn
-  order; the board resets each round and removed players sit out. If the board
-  fills with no connection, reset the board without eliminating anyone.
+- Elimination: connect the current Balanced target (3 with 4–8 players, or
+  4 with 2–3) to eliminate the **previous active player** in turn order:
+  the last opponent who had a chance to block. Already eliminated seats are
+  skipped and the order wraps around. The winning connection flashes, the
+  defeated player is announced, the arena visually clears, and the server
+  enforces a three-second 3–2–1 reset before the next player can drop.
+  A full board resets the arena without eliminating anyone.
   The last remaining player wins.
 - Bottom Drop: first to connect four wins, but if a newly placed chip reaches
   the **second row from the top**, the bottom row clears and all higher chips
@@ -428,3 +432,25 @@ a rematch. Server RPCs enforce the win condition; the local demo, winning
 highlights, match captions and replay UIs match the server. Board dimensions
 are unchanged in this pass; capacity still determines the board dimensions,
 while **the actual starting participants determine the winning rule**.
+
+## Elimination reset + prior-player targeting (migration 019)
+
+A newly connected line removes the **previous living seat** before the scorer,
+not the next. For example, with seats 1 → 2 → 3 → 4: if seat 3 scores,
+seat 2 is eliminated; if seat 1 scores, seat 4 is eliminated; if 2 is
+already out and 3 scores, seat 1 is eliminated. The scorer is never targeted.
+
+The next round opens after a server-timed **three-second reset animation**,
+showing the actual last confirmed board and its glowing winning connection,
+the eliminated player's name/avatar, an animated clearing effect and a
+3–2–1 countdown. All spectators and participants see the same event through
+the existing authenticated room or bearer-token TV RPC. Board input is
+blocked server-side before the deadline; the next active seat's full
+60-second turn begins only *after* the countdown. A board-full redraw
+also shows a reset sequence, but nobody is eliminated. A final elimination
+ends the match without a reset delay.
+
+The offline hot-seat demo mirrors the previous-active targeting and reset
+visuals. The existing replay move log still retains the elimination event,
+post-reset snapshot and updated player states; no old matches are rewritten.
+No other mode, live PlayVolt hub or unrelated project was modified.

@@ -46,16 +46,16 @@ test('empty cells cannot be played from outside the board', () => {
 });
 
 
-test('elimination removes the next active opponent, skipping eliminated players', () => {
+test('elimination removes the previous active opponent, skipping eliminated players', () => {
   const board = emptyBoard(7, 6);
   for (let col = 0; col < 3; col++) board[5 * 7 + col] = 1;
   const state = { board, scores: [0, 0, 0, 0], turn: 1, winner: null,
     status: 'playing', eliminated: [false, false, true, false], roundNumber: 1, floorClears: 0 };
   const next = playLocalTurn(state, 3, 4, 'elimination', 7, 6);
-  assert.deepEqual(next.eliminated, [false, true, true, false]);
+  assert.deepEqual(next.eliminated, [false, false, true, true]);
   assert.deepEqual(next.board, emptyBoard(7, 6));
   assert.equal(next.roundNumber, 2);
-  assert.equal(next.turn, 4);
+  assert.equal(next.turn, 2);
   assert.equal(next.status, 'playing');
   assert.equal(next.scores[0], 1);
 });

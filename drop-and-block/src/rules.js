@@ -38,6 +38,14 @@ export function dimensions(count) {
 export function clearBottomRow(board, width, height) {
   return [...Array(width).fill(0), ...board.slice(0, width * (height - 1))];
 }
+export function previousActiveSeat(current,eliminated){
+ if(!Number.isInteger(current)||!Array.isArray(eliminated)||!eliminated.length)return null;
+ for(let step=1;step<=eliminated.length;step++){
+   const seat=(current-1-step+eliminated.length*2)%eliminated.length+1;
+   if(seat!==current&&!eliminated[seat-1])return seat;
+ }
+ return null;
+}
 export function nextActiveSeat(current, eliminated) {
   for (let step = 1; step <= eliminated.length; step++) {
     const seat = (current - 1 + step) % eliminated.length + 1;
@@ -59,20 +67,32 @@ export function playLocalTurn(old, col, count, mode, width, height) {
   const full = move.board.every(Boolean);
   if (mode === 'elimination') {
     if (move.points > 0) {
-      const victim = nextActiveSeat(old.turn, eliminated);
+      const victim = previousActiveSeat(old.turn, eliminated);
       if (victim && victim !== old.turn) eliminated[victim - 1] = true;
       if (eliminated.filter(v => !v).length === 1) {
         return { ...base, status: 'finished', winner: old.turn, turn: null,
-          lastEvent: victim ? 'Player ' + victim + ' eliminated!' : '' };
+          eliminationTargetSeat:victim,eliminationScorerSeat:old.turn,
+          eliminationRoundOpensAt:null,eliminationPreviousBoard:null,
+          lastEvent: victim ? 'Player '+victim+' eliminated — previous active player before Player '+old.turn+'!' : '' };
       }
       return { ...base, board: emptyBoard(width, height),
         turn: nextActiveSeat(old.turn, eliminated), roundNumber: roundNumber + 1,
-        lastEvent: 'Player ' + victim + ' eliminated · New round!' };
+        eliminationPreviousBoard:move.board,
+        eliminationRoundOpensAt:new Date(Date.now()+3000).toISOString(),
+        eliminationTargetSeat:victim,eliminationScorerSeat:old.turn,
+        serverNow:new Date().toISOString(),
+        lastEvent:'Player '+victim+' eliminated — previous active player before Player '+old.turn+'! Arena resetting...' };
     }
     if (full) return { ...base, board: emptyBoard(width, height),
       turn: nextActiveSeat(old.turn, eliminated), roundNumber: roundNumber + 1,
-      lastEvent: 'Board full · New round!' };
-    return { ...base, turn: nextActiveSeat(old.turn, eliminated) };
+      eliminationPreviousBoard:move.board,
+      eliminationRoundOpensAt:new Date(Date.now()+3000).toISOString(),
+      eliminationTargetSeat:null,eliminationScorerSeat:null,
+      serverNow:new Date().toISOString(),
+      lastEvent:'Board full! No eliminations. Arena resetting...' };
+    return { ...base, turn: nextActiveSeat(old.turn, eliminated),
+      eliminationRoundOpensAt:null,eliminationPreviousBoard:null,
+      eliminationTargetSeat:null,eliminationScorerSeat:null };
   }
   if (mode === 'collapse') {
     if (move.points > 0) return { ...base, status: 'finished', winner: old.turn, turn: null };

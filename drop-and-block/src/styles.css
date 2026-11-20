@@ -976,3 +976,123 @@ footer span{color:#ffcb56}
  padding:11px 12px;border-radius:10px;color:#d2ffed;
  font-weight:800;font-size:11px;line-height:1.6;margin:10px 0}
 @media(max-width:650px){.balanced-rule-hint{font-size:10px;padding:9px}}
+
+/* ELIMINATION ARENA · server-synchronized round reset and defeated player reveal.
+   The winning chip snapshot is rendered over the already-cleared authoritative
+   board. During the 3-second pause, input is blocked server- and client-side. */
+.elimination-ghost-board{
+ position:absolute;inset:0;z-index:6;pointer-events:none;
+ display:grid;gap:var(--arcade-gap,5px);
+ padding:var(--arcade-pad,9px);
+ border:var(--arcade-border,5px) solid transparent;
+ border-radius:inherit;box-sizing:border-box;
+ transform-origin:center;will-change:opacity,transform;
+}
+.elimination-ghost-board .board-cell{
+ min-width:0;min-height:0;aspect-ratio:1;
+ display:flex;align-items:center;justify-content:center;
+ border-radius:50%;
+ background:radial-gradient(circle at 48% 48%,#18274a,#071124 75%);
+ box-shadow:inset 0 4px 8px #0008;
+}
+.elimination-ghost-board .disc{
+ width:90%;height:90%;
+}
+.elimination-ghost-board .winning-slot{
+ box-shadow:inset 0 0 0 3px #ffe6a2,0 0 22px #fbd276b3;
+ animation:elimination-final-flash .42s ease-in-out infinite alternate;
+}
+@keyframes elimination-final-flash{
+ from{filter:brightness(1);transform:scale(.98)}
+ to{filter:brightness(1.5);transform:scale(1.07)}
+}
+.elimination-reset-overlay{
+ position:absolute;inset:0;z-index:9;pointer-events:none;overflow:hidden;
+ border-radius:16px;border:3px solid #fb8575;
+ background:linear-gradient(147deg,#210e2dcc,#170e33b5,#151632db);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ text-align:center;gap:clamp(3px,1vw,12px);
+ padding:clamp(6px,2vw,20px);box-sizing:border-box;
+ box-shadow:inset 0 0 45px #f84b6438,0 0 25px #eb64759c;
+ animation:elimination-overlay-appear .3s ease-out both;
+}
+.elimination-reset-overlay.phase-clearing{
+ border-color:#f2bf75;
+ background:linear-gradient(150deg,#0b1b36e8,#331b36de,#0d2941e8);
+ box-shadow:inset 0 0 32px #f1ae5362,0 0 25px #edb57877;
+}
+.elimination-reset-overlay.phase-countdown{
+ border-color:#7bf1c3;
+ background:linear-gradient(150deg,#0e223be8,#0a3c42e8,#112a38ed);
+ box-shadow:inset 0 0 45px #80ffd236,0 0 27px #5fecb970;
+}
+@keyframes elimination-overlay-appear{
+ from{opacity:0;filter:brightness(1.8)}
+ to{opacity:1;filter:brightness(1)}
+}
+.elimination-reset-energy{
+ position:absolute;inset:-30%;z-index:0;pointer-events:none;
+ background:repeating-conic-gradient(from 0deg,#ff9f7c20 0deg 7deg,transparent 7deg 31deg);
+ animation:arena-energy-spin 5s linear infinite;
+}
+@keyframes arena-energy-spin{to{transform:rotate(360deg)}}
+.elimination-reset-overlay>small{
+ position:relative;z-index:1;color:#ffd2b5;
+ font-weight:1000;letter-spacing:.17em;font-size:clamp(9px,1.8vw,13px);
+ text-shadow:0 2px 9px #000;
+}
+.elimination-reset-avatar{
+ position:relative;z-index:1;
+ display:grid;place-items:center;
+ width:clamp(38px,9vw,86px);height:clamp(38px,9vw,86px);
+ border:3px solid #fa9e79;border-radius:50%;background:#1b263d;
+ box-shadow:0 0 18px #fd758c,0 0 36px #d643585e;
+ animation:arena-defeat-pulse .7s ease-in-out alternate infinite;
+}
+.elimination-reset-avatar>span{font-size:clamp(20px,4vw,38px);font-weight:950}
+@keyframes arena-defeat-pulse{
+ from{filter:brightness(1);transform:scale(.98)}
+ to{filter:brightness(1.25);transform:scale(1.08)}
+}
+.elimination-reset-overlay>strong{
+ position:relative;z-index:1;
+ color:#fff6ec;font-weight:1000;
+ font-size:clamp(14px,3vw,33px);letter-spacing:.035em;
+ line-height:1.14;overflow-wrap:anywhere;
+ text-shadow:0 3px 0 #3b1a27,0 0 22px #ff6a7b;
+}
+.elimination-reset-overlay>p{
+ position:relative;z-index:1;
+ color:#fff0e7;font-size:clamp(10px,1.6vw,14px);
+ line-height:1.35;margin:0;max-width:550px;
+ text-shadow:0 2px 5px #0009;
+}
+.elimination-reset-progress{
+ position:relative;z-index:1;
+ display:flex;justify-content:center;align-items:center;
+ gap:clamp(6px,2vw,18px);
+ background:#091323d9;border:1px solid #ffe3a3aa;
+ padding:clamp(4px,1vw,10px) clamp(8px,1.5vw,19px);
+ border-radius:14px;
+}
+.elimination-reset-progress>span{
+ font-size:clamp(10px,1.5vw,15px);font-weight:950;
+ letter-spacing:.07em;color:#f8dda7;
+}
+.elimination-reset-progress>b{
+ color:#fff1bd;font-weight:1000;
+ font-size:clamp(23px,5vw,49px);
+ line-height:1;font-variant-numeric:tabular-nums;
+ text-shadow:0 0 13px #ffe477;
+}
+@media(max-width:600px){
+ .elimination-reset-overlay{border-width:2px;gap:5px;padding:5px}
+ .elimination-reset-avatar{border-width:2px}
+ .elimination-reset-overlay>p{max-width:92%}
+ .elimination-reset-progress{border-radius:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .elimination-ghost-board .winning-slot,
+ .elimination-reset-overlay,
+ .elimination-reset-energy,.elimination-reset-avatar{animation:none!important}
+}
