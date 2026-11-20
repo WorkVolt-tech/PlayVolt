@@ -3,6 +3,7 @@ import {ChipDisc,AvatarBadge,safeBoard} from './looks.jsx';
 import {useArcadeFallingChips,ArcadeFallingChips} from './ArcadeFallingChips.jsx';
 import {useArcadeSound,SoundToggle,useArcadeLandingSounds} from './ArcadeSounds.jsx';
 import {ArcadeConfetti} from './ArcadeConfetti.jsx';
+import {winningCells} from './boardFeedback.js';
 import {canPlayReplay,replayFrame,replayTimeline,highlightLabel,modeLabels} from './replayModel.js';
 
 // Entirely read-only playback. The host starts and stops the session from a
@@ -26,6 +27,9 @@ export function TvReplayScreen({detail}) {
  const idx=timeline[Math.min(cursor,timeline.length-1)]??0;
  const frame=replayFrame(detail,idx);
  const last=idx>0?detail.moves[idx-1]:null;
+ const lastWinner=detail.gameMode==='team'?last?.seat:detail.winnerSeat;
+ const glowing=new Set(idx===detail.moves.length?
+   winningCells(frame.board,detail.width,detail.height,lastWinner,detail.gameMode,last,detail.winLength):[]);
  const {flights,hidden}=useArcadeFallingChips({
   board:frame.board,width:detail.width,height:detail.height,
   matchNumber:detail.matchNumber||1,moveCount:idx,
@@ -44,7 +48,7 @@ export function TvReplayScreen({detail}) {
     <div className="tv-replay-sound"><SoundToggle enabled={arcadeSound.enabled}
       onToggle={arcadeSound.toggle}/></div>
     <span className="tv-replay-kicker">{highlights?'★ PARTY HIGHLIGHTS':'▶ FULL MATCH REPLAY'}</span>
-    <strong>{modeLabels[detail.gameMode]||'Drop & Block'} · Match {detail.matchNumber}</strong>
+    <strong>{modeLabels[detail.gameMode]||'Drop & Block'} · Match {detail.matchNumber} · Connect {detail.winLength===3?3:4}</strong>
     <span className="tv-replay-winners">{winners}</span>
    </div>
    <div className="tv-replay-caption">
@@ -54,7 +58,7 @@ export function TvReplayScreen({detail}) {
    <div className="tv-replay-board-outer">
      <div className={'board arcade-board tv-replay-board board-theme-'+safeBoard(detail.boardTheme)}
        style={{gridTemplateColumns:'repeat('+detail.width+',minmax(0,1fr))'}} role="grid">
-       {frame.board.map((seat,i)=><div className={'board-cell'+(hidden.has(i)?' arcade-under-flight':'')}
+       {frame.board.map((seat,i)=><div className={'board-cell'+(hidden.has(i)?' arcade-under-flight':'')+(glowing.has(i)?' winning-slot':'')}
          role="gridcell" key={i}>
         <ChipDisc seat={seat} teamMode={detail.gameMode==='team'}
          style={detail.players.find(p=>p.seat===seat)?.chipStyle||'round'}/>

@@ -16,7 +16,7 @@ function ReplayBoard({detail,frame}) {
  const last=frame.step?detail.moves[frame.step-1]:null;
  const recent=lastMoveCell(frame.board,detail.width,detail.height,last);
  const winners=new Set(frame.step===detail.moves.length?
-   winningCells(frame.board,detail.width,detail.height,detail.winnerSeat,detail.mode,last):[]);
+   winningCells(frame.board,detail.width,detail.height,detail.winnerSeat,detail.mode,last,detail.winLength):[]);
  return <div className="replay-board-wrap">
   <div className="board board-theme-deep-navy replay-board" style={{...grid,minWidth:detail.width>=12?detail.width*34+'px':undefined}} role="grid"
     aria-label={'Recorded board after '+frame.step+' moves'}>

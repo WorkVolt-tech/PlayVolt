@@ -16,7 +16,7 @@ export function lastMoveCell(board,width,height,move){
  const expected=move.kind==='block'?9:move.seat;
  return board[i]===expected?i:null;
 }
-export function winningCells(board,width,height,winnerSeat,mode,lastMove){
+export function winningCells(board,width,height,winnerSeat,mode,lastMove,winLength=4){
  if(!validBoard(board,width,height)||!Number.isInteger(winnerSeat)||winnerSeat<1||
  winnerSeat>8||!validMove(lastMove,width,height)||lastMove.kind!=='drop'||
  lastMove.seat!==winnerSeat||mode==='territory')return [];
@@ -33,7 +33,7 @@ export function winningCells(board,width,height,winnerSeat,mode,lastMove){
        line.push(y*width+x);x+=dx*sign;y+=dy*sign;
      }
    }
-   if(line.length>=4)for(const i of line)all.add(i);
+   if(line.length>=(winLength===3?3:4))for(const i of line)all.add(i);
  }
  return [...all].sort((a,b)=>a-b);
 }
@@ -55,6 +55,6 @@ export function matchSummary(game){
  }
  return {title:win.name+' WINS!',subtitle:game.mode==='territory'?
   'Top score: '+(Number(win.score)||0)+' points':game.mode==='elimination'?
-  'Last player standing':'Four connected. Victory!',
+  'Last player standing':(game.winLength===3?'Three':'Four')+' connected. Victory!',
   winners:[win],draw:false};
 }

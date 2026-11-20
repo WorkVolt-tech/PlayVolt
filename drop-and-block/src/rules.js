@@ -1,6 +1,13 @@
 // Pure rules: shared by the no-account local demo and the unit tests.
 export function emptyBoard(width, height) { return Array(width * height).fill(0); }
-export function drop(board, width, height, column, seat) {
+/** Balanced preset: 2-3 starters connect 4; 4-8 connect 3.
+ * Team Battle retains 4 because teammates share a line.
+ * Server freezes this rule at Start; local hot-seat mirrors it.
+ */
+export function balancedWinLength(playerCount,mode='classic') {
+ return mode==='team'||!Number.isInteger(playerCount)||playerCount<4 ? 4 : 3;
+}
+export function drop(board, width, height, column, seat, winLength=4) {
   if (!Number.isInteger(column) || column < 0 || column >= width) return null;
   if (!Number.isInteger(seat) || seat < 1 || seat > 9) return null; // 9 = neutral Chaos Barrier
   let row = -1;
@@ -19,7 +26,7 @@ export function drop(board, width, height, column, seat) {
         count++; x += dx * sign; y += dy * sign;
       }
     }
-    if (count >= 4 && seat <= 8) points++; // neutral Barriers never score
+    if (count >= winLength && seat <= 8) points++; // neutral Barriers never score
   }
   return { board: next, row, points };
 }
@@ -41,7 +48,7 @@ export function nextActiveSeat(current, eliminated) {
 /** Identical rules to the server: local turn simulator for the same-device demo. */
 export function playLocalTurn(old, col, count, mode, width, height) {
   if (old.status !== 'playing' || old.eliminated?.[old.turn - 1]) return old;
-  const move = drop(old.board, width, height, col, old.turn);
+  const move = drop(old.board, width, height, col, old.turn, balancedWinLength(count,mode));
   if (!move) return old;
   const scores = [...old.scores];
   scores[old.turn - 1] += move.points;
@@ -115,7 +122,7 @@ export function playChaosTurn(old,column,count,width,height,kind='drop') {
     blockUsed[old.turn-1]=true;
     lastEvent='Player '+old.turn+' dropped a Barrier!';
   }else{
-    const placed=drop(old.board,width,height,column,old.turn);
+    const placed=drop(old.board,width,height,column,old.turn,balancedWinLength(count,'chaos'));
     if(!placed)return old;
     board=placed.board;points=placed.points;
   }

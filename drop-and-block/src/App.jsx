@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db, action } from './supabase.js';
-import { emptyBoard, dimensions, playLocalTurn, playChaosTurn, playTeamTurn, teamOfSeat } from './rules.js';
+import { emptyBoard, dimensions, playLocalTurn, playChaosTurn, playTeamTurn, teamOfSeat, balancedWinLength } from './rules.js';
 import { VersionAlert } from './VersionAlert.jsx';
 import { ProgressHub, TrophyUnlockNotice } from './ProgressHub.jsx';
 import { buildTvDisplayUrl } from './tvLink.js';
@@ -23,7 +23,7 @@ const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
 const hub = 'https://playvolt-hub.pages.dev/';
 
-function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic', matchNumber=1,moveCount=0,floorClears=0,speedOrder=[],speedPreviousOrder=[],soundEnabled=false }) {
+function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic', matchNumber=1,moveCount=0,floorClears=0,speedOrder=[],speedPreviousOrder=[],soundEnabled=false,winLength=4 }) {
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
@@ -31,7 +31,7 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
   const available=col=>canPlayColumn(board,width,height,col,moveKind,disabled||turn!==me);
   const actionLabel=moveKind==='blast'?'Blast':'Place '+(moveKind==='block'?'barrier':'chip');
   const lastCell=lastMoveCell(board,width,height,lastMove);
-  const winning=new Set(status==='finished'?winningCells(board,width,height,winnerSeat,mode,lastMove):[]);
+  const winning=new Set(status==='finished'?winningCells(board,width,height,winnerSeat,mode,lastMove,winLength):[]);
   const effectColumn=lastMove?.column!==undefined&&(lastMove.kind==='blast'||lastCell===null)
     ?lastMove.column:null;
   const {flights,hidden}=useArcadeFallingChips({
@@ -109,7 +109,7 @@ function LocalDemo({ onBack, count, mode, loadout }) {
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
     <h2>{modeName(mode)} · {count} Players</h2>
     <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
-    <GameArea game={{...state,width,height,mode,players,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner}} boardTheme={loadout?.board}
+    <GameArea game={{...state,width,height,mode,players,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner,winLength:balancedWinLength(count,mode)}} boardTheme={loadout?.board}
       onDrop={play} busy={false}/>
     <div className="actions"><button className="btn ghost" onClick={onBack}>← Back</button>
       <button className="btn primary" onClick={()=>setState(reset)}>Restart</button></div>
@@ -132,6 +132,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
   const lastMoveLabel=game.lastMove?.kind==='blast'?'used Blast on':
     game.lastMove?.kind==='block'?'placed a Barrier in':'played';
   const isSpeed=game.mode==='speed';
+  const winLength=game.winLength===3?3:4;
   const speedState=speedRoundState(game,game.meSeat);
   const speedSignal=useSpeedStartSignal(game);
   const arcadeSound=useArcadeSound();
@@ -207,15 +208,15 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
       <button type="button" className={'chaos-power'+(moveKind==='block'?' selected':'')} onClick={()=>setMoveKind('block')} disabled={busy||!current||current.chaosBlockUsed||game.status!=='playing'}>⬢ Barrier {current?.chaosBlockUsed?'USED':'1×'}</button>
       <button type="button" className={'chaos-power'+(moveKind==='blast'?' selected':'')} onClick={()=>setMoveKind('blast')} disabled={busy||!current||current.chaosBlastUsed||game.status!=='playing'}>✹ Blast {current?.chaosBlastUsed?'USED':'1×'}</button>
     </div>}
-    {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects four to win. Choosing a power uses your turn.'}</p>}
+    {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects '+winLength+' to win. Choosing a power uses your turn.'}</p>}
     <Board board={game.board} width={game.width} height={game.height}
       turn={isSpeed?game.meSeat:game.turnSeat} me={game.meSeat} onDrop={selectColumn}
       disabled={busy || game.status!=='playing'||iSubmitted||(isSpeed&&speedSignal.phase==='countdown')} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
       lastMove={game.lastMove} winnerSeat={game.winnerSeat} status={game.status} mode={game.mode}
       matchNumber={game.matchNumber||1} moveCount={game.moveCount||0} floorClears={game.floorClears||0}
       speedOrder={game.speedOrder||[]} speedPreviousOrder={game.speedPreviousOrder||[]}
-      soundEnabled={arcadeSound.enabled}/>
-    <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST SERVER-ACCEPTED DROP GOES FIRST · CONNECT FOUR TO WIN':game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT 4 TO WIN':game.mode==='team'?'CONNECT FOUR TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
+      soundEnabled={arcadeSound.enabled} winLength={winLength}/>
+    <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST ACCEPTED DROP GOES FIRST · CONNECT '+winLength+' TO WIN':game.mode==='territory'?'CONNECT '+winLength+' TO SCORE':game.mode==='elimination'?'CONNECT '+winLength+' TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT '+winLength+' TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT '+winLength+' TO WIN':game.mode==='team'?'CONNECT 4 TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT '+winLength+' TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
 
@@ -505,7 +506,9 @@ export default function App() {
        demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode} loadout={myLoadout}/> :
       room ? <section className="panel panel-wide">
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
-        <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p></div>
+        <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p>
+        <p className="lobby-win-target">{room.status==='lobby'?'Start with '+room.players.length+' player'+(room.players.length===1?'':'s')+': Connect '+balancedWinLength(room.players.length,room.mode):
+         'Match rule · Connect '+(room.winLength===3?3:4)+(room.mode==='team'?' team chips':' chips')}</p></div>
         <div className="room-share-actions">
           <button type="button" className="btn ghost" onClick={copyRoomCode}>Copy code</button>
           <button type="button" className="btn secondary" onClick={shareRoom}>Invite friends</button>
@@ -599,9 +602,12 @@ export default function App() {
             <option value="chaos">Chaos · Drop, Barrier and Blast</option>
             <option value="team">Team Battle · 2v2 / 3v3 / 4v4</option>
           </select></label>
+          <p className="balanced-rule-hint">{mode==='team'
+            ? 'TEAM BATTLE · Always Connect 4 using teammates’ chips.'
+            : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
           <p className="mode-explainer">{mode==='speed'
             ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
-            :mode==='elimination'?'Connect four to eliminate the next active rival. The board resets each round; last player standing wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Connect four to win.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to connect four wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect four in any direction.'}</p>
+            :mode==='elimination'?'Connect 3 with 4+ players, or Connect 4 with 2–3, to eliminate the next active rival. The board resets each round; last player standing wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
           <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
             {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
           </select></label>

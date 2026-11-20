@@ -969,3 +969,10 @@ footer span{color:#ffcb56}
  .match-spotlight:not(.is-draw)::before{animation:none!important}
  .match-spotlight:not(.is-draw) .match-spotlight-mark{animation:none!important}
 }
+
+/* Balanced multiplayer win rules: a visible frozen target per match. */
+.lobby-win-target{color:#bce8d7;font-size:11px;font-weight:800;margin:7px 0 0;line-height:1.5}
+.balanced-rule-hint{border:1px solid #8be2bd82;background:#1c4c4b64;
+ padding:11px 12px;border-radius:10px;color:#d2ffed;
+ font-weight:800;font-size:11px;line-height:1.6;margin:10px 0}
+@media(max-width:650px){.balanced-rule-hint{font-size:10px;padding:9px}}

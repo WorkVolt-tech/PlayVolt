@@ -402,3 +402,29 @@ display a false win celebration. All effects ignore pointer input, work with
 existing skins and chip shapes, and respect the OS/browser
 `prefers-reduced-motion` setting. No changes to gameplay, Supabase
 tables/RPCs, scoring, player accounts, or the live PlayVolt hub.
+
+## Balanced multiplayer connections (preview; migration 018)
+
+New matches use the **Balanced** win condition, frozen from the number of
+joined players when the host presses Start:
+
+- **2–3 active players:** Connect **4** own chips.
+- **4–8 active players:** Connect **3** own chips.
+- **Team Battle:** Connect **4 team chips**, regardless of team size.
+
+This is the same rule for normal Classic/Speed Round wins, Chaos/Bottom Drop,
+Elimination's knockouts and Territory's scoring lines. In Territory, the match
+still plays to a full board; newly completed connections earn points instead
+of an immediate victory. In Elimination, successful connections knock out one
+opponent and can start another round. Speed Round's one-drop-per-round race,
+timer, ordering and GO countdown are unchanged.
+
+The database stores `win_length` on the room at Start and with every
+accepted move. Existing completed moves are preserved as Connect 4, and
+existing ongoing games keep their prior Connect 4 rule until the next match.
+Phone/TV room state reports `winLength`, and personal/TV replay detail
+uses the saved **per-match** rule, so even older replays remain correct after
+a rematch. Server RPCs enforce the win condition; the local demo, winning
+highlights, match captions and replay UIs match the server. Board dimensions
+are unchanged in this pass; capacity still determines the board dimensions,
+while **the actual starting participants determine the winning rule**.
