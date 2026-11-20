@@ -13,6 +13,7 @@ import {canCloseLobby,canEndStalled,canRematch,isNoContest,isClosedLobby} from '
 import {canPlayColumn,wideBoardMinWidth} from './boardInteraction.js';
 import {lastMoveCell,winningCells} from './boardFeedback.js';
 import {MatchSpotlight} from './MatchSpotlight.jsx';
+import {speedRoundState} from './speedRound.js';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
@@ -103,7 +104,7 @@ function LocalDemo({ onBack, count, mode, loadout }) {
   </div>;
 }
 
-const modeName = mode => ({ classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop', chaos: 'Chaos', team: 'Team Battle' })[mode] || 'Classic';
+const modeName = mode => ({ speed: 'Speed Round', classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop', chaos: 'Chaos', team: 'Team Battle' })[mode] || 'Classic';
 
 export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
   const [moveKind,setMoveKind]=useState('drop');
@@ -118,14 +119,34 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
   const lastPlayer=game.players.find(p=>p.seat===game.lastMove?.seat);
   const lastMoveLabel=game.lastMove?.kind==='blast'?'used Blast on':
     game.lastMove?.kind==='block'?'placed a Barrier in':'played';
-  const myTurn = !readOnly && game.status==='playing' && game.turnSeat===game.meSeat;
+  const isSpeed=game.mode==='speed';
+  const speedState=speedRoundState(game,game.meSeat);
+  const submitted=speedState.submitted;
+  const iSubmitted=isSpeed&&speedState.alreadyPlayed;
+  const myTurn=!readOnly&&game.status==='playing'&&
+    (isSpeed?speedState.canSubmit:game.turnSeat===game.meSeat);
   return <>
-    <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'') + (p.eliminated?' eliminated':'')+(game.mode==='team'?' team-roster-'+teamOfSeat(p.seat):'')}>
+    <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'')+(isSpeed&&submitted.has(p.seat)?' speed-submitted':'') + (p.eliminated?' eliminated':'')+(game.mode==='team'?' team-roster-'+teamOfSeat(p.seat):'')}>
       <AvatarBadge id={p.avatarStyle||'sentinel'} small/><span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
       <span className="player-label">{p.name}{p.eliminated?' · OUT':game.mode==='team'?' · '+(teamOfSeat(p.seat)===1?'Gold':'Blue'):game.mode==='territory'?' · '+p.score+' pts':''}
+       {isSpeed&&game.status==='playing'&&<small className={'speed-roster-status'+(submitted.has(p.seat)?' placed':' waiting')}>
+          {submitted.has(p.seat)?'✓ Dropped this round':'⚡ Ready to drop'}
+        </small>}
        {p.online!==undefined&&<small className={'player-presence '+(p.online?'online':'away')}>{p.online?'● Online':'○ Away'}{p.timedOutTurns>0?' · '+p.timedOutTurns+' missed':''}</small>}
       </span>
     </div>)}</div>
+    {isSpeed&&game.status==='playing'&&<div className="speed-round-panel" role="status">
+      <div className="speed-round-header">
+        <strong>⚡ SPEED ROUND {game.roundNumber||1}</strong>
+        <span>{submitted.size} / {game.players.length} PLAYED</span>
+      </div>
+      <div className="speed-round-players">
+        {game.players.map(p=><span key={p.seat} className={'speed-player'+(submitted.has(p.seat)?' done':'')}>
+          {submitted.has(p.seat)?'✓':'⚡'} {p.name}
+        </span>)}
+      </div>
+      <p>Everyone drops at once. First accepted chip lands first. One chip per player; next round starts after everyone plays.</p>
+    </div>}
     {game.mode==='team' && <div className="team-scoreline">
       <div className="team-side team-gold"><strong>TEAM GOLD</strong><small>{game.players.filter(p=>teamOfSeat(p.seat)===1).map(p=>p.name).join(' · ')}</small></div>
       <b>VS</b>
@@ -144,7 +165,11 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     <div className={'turn-notice' + (myTurn?' is-me':'')}>
       {game.status==='cancelled' ? (isNoContest(game) ? 'No Contest · Match ended without a winner' : 'Room closed by the host')
         : game.status==='finished' ? (game.mode==='team' ? (game.winnerTeam || winner ? 'Team '+((game.winnerTeam || teamOfSeat(winner?.seat))===1?'Gold':'Blue')+' wins!' : 'Match finished · Draw') : (winner ? winner.name+' wins!' : 'Match finished · Draw'))
-        : myTurn ? 'Your turn — choose a column' : readOnly ? (turnPlayer?.name || 'A player') + ' is playing' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
+        : isSpeed
+          ? readOnly?'ALL PLAYERS CAN DROP NOW · FIRST CHIP GOES FIRST'
+            : iSubmitted?'✓ CHIP LOCKED IN · WAITING FOR EVERYONE ELSE'
+            : '⚡ DROP NOW · FIRST ACCEPTED CHIP LANDS FIRST!'
+          : myTurn ? 'Your turn — choose a column' : readOnly ? (turnPlayer?.name || 'A player') + ' is playing' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
     </div>
     <MatchSpotlight game={game}/>
     {game.mode==='chaos' && !readOnly && <div className="chaos-powers" role="group" aria-label="Choose a Chaos move">
@@ -154,10 +179,10 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     </div>}
     {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects four to win. Choosing a power uses your turn.'}</p>}
     <Board board={game.board} width={game.width} height={game.height}
-      turn={game.turnSeat} me={game.meSeat} onDrop={selectColumn}
-      disabled={busy || game.status!=='playing'} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
+      turn={isSpeed?game.meSeat:game.turnSeat} me={game.meSeat} onDrop={selectColumn}
+      disabled={busy || game.status!=='playing'||iSubmitted} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
       lastMove={game.lastMove} winnerSeat={game.winnerSeat} status={game.status} mode={game.mode}/>
-    <div className="board-foot">{game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT 4 TO WIN':game.mode==='team'?'CONNECT FOUR TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
+    <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST SERVER-ACCEPTED DROP GOES FIRST · CONNECT FOUR TO WIN':game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT 4 TO WIN':game.mode==='team'?'CONNECT FOUR TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
 
@@ -272,14 +297,14 @@ export default function App() {
         if(alive)setSyncStatus('reconnecting');
       }
     };
-    const timer=setInterval(refresh,2000);
+    const timer=setInterval(refresh,room?.mode==='speed'?1100:2000);
     const resume=()=>{if(!document.hidden)void refresh();};
     const onOnline=()=>void refresh();
     document.addEventListener('visibilitychange',resume);
     window.addEventListener('online',onOnline);
     return ()=>{alive=false;clearInterval(timer);document.removeEventListener('visibilitychange',resume);
       window.removeEventListener('online',onOnline);};
-  },[user?.id,room?.code]);
+  },[user?.id,room?.code,room?.mode]);
 
   useEffect(()=>{
     if(!menuOpen)return undefined;
@@ -432,7 +457,9 @@ export default function App() {
             <span>{p.name} {room.mode==='team'?'· Team '+(teamOfSeat(p.seat)===1?'Gold':'Blue'):''} {p.ready?'✓ Ready':'· Not ready'}
               {p.online!==undefined&&<small className={'player-presence '+(p.online?'online':'away')}> · {p.online?'Online':'Away'}</small>}
             </span></div>)}</div>
-          <p className="online-timer-note">Online games: 60 seconds per turn. An expired turn is skipped automatically when a player is connected. Rejoin using the same room code after a disconnect.</p>
+          <p className="online-timer-note">{room.mode==='speed'
+            ? 'Speed Round: All players drop simultaneously, one chip each per 60-second round. The server orders the chips by submission. A new round opens when everyone has played; missing players are skipped at the deadline.'
+            : 'Online games: 60 seconds per turn. An expired turn is skipped automatically when a player is connected. Rejoin using the same room code after a disconnect.'}</p>
           {room.mode==='team' && <div className="team-lobby-note">Players alternate into Gold and Blue teams by join order. Wait for 4, 6, or 8 players so both teams have the same size.</div>}
           <p className="sub lobby-note">{room.matchNumber > 1
             ? 'Rematch ready! Everyone keeps their seat, and the starting player rotates. Confirm you are ready, then the host can start.'
@@ -489,18 +516,23 @@ export default function App() {
           <h2>Choose your battle</h2>
           <label>Game mode<select value={mode} onChange={e=>{setMode(e.target.value);if(e.target.value==='team'&&maxPlayers<4)setMaxPlayers(4);if(e.target.value==='team'&&maxPlayers%2===1)setMaxPlayers(maxPlayers+1);}}>
             <option value="classic">Classic · First to connect four</option>
+            <option value="speed">⚡ Speed Round · Everyone drops at once!</option>
             <option value="territory">Territory · Score until board is full</option>
             <option value="elimination">Elimination · Connect 4 to knock out a rival</option>
             <option value="collapse">Bottom Drop · Clear the floor when stacks rise</option>
             <option value="chaos">Chaos · Drop, Barrier and Blast</option>
             <option value="team">Team Battle · 2v2 / 3v3 / 4v4</option>
           </select></label>
-          <p className="mode-explainer">{mode==='elimination'?'Connect four to eliminate the next active rival. The board resets each round; last player standing wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Connect four to win.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to connect four wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect four in any direction.'}</p>
+          <p className="mode-explainer">{mode==='speed'
+            ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
+            :mode==='elimination'?'Connect four to eliminate the next active rival. The board resets each round; last player standing wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Connect four to win.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to connect four wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect four in any direction.'}</p>
           <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
             {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
           </select></label>
           <button className="btn primary full" disabled={busy||!user} onClick={()=>perform('create',{mode,maxPlayers})}>Create online room</button>
-          <button className="btn secondary full" onClick={()=>setDemo(true)}>Try local demo</button>
+          <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
+            {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
+          </button>
           {user&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>}
         </section>
         <section className="panel">

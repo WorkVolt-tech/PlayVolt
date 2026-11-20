@@ -19,6 +19,7 @@ export const TROPHY_BY_CODE = Object.fromEntries(TROPHIES.map(t=>[t.code,t]));
 export const MODES = [
  {value:'all',label:'All modes'},
  {value:'classic',label:'Classic'},
+ {value:'speed',label:'Speed Round'},
  {value:'territory',label:'Territory'},
  {value:'elimination',label:'Elimination'},
  {value:'collapse',label:'Bottom Drop'},

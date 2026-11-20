@@ -561,3 +561,21 @@ footer span{color:#ffcb56}
  .board-cell.winning-slot{box-shadow:inset 0 0 0 2px #fff5c2,0 0 0 2px #ffcd58,0 0 11px #e8bd58ad}
 }
 @media(prefers-reduced-motion:reduce){.board-cell.winning-slot{animation:none}}
+
+/* Speed Round: all players submit one chip per server-ordered simultaneous round. */
+.speed-round-panel{margin:12px 0 8px;padding:14px 15px;border:1px solid #80e9d09c;border-radius:15px;
+  background:radial-gradient(circle at 3% 0%,#47cba33b,transparent 60%),linear-gradient(120deg,#1e4e5e,#172947)}
+.speed-round-header{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.speed-round-header strong{font-size:clamp(15px,2.5vw,21px);color:#d6fff0;font-weight:950}
+.speed-round-header span{font-size:12px;font-weight:900;color:#fff0a6;border:1px solid #efd38d8a;
+  padding:6px 11px;border-radius:20px;background:#132a40}
+.speed-round-players{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 8px}
+.speed-player{display:flex;align-items:center;gap:5px;border:1px solid #7fb3d48c;
+  background:#1a385c;border-radius:9px;padding:7px 9px;color:#f0d993;font-size:11px;font-weight:850}
+.speed-player.done{background:#215545;border-color:#8ee3bf;color:#c8fce0}
+.speed-round-panel p{font-size:11px;color:#c9e6f2;line-height:1.5;margin:5px 0 0}
+.speed-roster-status{display:block;margin:4px 0 0;font-size:10px;font-weight:900}
+.speed-roster-status.placed{color:#a7eed0}.speed-roster-status.waiting{color:#f5d586}
+.player-chip.speed-submitted{border-color:#6bddb0!important;background:#17493855}
+@media(max-width:630px){.speed-round-panel{padding:11px}.speed-round-players{gap:5px}
+ .speed-player{font-size:10px;padding:6px 7px}.speed-round-header span{font-size:10px}}

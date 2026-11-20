@@ -21,9 +21,10 @@ export function TurnClock({game}) {
  if(game.status!=='playing'||remaining===null)return null;
  const urgent=remaining<=10;
  const current=game.players.find(p=>p.seat===game.turnSeat);
+ const isSpeed=game.mode==='speed';
  return <div className={'turn-clock'+(urgent?' clock-urgent':'')} role="timer" aria-label="Turn time remaining">
-  <span><span className="clock-dot"/> {current?.name||'Current player'} · Turn timer</span>
+  <span><span className="clock-dot"/> {isSpeed?'All players · Round '+(game.roundNumber||1):current?.name||'Current player'} · {isSpeed?'Round timer':'Turn timer'}</span>
   <strong>{clockText(remaining)}</strong>
-  <span className="clock-rules">{game.turnSkips>0?game.turnSkips+' missed turn'+(game.turnSkips===1?'':'s')+' · ':''}Timeout skips the turn</span>
+  <span className="clock-rules">{game.turnSkips>0?game.turnSkips+(isSpeed?' missed drop':' missed turn')+(game.turnSkips===1?'':'s')+' · ':''}{isSpeed?'All players get one drop · Missing players skip at zero':'Timeout skips the turn'}</span>
  </div>;
 }

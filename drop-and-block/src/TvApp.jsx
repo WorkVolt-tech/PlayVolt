@@ -6,7 +6,7 @@ import { readTvLink, buildJoinUrl } from './tvLink.js';
 import {AvatarBadge,ChipDisc} from './looks.jsx';
 import {TvReplayScreen} from './TvReplayScreen.jsx';
 
-const modeNames = { classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP', chaos: 'CHAOS', team: 'TEAM BATTLE' };
+const modeNames = { speed: 'SPEED ROUND', classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP', chaos: 'CHAOS', team: 'TEAM BATTLE' };
 const icons = ['', '◆', '●', '▲', '■', '★', '⬡', '✦', '✳', '⬢'];
 
 export function TvApp() {
@@ -130,7 +130,10 @@ export function TvApp() {
             <span className="tv-player-name">{p.name}
               {p.online!==undefined&&<small className={'player-presence '+(p.online?'online':'away')}>{p.online?'● Online':'○ Away'}{p.timedOutTurns?' · '+p.timedOutTurns+' missed':''}</small>}
             </span>
-            <strong>{p.eliminated?'OUT':game.mode==='team'?(p.seat%2===1?'GOLD':'BLUE'):game.mode==='territory'?p.score+' pts':game.mode==='chaos'?'⬢'+(p.chaosBlockUsed?'0':'1')+' ✹'+(p.chaosBlastUsed?'0':'1'):p.seat===game.turnSeat?'PLAYING':''}</strong>
+            <strong>{p.eliminated?'OUT':game.mode==='speed'
+              ? game.status==='finished'?(p.seat===game.winnerSeat?'WINNER':'FINISHED')
+                :game.speedPlayedSeats?.includes(p.seat)?'✓ DROPPED':'⚡ READY'
+              :game.mode==='team'?(p.seat%2===1?'GOLD':'BLUE'):game.mode==='territory'?p.score+' pts':game.mode==='chaos'?'⬢'+(p.chaosBlockUsed?'0':'1')+' ✹'+(p.chaosBlastUsed?'0':'1'):p.seat===game.turnSeat?'PLAYING':''}</strong>
           </div>
         )}</div> : <p className="tv-empty">Players will appear here when they join.</p>}
         <div className="tv-status">{showReplay?'★ TV PARTY REPLAY':game?.status==='playing'?'● MATCH LIVE':game?.status==='finished'?'✓ MATCH FINISHED':game?.status==='cancelled'?(game.endReason==='stalled_no_contest'?'⊘ NO CONTEST':'⊘ ROOM CLOSED'):'◌ WAITING IN LOBBY'}</div>

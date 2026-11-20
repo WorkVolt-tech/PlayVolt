@@ -275,3 +275,30 @@ banner shows the winner, winning teammates, or an actual draw; the same
 styling is applied to the final step of saved phone replays. Animations respect
 reduced-motion preferences. No new game tables, leaderboard logic, or shared
 PlayVolt apps were changed.
+
+## ⚡ Speed Round: all players drop at once (preview; migration 014)
+
+**Speed Round** is a separate, online-only 2–8 player mode. Unlike Classic,
+there is **no individual turn order**. Every player may submit exactly **one
+normal chip in each 60-second round**, using their own phone. The database
+serializes concurrent requests under a locked room row, so the first accepted
+submission is placed first. Two people choosing the same column will stack
+in that order: the earlier accepted chip lands lower. Nobody can submit a
+second chip until all participating players have made their one drop.
+
+When the last player submits, the next round opens **immediately**. If one or
+more people do not play, a server-owned 60-second round deadline skips only
+those missing players when a joined participant next polls, then opens a
+fresh round for everyone. Skipped players are **not eliminated**. A drop arriving
+just after an expired deadline is not placed; the client sees the new round
+and can submit again. First connected four wins; a full board is a draw.
+
+Players and the read-only TV see round number, the shared countdown, and
+which participants have already dropped. Room polling is slightly faster for
+this mode. Server-only `drop_block_speed_plays` records each round's unique
+participation, with RLS and direct client privileges denied. Signed-in room
+participants submit only through the transactional `drop_block_action` RPC.
+Each accepted drop still writes the regular move log and replay snapshot,
+so match history, win recording and TV playback work as before.
+Local hot-seat demo is disabled for this mode, since simultaneous inputs need
+separate devices. **All six existing game modes remain turn-based and unchanged.**

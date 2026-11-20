@@ -26,7 +26,7 @@ export function canPlayReplay(detail) {
 export function outcomeLabel(value) {
  return value==='win'?'Victory':value==='loss'?'Defeat':'Draw';
 }
-export const modeLabels={classic:'Classic',territory:'Territory',elimination:'Elimination',
+export const modeLabels={speed:'Speed Round',classic:'Classic',territory:'Territory',elimination:'Elimination',
  collapse:'Bottom Drop',chaos:'Chaos',team:'Team Battle'};
 
 // Highlight reel: prioritize earned lines, special powers, round transitions and
