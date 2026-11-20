@@ -258,3 +258,20 @@ possible across rematches because the match number is part of the move key.
 - The unattended TV shows a clear **Live / Reconnecting** indicator.
   Interrupted replay loads retry automatically, rather than permanently
   leaving the TV stuck on the loading screen.
+
+## Last-move and end-of-match feedback (preview; migration 013)
+
+The room and scoped read-only TV RPCs return the **last accepted move** of the
+current match (seat, column, row, kind, move number and points earned).
+The last placed chip or Chaos Barrier is outlined, while a Blast or reset round
+highlights its affected column instead of inventing a vanished chip. The same
+feedback works in local pass-and-play demos and on the shared TV.
+
+On a finished match, the display derives the **winning connection through the
+final placed chip**; Team Battle treats same-team chips as compatible even
+when their individual colors differ. Territory uses its final score-based
+result, without falsely marking an arbitrary four-in-a-row. The completion
+banner shows the winner, winning teammates, or an actual draw; the same
+styling is applied to the final step of saved phone replays. Animations respect
+reduced-motion preferences. No new game tables, leaderboard logic, or shared
+PlayVolt apps were changed.

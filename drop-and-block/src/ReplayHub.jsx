@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useState} from 'react';
 import {db} from './supabase.js';
 import {ChipDisc,AvatarBadge} from './looks.jsx';
 import {clampStep,replayFrame,canPlayReplay,outcomeLabel,modeLabels,highlightSteps,replayTimeline,highlightLabel} from './replayModel.js';
+import {winningCells,lastMoveCell} from './boardFeedback.js';
 
 const PAGE=20;
 function dateLabel(iso) {
@@ -12,10 +13,15 @@ function dateLabel(iso) {
 function ReplayBoard({detail,frame}) {
  const grid={gridTemplateColumns:'repeat('+detail.width+',minmax(0,1fr))'};
  const players=detail.players||[];
+ const last=frame.step?detail.moves[frame.step-1]:null;
+ const recent=lastMoveCell(frame.board,detail.width,detail.height,last);
+ const winners=new Set(frame.step===detail.moves.length?
+   winningCells(frame.board,detail.width,detail.height,detail.winnerSeat,detail.mode,last):[]);
  return <div className="replay-board-wrap">
   <div className="board board-theme-deep-navy replay-board" style={{...grid,minWidth:detail.width>=12?detail.width*34+'px':undefined}} role="grid"
     aria-label={'Recorded board after '+frame.step+' moves'}>
-   {(frame.board||[]).map((seat,i)=><div className="board-cell" key={i} role="gridcell">
+   {(frame.board||[]).map((seat,i)=><div className={'board-cell'+(winners.has(i)?' winning-slot':'')+
+       (recent===i?' last-played-slot':'')} key={i} role="gridcell">
      <ChipDisc seat={seat} teamMode={detail.mode==='team'}
       style={players.find(p=>p.seat===seat)?.chipStyle||'round'}/>
    </div>)}

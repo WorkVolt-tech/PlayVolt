@@ -11,25 +11,31 @@ import {ReplayHub} from './ReplayHub.jsx';
 import {TvReplayControls} from './TvReplayControls.jsx';
 import {canCloseLobby,canEndStalled,canRematch,isNoContest,isClosedLobby} from './hostControls.js';
 import {canPlayColumn,wideBoardMinWidth} from './boardInteraction.js';
+import {lastMoveCell,winningCells} from './boardFeedback.js';
+import {MatchSpotlight} from './MatchSpotlight.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
 const hub = 'https://playvolt-hub.pages.dev/';
 
-function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy' }) {
+function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic' }) {
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
   const minWidth=wideBoardMinWidth(width,readOnly);
   const available=col=>canPlayColumn(board,width,height,col,moveKind,disabled||turn!==me);
   const actionLabel=moveKind==='blast'?'Blast':'Place '+(moveKind==='block'?'barrier':'chip');
+  const lastCell=lastMoveCell(board,width,height,lastMove);
+  const winning=new Set(status==='finished'?winningCells(board,width,height,winnerSeat,mode,lastMove):[]);
+  const effectColumn=lastMove?.column!==undefined&&(lastMove.kind==='blast'||lastCell===null)
+    ?lastMove.column:null;
   return <div className="board-wrap">
     <div className={'board-scroll'+(minWidth?' is-wide':'')}
       role={minWidth?'region':undefined} aria-label={minWidth?'Swipe horizontally to view the entire game board':undefined}
       tabIndex={minWidth?0:undefined}>
       <div className="board-inner" style={minWidth?{minWidth:minWidth+'px'}:undefined}>
         {!readOnly&&<div className="board-controls" style={grid}>
-          {columns.map(col=><button type="button" key={col} className="drop-arrow"
+          {columns.map(col=><button type="button" key={col} className={'drop-arrow'+(lastMove?.column===col?' recently-used':'')}
             aria-label={actionLabel+' in column '+(col+1)}
             disabled={!available(col)} onClick={()=>onDrop(col)}>
             {moveKind==='blast'?'✹':moveKind==='block'?'⬢':'▼'}
@@ -39,7 +45,12 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
           <div className={'board board-theme-'+safeBoard(boardTheme)} style={grid} role="grid" aria-label="Drop & Block game board">
             {rows.flatMap(row=>columns.map(col=>{
               const seat=board[row*width+col]||0;
-              return <div className="board-cell" role="gridcell" key={row+'-'+col}>
+              const index=row*width+col;
+              const isWinner=winning.has(index),isRecent=lastCell===index;
+              return <div className={'board-cell'+(isWinner?' winning-slot':'')+
+                (isRecent?' last-played-slot':'')+(effectColumn===col?' move-effect-column':'')}
+                role="gridcell" key={row+'-'+col}
+                title={isWinner?'Winning connection':isRecent?'Most recent chip':undefined}>
                 <ChipDisc seat={seat} style={players.find(p=>p.seat===seat)?.chipStyle||'round'} teamMode={teamMode}/>
               </div>;
             }))}
@@ -60,10 +71,27 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
 
 function LocalDemo({ onBack, count, mode, loadout }) {
   const [width, height] = dimensions(count);
-  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false) });
+  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false) });
   const [state, setState] = useState(reset);
   const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i],chaosBlockUsed:state.chaosBlockUsed[i],chaosBlastUsed:state.chaosBlastUsed[i],avatarStyle:i===0?loadout?.avatar:'sentinel',chipStyle:i===0?loadout?.chip:'round'}));
-  function play(col,kind='drop') { setState(old => mode==='team'?playTeamTurn(old,col,count,width,height):mode==='chaos'?playChaosTurn(old,col,count,width,height,kind):playLocalTurn(old,col,count,mode,width,height)); return true; }
+  function play(col,kind='drop') {
+    setState(old=>{
+      const next=mode==='team'?playTeamTurn(old,col,count,width,height):
+        mode==='chaos'?playChaosTurn(old,col,count,width,height,kind):
+        playLocalTurn(old,col,count,mode,width,height);
+      if(next===old)return old;
+      let row=height-1;
+      if(kind!=='blast'){
+        for(let y=height-1;y>=0;y--){
+          if(old.board[y*width+col]===0){row=y;break;}
+        }
+      }
+      return {...next,moveCount:(old.moveCount||0)+1,
+        lastMove:{seat:old.turn,column:col,row,kind,
+          earned:(next.scores?.[old.turn-1]||0)-(old.scores?.[old.turn-1]||0)}};
+    });
+    return true;
+  }
   return <div className="panel panel-wide">
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
     <h2>{modeName(mode)} · {count} Players</h2>
@@ -87,6 +115,9 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
   };
   const turnPlayer = game.players.find(p=>p.seat===game.turnSeat);
   const winner = game.players.find(p=>p.seat===game.winnerSeat);
+  const lastPlayer=game.players.find(p=>p.seat===game.lastMove?.seat);
+  const lastMoveLabel=game.lastMove?.kind==='blast'?'used Blast on':
+    game.lastMove?.kind==='block'?'placed a Barrier in':'played';
   const myTurn = !readOnly && game.status==='playing' && game.turnSeat===game.meSeat;
   return <>
     <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'') + (p.eliminated?' eliminated':'')+(game.mode==='team'?' team-roster-'+teamOfSeat(p.seat):'')}>
@@ -105,11 +136,17 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     {game.mode==='collapse' && <div className="mode-status">BOTTOM ROW DROPS: {game.floorClears || 0} · TRIGGER AT SECOND ROW FROM TOP</div>}
     {game.lastEvent && <div className="round-event" role="status">{game.lastEvent}</div>}
     <TurnClock game={game}/>
+    {game.lastMove&&<div className="last-move-caption">
+      <span className="last-move-tag">LAST MOVE</span>
+      <span>{lastPlayer?.name||'Player '+game.lastMove.seat} {lastMoveLabel} column {game.lastMove.column+1}
+        {game.lastMove.earned>0?' · '+game.lastMove.earned+' line'+(game.lastMove.earned===1?'':'s')+' connected':''}</span>
+    </div>}
     <div className={'turn-notice' + (myTurn?' is-me':'')}>
       {game.status==='cancelled' ? (isNoContest(game) ? 'No Contest · Match ended without a winner' : 'Room closed by the host')
         : game.status==='finished' ? (game.mode==='team' ? (game.winnerTeam || winner ? 'Team '+((game.winnerTeam || teamOfSeat(winner?.seat))===1?'Gold':'Blue')+' wins!' : 'Match finished · Draw') : (winner ? winner.name+' wins!' : 'Match finished · Draw'))
         : myTurn ? 'Your turn — choose a column' : readOnly ? (turnPlayer?.name || 'A player') + ' is playing' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
     </div>
+    <MatchSpotlight game={game}/>
     {game.mode==='chaos' && !readOnly && <div className="chaos-powers" role="group" aria-label="Choose a Chaos move">
       <button type="button" className={'chaos-power'+(moveKind==='drop'?' selected':'')} onClick={()=>setMoveKind('drop')} disabled={busy}>▼ Normal Drop</button>
       <button type="button" className={'chaos-power'+(moveKind==='block'?' selected':'')} onClick={()=>setMoveKind('block')} disabled={busy||!current||current.chaosBlockUsed||game.status!=='playing'}>⬢ Barrier {current?.chaosBlockUsed?'USED':'1×'}</button>
@@ -118,7 +155,8 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects four to win. Choosing a power uses your turn.'}</p>}
     <Board board={game.board} width={game.width} height={game.height}
       turn={game.turnSeat} me={game.meSeat} onDrop={selectColumn}
-      disabled={busy || game.status!=='playing'} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}/>
+      disabled={busy || game.status!=='playing'} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
+      lastMove={game.lastMove} winnerSeat={game.winnerSeat} status={game.status} mode={game.mode}/>
     <div className="board-foot">{game.mode==='territory'?'CONNECT 4 TO SCORE':game.mode==='elimination'?'CONNECT 4 TO ELIMINATE THE NEXT OPPONENT':game.mode==='collapse'?'CONNECT 4 TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT 4 TO WIN':game.mode==='team'?'CONNECT FOUR TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT 4 TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }

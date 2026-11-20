@@ -516,3 +516,48 @@ footer span{color:#ffcb56}
 .tv-connection.is-live{color:#95ebc0}
 .tv-connection.is-away{color:#ffc49e}
 @media(max-width:650px){.tv-topbar-status{gap:4px;align-items:flex-end;flex-direction:column}.tv-connection{font-size:10px}}
+
+/* Gameplay feedback: last accepted action, earned four-in-a-row and end screen. */
+.last-move-caption{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:7px;
+  margin:10px 0;padding:7px 11px;color:#c4d5f2;font-size:12px;line-height:1.4;text-align:center}
+.last-move-tag{font-size:10px;font-weight:950;letter-spacing:.12em;color:#f9d68b;
+ border:1px solid #f5cc795e;border-radius:7px;padding:4px 7px;background:#5e49294f;white-space:nowrap}
+.drop-arrow.recently-used{border-color:#f9d67c77;background:#f5cf5940;color:#ffe8ab}
+.board-cell{position:relative}
+.board-cell.last-played-slot:not(.winning-slot){box-shadow:inset 0 0 0 3px #ffdf94,0 0 0 2px #e2a83f,0 0 13px #ffdc7c6a}
+.board-cell.last-played-slot .disc{filter:brightness(1.1)}
+.board-cell.move-effect-column:not(.winning-slot){background:#184d6788;box-shadow:inset 0 0 0 1px #62c9ed9a}
+.board-cell.winning-slot{z-index:1;box-shadow:inset 0 0 0 3px #fff5c2,0 0 0 3px #ffcd58,0 0 18px 5px #e8bd58ad;animation:db-win-glow 1.35s ease-in-out infinite alternate}
+.board-cell.winning-slot .disc{filter:brightness(1.2) saturate(1.15)}
+@keyframes db-win-glow{
+ from{box-shadow:inset 0 0 0 3px #fff1a2,0 0 0 2px #f3c25c,0 0 9px #ffcd5888}
+ to{box-shadow:inset 0 0 0 4px #fff9d9,0 0 0 4px #ffe187,0 0 21px 5px #ffe49ad1}
+}
+.match-spotlight{display:flex;align-items:center;gap:13px;flex-wrap:wrap;
+ background:radial-gradient(circle at 8% 0,#c99e453b,transparent 65%),linear-gradient(130deg,#473b29,#202a45);
+ border:1px solid #f0c579a8;border-radius:16px;padding:14px 16px;margin:13px 0 18px;
+ box-shadow:inset 0 1px 0 #fff2,0 7px 24px #0006}
+.match-spotlight-mark{font-size:37px;line-height:1;filter:drop-shadow(0 2px 5px #0006);flex-shrink:0}
+.match-spotlight-copy{display:grid;gap:3px;min-width:0;flex:1}
+.match-spotlight-copy small{font-size:10px;color:#e2c893;font-weight:900;letter-spacing:.12em}
+.match-spotlight-copy strong{font-size:clamp(18px,2.8vw,29px);line-height:1.14;font-weight:950;color:#ffedbc}
+.match-spotlight-copy span{font-size:12px;color:#d2dcef;line-height:1.4}
+.match-spotlight.is-draw{border-color:#9ab2d091;background:linear-gradient(110deg,#273c5a,#202b45)}
+.match-winner-avatars{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:7px;max-width:360px}
+.match-winner{display:flex;align-items:center;gap:5px;padding:5px 8px;background:#131f357c;
+ border:1px solid #f3cc7e80;border-radius:10px;min-width:0}
+.match-winner>span:last-child{font-weight:800;font-size:11px;color:#f8ebc6;overflow-wrap:anywhere}
+.match-spotlight.team-gold{border-color:#efc462}.match-spotlight.team-blue{border-color:#68cafa}
+.tv-stage .match-spotlight{padding:10px 13px;gap:10px}
+.tv-stage .match-spotlight-copy strong{font-size:clamp(21px,2.8vw,32px)}
+.tv-stage .last-move-caption{font-size:clamp(12px,1.4vw,17px)}
+@media(max-width:650px){
+ .last-move-caption{font-size:11px;padding:6px;gap:5px}
+ .match-spotlight{padding:11px;gap:10px}
+ .match-spotlight-mark{font-size:28px}
+ .match-spotlight-copy strong{font-size:20px}
+ .match-winner-avatars{width:100%;max-width:none;justify-content:flex-start}
+ .board-cell.last-played-slot:not(.winning-slot){box-shadow:inset 0 0 0 2px #ffdf94,0 0 0 1px #e2a83f}
+ .board-cell.winning-slot{box-shadow:inset 0 0 0 2px #fff5c2,0 0 0 2px #ffcd58,0 0 11px #e8bd58ad}
+}
+@media(prefers-reduced-motion:reduce){.board-cell.winning-slot{animation:none}}
