@@ -23,17 +23,18 @@ import {LocalReplay} from './LocalReplay.jsx';
 import {appendLocalMove} from './localReplayModel.js';
 import {WinRuleBanner} from './WinRuleBanner.jsx';
 import {TvPairHost} from './TvPairHost.jsx';
+import {initPowerState,playPowerTurn,powerTargetAllowed,activateDouble} from './powerRules.js';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
 const hub = 'https://playvolt-hub.pages.dev/';
 
-function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic', matchNumber=1,moveCount=0,floorClears=0,speedOrder=[],speedPreviousOrder=[],soundEnabled=false,winLength=4,eliminationGame=null,eliminationReset=null }) {
+function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = false, moveKind = 'drop', teamMode = false, players=[], boardTheme='deep-navy', lastMove=null, winnerSeat=null, status='playing', mode='classic', matchNumber=1,moveCount=0,floorClears=0,speedOrder=[],speedPreviousOrder=[],soundEnabled=false,winLength=4,eliminationGame=null,eliminationReset=null,power=null,selectedPower='drop' }) {
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
   const minWidth=wideBoardMinWidth(width,readOnly);
-  const available=col=>canPlayColumn(board,width,height,col,moveKind,disabled||turn!==me);
+  const available=col=>power?(!disabled&&turn===me&&powerTargetAllowed({board,turn,...power},selectedPower,col,width,height)):canPlayColumn(board,width,height,col,moveKind,disabled||turn!==me);
   const actionLabel=moveKind==='blast'?'Blast':'Place '+(moveKind==='block'?'barrier':'chip');
   const lastCell=lastMoveCell(board,width,height,lastMove);
   const winning=new Set(status==='finished'?winningCells(board,width,height,winnerSeat,mode,lastMove,winLength):[]);
@@ -93,15 +94,18 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
 
 function LocalDemo({ onBack, count, mode, loadout }) {
   const [width, height] = dimensions(count);
-  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false), eliminationRoundOpensAt:null,eliminationPreviousBoard:null,eliminationTargetSeat:null,eliminationScorerSeat:null,history:[] });
+  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false), eliminationRoundOpensAt:null,eliminationPreviousBoard:null,eliminationTargetSeat:null,eliminationScorerSeat:null,history:[],power:initPowerState(count) });
   const [state, setState] = useState(reset);
   const [replayOpen,setReplayOpen]=useState(false);
+  const [powerChoice,setPowerChoice]=useState('drop');
   useEffect(()=>{
     if(state.status==='finished'&&state.history?.length)setReplayOpen(true);
   },[state.status,state.history?.length]);
   const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i],chaosBlockUsed:state.chaosBlockUsed[i],chaosBlastUsed:state.chaosBlastUsed[i],avatarStyle:i===0?loadout?.avatar:'sentinel',chipStyle:i===0?loadout?.chip:'round'}));
   function play(col,kind='drop') {
+    if(mode==='power')kind=powerChoice;
     setState(old=>{
+      if(mode==='power')return playPowerTurn(old,col,count,width,height,old.power.doublePending?'double':kind);
       if(mode==='elimination'&&old.eliminationRoundOpensAt&&
          Date.now()<Date.parse(old.eliminationRoundOpensAt))return old;
       const next=mode==='team'?playTeamTurn(old,col,count,width,height):
@@ -121,21 +125,23 @@ function LocalDemo({ onBack, count, mode, loadout }) {
           seat:old.turn,column:col,row,kind,width,height
         })};
     });
+    setPowerChoice('drop');
     return true;
   }
+  const useDouble=()=>{setState(old=>activateDouble(old,count));setPowerChoice('drop');};
   return <div className="panel panel-wide">
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
     <h2>{modeName(mode)} · {count} Players</h2>
     <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
     <GameArea game={{...state,width,height,mode,players,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner,winLength:balancedWinLength(count,mode)}} boardTheme={loadout?.board}
-      onDrop={play} busy={false}/>
+      onDrop={play} busy={false} powerChoice={powerChoice} onPowerChoice={setPowerChoice} onDouble={useDouble}/>
     <div className="actions local-demo-actions">
       <button className="btn ghost" onClick={onBack}>← Back</button>
       <button className="btn secondary" disabled={!state.history?.length}
         onClick={()=>setReplayOpen(v=>!v)}>
         {replayOpen?'✕ Close replay':'↺ Watch local replay ('+(state.history?.length||0)+' moves)'}
       </button>
-      <button className="btn primary" onClick={()=>{setState(reset);setReplayOpen(false);}}>Restart</button>
+      <button className="btn primary" onClick={()=>{setState(reset);setReplayOpen(false);setPowerChoice('drop');}}>Restart</button>
     </div>
     {replayOpen&&state.history?.length>0&&<LocalReplay state={state} width={width} height={height}
       count={count} mode={mode} loadout={loadout} onClose={()=>setReplayOpen(false)}/>}
@@ -145,13 +151,13 @@ function LocalDemo({ onBack, count, mode, loadout }) {
   </div>;
 }
 
-const modeName = mode => ({ speed: 'Speed Round', classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop', chaos: 'Chaos', team: 'Team Battle' })[mode] || 'Classic';
+const modeName = mode => ({ speed: 'Speed Round', classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop', chaos: 'Chaos', power:'Power-Up Arcade', team: 'Team Battle' })[mode] || 'Classic';
 
-export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
+export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powerChoice='drop', onPowerChoice, onDouble}) {
   const [moveKind,setMoveKind]=useState('drop');
   const current=game.players.find(p=>p.seat===game.meSeat);
   const selectColumn=async col=>{
-    const kind=game.mode==='chaos'?moveKind:'drop';
+    const kind=game.mode==='chaos'?moveKind:game.mode==='power'?powerChoice:'drop';
     const ok=await onDrop(col,kind);
     if(ok!==false)setMoveKind('drop');
   };
@@ -238,6 +244,9 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
           : myTurn ? 'Your turn — choose a column' : readOnly ? (turnPlayer?.name || 'A player') + ' is playing' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
     </div>
     <MatchSpotlight game={game}/>
+    {game.mode==='power'&&game.power&&<div className="power-roster">{game.players.map(p=><div key={p.seat} className={'power-player'+(game.turnSeat===p.seat?' active':'')}><b>{p.name}</b><span>{game.power.energy[p.seat-1]}/100 EP</span><div className="power-track"><i style={{width:(game.power.energy[p.seat-1]||0)+'%'}}/></div></div>)}</div>}
+    {game.mode==='power'&&!readOnly&&onPowerChoice&&<div className="power-actions" role="group" aria-label="Power-up abilities">{[['drop','▼ Drop',0],['shield','⬡ Shield',70],['freeze','❄ Freeze',80],['bomb','✹ Bomb',100]].map(([kind,title,cost])=><button type="button" key={kind} className={'power-action'+(powerChoice===kind?' selected':'')} disabled={busy||game.status!=='playing'||cost>(game.power?.energy?.[game.turnSeat-1]||0)||game.power?.doublePending} onClick={()=>onPowerChoice(kind)}>{title}{cost?' · '+cost:''}</button>)}<button type="button" className="power-action" disabled={busy||game.status!=='playing'||game.power?.doublePending||(game.power?.energy?.[game.turnSeat-1]||0)<100} onClick={onDouble}>⇊ Double · 100</button></div>}
+    {game.mode==='power'&&!readOnly&&<p className="chaos-tip">{game.power?.doublePending?'Drop your extra chips in any playable columns.':powerChoice==='shield'?'Select a column with your chip at the top.':powerChoice==='bomb'?'Select an occupied column to blast its top chip and adjacent pieces.':powerChoice==='freeze'?'Select a playable column to freeze it.':'Earn energy by dropping chips and blocking opponents.'}</p>}
     {game.mode==='chaos' && !readOnly && <div className="chaos-powers" role="group" aria-label="Choose a Chaos move">
       <button type="button" className={'chaos-power'+(moveKind==='drop'?' selected':'')} onClick={()=>setMoveKind('drop')} disabled={busy}>▼ Normal Drop</button>
       <button type="button" className={'chaos-power'+(moveKind==='block'?' selected':'')} onClick={()=>setMoveKind('block')} disabled={busy||!current||current.chaosBlockUsed||game.status!=='playing'}>⬢ Barrier {current?.chaosBlockUsed?'USED':'1×'}</button>
@@ -246,13 +255,13 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
     {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects '+winLength+' to win. Choosing a power uses your turn.'}</p>}
     <Board board={game.board} width={game.width} height={game.height}
       turn={isSpeed?game.meSeat:game.turnSeat} me={game.meSeat} onDrop={selectColumn}
-      disabled={busy || game.status!=='playing'||iSubmitted||eliminationReset.active||(isSpeed&&speedSignal.phase==='countdown')} readOnly={readOnly} moveKind={moveKind} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
+      disabled={busy || game.status!=='playing'||iSubmitted||eliminationReset.active||(isSpeed&&speedSignal.phase==='countdown')} readOnly={readOnly} moveKind={moveKind} power={game.mode==='power'?game.power:null} selectedPower={game.power?.doublePending?'double':powerChoice} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
       lastMove={game.lastMove} winnerSeat={game.winnerSeat} status={game.status} mode={game.mode}
       matchNumber={game.matchNumber||1} moveCount={game.moveCount||0} floorClears={game.floorClears||0}
       speedOrder={game.speedOrder||[]} speedPreviousOrder={game.speedPreviousOrder||[]}
       soundEnabled={arcadeSound.enabled} winLength={winLength}
       eliminationReset={eliminationReset} eliminationGame={game}/>
-    <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST ACCEPTED DROP GOES FIRST · CONNECT '+winLength+' TO WIN':game.mode==='territory'?'CONNECT '+winLength+' TO SCORE':game.mode==='elimination'?'CONNECT '+winLength+' · PREVIOUS ACTIVE PLAYER IS ELIMINATED':game.mode==='collapse'?'CONNECT '+winLength+' TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT '+winLength+' TO WIN':game.mode==='team'?'CONNECT 4 TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT '+winLength+' TO WIN'} · {game.width} × {game.height}</div>
+    <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST ACCEPTED DROP GOES FIRST · CONNECT '+winLength+' TO WIN':game.mode==='territory'?'CONNECT '+winLength+' TO SCORE':game.mode==='elimination'?'CONNECT '+winLength+' · PREVIOUS ACTIVE PLAYER IS ELIMINATED':game.mode==='collapse'?'CONNECT '+winLength+' TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT '+winLength+' TO WIN':game.mode==='power'?'POWER-UP ARCADE · CONNECT '+winLength+' TO WIN':game.mode==='team'?'CONNECT 4 TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT '+winLength+' TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
 
@@ -638,6 +647,7 @@ export default function App() {
             <option value="elimination">Elimination · Previous player is knocked out</option>
             <option value="collapse">Bottom Drop · Clear the floor when stacks rise</option>
             <option value="chaos">Chaos · Drop, Barrier and Blast</option>
+             <option value="power">⚡ Power-Up Arcade · Local preview</option>
             <option value="team">Team Battle · 2v2 / 3v3 / 4v4</option>
           </select></label>
           <p className="balanced-rule-hint">{mode==='team'
@@ -645,11 +655,11 @@ export default function App() {
             : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
           <p className="mode-explainer">{mode==='speed'
             ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
-            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
+            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Earn energy to activate Bomb, Shield, Freeze and Double Drop. Local hot-seat preview until server support is enabled.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
           <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
             {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
           </select></label>
-          <button className="btn primary full" disabled={busy||!user} onClick={()=>perform('create',{mode,maxPlayers})}>Create online room</button>
+          <button className="btn primary full" disabled={busy||!user||mode==='power'} onClick={()=>perform('create',{mode,maxPlayers})}>{mode==='power'?'Online mode requires server rules':'Create online room'}</button>
           <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
             {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
           </button>
