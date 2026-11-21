@@ -11,7 +11,7 @@ export function TvLobby({ game }) {
   const players = (game.players || []).filter((p) => p.active);
   const leaders = winLeaders(players);
   const ready = players.filter((p) => p.ready).length;
-  const joinUrl = `${location.origin}${location.pathname}?room=${game.code}`;
+  const joinUrl = `${location.origin}/?room=${encodeURIComponent(game.code)}&install=1`;
   const mode = MODES[game.mode];
   return <div className="tv-lobby">
     <section className="tv-join">
@@ -19,7 +19,7 @@ export function TvLobby({ game }) {
         <p className="tv-kicker">Join on your phone</p>
         <strong className="tv-code">{game.code}</strong>
         <p className="tv-url">{location.host}</p>
-        <p className="tv-hint">Scan the code, or open the site and enter the room code.</p>
+        <p className="tv-hint">Scan to open the game app or get it installed. Room code stays above.</p>
       </div>
       <QrCode text={joinUrl} label={`QR code to join room ${game.code}`} />
     </section>
