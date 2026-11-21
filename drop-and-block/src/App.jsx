@@ -99,7 +99,7 @@ function LocalDemo({ onBack, count, mode, loadout }) {
   const [width, height] = dimensions(count);
   const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false), eliminationRoundOpensAt:null,eliminationPreviousBoard:null,eliminationTargetSeat:null,eliminationScorerSeat:null,history:[],power:initPowerState(count),gravity:{drops:0,nextDirection:'left',lastShift:null},rivalry:emptyRivalry(count) });
   const [state, setState] = useState(reset);
-  const [replayOpen,setReplayOpen]=useState(false);
+  const [activeLocalTab,setActiveLocalTab]=useState('game');
   const [powerChoice,setPowerChoice]=useState('drop');
   const freshSession=()=>({wins:Array(count).fill(0),lastWinner:null,callout:''});
   const [session,setSession]=useState(freshSession);
@@ -112,9 +112,6 @@ function LocalDemo({ onBack, count, mode, loadout }) {
       return {wins,lastWinner:state.winner,callout};
     });
   },[state.status,state.winner]);
-  useEffect(()=>{
-    if(state.status==='finished'&&state.history?.length)setReplayOpen(true);
-  },[state.status,state.history?.length]);
   const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i],chaosBlockUsed:state.chaosBlockUsed[i],chaosBlastUsed:state.chaosBlastUsed[i],avatarStyle:i===0?loadout?.avatar:'sentinel',chipStyle:i===0?loadout?.chip:'round'}));
   function play(col,kind='drop') {
     if(mode==='power')kind=powerChoice;
@@ -157,22 +154,35 @@ function LocalDemo({ onBack, count, mode, loadout }) {
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
     <h2>{modeName(mode)} · {count} Players</h2>
     <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
-    <GameArea game={{...state,width,height,mode,players,sessionWins:session.wins,sessionCallout:session.callout,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner,winLength:balancedWinLength(count,mode)}} boardTheme={loadout?.board}
-      onDrop={play} busy={false} powerChoice={powerChoice} onPowerChoice={setPowerChoice} onDouble={useDouble}/>
-    <div className="actions local-demo-actions">
-      <button className="btn ghost" onClick={onBack}>← Back</button>
-      <button className="btn secondary" disabled={!state.history?.length}
-        onClick={()=>setReplayOpen(v=>!v)}>
-        {replayOpen?'✕ Close replay':'↺ Watch local replay ('+(state.history?.length||0)+' moves)'}
-      </button>
-      <button className="btn primary" onClick={()=>{setState(reset);setReplayOpen(false);setPowerChoice('drop');}}>Next match · keep scores</button>
-      <button className="btn ghost" onClick={()=>{setSession(freshSession());setState(reset);setReplayOpen(false);setPowerChoice('drop');}}>Reset session</button>
+    <div className="local-game-tabs" role="tablist" aria-label="Local match views">
+      <button id="local-game-tab" type="button" role="tab"
+        aria-selected={activeLocalTab==='game'} aria-controls="local-game-panel"
+        className={activeLocalTab==='game'?'selected':''}
+        onClick={()=>setActiveLocalTab('game')}>🎮 Game</button>
+      <button id="local-replay-tab" type="button" role="tab"
+        aria-selected={activeLocalTab==='replay'} aria-controls="local-replay-panel"
+        className={activeLocalTab==='replay'?'selected':''}
+        onClick={()=>setActiveLocalTab('replay')}>↺ Replay <span className="local-tab-count">{state.history?.length||0}</span></button>
     </div>
-    {replayOpen&&state.history?.length>0&&<LocalReplay state={state} width={width} height={height}
-      count={count} mode={mode} loadout={loadout} onClose={()=>setReplayOpen(false)}/>}
-    <p className="local-tv-explainer">📺 TV / Fire Stick display is available for <b>online rooms</b>.
-     This offline same-device preview cannot sync to a separate television.
-     Create an online room to pair a Fire Stick and let everyone play from their phones.</p>
+    <div id="local-game-panel" role="tabpanel" aria-labelledby="local-game-tab" hidden={activeLocalTab!=='game'}>
+      <GameArea game={{...state,width,height,mode,players,sessionWins:session.wins,sessionCallout:session.callout,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner,winLength:balancedWinLength(count,mode)}} boardTheme={loadout?.board}
+        onDrop={play} busy={false} powerChoice={powerChoice} onPowerChoice={setPowerChoice} onDouble={useDouble}/>
+      <div className="actions local-demo-actions">
+        <button className="btn ghost" onClick={onBack}>← Back</button>
+        <button className="btn primary" onClick={()=>{setState(reset);setActiveLocalTab('game');setPowerChoice('drop');}}>Next match · keep scores</button>
+        <button className="btn ghost" onClick={()=>{setSession(freshSession());setState(reset);setActiveLocalTab('game');setPowerChoice('drop');}}>Reset session</button>
+      </div>
+      <p className="local-tv-explainer">📺 TV / Fire Stick display is available for <b>online rooms</b>.
+       This offline same-device preview cannot sync to a separate television.
+       Create an online room to pair a Fire Stick and let everyone play from their phones.</p>
+    </div>
+    <div id="local-replay-panel" role="tabpanel" aria-labelledby="local-replay-tab" hidden={activeLocalTab!=='replay'}>
+      {activeLocalTab==='replay'&&(state.history?.length>0
+        ? <LocalReplay state={state} width={width} height={height}
+            count={count} mode={mode} loadout={loadout} onClose={()=>setActiveLocalTab('game')}/>
+        : <div className="local-replay-empty"><strong>No moves to replay yet</strong><p>Play a few chips, then return to this tab to review the match.</p>
+           <button type="button" className="btn secondary" onClick={()=>setActiveLocalTab('game')}>← Back to game</button></div>)}
+    </div>
   </div>;
 }
 
