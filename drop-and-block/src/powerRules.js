@@ -54,8 +54,8 @@ function threats(board,width,height,seat,length){
 export function playPowerTurn(old,column,count,width,height,kind='drop'){
  if(old.status!=='playing'||!Number.isInteger(old.turn))return old;
  if(!Object.hasOwn(POWER_COSTS,kind)&&kind!=='drop')return old;
- if(old.doublePending&&kind!=='double')return old;
- if(!old.doublePending&&kind==='double')return old;
+ if(old.power?.doublePending&&kind!=='double')return old;
+ if(!old.power?.doublePending&&kind==='double')return old;
  const ps={...initPowerState(count),...old.power};
  if(!powerTargetAllowed({...old,...ps},kind,column,width,height))return old;
  const seat=old.turn, length=balancedWinLength(count,'power'), energy=[...ps.energy];
@@ -67,15 +67,15 @@ export function playPowerTurn(old,column,count,width,height,kind='drop'){
  if(kind==='drop'||kind==='double'){
   const move=drop(board,width,height,column,seat,length);if(!move)return old;
   board=move.board;row=move.row;
-  if(kind==='double')pending=Math.max(0,Number(pending)-1);
+  if(kind==='double'){pending=Math.max(0,Number(pending)-1);event=pending?'DOUBLE DROP: 1 chip placed — choose your second column!':'DOUBLE DROP COMPLETE — both chips placed!';}
   energy[seat-1]=Math.min(100,energy[seat-1]+10);
  }else{
   const cost=POWER_COSTS[kind];
   if(energy[seat-1]<cost)return old;
   energy[seat-1]-=cost;
   row=Array.from({length:height},(_,i)=>i).find(y=>board[y*width+column]!==0);
-  if(kind==='shield'){newShields=[...shields,row*width+column];event='Player '+seat+' activated SHIELD!';}
-  if(kind==='freeze'){frozen={column,owner:seat};event='Player '+seat+' froze column '+(column+1)+'!';}
+  if(kind==='shield'){newShields=[...shields,row*width+column];event='🛡 SHIELD ACTIVE! The top chip in column '+(column+1)+' blocks one Bomb hit.';}
+  if(kind==='freeze'){frozen={column,owner:seat};event='❄ COLUMN '+(column+1)+' FROZEN! Nobody may drop there until Player '+seat+' plays again.';}
   if(kind==='bomb'){
    for(const x of [column-1,column,column+1]){
     if(x<0||x>=width)continue;
@@ -84,7 +84,7 @@ export function playPowerTurn(old,column,count,width,height,kind='drop'){
     else if(shields.includes(index))newShields=newShields.filter(i=>i!==index);
    }
    const settled=settle(board,newShields,width,height);
-   board=settled.board;newShields=settled.shields;event='Player '+seat+' used BOMB!';
+   board=settled.board;newShields=settled.shields;event='💥 BOMB! Top chip in column '+(column+1)+' and nearby chips hit.';
   }
  }
  const afterThreats=threats(board,width,height,seat,length);
@@ -110,5 +110,5 @@ export function activateDouble(old,count){
  if(energy[p-1]<POWER_COSTS.double)return old;
  energy[p-1]-=POWER_COSTS.double;
  return {...old,power:{...old.power,energy,doublePending:2},
-  lastEvent:'Player '+p+' activated DOUBLE DROP — select the extra chip!'};
+  lastEvent:'DOUBLE DROP READY! Place chip 1 of 2 — choose a column.'};
 }
