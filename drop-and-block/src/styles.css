@@ -1496,3 +1496,14 @@ footer span{color:#ffcb56}
 .gravity-status small{flex-basis:100%;color:#bdc8ed;font-size:10px}
 .rivalry-callout{border:2px solid #ffb376;background:linear-gradient(110deg,#663124,#3c1c33);box-shadow:0 0 19px #ff844d66;color:#fff2d8;text-align:center;font-weight:900;font-size:clamp(14px,2.2vw,19px);border-radius:12px;padding:12px;margin:10px 0}
 @media(max-width:600px){.match-scoreboard{padding:10px}.scoreboard-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.scoreboard-player{padding:9px}.scoreboard-seat{font-size:10px}.gravity-status{padding:10px}.gravity-status span{font-size:11px}}
+
+/* Visible board reaction when Gravity Shift rearranges chips. */
+.board.arcade-board.gravity-shift-impact{animation:gravity-impact .7s ease-out both}
+@keyframes gravity-impact {
+ 0%{filter:brightness(1);transform:translateX(0)}
+ 20%{filter:brightness(1.6);transform:translateX(-7px)}
+ 45%{filter:brightness(1.4);transform:translateX(7px)}
+ 70%{filter:brightness(1.18);transform:translateX(-3px)}
+ 100%{filter:brightness(1);transform:translateX(0)}
+}
+@media(prefers-reduced-motion:reduce){.board.arcade-board.gravity-shift-impact{animation:none}}
