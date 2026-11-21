@@ -38,7 +38,7 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
   const actionLabel=moveKind==='blast'?'Blast':'Place '+(moveKind==='block'?'barrier':'chip');
   const lastCell=lastMoveCell(board,width,height,lastMove);
   const winning=new Set(status==='finished'?winningCells(board,width,height,winnerSeat,mode,lastMove,winLength):[]);
-  const effectColumn=lastMove?.column!==undefined&&(lastMove.kind==='blast'||lastCell===null)
+  const effectColumn=lastMove?.column!==undefined&&(lastMove.kind==='blast'||lastMove.kind==='bomb'||lastCell===null)
     ?lastMove.column:null;
   const {flights,hidden}=useArcadeFallingChips({
     board,width,height,matchNumber,moveCount,floorClears,lastMove,mode,
@@ -64,11 +64,11 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
               const index=row*width+col;
               const isWinner=winning.has(index),isRecent=lastCell===index;
               return <div className={'board-cell'+(isWinner?' winning-slot':'')+
-                (isRecent?' last-played-slot':'')+(effectColumn===col?' move-effect-column':'')+
+                (isRecent?' last-played-slot':'')+(power?.shields?.includes(index)?' power-shielded':'')+(power?.frozen?.column===col?' power-frozen':'')+(effectColumn===col?' move-effect-column':'')+
                 (hidden.has(index)?' arcade-under-flight':'')}
                 role="gridcell" key={row+'-'+col}
                 title={isWinner?'Winning connection':isRecent?'Most recent chip':undefined}>
-                <ChipDisc seat={seat} style={players.find(p=>p.seat===seat)?.chipStyle||'round'} teamMode={teamMode}/>
+                <ChipDisc seat={seat} style={players.find(p=>p.seat===seat)?.chipStyle||'round'} teamMode={teamMode}/>{power?.shields?.includes(index)&&<span className="shield-symbol" aria-label="Shield protected">⬡</span>}
               </div>;
             }))}
           </div>
