@@ -9,7 +9,7 @@ export function powerTargetAllowed(state,kind,column,width,height){
  if(kind==='freeze')return state.frozen?.column!==column&&board[column]===0;
  // Shield and bomb select the uppermost occupied piece of a column.
  const row=Array.from({length:height},(_,i)=>i).find(y=>board[y*width+column]!==0);
- if(row===undefined)return false;
+ if(row===undefined)return kind==='bomb'&&state.frozen?.column===column;
  return kind==='bomb'||(kind==='shield'&&board[row*width+column]===p&&!state.shields.includes(row*width+column));
 }
 function settle(board,shields,width,height){
@@ -77,6 +77,11 @@ export function playPowerTurn(old,column,count,width,height,kind='drop'){
   if(kind==='shield'){newShields=[...shields,row*width+column];event='🛡 SHIELD ACTIVE! The top chip in column '+(column+1)+' blocks one Bomb hit.';}
   if(kind==='freeze'){frozen={column,owner:seat};event='❄ COLUMN '+(column+1)+' FROZEN! Nobody may drop there until Player '+seat+' plays again.';}
   if(kind==='bomb'){
+   // Bombs shatter the frozen lane when their three-column blast touches it.
+   // The bomb still uses its usual one-row area; it never wipes a whole column.
+   const shattered=frozen&&Math.abs(frozen.column-column)<=1;
+   if(shattered)frozen=null;
+   if(row===undefined)row=height-1;
    for(const x of [column-1,column,column+1]){
     if(x<0||x>=width)continue;
     const index=row*width+x;
@@ -84,7 +89,7 @@ export function playPowerTurn(old,column,count,width,height,kind='drop'){
     else if(shields.includes(index))newShields=newShields.filter(i=>i!==index);
    }
    const settled=settle(board,newShields,width,height);
-   board=settled.board;newShields=settled.shields;event='💥 BOMB! Top chip in column '+(column+1)+' and nearby chips hit.';
+   board=settled.board;newShields=settled.shields;event=shattered?'💥 ICE SHATTERED! Bomb cleared the freeze and hit nearby chips.':'💥 BOMB! Top chip in column '+(column+1)+' and nearby chips hit.';
   }
  }
  const afterThreats=threats(board,width,height,seat,length);
