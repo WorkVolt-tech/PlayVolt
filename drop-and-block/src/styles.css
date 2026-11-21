@@ -1507,3 +1507,9 @@ footer span{color:#ffcb56}
  100%{filter:brightness(1);transform:translateX(0)}
 }
 @media(prefers-reduced-motion:reduce){.board.arcade-board.gravity-shift-impact{animation:none}}
+
+.session-scoreline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 12px;padding:11px;border-radius:9px;border:1px solid #6275a07a;background:#101936;color:#ddedff;font-weight:900;font-size:11px}
+.session-scoreline>span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:#1e2a4b;padding:5px 9px;border-radius:8px;border:1px solid #536994}
+.session-scoreline>span strong{color:#ffe7a7;font-size:15px}
+.session-scoreline>span.session-wins-leader{border-color:#ffe08c;box-shadow:0 0 10px #ffcb6b44}
+.session-scoreline small{margin-left:auto;font-size:10px;color:#acbedb;font-weight:500}
