@@ -454,3 +454,37 @@ The offline hot-seat demo mirrors the previous-active targeting and reset
 visuals. The existing replay move log still retains the elimination event,
 post-reset snapshot and updated player states; no old matches are rewritten.
 No other mode, live PlayVolt hub or unrelated project was modified.
+
+## Local replay, explicit rule labels, and Fire TV (migration 020)
+
+Local same-device demos now record snapshots in React memory: choose **Watch
+local replay** after a valid move or see it automatically after the game ends.
+The replay has Play/Pause, Back, Next, Highlights and a timeline scrubber.
+Restarting clears the local recording. Local matches never enter online
+leaderboards or history and cannot stream to a separate device.
+
+A permanent **CONNECT 3** or **CONNECT 4** banner appears in the game and
+read-only TV, while the lobby shows the rule based on currently joined players.
+Personal and TV replay screens display the stored rule for that match.
+
+For online rooms, the host can choose **Generate TV pairing code**. On Fire TV,
+open `/?tv-connect=1` or the installed Fire TV wrapper; enter the room's
+six-character code and the temporary ten-character PIN. PINs expire in
+10 minutes, can be used once, and only grant read-only TV spectator access.
+The new `drop_block_tv_pairings` table uses RLS with no direct public grants.
+The dedicated `drop_block_create_tv_pair` authenticated-host RPC and
+`drop_block_redeem_tv_pair` guest RPC validate pairing.
+
+The Android Fire TV wrapper source is in `firetv/`. GitHub Actions builds a
+signed **developer test APK** and, on main, publishes it to
+`https://github.com/WorkVolt-tech/PlayVolt/releases/download/drop-and-block-firetv/DropAndBlock-FireTV.apk`.
+The `/firetv.apk` path redirects to that release for a shorter Downloader URL.
+The TV wrapper loads the HTTPS pairing screen and, after successful pairing,
+the read-only live TV screen; TV remote Back clears the saved connection.
+The app requires Internet and does not ship any account credentials.
+
+The APK requires compatible **Android-based Fire OS** devices (min API 25).
+It is not an Amazon Appstore listing, is not tested on a physical Fire Stick,
+and does not run on Vega OS devices. Debug-signed APK upgrades may require
+uninstalling the previous wrapper; web content updates automatically without
+reinstall. Amazon Silk browser offers a no-install way to view TV screens.

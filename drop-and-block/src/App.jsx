@@ -19,6 +19,10 @@ import {watchRoomPulse,reconcileRoom,createRefreshCoordinator} from './roomRealt
 import {useArcadeFallingChips,ArcadeFallingChips} from './ArcadeFallingChips.jsx';
 import {useEliminationReset,EliminationBoardReset} from './EliminationReset.jsx';
 import {useArcadeSound,SoundToggle,useArcadeLandingSounds,useArcadeMatchSounds} from './ArcadeSounds.jsx';
+import {LocalReplay} from './LocalReplay.jsx';
+import {appendLocalMove} from './localReplayModel.js';
+import {WinRuleBanner} from './WinRuleBanner.jsx';
+import {TvPairHost} from './TvPairHost.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
@@ -89,8 +93,12 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
 
 function LocalDemo({ onBack, count, mode, loadout }) {
   const [width, height] = dimensions(count);
-  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false), eliminationRoundOpensAt:null,eliminationPreviousBoard:null,eliminationTargetSeat:null,eliminationScorerSeat:null });
+  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false), eliminationRoundOpensAt:null,eliminationPreviousBoard:null,eliminationTargetSeat:null,eliminationScorerSeat:null,history:[] });
   const [state, setState] = useState(reset);
+  const [replayOpen,setReplayOpen]=useState(false);
+  useEffect(()=>{
+    if(state.status==='finished'&&state.history?.length)setReplayOpen(true);
+  },[state.status,state.history?.length]);
   const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i],chaosBlockUsed:state.chaosBlockUsed[i],chaosBlastUsed:state.chaosBlastUsed[i],avatarStyle:i===0?loadout?.avatar:'sentinel',chipStyle:i===0?loadout?.chip:'round'}));
   function play(col,kind='drop') {
     setState(old=>{
@@ -108,7 +116,10 @@ function LocalDemo({ onBack, count, mode, loadout }) {
       }
       return {...next,moveCount:(old.moveCount||0)+1,
         lastMove:{seat:old.turn,column:col,row,kind,
-          earned:(next.scores?.[old.turn-1]||0)-(old.scores?.[old.turn-1]||0)}};
+          earned:(next.scores?.[old.turn-1]||0)-(old.scores?.[old.turn-1]||0)},
+        history:appendLocalMove(old.history||[],old,next,{
+          seat:old.turn,column:col,row,kind,width,height
+        })};
     });
     return true;
   }
@@ -118,8 +129,19 @@ function LocalDemo({ onBack, count, mode, loadout }) {
     <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
     <GameArea game={{...state,width,height,mode,players,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner,winLength:balancedWinLength(count,mode)}} boardTheme={loadout?.board}
       onDrop={play} busy={false}/>
-    <div className="actions"><button className="btn ghost" onClick={onBack}>← Back</button>
-      <button className="btn primary" onClick={()=>setState(reset)}>Restart</button></div>
+    <div className="actions local-demo-actions">
+      <button className="btn ghost" onClick={onBack}>← Back</button>
+      <button className="btn secondary" disabled={!state.history?.length}
+        onClick={()=>setReplayOpen(v=>!v)}>
+        {replayOpen?'✕ Close replay':'↺ Watch local replay ('+(state.history?.length||0)+' moves)'}
+      </button>
+      <button className="btn primary" onClick={()=>{setState(reset);setReplayOpen(false);}}>Restart</button>
+    </div>
+    {replayOpen&&state.history?.length>0&&<LocalReplay state={state} width={width} height={height}
+      count={count} mode={mode} loadout={loadout} onClose={()=>setReplayOpen(false)}/>}
+    <p className="local-tv-explainer">📺 TV / Fire Stick display is available for <b>online rooms</b>.
+     This offline same-device preview cannot sync to a separate television.
+     Create an online room to pair a Fire Stick and let everyone play from their phones.</p>
   </div>;
 }
 
@@ -150,6 +172,8 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme}) {
   const myTurn=!readOnly&&game.status==='playing'&&!eliminationReset.active&&
     (isSpeed?speedState.canSubmit&&speedSignal.phase!=='countdown':game.turnSeat===game.meSeat);
   return <>
+    <WinRuleBanner mode={game.mode} winLength={winLength} playerCount={game.players.length}
+      lobby={game.status==='lobby'}/>
     <div className="arcade-sound-tray">
       <span aria-hidden="true">✦</span>
       <span className="arcade-sound-label">ARCADE EFFECTS</span>
@@ -525,6 +549,7 @@ export default function App() {
           <button type="button" className="btn ghost" onClick={copyRoomCode}>Copy code</button>
           <button type="button" className="btn secondary" onClick={shareRoom}>Invite friends</button>
         </div></div>
+        {room.status==='lobby'&&<WinRuleBanner mode={room.mode} playerCount={room.players.length} lobby/>}
         <div className={'room-sync '+(syncStatus==='connected'?'is-connected':'is-reconnecting')} role="status">
           <span aria-hidden="true">{syncStatus==='connected'?'●':'◌'}</span>
           {syncStatus==='connected'?(roomTransport==='live'?'Room connected · Instant updates':'Room connected · Automatic refresh'):'Connection interrupted · Trying to reconnect'}
@@ -534,14 +559,15 @@ export default function App() {
           }}>Retry now</button>}
         </div>
         <div className="tv-launch">
-          <span><b>TV Party Mode</b><small>Show the board on your TV; everyone plays on their phone.</small></span>
+          <span><b>TV Party Mode</b><small>Live read-only display on a TV or Fire Stick · Everyone plays on their phone.</small></span>
           <div className="tv-launch-actions">
             <button type="button" className="btn secondary" onClick={openTv} disabled={!room.displayToken}>Open TV</button>
             <button type="button" className="btn ghost" onClick={copyTvUrl} disabled={!room.displayToken}>Copy TV link</button>
           </div>
         </div>
+        <TvPairHost room={room}/>
         {room.host&&['finished','lobby'].includes(room.status)&&
-          <TvReplayControls room={room} onRefresh={()=>perform('get')}/>}
+          <TvReplayControls room={room} onRefresh={()=>perform('get')}/>} 
         {room.status==='lobby' ? <>
           <div className="roster">{room.players.map(p=><div key={p.seat} className={'player-chip seat-border-'+p.seat}>
             <AvatarBadge id={p.avatarStyle||'sentinel'} small/><span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
@@ -606,10 +632,10 @@ export default function App() {
           <div className="section-eyebrow">START A MATCH</div>
           <h2>Choose your battle</h2>
           <label>Game mode<select value={mode} onChange={e=>{setMode(e.target.value);if(e.target.value==='team'&&maxPlayers<4)setMaxPlayers(4);if(e.target.value==='team'&&maxPlayers%2===1)setMaxPlayers(maxPlayers+1);}}>
-            <option value="classic">Classic · First to connect four</option>
+            <option value="classic">Classic · Balanced Connect 3 / 4</option>
             <option value="speed">⚡ Speed Round · Everyone drops at once!</option>
             <option value="territory">Territory · Score until board is full</option>
-            <option value="elimination">Elimination · Connect 4 to knock out a rival</option>
+            <option value="elimination">Elimination · Previous player is knocked out</option>
             <option value="collapse">Bottom Drop · Clear the floor when stacks rise</option>
             <option value="chaos">Chaos · Drop, Barrier and Blast</option>
             <option value="team">Team Battle · 2v2 / 3v3 / 4v4</option>
