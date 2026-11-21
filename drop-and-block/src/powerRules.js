@@ -67,7 +67,7 @@ export function playPowerTurn(old,column,count,width,height,kind='drop'){
  if(kind==='drop'||kind==='double'){
   const move=drop(board,width,height,column,seat,length);if(!move)return old;
   board=move.board;row=move.row;
-  if(kind==='double')pending=false;
+  if(kind==='double')pending=Math.max(0,Number(pending)-1);
   energy[seat-1]=Math.min(100,energy[seat-1]+10);
  }else{
   const cost=POWER_COSTS[kind];
@@ -109,6 +109,6 @@ export function activateDouble(old,count){
  const p=old.turn,energy=[...old.power.energy];
  if(energy[p-1]<POWER_COSTS.double)return old;
  energy[p-1]-=POWER_COSTS.double;
- return {...old,power:{...old.power,energy,doublePending:true},
+ return {...old,power:{...old.power,energy,doublePending:2},
   lastEvent:'Player '+p+' activated DOUBLE DROP — select the extra chip!'};
 }
