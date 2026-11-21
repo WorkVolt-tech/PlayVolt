@@ -1368,3 +1368,45 @@ footer span{color:#ffcb56}
  .disc:not(.empty)::before{border-width:1px}
 }
 @media (prefers-reduced-motion:reduce){.disc:not(.empty){transition:none!important}}
+
+
+/* Power-up clarity pass: frost must be visible on every occupied slot, not just the hole. */
+.power-help{margin:14px 0 12px;padding:14px;border:1px solid #5b73b2;border-radius:14px;background:linear-gradient(140deg,#111e3e,#1d1c44 95%);box-shadow:inset 0 1px 0 #ffffff1f}
+.power-help-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.power-help-head strong{color:#ffe49a;font-size:13px;letter-spacing:.08em}
+.power-help-head span{color:#aec9ed;font-size:11px}
+.power-help-flow{font-size:12px;color:#d7efff;margin:11px 0 12px;line-height:1.8}
+.power-help-flow b{color:#ffe491;margin-left:9px}
+.power-help-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.power-help-grid>div{background:#0b1532b8;padding:10px;border:1px solid #536da066;border-radius:9px;display:grid;gap:5px;min-width:0}
+.power-help-grid strong{color:#fff0b9;font-size:12px}
+.power-help-grid span{color:#bfd0ed;font-size:11px;line-height:1.5}
+.power-help-grid span b{color:#e6f8ff}
+.power-instruction{padding:13px 16px;margin:12px 0;border-radius:12px;background:#23335f;border:1px solid #7a98e088;color:#ebf7ff;font-weight:800;font-size:13px;text-align:center;line-height:1.6;box-shadow:inset 0 1px 0 #ffffff20}
+.power-instruction.double-active{background:#493b11;border:2px solid #ffd36c;box-shadow:0 0 22px #ffd15a44;color:#fff3bf;animation:power-double-pulse 1.2s ease-in-out infinite alternate}
+@keyframes power-double-pulse{from{box-shadow:0 0 6px #ffc35f44}to{box-shadow:0 0 24px #ffc35faa}}
+.frozen-alert{margin:12px 0;border:2px solid #89e8ff;background:linear-gradient(95deg,#092e50,#17375a);color:#defaff;padding:12px 14px;border-radius:12px;box-shadow:0 0 18px #6ce1ff54;font-weight:900;font-size:13px;text-align:center;line-height:1.5}
+.board.arcade-board .board-cell.power-frozen,.board.arcade-board.board-theme-deep-navy .board-cell.power-frozen {
+  background:radial-gradient(circle at 35% 25%,#579fcb75,#204e82 50%,#0d2441 100%);
+  outline:2px solid #b4f3ff;outline-offset:-3px;
+  box-shadow:inset 0 0 20px #a2edff94,inset 0 0 0 4px #83d6ff33,0 0 9px #5bd9ff75;
+}
+.board.arcade-board .board-cell.power-frozen::after{
+  content:"❄";position:absolute;inset:0;z-index:2;display:grid;place-items:center;
+  color:#e1faff;font-size:clamp(13px,2.5vw,30px);font-weight:900;
+  text-shadow:0 0 5px #37beff,0 0 16px #b1f5ff;opacity:.75;pointer-events:none;
+}
+.board.arcade-board .board-cell.power-frozen-chip .disc:not(.empty){
+  filter:saturate(.3) brightness(1.2) hue-rotate(155deg);
+  box-shadow:inset 0 0 0 3px #e0ffffb0,inset 0 0 14px #c8f9ffbb,0 0 12px #7cecff !important;
+}
+.board.arcade-board .board-cell.power-frozen-chip::before{
+  content:"";position:absolute;inset:7%;z-index:2;border-radius:50%;pointer-events:none;
+  background:repeating-linear-gradient(135deg,transparent 0 9px,#d4ffff25 9px 11px),
+    linear-gradient(135deg,#d7f9ff6b,transparent 53%,#3dbdfb6b);
+}
+.freeze-flake{position:absolute;z-index:4;right:1%;top:0;display:grid;place-items:center;color:#e6ffff;background:#095782;border:1px solid #baf8ff;border-radius:50%;width:34%;height:34%;font-size:clamp(12px,2.2vw,24px);text-shadow:0 0 5px #ffffff;pointer-events:none;box-shadow:0 0 10px #a5edffaa}
+.drop-arrow.frozen-drop-arrow{color:#c9f8ff!important;background:#1c5d8177!important;border:1px solid #93efff!important;opacity:1!important;text-shadow:0 0 8px #b6faff;box-shadow:0 0 10px #38b6f888}
+.power-action.selected{outline:2px solid #ffda8c;outline-offset:1px}
+@media(max-width:600px){.power-help-grid{grid-template-columns:1fr}.power-help{padding:10px}.power-help-flow b{margin-left:3px}.power-instruction,.frozen-alert{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.power-instruction.double-active{animation:none}}
