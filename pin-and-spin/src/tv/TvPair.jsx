@@ -82,8 +82,8 @@ export function TvPair({ onPaired }) {
         <li>Type the code above. This TV shows your room right away.</li>
       </ol>
       <div className="tv-pair-scan">
-        <QrCode text={`${location.origin}/`} label="QR code to open Pin & Spin on a phone" />
-        <span>No room yet? Scan to open<br /><strong>{location.host}</strong></span>
+        <QrCode text={`${location.origin}/?install=1`} label="QR code to open or install Pin & Spin on a phone" />
+        <span>No room yet? Scan to open<br />or install <strong>Pin &amp; Spin</strong></span>
       </div>
     </section>
   </div>;
