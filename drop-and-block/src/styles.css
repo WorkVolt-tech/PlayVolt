@@ -1463,3 +1463,307 @@ footer span{color:#ffcb56}
  .playing-now-label{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.roster .player-chip.turn-active{transition:none}}
+
+
+/* Gravity Shift, Rivalries and in-game Momentum scoreboard. */
+.match-scoreboard{
+ margin:14px 0;padding:14px;
+ border:1px solid #7f73d8aa;border-radius:14px;
+ background:linear-gradient(135deg,#192047,#0d1732 78%);
+ box-shadow:inset 0 1px 0 #b6b4ff30,0 0 23px #3430a32a;
+}
+.scoreboard-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:11px}
+.scoreboard-heading>div{display:flex;flex-direction:column;gap:3px}
+.scoreboard-heading strong{font-size:14px;color:#ffe5a5;letter-spacing:.075em}
+.scoreboard-heading small{font-size:11px;color:#c3d6ee}
+.scoreboard-leader{font-size:12px;font-weight:900;color:#ffe69e;background:#473a227c;border:1px solid #9a76488e;border-radius:100px;padding:6px 10px}
+.scoreboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.scoreboard-player{
+ display:flex;flex-direction:column;gap:6px;padding:11px;min-width:0;
+ background:#0a1430bb;border:1px solid #586b9b88;border-radius:11px;
+}
+.scoreboard-player.is-leading{border:2px solid #ffd874;background:linear-gradient(145deg,#3c3451,#1d254e);box-shadow:0 0 13px #f3c25e56}
+.scoreboard-player.is-active{outline:2px solid #a6c9ff8c;outline-offset:1px}
+.scoreboard-seat{font-size:12px;font-weight:900;color:#edf3ff;border-left-width:4px;padding-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scoreboard-player>strong{color:#ffe8a3;font-size:clamp(24px,3vw,35px);line-height:1}
+.scoreboard-player>strong small{font-size:10px;letter-spacing:.07em;color:#cddbf3}
+.scoreboard-detail{font-size:10px;line-height:1.55;color:#b9cde9}
+.scoreboard-revenge{font-size:11px;color:#ffbe93;font-weight:800}
+.scoreboard-disclaimer{font-size:10px;line-height:1.5;color:#a7b9d7;margin:11px 1px 0}
+.gravity-status{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:13px 15px;margin:11px 0;border-radius:12px;border:2px solid #9d89ff;background:linear-gradient(110deg,#232650,#131f48);box-shadow:0 0 14px #8781ff49}
+.gravity-status strong{font-size:13px;color:#ecd5ff;letter-spacing:.08em}
+.gravity-status span{font-size:13px;color:#f6e9ff;font-weight:900}
+.gravity-status small{flex-basis:100%;color:#bdc8ed;font-size:10px}
+.rivalry-callout{border:2px solid #ffb376;background:linear-gradient(110deg,#663124,#3c1c33);box-shadow:0 0 19px #ff844d66;color:#fff2d8;text-align:center;font-weight:900;font-size:clamp(14px,2.2vw,19px);border-radius:12px;padding:12px;margin:10px 0}
+@media(max-width:600px){.match-scoreboard{padding:10px}.scoreboard-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.scoreboard-player{padding:9px}.scoreboard-seat{font-size:10px}.gravity-status{padding:10px}.gravity-status span{font-size:11px}}
+
+/* Visible board reaction when Gravity Shift rearranges chips. */
+.board.arcade-board.gravity-shift-impact{animation:gravity-impact .7s ease-out both}
+@keyframes gravity-impact {
+ 0%{filter:brightness(1);transform:translateX(0)}
+ 20%{filter:brightness(1.6);transform:translateX(-7px)}
+ 45%{filter:brightness(1.4);transform:translateX(7px)}
+ 70%{filter:brightness(1.18);transform:translateX(-3px)}
+ 100%{filter:brightness(1);transform:translateX(0)}
+}
+@media(prefers-reduced-motion:reduce){.board.arcade-board.gravity-shift-impact{animation:none}}
+
+.session-scoreline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 12px;padding:11px;border-radius:9px;border:1px solid #6275a07a;background:#101936;color:#ddedff;font-weight:900;font-size:11px}
+.session-scoreline>span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:#1e2a4b;padding:5px 9px;border-radius:8px;border:1px solid #536994}
+.session-scoreline>span strong{color:#ffe7a7;font-size:15px}
+.session-scoreline>span.session-wins-leader{border-color:#ffe08c;box-shadow:0 0 10px #ffcb6b44}
+.session-scoreline small{margin-left:auto;font-size:10px;color:#acbedb;font-weight:500}
+
+
+/* Mobile edge-to-edge / cutout pass. viewport-fit=cover is already set in index.html.
+   Safe areas reserve space for iPhone Dynamic Island, Android camera cutouts and
+   gesture/home indicator even in landscape. */
+html,body,#root{min-width:0;max-width:100%;margin:0}
+.shell{
+ min-width:0;
+ min-height:100vh;
+ min-height:100dvh;
+ padding-top:max(16px,calc(env(safe-area-inset-top,0px) + 12px));
+ padding-right:max(12px,calc(env(safe-area-inset-right,0px) + 12px));
+ padding-bottom:max(24px,calc(env(safe-area-inset-bottom,0px) + 18px));
+ padding-left:max(12px,calc(env(safe-area-inset-left,0px) + 12px));
+}
+.content,.panel,.panel-wide,.home-grid,.board-wrap,.board-scroll,
+.match-scoreboard,.scoreboard-grid,.power-help,.power-actions,.roster,.topbar{min-width:0;max-width:100%}
+.board-scroll{-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;scroll-padding-inline:10px}
+.board-inner{min-width:0}
+.board-tap-column{touch-action:manipulation}
+button,.drop-arrow,.board-tap-column{-webkit-tap-highlight-color:transparent}
+@media(max-width:720px){
+ .shell{
+  padding-top:max(14px,calc(env(safe-area-inset-top,0px) + 12px));
+  padding-right:max(10px,calc(env(safe-area-inset-right,0px) + 10px));
+  padding-bottom:max(25px,calc(env(safe-area-inset-bottom,0px) + 18px));
+  padding-left:max(10px,calc(env(safe-area-inset-left,0px) + 10px));
+ }
+ .topbar{height:auto;min-height:48px;flex-wrap:wrap;align-items:center}
+ .topbar>*{min-width:0}
+ .panel{padding:clamp(10px,3.1vw,17px)}
+ .panel-wide{width:100%;margin:10px auto 18px}
+ .roster{gap:7px;margin:12px 0}
+ .player-chip{min-width:0;max-width:100%;overflow-wrap:anywhere}
+ .turn-notice.turn-notice-active{padding:11px 8px}
+ .turn-announcement strong{font-size:clamp(18px,5.8vw,26px)}
+ .turn-announcement-instruction{font-size:11px}
+ .match-scoreboard{padding:10px;margin:10px 0}
+ .scoreboard-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .scoreboard-player{min-width:0;overflow:hidden}
+ .scoreboard-heading{align-items:flex-start}
+ .scoreboard-leader{white-space:normal;overflow-wrap:anywhere}
+ .scoreboard-detail,.scoreboard-disclaimer{overflow-wrap:anywhere}
+ .session-scoreline{gap:6px;padding:9px;font-size:10px}
+ .session-scoreline>span{padding:5px 7px;white-space:normal}
+ .session-scoreline small{margin-left:0}
+ .gravity-status{gap:6px;padding:10px;line-height:1.4}
+ .gravity-status span,.gravity-status small{overflow-wrap:anywhere}
+ .power-roster{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .power-player{min-width:0;padding:8px}
+ .power-help,.power-instruction,.frozen-alert{max-width:100%;overflow-wrap:anywhere}
+ .power-help-grid{grid-template-columns:1fr}
+ .power-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .power-action{min-height:46px;font-size:12px;white-space:normal;overflow-wrap:anywhere}
+ .board-wrap{width:100%;max-width:100%}
+ .board-controls{margin-inline:4px}
+ .board-controls .drop-arrow{min-height:42px}
+ .board-scroll{border-radius:12px}
+ .board-scroll.is-wide{padding-bottom:12px}
+ .board-mobile-hint{font-size:11px;line-height:1.5}
+ .local-demo-actions{display:flex;flex-wrap:wrap;gap:8px}
+ .local-demo-actions>.btn{flex:1 1 145px;min-height:44px}
+ .version-alert{
+  top:calc(env(safe-area-inset-top,0px) + 12px);
+  max-width:calc(100vw - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px) - 20px);
+ }
+}
+@media(max-width:370px){
+ .scoreboard-grid,.power-roster{grid-template-columns:1fr}
+ .roster .player-chip.turn-active{max-width:100%}
+ .scoreboard-heading{flex-direction:column}
+ .power-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .topbar .mini-brand{font-size:10px}
+}
+@media(orientation:landscape) and (max-height:540px) and (pointer:coarse){
+ /* Landscape cutouts tend to occupy the left/right edges, not just the top. */
+ .shell{
+  padding-left:max(14px,calc(env(safe-area-inset-left,0px) + 14px));
+  padding-right:max(14px,calc(env(safe-area-inset-right,0px) + 14px));
+  padding-top:max(12px,calc(env(safe-area-inset-top,0px) + 9px));
+  padding-bottom:max(18px,calc(env(safe-area-inset-bottom,0px) + 10px));
+ }
+ .panel-wide{margin:6px auto 15px}
+ .topbar{min-height:44px}
+}
+
+/* The TV pairing and spectator routes can also be opened on a notched phone. */
+.tv-shell,.tv-pair-page{
+ min-height:100dvh;
+ padding-top:max(14px,calc(env(safe-area-inset-top,0px) + 12px));
+ padding-right:max(12px,calc(env(safe-area-inset-right,0px) + 12px));
+ padding-bottom:max(22px,calc(env(safe-area-inset-bottom,0px) + 16px));
+ padding-left:max(12px,calc(env(safe-area-inset-left,0px) + 12px));
+}
+@media(orientation:landscape) and (pointer:coarse){
+ .tv-shell,.tv-pair-page{
+  padding-left:max(14px,calc(env(safe-area-inset-left,0px) + 14px));
+  padding-right:max(14px,calc(env(safe-area-inset-right,0px) + 14px));
+ }
+}
+
+
+/* App-wide phone viewport guard: applies to ALL modes and pages, not Gravity Shift.
+   The document can scroll vertically, but the camera cutout and gesture strip are
+   never allowed to cover menu, lobby, modal or game controls. */
+html{width:100%;overflow-x:clip}
+body,#root{width:100%;min-height:100dvh;overflow-x:clip}
+.shell,.tv-shell,.tv-pair-page{box-sizing:border-box;width:100%;max-width:100%}
+.content,.panel,.panel-wide,.home-grid,.customize-hub,.replay-hub,.replay-stage,.progress-hub,
+.room-top,.room-share-actions,.room-sync,.match-scoreboard,.replay-board-wrap{min-width:0;max-width:100%}
+.content>*{max-width:100%}
+img,video,canvas,svg{max-width:100%}
+@media(max-width:720px){
+ /* Prevent menu and scoreboard grids from forcing the whole page under the bezel. */
+ .home-grid,.replay-player-grid{grid-template-columns:minmax(0,1fr)}
+ .panel,.replay-hub,.customize-hub{width:100%;margin-inline:auto}
+ .replay-header,.room-top,.progress-head,.custom-head{max-width:100%;min-width:0}
+ .replay-pagination,.replay-frame-meta,.replay-stage-head{flex-wrap:wrap}
+ .replay-match-main,.replay-match-main strong,.replay-match-main small{min-width:0;overflow-wrap:anywhere}
+ .custom-sticky{
+  top:calc(env(safe-area-inset-top,0px) + 10px);
+  max-width:100%;
+  min-width:0;
+ }
+ .custom-tabs,.replay-header-actions,.replay-controls-buttons{max-width:100%;min-width:0}
+ .mobile-menu-panel{
+  max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 90px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+ }
+ .trophy-popup-backdrop{
+  padding-top:calc(env(safe-area-inset-top,0px) + 14px);
+  padding-right:calc(env(safe-area-inset-right,0px) + 12px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
+  padding-left:calc(env(safe-area-inset-left,0px) + 12px);
+ }
+ .trophy-popup{
+  max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 30px);
+  overscroll-behavior:contain;
+ }
+ .trophy-popup-list{max-height:min(55dvh,420px)}
+ .tv-pair-panel{max-width:100%;padding:clamp(14px,4vw,28px)}
+ .tv-pair-form input{font-size:16px}
+}
+@media(orientation:landscape) and (pointer:coarse) and (max-height:540px){
+ .custom-sticky{top:calc(env(safe-area-inset-top,0px) + 5px)}
+ .mobile-menu-panel{max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 65px)}
+ .trophy-popup{max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 18px)}
+}
+
+
+/* Local match main navigation: replay lives in a tab, never below the board. */
+.local-game-tabs{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+ margin:15px 0 18px;padding:6px;border-radius:15px;
+ background:#0a142c;border:1px solid #667eac88;
+}
+.local-game-tabs>button{
+ min-width:0;min-height:48px;padding:10px 13px;
+ display:flex;align-items:center;justify-content:center;gap:8px;
+ color:#c4d4ee;background:#192746;border:1px solid #405783;
+ border-radius:10px;font-weight:900;font-size:clamp(12px,2.4vw,15px);
+ cursor:pointer;
+}
+.local-game-tabs>button.selected{
+ color:#fff4cb;background:linear-gradient(135deg,#514781,#28366b);
+ border-color:#ffe095;box-shadow:0 0 14px #ddbc6942;
+}
+.local-game-tabs>button:focus-visible{
+ outline:3px solid #ffe29c;outline-offset:2px;
+}
+.local-tab-count{
+ display:inline-grid;place-items:center;min-width:23px;padding:3px 6px;
+ border-radius:99px;background:#3d547f;color:#fff;font-size:11px;
+ font-variant-numeric:tabular-nums;
+}
+.local-game-tabs>button.selected .local-tab-count{background:#ffdb8b;color:#192239}
+#local-game-panel[hidden],#local-replay-panel[hidden]{display:none!important}
+#local-game-panel,#local-replay-panel{min-width:0;max-width:100%}
+#local-replay-panel .local-replay{margin-top:0}
+.local-replay-empty{
+ display:grid;place-items:center;text-align:center;gap:10px;
+ border:1px dashed #7f92bd;border-radius:15px;padding:32px 18px;
+ background:#121d38;
+}
+.local-replay-empty strong{color:#ffe4a3;font-size:18px}
+.local-replay-empty p{color:#b6cae6;font-size:13px;line-height:1.5;margin:0}
+.local-replay-empty .btn{min-height:44px}
+@media(max-width:600px){
+ .local-game-tabs{margin:10px 0 12px;gap:5px;padding:4px}
+ .local-game-tabs>button{min-height:46px;padding:9px 5px}
+ .local-replay-empty{padding:23px 12px}
+}
+
+
+/* Unique, scalable arcade emblems for all nine game modes. */
+.mode-picker-label{margin:18px 0 10px;color:#ffe69b;font-size:11px;font-weight:900;letter-spacing:.14em}
+.mode-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 12px;max-width:100%}
+.mode-choice{
+ --mode-accent:#ff8a9a;
+ min-width:0;position:relative;display:flex;align-items:center;text-align:left;gap:9px;
+ padding:11px 9px;border-radius:12px;border:1px solid #6776a177;
+ background:linear-gradient(140deg,#1a2747,#101a35);color:#ecf2ff;
+ font:inherit;cursor:pointer;min-height:76px;transition:border-color .16s,box-shadow .16s,background .16s;
+}
+.mode-choice.mode-tone-gold{--mode-accent:#ffce65}
+.mode-choice.mode-tone-cyan{--mode-accent:#55dfff}
+.mode-choice.mode-tone-red{--mode-accent:#ff718b}
+.mode-choice.mode-tone-orange{--mode-accent:#ffaa60}
+.mode-choice.mode-tone-violet{--mode-accent:#b38cff}
+.mode-choice.mode-tone-mint{--mode-accent:#65efce}
+.mode-choice.mode-tone-yellow{--mode-accent:#ffe776}
+.mode-choice.mode-tone-blue{--mode-accent:#7aafff}
+.mode-choice:hover{border-color:var(--mode-accent);background:linear-gradient(140deg,#263a62,#192345)}
+.mode-choice.is-selected{
+ border:2px solid var(--mode-accent);
+ background:linear-gradient(140deg,#2c3b63,#202b50);
+ box-shadow:0 0 0 1px #ffffff18,inset 0 1px 0 #ffffff22,0 0 16px color-mix(in srgb,var(--mode-accent) 32%,transparent);
+}
+.mode-choice:focus-visible{outline:3px solid #ffe297;outline-offset:2px}
+.mode-choice-emblem{
+ display:grid;place-items:center;flex:0 0 47px;height:47px;border-radius:12px;
+ color:var(--mode-accent);background:color-mix(in srgb,var(--mode-accent) 12%,#0a132a);
+ border:1px solid color-mix(in srgb,var(--mode-accent) 42%,transparent);
+ box-shadow:inset 0 1px 0 #ffffff14;
+}
+.mode-choice-emblem svg{display:block;width:34px;height:34px;max-width:100%;max-height:100%}
+.mode-choice-copy{display:flex;flex-direction:column;min-width:0;gap:4px;line-height:1.2}
+.mode-choice-copy strong{font-weight:900;color:#fff;overflow-wrap:anywhere;font-size:12px}
+.mode-choice-copy small{color:#b4c8e5;overflow-wrap:anywhere;font-size:10px;line-height:1.35}
+.mode-choice-preview{position:absolute;right:5px;top:4px;font-size:8px;color:#d9d6ff;letter-spacing:.045em;font-weight:900}
+.mode-choice:has(.mode-choice-preview){padding-top:16px}
+.mode-selected-banner{
+ display:flex;align-items:center;gap:10px;background:#2737537d;border:1px solid #6882af77;
+ padding:9px 12px;border-radius:11px;color:#ffdc8a;
+}
+.mode-selected-banner svg{flex-shrink:0}
+.mode-selected-banner span{display:flex;flex-direction:column;gap:3px}
+.mode-selected-banner strong{color:#fff;font-size:13px}
+.mode-selected-banner small{color:#b1c7e9;font-size:9px;letter-spacing:.08em;font-weight:800}
+.mode-icon-heading,.mode-icon-sub{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mode-icon-heading svg,.mode-icon-sub svg{flex:0 0 auto;color:#ffdb86}
+@media(max-width:950px){.mode-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){
+ .mode-choice-grid{gap:7px;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mode-choice{padding:9px 7px;gap:7px;min-height:72px}
+ .mode-choice-emblem{flex-basis:40px;height:40px;border-radius:10px}
+ .mode-choice-emblem svg{width:29px;height:29px}
+ .mode-choice-copy strong{font-size:11px}
+ .mode-choice-copy small{font-size:9px}
+ .mode-icon-heading{gap:8px}
+}
+@media(max-width:350px){.mode-choice-emblem{flex-basis:34px;height:36px}.mode-choice-emblem svg{width:25px;height:25px}}
+@media(prefers-reduced-motion:reduce){.mode-choice{transition:none}}

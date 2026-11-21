@@ -24,6 +24,9 @@ import {appendLocalMove} from './localReplayModel.js';
 import {WinRuleBanner} from './WinRuleBanner.jsx';
 import {TvPairHost} from './TvPairHost.jsx';
 import {initPowerState,playPowerTurn,powerTargetAllowed,activateDouble} from './powerRules.js';
+import {playGravityTurn,emptyRivalry,registerRivalry,SHIFT_EVERY} from './arcadeModes.js';
+import {MatchScoreboard} from './MatchScoreboard.jsx';
+import {GameModeIcon,ModeChoiceGrid} from './GameModeIcons.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
@@ -33,7 +36,8 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
-  const minWidth=wideBoardMinWidth(width,readOnly);
+  // Keep column targets usable on narrow phones; the board scrolls inside its own viewport.
+  const minWidth=readOnly?0:Math.max(wideBoardMinWidth(width,readOnly),width*42);
   const available=col=>power?(!disabled&&turn===me&&powerTargetAllowed({board,turn,...power},selectedPower,col,width,height)):canPlayColumn(board,width,height,col,moveKind,disabled||turn!==me);
   const actionLabel=power?(selectedPower==='freeze'?'Freeze':selectedPower==='bomb'?'Bomb':selectedPower==='shield'?'Shield':selectedPower==='double'?'Double-drop chip':'Drop chip'):moveKind==='blast'?'Blast':'Place '+(moveKind==='block'?'barrier':'chip');
   const lastCell=lastMoveCell(board,width,height,lastMove);
@@ -47,7 +51,7 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
   useArcadeLandingSounds(flights,soundEnabled);
   return <div className="board-wrap">
     <div className={'board-scroll'+(minWidth?' is-wide':'')}
-      role={minWidth?'region':undefined} aria-label={minWidth?'Swipe horizontally to view the entire game board':undefined}
+      role={minWidth?'region':undefined} aria-label={minWidth?'Game board. On small phones, swipe horizontally to reach additional columns.':undefined}
       tabIndex={minWidth?0:undefined}>
       <div className="board-inner" style={minWidth?{minWidth:minWidth+'px'}:undefined}>
         {!readOnly&&<div className="board-controls" style={grid}>
@@ -58,7 +62,7 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
           </button>)}
         </div>}
         <div className="board-tap-area">
-          <div className={'board arcade-board board-theme-'+safeBoard(boardTheme)} style={grid} role="grid" aria-label="Drop & Block game board">
+          <div className={'board arcade-board board-theme-'+safeBoard(boardTheme)+(mode==='gravity'&&lastMove?.shifted?' gravity-shift-impact':'')} style={grid} role="grid" aria-label="Drop & Block game board">
             {rows.flatMap(row=>columns.map(col=>{
               const seat=board[row*width+col]||0;
               const index=row*width+col;
@@ -87,25 +91,42 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
       </div>
     </div>
     {!readOnly&&<p className="board-mobile-hint">
-      Tap anywhere in a column to play{minWidth?' · Swipe sideways to see the whole board':''}
+      Tap a column to play{width>=9?' · Swipe the board sideways for more columns':''}
     </p>}
   </div>;
 }
 
 function LocalDemo({ onBack, count, mode, loadout }) {
   const [width, height] = dimensions(count);
-  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false), eliminationRoundOpensAt:null,eliminationPreviousBoard:null,eliminationTargetSeat:null,eliminationScorerSeat:null,history:[],power:initPowerState(count) });
+  const reset = () => ({ board:emptyBoard(width,height), turn:1, scores:Array(count).fill(0), status:'playing', winner:null, winnerTeam:null, eliminated:Array(count).fill(false), roundNumber:1, floorClears:0, lastEvent:'', lastMove:null, moveCount:0, matchNumber:1, chaosBlockUsed:Array(count).fill(false), chaosBlastUsed:Array(count).fill(false), eliminationRoundOpensAt:null,eliminationPreviousBoard:null,eliminationTargetSeat:null,eliminationScorerSeat:null,history:[],power:initPowerState(count),gravity:{drops:0,nextDirection:'left',lastShift:null},rivalry:emptyRivalry(count) });
   const [state, setState] = useState(reset);
-  const [replayOpen,setReplayOpen]=useState(false);
+  const [activeLocalTab,setActiveLocalTab]=useState('game');
   const [powerChoice,setPowerChoice]=useState('drop');
+  const freshSession=()=>({wins:Array(count).fill(0),lastWinner:null,callout:''});
+  const [session,setSession]=useState(freshSession);
   useEffect(()=>{
-    if(state.status==='finished'&&state.history?.length)setReplayOpen(true);
-  },[state.status,state.history?.length]);
+    if(state.status!=='finished'||!Number.isInteger(state.winner))return;
+    setSession(previous=>{
+      const wins=[...previous.wins];wins[state.winner-1]++;
+      const callout=previous.lastWinner&&previous.lastWinner!==state.winner
+        ?'🔥 REVENGE! Player '+state.winner+' dethroned the previous winner, Player '+previous.lastWinner+'!':'';
+      return {wins,lastWinner:state.winner,callout};
+    });
+  },[state.status,state.winner]);
   const players = Array.from({length:count},(_,i)=>({seat:i+1,name:'Player '+(i+1),score:state.scores[i],eliminated:state.eliminated[i],chaosBlockUsed:state.chaosBlockUsed[i],chaosBlastUsed:state.chaosBlastUsed[i],avatarStyle:i===0?loadout?.avatar:'sentinel',chipStyle:i===0?loadout?.chip:'round'}));
   function play(col,kind='drop') {
     if(mode==='power')kind=powerChoice;
     setState(old=>{
-      if(mode==='power')return playPowerTurn(old,col,count,width,height,old.power.doublePending?'double':kind);
+      if(mode==='power'){
+        const next=playPowerTurn(old,col,count,width,height,old.power.doublePending?'double':kind);
+        return registerRivalry(old,next,count,width,height,mode);
+      }
+      if(mode==='gravity'){
+        const next=playGravityTurn(old,col,count,width,height);
+        if(next===old)return old;
+        const tracked=registerRivalry(old,next,count,width,height,mode);
+        return {...tracked,history:appendLocalMove(old.history||[],old,tracked,{seat:old.turn,column:col,row:next.lastMove.row,kind:'drop',width,height})};
+      }
       if(mode==='elimination'&&old.eliminationRoundOpensAt&&
          Date.now()<Date.parse(old.eliminationRoundOpensAt))return old;
       const next=mode==='team'?playTeamTurn(old,col,count,width,height):
@@ -118,10 +139,11 @@ function LocalDemo({ onBack, count, mode, loadout }) {
           if(old.board[y*width+col]===0){row=y;break;}
         }
       }
-      return {...next,moveCount:(old.moveCount||0)+1,
+      const tracked=registerRivalry(old,next,count,width,height,mode);
+      return {...tracked,moveCount:(old.moveCount||0)+1,
         lastMove:{seat:old.turn,column:col,row,kind,
           earned:(next.scores?.[old.turn-1]||0)-(old.scores?.[old.turn-1]||0)},
-        history:appendLocalMove(old.history||[],old,next,{
+        history:appendLocalMove(old.history||[],old,tracked,{
           seat:old.turn,column:col,row,kind,width,height
         })};
     });
@@ -131,27 +153,41 @@ function LocalDemo({ onBack, count, mode, loadout }) {
   const useDouble=()=>{setState(old=>activateDouble(old,count));setPowerChoice('drop');};
   return <div className="panel panel-wide">
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
-    <h2>{modeName(mode)} · {count} Players</h2>
+    <h2 className="mode-icon-heading"><GameModeIcon mode={mode} size={31}/>{modeName(mode)} · {count} Players</h2>
     <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
-    <GameArea game={{...state,width,height,mode,players,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner,winLength:balancedWinLength(count,mode)}} boardTheme={loadout?.board}
-      onDrop={play} busy={false} powerChoice={powerChoice} onPowerChoice={setPowerChoice} onDouble={useDouble}/>
-    <div className="actions local-demo-actions">
-      <button className="btn ghost" onClick={onBack}>← Back</button>
-      <button className="btn secondary" disabled={!state.history?.length}
-        onClick={()=>setReplayOpen(v=>!v)}>
-        {replayOpen?'✕ Close replay':'↺ Watch local replay ('+(state.history?.length||0)+' moves)'}
-      </button>
-      <button className="btn primary" onClick={()=>{setState(reset);setReplayOpen(false);setPowerChoice('drop');}}>Restart</button>
+    <div className="local-game-tabs" role="tablist" aria-label="Local match views">
+      <button id="local-game-tab" type="button" role="tab"
+        aria-selected={activeLocalTab==='game'} aria-controls="local-game-panel"
+        className={activeLocalTab==='game'?'selected':''}
+        onClick={()=>setActiveLocalTab('game')}>🎮 Game</button>
+      <button id="local-replay-tab" type="button" role="tab"
+        aria-selected={activeLocalTab==='replay'} aria-controls="local-replay-panel"
+        className={activeLocalTab==='replay'?'selected':''}
+        onClick={()=>setActiveLocalTab('replay')}>↺ Replay <span className="local-tab-count">{state.history?.length||0}</span></button>
     </div>
-    {replayOpen&&state.history?.length>0&&<LocalReplay state={state} width={width} height={height}
-      count={count} mode={mode} loadout={loadout} onClose={()=>setReplayOpen(false)}/>}
-    <p className="local-tv-explainer">📺 TV / Fire Stick display is available for <b>online rooms</b>.
-     This offline same-device preview cannot sync to a separate television.
-     Create an online room to pair a Fire Stick and let everyone play from their phones.</p>
+    <div id="local-game-panel" role="tabpanel" aria-labelledby="local-game-tab" hidden={activeLocalTab!=='game'}>
+      <GameArea game={{...state,width,height,mode,players,sessionWins:session.wins,sessionCallout:session.callout,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner,winLength:balancedWinLength(count,mode)}} boardTheme={loadout?.board}
+        onDrop={play} busy={false} powerChoice={powerChoice} onPowerChoice={setPowerChoice} onDouble={useDouble}/>
+      <div className="actions local-demo-actions">
+        <button className="btn ghost" onClick={onBack}>← Back</button>
+        <button className="btn primary" onClick={()=>{setState(reset);setActiveLocalTab('game');setPowerChoice('drop');}}>Next match · keep scores</button>
+        <button className="btn ghost" onClick={()=>{setSession(freshSession());setState(reset);setActiveLocalTab('game');setPowerChoice('drop');}}>Reset session</button>
+      </div>
+      <p className="local-tv-explainer">📺 TV / Fire Stick display is available for <b>online rooms</b>.
+       This offline same-device preview cannot sync to a separate television.
+       Create an online room to pair a Fire Stick and let everyone play from their phones.</p>
+    </div>
+    <div id="local-replay-panel" role="tabpanel" aria-labelledby="local-replay-tab" hidden={activeLocalTab!=='replay'}>
+      {activeLocalTab==='replay'&&(state.history?.length>0
+        ? <LocalReplay state={state} width={width} height={height}
+            count={count} mode={mode} loadout={loadout} onClose={()=>setActiveLocalTab('game')}/>
+        : <div className="local-replay-empty"><strong>No moves to replay yet</strong><p>Play a few chips, then return to this tab to review the match.</p>
+           <button type="button" className="btn secondary" onClick={()=>setActiveLocalTab('game')}>← Back to game</button></div>)}
+    </div>
   </div>;
 }
 
-const modeName = mode => ({ speed: 'Speed Round', classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop', chaos: 'Chaos', power:'Power-Up Arcade', team: 'Team Battle' })[mode] || 'Classic';
+const modeName = mode => ({ speed: 'Speed Round', classic: 'Classic', territory: 'Territory', elimination: 'Elimination', collapse: 'Bottom Drop', chaos: 'Chaos', power:'Power-Up Arcade', gravity:'Gravity Shift', team: 'Team Battle' })[mode] || 'Classic';
 
 export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powerChoice='drop', onPowerChoice, onDouble}) {
   const [moveKind,setMoveKind]=useState('drop');
@@ -248,6 +284,10 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
           : showActiveTurn ? <span className="turn-announcement"><span className="turn-announcement-kicker">▶ NOW PLAYING</span><strong>{turnPlayer?.name||'Player '+game.turnSeat}</strong><span className="turn-announcement-instruction">{game.power?.doublePending?'Double Drop — chip '+(3-game.power.doublePending)+' of 2':myTurn?'Choose a column or power-up':'Waiting for their move'}</span></span> : 'Waiting for the next turn…'}
     </div>
     <MatchSpotlight game={game}/>
+    <MatchScoreboard game={game}/>
+    {game.rivalry?.lastCallout&&<div className="rivalry-callout" role="status">{game.rivalry.lastCallout}</div>}
+    {game.sessionCallout&&game.status==='finished'&&<div className="rivalry-callout" role="status">{game.sessionCallout}</div>}
+    {game.mode==='gravity'&&<div className="gravity-status" role="status"><strong>🌪 GRAVITY SHIFT{game.lastMove?.shifted?' · SHIFTED '+game.lastMove.shiftDirection.toUpperCase()+'!':''}</strong><span>Every {SHIFT_EVERY} chips, the board shifts {game.gravity?.nextDirection?.toUpperCase()||'LEFT'}. Next shift in {SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY)} {SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY)===1?'drop':'drops'}.</span><small>Connections are checked both before and after shifting. Multiple simultaneous connections result in a draw.</small></div>}
     {game.mode==='power'&&game.power&&<div className="power-roster">{game.players.map(p=><div key={p.seat} className={'power-player'+(showActiveTurn&&game.turnSeat===p.seat?' active':'')}><b>{p.name}{showActiveTurn&&game.turnSeat===p.seat&&<small className="power-playing-label"> · PLAYING</small>}</b><span>{game.power.energy[p.seat-1]}/100 EP</span><div className="power-track"><i style={{width:(game.power.energy[p.seat-1]||0)+'%'}}/></div></div>)}</div>}
     {game.mode==='power'&&game.power&&<section className="power-help" aria-label="How Power-Up Mode works">
       <div className="power-help-head"><strong>⚡ HOW TO USE POWER-UPS</strong><span>Each ability costs energy (EP) · Each activation uses your turn except Double Drop</span></div>
@@ -566,7 +606,7 @@ export default function App() {
        demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode} loadout={myLoadout}/> :
       room ? <section className="panel panel-wide">
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
-        <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p>
+        <h2>{room.code}</h2><p className="sub mode-icon-sub"><GameModeIcon mode={room.mode} size={22}/>{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p>
         <p className="lobby-win-target">{room.status==='lobby'?'Start with '+room.players.length+' player'+(room.players.length===1?'':'s')+': Connect '+balancedWinLength(room.players.length,room.mode):
          'Match rule · Connect '+(room.winLength===3?3:4)+(room.mode==='team'?' team chips':' chips')}</p></div>
         <div className="room-share-actions">
@@ -655,26 +695,19 @@ export default function App() {
         <section className="panel">
           <div className="section-eyebrow">START A MATCH</div>
           <h2>Choose your battle</h2>
-          <label>Game mode<select value={mode} onChange={e=>{setMode(e.target.value);if(e.target.value==='team'&&maxPlayers<4)setMaxPlayers(4);if(e.target.value==='team'&&maxPlayers%2===1)setMaxPlayers(maxPlayers+1);}}>
-            <option value="classic">Classic · Balanced Connect 3 / 4</option>
-            <option value="speed">⚡ Speed Round · Everyone drops at once!</option>
-            <option value="territory">Territory · Score until board is full</option>
-            <option value="elimination">Elimination · Previous player is knocked out</option>
-            <option value="collapse">Bottom Drop · Clear the floor when stacks rise</option>
-            <option value="chaos">Chaos · Drop, Barrier and Blast</option>
-             <option value="power">⚡ Power-Up Arcade · Local preview</option>
-            <option value="team">Team Battle · 2v2 / 3v3 / 4v4</option>
-          </select></label>
+          <div className="mode-picker-label">SELECT GAME MODE</div>
+          <ModeChoiceGrid value={mode} onChange={next=>{setMode(next);if(next==='team')setMaxPlayers(old=>Math.max(4,old+(old%2)));}}/>
+          <div className="mode-selected-banner"><GameModeIcon mode={mode} size={26}/><span><strong>{modeName(mode)}</strong><small>SELECTED MODE</small></span></div>
           <p className="balanced-rule-hint">{mode==='team'
             ? 'TEAM BATTLE · Always Connect 4 using teammates’ chips.'
             : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
           <p className="mode-explainer">{mode==='speed'
             ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
-            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Earn energy to activate Bomb, Shield, Freeze and Double Drop. Local hot-seat preview until server support is enabled.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
+            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Earn energy to activate Bomb, Shield, Freeze and Double Drop. Local hot-seat preview until server support is enabled.':mode==='gravity'?'Every four valid drops, the whole board slides LEFT, then RIGHT, alternating. Chips settle downward and new connections may appear. Local preview; online support requires server rules.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
           <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
             {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
           </select></label>
-          <button className="btn primary full" disabled={busy||!user||mode==='power'} onClick={()=>perform('create',{mode,maxPlayers})}>{mode==='power'?'Online mode requires server rules':'Create online room'}</button>
+          <button className="btn primary full" disabled={busy||!user||mode==='power'||mode==='gravity'} onClick={()=>perform('create',{mode,maxPlayers})}>{mode==='power'||mode==='gravity'?'Online mode requires server rules':'Create online room'}</button>
           <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
             {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
           </button>
