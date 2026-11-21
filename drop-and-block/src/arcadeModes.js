@@ -66,7 +66,7 @@ export function playGravityTurn(old,col,count,width,height){
   turn:finished?null:old.turn%count+1,
   moveCount:(old.moveCount||0)+1,
   gravity:{drops:nextCount,nextDirection:shifted?(priorDirection==='left'?'right':'left'):priorDirection,lastShift:applied},
-  lastEvent:event,lastMove:{seat:old.turn,column:col,row:move.row,kind:'drop',earned:move.points}};
+  lastEvent:event,lastMove:{seat:old.turn,column:col,row:move.row,kind:'drop',earned:move.points,shifted,shiftDirection:applied}};
 }
 export function emptyRivalry(count){return {blocks:Array(count).fill(0),revenge:Array(count).fill(0),deniedBy:Array.from({length:count},()=>[]),lastCallout:''};}
 export function registerRivalry(previous,next,count,width,height,mode){
@@ -99,7 +99,7 @@ export function registerRivalry(previous,next,count,width,height,mode){
   lastCallout='🔥 REVENGE VICTORY! Player '+current+' wins after being denied!';
  }
  return {...next,rivalry:{blocks,revenge,deniedBy,lastCallout},
-   lastEvent:lastCallout||(next.lastEvent||'')};
+   lastEvent:[next.lastEvent,lastCallout].filter(Boolean).join(' · ')};
 }
 export function boardStanding(game){
  const count=game.players?.length||0, width=game.width, height=game.height;
