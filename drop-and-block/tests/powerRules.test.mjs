@@ -49,3 +49,85 @@ test('double drop consumes 100 energy and grants exactly two placements',()=>{
  assert.equal(state.turn,2);
  assert.equal(state.power.doublePending,0);
 });
+
+test('double mode cannot be used before activation and allows both successive placements',()=>{
+ let state=initial();
+ assert.strictEqual(playPowerTurn(state,3,count,width,height,'double'),state);
+ state.power.energy[0]=100;
+ state=activateDouble(state,count);
+ const before=state.turn;
+ state=playPowerTurn(state,3,count,width,height,'double');
+ assert.equal(state.turn,before);
+ assert.equal(state.board[38],1);
+ assert.equal(state.power.doublePending,1);
+ assert.match(state.lastEvent,/second column/i);
+ state=playPowerTurn(state,4,count,width,height,'double');
+ assert.equal(state.board[39],1);
+ assert.equal(state.turn,2);
+ assert.equal(state.power.doublePending,0);
+});
+test('double drop cannot spend the same ability twice or mix in other powers',()=>{
+ let state=initial();state.power.energy[0]=100;
+ state=activateDouble(state,count);
+ assert.strictEqual(activateDouble(state,count),state);
+ assert.strictEqual(playPowerTurn(state,3,count,width,height,'drop'),state);
+ assert.strictEqual(playPowerTurn(state,3,count,width,height,'freeze'),state);
+});
+test('freeze keeps chips in place and blocks normal and double drops for everyone',()=>{
+ let state=initial();
+ state.board[38]=1;
+ state.power.energy[0]=80;
+ const frozen=playPowerTurn(state,3,count,width,height,'freeze');
+ assert.equal(frozen.board[38],1);
+ assert.equal(frozen.power.frozen.column,3);
+ assert.strictEqual(playPowerTurn(frozen,3,count,width,height),frozen);
+ const other=playPowerTurn(frozen,4,count,width,height);
+ assert.equal(other.turn,1);
+ assert.equal(other.power.frozen,null);
+});
+
+test('bomb shatters a frozen target column, destroys hit chips, and unlocks it',()=>{
+ const state=initial();
+ state.board[36]=2;state.board[37]=1;state.board[38]=2;
+ state.turn=2;
+ state.power.energy[1]=100;
+ state.power.frozen={column:2,owner:1};
+ const next=playPowerTurn(state,2,count,width,height,'bomb');
+ assert.equal(next.power.frozen,null);
+ assert.equal(next.board[36],0);
+ assert.equal(next.board[37],0);
+ assert.equal(next.board[38],0);
+ assert.match(next.lastEvent,/ICE SHATTERED/);
+ assert.equal(powerTargetAllowed({...next,turn:1,...next.power},'drop',2,width,height),true);
+});
+test('bomb blast next to frozen column shatters ice but keeps distant chips',()=>{
+ const state=initial();
+ state.board[36]=1;state.board[37]=2;state.board[38]=1;
+ state.board[39]=2;state.board[40]=2;
+ state.power.energy[0]=100;
+ state.power.frozen={column:3,owner:1};
+ const next=playPowerTurn(state,2,count,width,height,'bomb');
+ assert.equal(next.power.frozen,null);
+ assert.equal(next.board[36],0);
+ assert.equal(next.board[37],0);
+ assert.equal(next.board[38],0);
+ assert.equal(next.board[39],2);
+ assert.equal(next.board[40],2);
+});
+test('bomb can break an empty frozen column without deleting unrelated chips',()=>{
+ const state=initial();
+ state.power.energy[0]=100;
+ state.power.frozen={column:3,owner:1};
+ assert.equal(powerTargetAllowed({...state,...state.power},'bomb',3,width,height),true);
+ const next=playPowerTurn(state,3,count,width,height,'bomb');
+ assert.equal(next.power.frozen,null);
+ assert.equal(next.power.energy[0],0);
+ assert.match(next.lastEvent,/ICE SHATTERED/);
+});
+test('bomb does not thaw a frozen column outside its blast width',()=>{
+ const state=initial();
+ state.board[35]=2;state.power.energy[0]=100;
+ state.power.frozen={column:3,owner:1};
+ const next=playPowerTurn(state,0,count,width,height,'bomb');
+ assert.equal(next.power.frozen?.column,3);
+});
