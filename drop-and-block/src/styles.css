@@ -1513,3 +1513,88 @@ footer span{color:#ffcb56}
 .session-scoreline>span strong{color:#ffe7a7;font-size:15px}
 .session-scoreline>span.session-wins-leader{border-color:#ffe08c;box-shadow:0 0 10px #ffcb6b44}
 .session-scoreline small{margin-left:auto;font-size:10px;color:#acbedb;font-weight:500}
+
+
+/* Mobile edge-to-edge / cutout pass. viewport-fit=cover is already set in index.html.
+   Safe areas reserve space for iPhone Dynamic Island, Android camera cutouts and
+   gesture/home indicator even in landscape. */
+html,body,#root{min-width:0;max-width:100%;margin:0}
+.shell{
+ min-width:0;
+ min-height:100vh;
+ min-height:100dvh;
+ padding-top:max(16px,calc(env(safe-area-inset-top,0px) + 12px));
+ padding-right:max(12px,calc(env(safe-area-inset-right,0px) + 12px));
+ padding-bottom:max(24px,calc(env(safe-area-inset-bottom,0px) + 18px));
+ padding-left:max(12px,calc(env(safe-area-inset-left,0px) + 12px));
+}
+.content,.panel,.panel-wide,.home-grid,.board-wrap,.board-scroll,
+.match-scoreboard,.scoreboard-grid,.power-help,.power-actions,.roster,.topbar{min-width:0;max-width:100%}
+.board-scroll{-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;scroll-padding-inline:10px}
+.board-inner{min-width:0}
+.board-tap-column{touch-action:manipulation}
+button,.drop-arrow,.board-tap-column{-webkit-tap-highlight-color:transparent}
+@media(max-width:720px){
+ .shell{
+  padding-top:max(14px,calc(env(safe-area-inset-top,0px) + 12px));
+  padding-right:max(10px,calc(env(safe-area-inset-right,0px) + 10px));
+  padding-bottom:max(25px,calc(env(safe-area-inset-bottom,0px) + 18px));
+  padding-left:max(10px,calc(env(safe-area-inset-left,0px) + 10px));
+ }
+ .topbar{height:auto;min-height:48px;flex-wrap:wrap;align-items:center}
+ .topbar>*{min-width:0}
+ .panel{padding:clamp(10px,3.1vw,17px)}
+ .panel-wide{width:100%;margin:10px auto 18px}
+ .roster{gap:7px;margin:12px 0}
+ .player-chip{min-width:0;max-width:100%;overflow-wrap:anywhere}
+ .turn-notice.turn-notice-active{padding:11px 8px}
+ .turn-announcement strong{font-size:clamp(18px,5.8vw,26px)}
+ .turn-announcement-instruction{font-size:11px}
+ .match-scoreboard{padding:10px;margin:10px 0}
+ .scoreboard-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .scoreboard-player{min-width:0;overflow:hidden}
+ .scoreboard-heading{align-items:flex-start}
+ .scoreboard-leader{white-space:normal;overflow-wrap:anywhere}
+ .scoreboard-detail,.scoreboard-disclaimer{overflow-wrap:anywhere}
+ .session-scoreline{gap:6px;padding:9px;font-size:10px}
+ .session-scoreline>span{padding:5px 7px;white-space:normal}
+ .session-scoreline small{margin-left:0}
+ .gravity-status{gap:6px;padding:10px;line-height:1.4}
+ .gravity-status span,.gravity-status small{overflow-wrap:anywhere}
+ .power-roster{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .power-player{min-width:0;padding:8px}
+ .power-help,.power-instruction,.frozen-alert{max-width:100%;overflow-wrap:anywhere}
+ .power-help-grid{grid-template-columns:1fr}
+ .power-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .power-action{min-height:46px;font-size:12px;white-space:normal;overflow-wrap:anywhere}
+ .board-wrap{width:100%;max-width:100%}
+ .board-controls{margin-inline:4px}
+ .board-controls .drop-arrow{min-height:42px}
+ .board-scroll{border-radius:12px}
+ .board-scroll.is-wide{padding-bottom:12px}
+ .board-mobile-hint{font-size:11px;line-height:1.5}
+ .local-demo-actions{display:flex;flex-wrap:wrap;gap:8px}
+ .local-demo-actions>.btn{flex:1 1 145px;min-height:44px}
+ .version-alert{
+  top:calc(env(safe-area-inset-top,0px) + 12px);
+  max-width:calc(100vw - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px) - 20px);
+ }
+}
+@media(max-width:370px){
+ .scoreboard-grid,.power-roster{grid-template-columns:1fr}
+ .roster .player-chip.turn-active{max-width:100%}
+ .scoreboard-heading{flex-direction:column}
+ .power-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .topbar .mini-brand{font-size:10px}
+}
+@media(orientation:landscape) and (max-height:540px) and (pointer:coarse){
+ /* Landscape cutouts tend to occupy the left/right edges, not just the top. */
+ .shell{
+  padding-left:max(14px,calc(env(safe-area-inset-left,0px) + 14px));
+  padding-right:max(14px,calc(env(safe-area-inset-right,0px) + 14px));
+  padding-top:max(12px,calc(env(safe-area-inset-top,0px) + 9px));
+  padding-bottom:max(18px,calc(env(safe-area-inset-bottom,0px) + 10px));
+ }
+ .panel-wide{margin:6px auto 15px}
+ .topbar{min-height:44px}
+}
