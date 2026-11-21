@@ -1463,3 +1463,36 @@ footer span{color:#ffcb56}
  .playing-now-label{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.roster .player-chip.turn-active{transition:none}}
+
+
+/* Gravity Shift, Rivalries and in-game Momentum scoreboard. */
+.match-scoreboard{
+ margin:14px 0;padding:14px;
+ border:1px solid #7f73d8aa;border-radius:14px;
+ background:linear-gradient(135deg,#192047,#0d1732 78%);
+ box-shadow:inset 0 1px 0 #b6b4ff30,0 0 23px #3430a32a;
+}
+.scoreboard-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:11px}
+.scoreboard-heading>div{display:flex;flex-direction:column;gap:3px}
+.scoreboard-heading strong{font-size:14px;color:#ffe5a5;letter-spacing:.075em}
+.scoreboard-heading small{font-size:11px;color:#c3d6ee}
+.scoreboard-leader{font-size:12px;font-weight:900;color:#ffe69e;background:#473a227c;border:1px solid #9a76488e;border-radius:100px;padding:6px 10px}
+.scoreboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.scoreboard-player{
+ display:flex;flex-direction:column;gap:6px;padding:11px;min-width:0;
+ background:#0a1430bb;border:1px solid #586b9b88;border-radius:11px;
+}
+.scoreboard-player.is-leading{border:2px solid #ffd874;background:linear-gradient(145deg,#3c3451,#1d254e);box-shadow:0 0 13px #f3c25e56}
+.scoreboard-player.is-active{outline:2px solid #a6c9ff8c;outline-offset:1px}
+.scoreboard-seat{font-size:12px;font-weight:900;color:#edf3ff;border-left-width:4px;padding-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scoreboard-player>strong{color:#ffe8a3;font-size:clamp(24px,3vw,35px);line-height:1}
+.scoreboard-player>strong small{font-size:10px;letter-spacing:.07em;color:#cddbf3}
+.scoreboard-detail{font-size:10px;line-height:1.55;color:#b9cde9}
+.scoreboard-revenge{font-size:11px;color:#ffbe93;font-weight:800}
+.scoreboard-disclaimer{font-size:10px;line-height:1.5;color:#a7b9d7;margin:11px 1px 0}
+.gravity-status{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:13px 15px;margin:11px 0;border-radius:12px;border:2px solid #9d89ff;background:linear-gradient(110deg,#232650,#131f48);box-shadow:0 0 14px #8781ff49}
+.gravity-status strong{font-size:13px;color:#ecd5ff;letter-spacing:.08em}
+.gravity-status span{font-size:13px;color:#f6e9ff;font-weight:900}
+.gravity-status small{flex-basis:100%;color:#bdc8ed;font-size:10px}
+.rivalry-callout{border:2px solid #ffb376;background:linear-gradient(110deg,#663124,#3c1c33);box-shadow:0 0 19px #ff844d66;color:#fff2d8;text-align:center;font-weight:900;font-size:clamp(14px,2.2vw,19px);border-radius:12px;padding:12px;margin:10px 0}
+@media(max-width:600px){.match-scoreboard{padding:10px}.scoreboard-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.scoreboard-player{padding:9px}.scoreboard-seat{font-size:10px}.gravity-status{padding:10px}.gravity-status span{font-size:11px}}
