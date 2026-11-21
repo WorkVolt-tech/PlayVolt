@@ -1207,3 +1207,59 @@ footer span{color:#ffcb56}
  .tv-pair-form input{min-height:58px;font-size:24px}
 }
 @media(prefers-reduced-motion:reduce){.win-rule-banner{scroll-behavior:auto}}
+
+
+/* Drop & Block Neon Arcade refresh — glossy, readable seat tokens and local powers. */
+:root { --arcade-cyan:#50eaff; --arcade-violet:#a46cff; --arcade-gold:#ffd86b; }
+.arcade-board {
+  border:5px solid #6383cb;
+  background:linear-gradient(145deg,#253c6c 0%,#121d40 54%,#202455 100%);
+  box-shadow:inset 0 2px 2px #ffffff32,inset 0 -9px 24px #030612aa,0 0 0 2px #0b1229,0 16px 42px #000a,0 0 28px #686dff2a;
+}
+.arcade-board .board-cell {
+  background:radial-gradient(circle at 52% 58%,#071023 38%,#030713 74%,#26375f 99%);
+  border:1px solid #8b9bd32b;
+  box-shadow:inset 0 4px 10px #000d,inset 0 -1px 2px #7b99ff3b,0 1px 0 #ffffff12;
+}
+.arcade-board .disc:not(.empty),.look-demo-board .disc:not(.empty) {
+  position:relative;isolation:isolate;
+  color:#fff; text-shadow:0 1px 3px #070b20aa;
+  border:2px solid #ffffff75;
+  background-image:radial-gradient(circle at 32% 22%,#ffffffb0 0%,#ffffff18 18%,transparent 43%),linear-gradient(145deg,#ffffff28,transparent 48%,#080d2e75);
+  box-shadow:inset 0 2px 2px #ffffffa0,inset 0 -5px 6px #070a28aa,inset 0 0 0 5px #080e2540,0 3px 8px #000b,0 0 9px currentColor;
+  transform:translateZ(0);
+}
+.arcade-board .disc:not(.empty)::after,.look-demo-board .disc:not(.empty)::after {
+  content:"";pointer-events:none;position:absolute;inset:13%;border-radius:inherit;
+  border:1.5px solid #ffffff60;
+  box-shadow:inset 0 2px 6px #ffffff21,0 1px 0 #0007;
+}
+.arcade-board .disc.seat-1,.look-demo-board .disc.seat-1{background-color:#fa405c;color:#ff6686}
+.arcade-board .disc.seat-2,.look-demo-board .disc.seat-2{background-color:#11bafa;color:#53e9ff}
+.arcade-board .disc.seat-3,.look-demo-board .disc.seat-3{background-color:#ffbe31;color:#ffe06d}
+.arcade-board .disc.seat-4,.look-demo-board .disc.seat-4{background-color:#19d684;color:#66ffb2}
+.arcade-board .disc.seat-5,.look-demo-board .disc.seat-5{background-color:#8d59f9;color:#bf93ff}
+.arcade-board .disc.seat-6,.look-demo-board .disc.seat-6{background-color:#fa732c;color:#ffad68}
+.arcade-board .disc.seat-7,.look-demo-board .disc.seat-7{background-color:#eb43ba;color:#ff94e0}
+.arcade-board .disc.seat-8,.look-demo-board .disc.seat-8{background-color:#a8c8ef;color:#e1f2ff}
+.arcade-board .disc.seat-9{background-color:#526079;color:#e7edff}
+.arcade-board .disc:not(.empty){-webkit-text-stroke:.3px #090f2c}
+.drop-arrow:not(:disabled):hover,.drop-arrow:not(:disabled):focus-visible {
+  background:#47e9ff22;color:#fff;border-color:var(--arcade-cyan);
+  box-shadow:0 0 16px #35cbff50;outline:none;
+}
+.board-cell.winning-slot .disc:not(.empty){animation:arcade-winning-glow .8s ease-in-out infinite alternate}
+@keyframes arcade-winning-glow {from{filter:brightness(1);transform:scale(1)}to{filter:brightness(1.35);transform:scale(1.055)}}
+.power-roster {display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}
+.power-player {background:linear-gradient(150deg,#141d3a,#0b1329);border:1px solid #4a5986;border-radius:12px;padding:9px;display:grid;grid-template-columns:1fr auto;gap:6px;font-size:11px}
+.power-player.active{border-color:#e1b95d;box-shadow:0 0 12px #ebbe5c2e}
+.power-player b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.power-player span{color:#ffe08b;font-weight:900}
+.power-track{grid-column:1/-1;height:8px;border-radius:99px;background:#050a17;overflow:hidden}
+.power-track i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#398ffd,#8c6dff,#f8c55a);box-shadow:0 0 10px #8a81ff99;transition:width .2s}
+.power-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:12px 0}
+.power-action{min-width:0;padding:12px 5px;border-radius:11px;border:1px solid #465b91;background:linear-gradient(155deg,#263c65,#121e39);color:#e4efff;font-weight:900;font-size:clamp(10px,1.3vw,14px)}
+.power-action.selected{border-color:#ffd877;background:linear-gradient(145deg,#6d4a29,#3e315b);color:#fff2c0;box-shadow:0 0 0 1px #fcd67755,0 0 15px #f4b44b33}
+.power-action:not(:disabled):hover{border-color:#6cdeff}
+@media(max-width:650px){.power-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.arcade-board .disc:not(.empty){border-width:1px}.arcade-board .disc:not(.empty)::after{inset:15%}}
+@media(prefers-reduced-motion:reduce){.arcade-board .disc,.power-track i{transition:none;animation:none!important}}
