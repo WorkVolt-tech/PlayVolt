@@ -100,6 +100,17 @@ function LocalDemo({ onBack, count, mode, loadout }) {
   const [state, setState] = useState(reset);
   const [replayOpen,setReplayOpen]=useState(false);
   const [powerChoice,setPowerChoice]=useState('drop');
+  const freshSession=()=>({wins:Array(count).fill(0),lastWinner:null,callout:''});
+  const [session,setSession]=useState(freshSession);
+  useEffect(()=>{
+    if(state.status!=='finished'||!Number.isInteger(state.winner))return;
+    setSession(previous=>{
+      const wins=[...previous.wins];wins[state.winner-1]++;
+      const callout=previous.lastWinner&&previous.lastWinner!==state.winner
+        ?'🔥 REVENGE! Player '+state.winner+' dethroned the previous winner, Player '+previous.lastWinner+'!':'';
+      return {wins,lastWinner:state.winner,callout};
+    });
+  },[state.status,state.winner]);
   useEffect(()=>{
     if(state.status==='finished'&&state.history?.length)setReplayOpen(true);
   },[state.status,state.history?.length]);
@@ -145,7 +156,7 @@ function LocalDemo({ onBack, count, mode, loadout }) {
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
     <h2>{modeName(mode)} · {count} Players</h2>
     <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
-    <GameArea game={{...state,width,height,mode,players,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner,winLength:balancedWinLength(count,mode)}} boardTheme={loadout?.board}
+    <GameArea game={{...state,width,height,mode,players,sessionWins:session.wins,sessionCallout:session.callout,turnSeat:state.turn,meSeat:state.turn,winnerSeat:state.winner,winLength:balancedWinLength(count,mode)}} boardTheme={loadout?.board}
       onDrop={play} busy={false} powerChoice={powerChoice} onPowerChoice={setPowerChoice} onDouble={useDouble}/>
     <div className="actions local-demo-actions">
       <button className="btn ghost" onClick={onBack}>← Back</button>
@@ -153,7 +164,8 @@ function LocalDemo({ onBack, count, mode, loadout }) {
         onClick={()=>setReplayOpen(v=>!v)}>
         {replayOpen?'✕ Close replay':'↺ Watch local replay ('+(state.history?.length||0)+' moves)'}
       </button>
-      <button className="btn primary" onClick={()=>{setState(reset);setReplayOpen(false);setPowerChoice('drop');}}>Restart</button>
+      <button className="btn primary" onClick={()=>{setState(reset);setReplayOpen(false);setPowerChoice('drop');}}>Next match · keep scores</button>
+      <button className="btn ghost" onClick={()=>{setSession(freshSession());setState(reset);setReplayOpen(false);setPowerChoice('drop');}}>Reset session</button>
     </div>
     {replayOpen&&state.history?.length>0&&<LocalReplay state={state} width={width} height={height}
       count={count} mode={mode} loadout={loadout} onClose={()=>setReplayOpen(false)}/>}
@@ -262,6 +274,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
     <MatchSpotlight game={game}/>
     <MatchScoreboard game={game}/>
     {game.rivalry?.lastCallout&&<div className="rivalry-callout" role="status">{game.rivalry.lastCallout}</div>}
+    {game.sessionCallout&&game.status==='finished'&&<div className="rivalry-callout" role="status">{game.sessionCallout}</div>}
     {game.mode==='gravity'&&<div className="gravity-status" role="status"><strong>🌪 GRAVITY SHIFT{game.lastMove?.shifted?' · SHIFTED '+game.lastMove.shiftDirection.toUpperCase()+'!':''}</strong><span>Every {SHIFT_EVERY} chips, the board shifts {game.gravity?.nextDirection?.toUpperCase()||'LEFT'}. Next shift in {SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY)} {SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY)===1?'drop':'drops'}.</span><small>Connections are checked both before and after shifting. Multiple simultaneous connections result in a draw.</small></div>}
     {game.mode==='power'&&game.power&&<div className="power-roster">{game.players.map(p=><div key={p.seat} className={'power-player'+(showActiveTurn&&game.turnSeat===p.seat?' active':'')}><b>{p.name}{showActiveTurn&&game.turnSeat===p.seat&&<small className="power-playing-label"> · PLAYING</small>}</b><span>{game.power.energy[p.seat-1]}/100 EP</span><div className="power-track"><i style={{width:(game.power.energy[p.seat-1]||0)+'%'}}/></div></div>)}</div>}
     {game.mode==='power'&&game.power&&<section className="power-help" aria-label="How Power-Up Mode works">
