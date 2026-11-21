@@ -1662,3 +1662,47 @@ img,video,canvas,svg{max-width:100%}
  .mobile-menu-panel{max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 65px)}
  .trophy-popup{max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 18px)}
 }
+
+
+/* Local match main navigation: replay lives in a tab, never below the board. */
+.local-game-tabs{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+ margin:15px 0 18px;padding:6px;border-radius:15px;
+ background:#0a142c;border:1px solid #667eac88;
+}
+.local-game-tabs>button{
+ min-width:0;min-height:48px;padding:10px 13px;
+ display:flex;align-items:center;justify-content:center;gap:8px;
+ color:#c4d4ee;background:#192746;border:1px solid #405783;
+ border-radius:10px;font-weight:900;font-size:clamp(12px,2.4vw,15px);
+ cursor:pointer;
+}
+.local-game-tabs>button.selected{
+ color:#fff4cb;background:linear-gradient(135deg,#514781,#28366b);
+ border-color:#ffe095;box-shadow:0 0 14px #ddbc6942;
+}
+.local-game-tabs>button:focus-visible{
+ outline:3px solid #ffe29c;outline-offset:2px;
+}
+.local-tab-count{
+ display:inline-grid;place-items:center;min-width:23px;padding:3px 6px;
+ border-radius:99px;background:#3d547f;color:#fff;font-size:11px;
+ font-variant-numeric:tabular-nums;
+}
+.local-game-tabs>button.selected .local-tab-count{background:#ffdb8b;color:#192239}
+#local-game-panel[hidden],#local-replay-panel[hidden]{display:none!important}
+#local-game-panel,#local-replay-panel{min-width:0;max-width:100%}
+#local-replay-panel .local-replay{margin-top:0}
+.local-replay-empty{
+ display:grid;place-items:center;text-align:center;gap:10px;
+ border:1px dashed #7f92bd;border-radius:15px;padding:32px 18px;
+ background:#121d38;
+}
+.local-replay-empty strong{color:#ffe4a3;font-size:18px}
+.local-replay-empty p{color:#b6cae6;font-size:13px;line-height:1.5;margin:0}
+.local-replay-empty .btn{min-height:44px}
+@media(max-width:600px){
+ .local-game-tabs{margin:10px 0 12px;gap:5px;padding:4px}
+ .local-game-tabs>button{min-height:46px;padding:9px 5px}
+ .local-replay-empty{padding:23px 12px}
+}
