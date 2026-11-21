@@ -35,7 +35,7 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
   const minWidth=wideBoardMinWidth(width,readOnly);
   const available=col=>power?(!disabled&&turn===me&&powerTargetAllowed({board,turn,...power},selectedPower,col,width,height)):canPlayColumn(board,width,height,col,moveKind,disabled||turn!==me);
-  const actionLabel=moveKind==='blast'?'Blast':'Place '+(moveKind==='block'?'barrier':'chip');
+  const actionLabel=power?(selectedPower==='freeze'?'Freeze':selectedPower==='bomb'?'Bomb':selectedPower==='shield'?'Shield':selectedPower==='double'?'Double-drop chip':'Drop chip'):moveKind==='blast'?'Blast':'Place '+(moveKind==='block'?'barrier':'chip');
   const lastCell=lastMoveCell(board,width,height,lastMove);
   const winning=new Set(status==='finished'?winningCells(board,width,height,winnerSeat,mode,lastMove,winLength):[]);
   const effectColumn=lastMove?.column!==undefined&&(lastMove.kind==='blast'||lastMove.kind==='bomb'||lastCell===null)
@@ -51,10 +51,10 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
       tabIndex={minWidth?0:undefined}>
       <div className="board-inner" style={minWidth?{minWidth:minWidth+'px'}:undefined}>
         {!readOnly&&<div className="board-controls" style={grid}>
-          {columns.map(col=><button type="button" key={col} className={'drop-arrow'+(lastMove?.column===col?' recently-used':'')}
+          {columns.map(col=><button type="button" key={col} className={'drop-arrow'+(lastMove?.column===col?' recently-used':'')+(power?.frozen?.column===col?' frozen-drop-arrow':'')}
             aria-label={actionLabel+' in column '+(col+1)}
             disabled={!available(col)} onClick={()=>onDrop(col)}>
-            {moveKind==='blast'?'✹':moveKind==='block'?'⬢':'▼'}
+            {power?.frozen?.column===col?'❄':power&&selectedPower==='freeze'?'❄':power&&selectedPower==='shield'?'⬡':power&&selectedPower==='bomb'?'✹':power&&selectedPower==='double'?'⇊':moveKind==='blast'?'✹':moveKind==='block'?'⬢':'▼'}
           </button>)}
         </div>}
         <div className="board-tap-area">
@@ -64,11 +64,11 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
               const index=row*width+col;
               const isWinner=winning.has(index),isRecent=lastCell===index;
               return <div className={'board-cell'+(isWinner?' winning-slot':'')+
-                (isRecent?' last-played-slot':'')+(power?.shields?.includes(index)?' power-shielded':'')+(power?.frozen?.column===col?' power-frozen':'')+(effectColumn===col?' move-effect-column':'')+
+                (isRecent?' last-played-slot':'')+(power?.shields?.includes(index)?' power-shielded':'')+(power?.frozen?.column===col?' power-frozen':'')+(power?.frozen?.column===col&&seat?' power-frozen-chip':'')+(effectColumn===col?' move-effect-column':'')+
                 (hidden.has(index)?' arcade-under-flight':'')}
                 role="gridcell" key={row+'-'+col}
                 title={isWinner?'Winning connection':isRecent?'Most recent chip':undefined}>
-                <ChipDisc seat={seat} style={players.find(p=>p.seat===seat)?.chipStyle||'round'} teamMode={teamMode}/>{power?.shields?.includes(index)&&<span className="shield-symbol" aria-label="Shield protected">⬡</span>}
+                <ChipDisc seat={seat} style={players.find(p=>p.seat===seat)?.chipStyle||'round'} teamMode={teamMode}/>{power?.frozen?.column===col&&seat>0&&<span className="freeze-flake" aria-label="Column frozen">❄</span>}{power?.shields?.includes(index)&&<span className="shield-symbol" aria-label="Shield protected">⬡</span>}
               </div>;
             }))}
           </div>
@@ -165,7 +165,9 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
   const winner = game.players.find(p=>p.seat===game.winnerSeat);
   const lastPlayer=game.players.find(p=>p.seat===game.lastMove?.seat);
   const lastMoveLabel=game.lastMove?.kind==='blast'?'used Blast on':
-    game.lastMove?.kind==='block'?'placed a Barrier in':'played';
+    game.lastMove?.kind==='block'?'placed a Barrier in':
+    game.lastMove?.kind==='freeze'?'froze':game.lastMove?.kind==='shield'?'shielded a chip in':
+    game.lastMove?.kind==='bomb'?'bombed':game.lastMove?.kind==='double'?'double-dropped in':'played';
   const isSpeed=game.mode==='speed';
   const winLength=game.winLength===3?3:4;
   const speedState=speedRoundState(game,game.meSeat);
@@ -245,8 +247,19 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
     </div>
     <MatchSpotlight game={game}/>
     {game.mode==='power'&&game.power&&<div className="power-roster">{game.players.map(p=><div key={p.seat} className={'power-player'+(game.turnSeat===p.seat?' active':'')}><b>{p.name}</b><span>{game.power.energy[p.seat-1]}/100 EP</span><div className="power-track"><i style={{width:(game.power.energy[p.seat-1]||0)+'%'}}/></div></div>)}</div>}
-    {game.mode==='power'&&!readOnly&&onPowerChoice&&<div className="power-actions" role="group" aria-label="Power-up abilities">{[['drop','▼ Drop',0],['shield','⬡ Shield',70],['freeze','❄ Freeze',80],['bomb','✹ Bomb',100]].map(([kind,title,cost])=><button type="button" key={kind} className={'power-action'+(powerChoice===kind?' selected':'')} disabled={busy||game.status!=='playing'||cost>(game.power?.energy?.[game.turnSeat-1]||0)||game.power?.doublePending} onClick={()=>onPowerChoice(kind)}>{title}{cost?' · '+cost:''}</button>)}<button type="button" className="power-action" disabled={busy||game.status!=='playing'||game.power?.doublePending||(game.power?.energy?.[game.turnSeat-1]||0)<100} onClick={onDouble}>⇊ Double · 100</button></div>}
-    {game.mode==='power'&&!readOnly&&<p className="chaos-tip">{game.power?.doublePending?'Drop your extra chips in any playable columns.':powerChoice==='shield'?'Select a column with your chip at the top.':powerChoice==='bomb'?'Select an occupied column to blast its top chip and adjacent pieces.':powerChoice==='freeze'?'Select a playable column to freeze it.':'Earn energy by dropping chips and blocking opponents.'}</p>}
+    {game.mode==='power'&&game.power&&<section className="power-help" aria-label="How Power-Up Mode works">
+      <div className="power-help-head"><strong>⚡ HOW TO USE POWER-UPS</strong><span>Each ability costs energy (EP) · Each activation uses your turn except Double Drop</span></div>
+      <p className="power-help-flow"><b>1.</b> Drop chips to earn EP <b>2.</b> Select an unlocked power <b>3.</b> Tap its target column on the board</p>
+      <div className="power-help-grid">
+        <div><strong>⇊ Double · 100 EP</strong><span>Tap Double, then drop <b>two chips</b> one at a time in any available columns. Both happen on your turn.</span></div>
+        <div><strong>❄ Freeze · 80 EP</strong><span>Tap Freeze, then choose a column. <b>No one can drop there</b> until your next turn. Existing chips stay in place and appear icy.</span></div>
+        <div><strong>⬡ Shield · 70 EP</strong><span>Tap Shield, then tap a column where <b>your chip is on top</b>. Protects it from one Bomb hit.</span></div>
+        <div><strong>✹ Bomb · 100 EP</strong><span>Tap Bomb, then choose an occupied column. Hits its <b>topmost chip and neighboring chips</b> on that row.</span></div>
+      </div>
+    </section>}
+    {game.mode==='power'&&game.power?.frozen&&<div className="frozen-alert" role="status">❄ COLUMN {game.power.frozen.column+1} IS FROZEN — locked until Player {game.power.frozen.owner}'s next turn. Chips in the column are not destroyed.</div>}
+    {game.mode==='power'&&!readOnly&&onPowerChoice&&<div className="power-actions" role="group" aria-label="Power-up abilities">{[['drop','▼ Normal chip',0],['shield','⬡ Shield',70],['freeze','❄ Freeze',80],['bomb','✹ Bomb',100]].map(([kind,title,cost])=><button type="button" key={kind} aria-pressed={powerChoice===kind} className={'power-action'+(powerChoice===kind?' selected':'')} disabled={busy||game.status!=='playing'||cost>(game.power?.energy?.[game.turnSeat-1]||0)||game.power?.doublePending} onClick={()=>onPowerChoice(kind)}>{title}{cost?' · '+cost+' EP':''}</button>)}<button type="button" className={'power-action'+(game.power?.doublePending?' selected':'')} disabled={busy||game.status!=='playing'||game.power?.doublePending||(game.power?.energy?.[game.turnSeat-1]||0)<100} onClick={onDouble}>⇊ Double · 100 EP</button></div>}
+    {game.mode==='power'&&!readOnly&&<div className={'power-instruction'+(game.power?.doublePending?' double-active':'')} role="status">{game.power?.doublePending?'⇊ DOUBLE DROP ACTIVE: place chip '+(3-game.power.doublePending)+' of 2. Tap a column. Your turn continues until both chips are placed.':powerChoice==='shield'?'⬡ SHIELD SELECTED: tap a column whose top chip belongs to you. It will survive one Bomb hit.':powerChoice==='bomb'?'✹ BOMB SELECTED: tap an occupied column to hit the highest chip and adjacent chips on the same row.':powerChoice==='freeze'?'❄ FREEZE SELECTED: tap an available column to lock it for every player until your next turn.':'▼ NORMAL DROP: tap an available column. Placing chips earns EP. Select a power above to use it.'}</div>}
     {game.mode==='chaos' && !readOnly && <div className="chaos-powers" role="group" aria-label="Choose a Chaos move">
       <button type="button" className={'chaos-power'+(moveKind==='drop'?' selected':'')} onClick={()=>setMoveKind('drop')} disabled={busy}>▼ Normal Drop</button>
       <button type="button" className={'chaos-power'+(moveKind==='block'?' selected':'')} onClick={()=>setMoveKind('block')} disabled={busy||!current||current.chaosBlockUsed||game.status!=='playing'}>⬢ Barrier {current?.chaosBlockUsed?'USED':'1×'}</button>
