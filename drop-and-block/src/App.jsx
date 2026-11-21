@@ -177,6 +177,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
   useArcadeMatchSounds(game,speedSignal,arcadeSound.enabled);
   const submitted=speedState.submitted;
   const iSubmitted=isSpeed&&speedState.alreadyPlayed;
+  const showActiveTurn=game.status==='playing'&&!isSpeed&&!eliminationReset.active&&Number.isInteger(game.turnSeat);
   const myTurn=!readOnly&&game.status==='playing'&&!eliminationReset.active&&
     (isSpeed?speedState.canSubmit&&speedSignal.phase!=='countdown':game.turnSeat===game.meSeat);
   return <>
@@ -187,7 +188,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
       <span className="arcade-sound-label">ARCADE EFFECTS</span>
       <SoundToggle enabled={arcadeSound.enabled} onToggle={arcadeSound.toggle}/>
     </div>
-    <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (game.turnSeat===p.seat?' current':'')+(isSpeed&&submitted.has(p.seat)?' speed-submitted':'') + (p.eliminated?' eliminated':'')+(game.mode==='team'?' team-roster-'+teamOfSeat(p.seat):'')}>
+    <div className="roster">{game.players.map(p=><div key={p.seat} className={'player-chip seat-border-' + p.seat + (showActiveTurn&&game.turnSeat===p.seat?' current turn-active':'')+(isSpeed&&submitted.has(p.seat)?' speed-submitted':'') + (p.eliminated?' eliminated':'')+(game.mode==='team'?' team-roster-'+teamOfSeat(p.seat):'')}>
       <AvatarBadge id={p.avatarStyle||'sentinel'} small/><span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
       <span className="player-label">{p.name}{p.eliminated?' · OUT':game.mode==='team'?' · '+(teamOfSeat(p.seat)===1?'Gold':'Blue'):game.mode==='territory'?' · '+p.score+' pts':''}
        {isSpeed&&game.status==='playing'&&<small className={'speed-roster-status'+(submitted.has(p.seat)?' placed':' waiting')}>
@@ -195,6 +196,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
         </small>}
        {p.online!==undefined&&<small className={'player-presence '+(p.online?'online':'away')}>{p.online?'● Online':'○ Away'}{p.timedOutTurns>0?' · '+p.timedOutTurns+' missed':''}</small>}
       </span>
+      {showActiveTurn&&game.turnSeat===p.seat&&<span className="playing-now-label">▶ PLAYING NOW</span>}
     </div>)}</div>
     {isSpeed&&game.status==='playing'&&<div className="speed-round-panel" role="status">
       <div className="speed-round-header">
@@ -234,7 +236,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
       <span>{lastPlayer?.name||'Player '+game.lastMove.seat} {lastMoveLabel} column {game.lastMove.column+1}
         {game.lastMove.earned>0?' · '+game.lastMove.earned+' line'+(game.lastMove.earned===1?'':'s')+' connected':''}</span>
     </div>}
-    <div className={'turn-notice' + (myTurn?' is-me':'')}>
+    <div className={'turn-notice' + (myTurn?' is-me':'')+(showActiveTurn?' turn-notice-active turn-seat-'+game.turnSeat:'')}>
       {game.status==='cancelled' ? (isNoContest(game) ? 'No Contest · Match ended without a winner' : 'Room closed by the host')
         : game.status==='finished' ? (game.mode==='team' ? (game.winnerTeam || winner ? 'Team '+((game.winnerTeam || teamOfSeat(winner?.seat))===1?'Gold':'Blue')+' wins!' : 'Match finished · Draw') : (winner ? winner.name+' wins!' : 'Match finished · Draw'))
         : eliminationReset.active?'ARENA RESET · NEXT ROUND IN '+eliminationReset.seconds+'…'
@@ -243,10 +245,10 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
             : readOnly?'ALL PLAYERS CAN DROP NOW · FIRST CHIP GOES FIRST'
             : iSubmitted?'✓ CHIP LOCKED IN · WAITING FOR EVERYONE ELSE'
             : '⚡ DROP NOW · FIRST ACCEPTED CHIP LANDS FIRST!'
-          : myTurn ? 'Your turn — choose a column' : readOnly ? (turnPlayer?.name || 'A player') + ' is playing' : 'Waiting for '+(turnPlayer?.name||'player')+'…'}
+          : showActiveTurn ? <span className="turn-announcement"><span className="turn-announcement-kicker">▶ NOW PLAYING</span><strong>{turnPlayer?.name||'Player '+game.turnSeat}</strong><span className="turn-announcement-instruction">{game.power?.doublePending?'Double Drop — chip '+(3-game.power.doublePending)+' of 2':myTurn?'Choose a column or power-up':'Waiting for their move'}</span></span> : 'Waiting for the next turn…'}
     </div>
     <MatchSpotlight game={game}/>
-    {game.mode==='power'&&game.power&&<div className="power-roster">{game.players.map(p=><div key={p.seat} className={'power-player'+(game.turnSeat===p.seat?' active':'')}><b>{p.name}</b><span>{game.power.energy[p.seat-1]}/100 EP</span><div className="power-track"><i style={{width:(game.power.energy[p.seat-1]||0)+'%'}}/></div></div>)}</div>}
+    {game.mode==='power'&&game.power&&<div className="power-roster">{game.players.map(p=><div key={p.seat} className={'power-player'+(showActiveTurn&&game.turnSeat===p.seat?' active':'')}><b>{p.name}{showActiveTurn&&game.turnSeat===p.seat&&<small className="power-playing-label"> · PLAYING</small>}</b><span>{game.power.energy[p.seat-1]}/100 EP</span><div className="power-track"><i style={{width:(game.power.energy[p.seat-1]||0)+'%'}}/></div></div>)}</div>}
     {game.mode==='power'&&game.power&&<section className="power-help" aria-label="How Power-Up Mode works">
       <div className="power-help-head"><strong>⚡ HOW TO USE POWER-UPS</strong><span>Each ability costs energy (EP) · Each activation uses your turn except Double Drop</span></div>
       <p className="power-help-flow"><b>1.</b> Drop chips to earn EP <b>2.</b> Select an unlocked power <b>3.</b> Tap its target column on the board</p>
