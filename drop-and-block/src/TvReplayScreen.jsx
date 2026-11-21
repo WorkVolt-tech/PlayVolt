@@ -4,6 +4,7 @@ import {useArcadeFallingChips,ArcadeFallingChips} from './ArcadeFallingChips.jsx
 import {useArcadeSound,SoundToggle,useArcadeLandingSounds} from './ArcadeSounds.jsx';
 import {ArcadeConfetti} from './ArcadeConfetti.jsx';
 import {winningCells} from './boardFeedback.js';
+import {WinRuleBanner} from './WinRuleBanner.jsx';
 import {canPlayReplay,replayFrame,replayTimeline,highlightLabel,modeLabels} from './replayModel.js';
 
 // Entirely read-only playback. The host starts and stops the session from a
@@ -51,6 +52,7 @@ export function TvReplayScreen({detail}) {
     <strong>{modeLabels[detail.gameMode]||'Drop & Block'} · Match {detail.matchNumber} · Connect {detail.winLength===3?3:4}</strong>
     <span className="tv-replay-winners">{winners}</span>
    </div>
+   <WinRuleBanner mode={detail.gameMode} winLength={detail.winLength} compact/>
    <div className="tv-replay-caption">
     <strong>{idx===0?'The match begins':highlightLabel(detail,idx)}</strong>
     <span>{idx>0?(actor?.name||'Player '+frame.seat)+' · Column '+(frame.column+1):'Watch the key plays unfold'}</span>

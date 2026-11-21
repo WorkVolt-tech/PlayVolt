@@ -3,6 +3,7 @@ import {db} from './supabase.js';
 import {ChipDisc,AvatarBadge} from './looks.jsx';
 import {clampStep,replayFrame,canPlayReplay,outcomeLabel,modeLabels,highlightSteps,replayTimeline,highlightLabel} from './replayModel.js';
 import {winningCells,lastMoveCell} from './boardFeedback.js';
+import {WinRuleBanner} from './WinRuleBanner.jsx';
 
 const PAGE=20;
 function dateLabel(iso) {
@@ -123,6 +124,7 @@ export function ReplayHub({userId,onBack}) {
     <strong>{winnerText}</strong>
     <small>{dateLabel(detail.finishedAt)} · {detail.moveCount} accepted moves</small>
    </div>
+   <WinRuleBanner mode={detail.mode} winLength={detail.winLength} compact/>
    <div className="replay-player-grid">
     {detail.players.map(p=><div key={p.seat} className={'replay-player'+(p.won?' winning':'')}>
       <AvatarBadge id={p.avatarStyle||'sentinel'} small/>
