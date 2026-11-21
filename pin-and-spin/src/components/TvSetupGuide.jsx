@@ -8,11 +8,16 @@ export function TvSetupGuide() {
     <section>
       <h3>🔥 Amazon Fire TV / Fire Stick <span className="guide-tag">best</span></h3>
       <p className="guide-note">Install the free Pin &amp; Spin TV app once (about 5 minutes):</p>
+      <div style={{ padding: "12px 14px", margin: "10px 0 12px", textAlign: "center", background: "#241c3a", border: "1px solid #8065ad", borderRadius: 12 }}>
+        <div style={{ color: "#e2c8ff", fontSize: 11, fontWeight: 800, letterSpacing: ".08em" }}>FIRE TV / FIRE STICK · DOWNLOADER CODE</div>
+        <strong style={{ display: "block", color: "var(--volt)", fontSize: 30, letterSpacing: ".13em", margin: "3px 0", userSelect: "all" }}>7035674</strong>
+        <div style={{ color: "#ddd5ee", fontSize: 12 }}>Enter this code in Downloader to install the TV app.</div>
+      </div>
       <ol>
         <li>On the Fire TV: <b>Settings → My Fire TV → About</b>. Click your device name <b>7 times</b> until it says you are a developer.</li>
         <li>Search for and install the free <b>Downloader</b> app (orange icon).</li>
         <li><b>Settings → My Fire TV → Developer Options → Install unknown apps</b> → turn on <b>Downloader</b>.</li>
-        <li>Open Downloader, type <code className="guide-link">{host}/app</code>, press <b>Go</b>, then <b>Install</b>.</li>
+        <li>Open Downloader, enter <b>7035674</b> (or <code className="guide-link">{host}/app</code>), press <b>Go</b>, then <b>Install</b>.</li>
         <li>Open <b>Pin &amp; Spin TV</b> from your apps. It shows a 4-letter code.</li>
       </ol>
       <p className="guide-note">Google TV / Android TV: the same steps and link work with Downloader.</p>
