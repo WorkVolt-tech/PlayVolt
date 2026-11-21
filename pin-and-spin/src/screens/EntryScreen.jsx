@@ -20,6 +20,9 @@ export function EntryScreen({ form, busy, account, onCustomize }) {
           <button className="primary-btn" onClick={() => { play('tap-ui-tick'); setFormTab('create'); }}>Create Room <span>＋</span></button>
           <button className="outline-btn full" onClick={() => { play('tap-ui-tick'); setFormTab('join'); }}>Join Room <span>↗</span></button>
           {/* Everything else in a compact two-column grid so the menu fits on one screen. */}
+          <p className="bottom-note" style={{ margin: "8px 0 2px", fontSize: 12, letterSpacing: 0 }}>
+            📺 Fire TV / Fire Stick app · Downloader code <strong style={{ color: "var(--volt)", fontSize: 16, letterSpacing: ".08em", userSelect: "all" }}>7035674</strong>
+          </p>
           <div className="home-grid">
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('story'); }}><span>🗺️</span> Story Mode</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('solo'); }}><span>🎯</span> Play Solo</button>
