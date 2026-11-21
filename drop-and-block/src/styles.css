@@ -1598,3 +1598,18 @@ button,.drop-arrow,.board-tap-column{-webkit-tap-highlight-color:transparent}
  .panel-wide{margin:6px auto 15px}
  .topbar{min-height:44px}
 }
+
+/* The TV pairing and spectator routes can also be opened on a notched phone. */
+.tv-shell,.tv-pair-page{
+ min-height:100dvh;
+ padding-top:max(14px,calc(env(safe-area-inset-top,0px) + 12px));
+ padding-right:max(12px,calc(env(safe-area-inset-right,0px) + 12px));
+ padding-bottom:max(22px,calc(env(safe-area-inset-bottom,0px) + 16px));
+ padding-left:max(12px,calc(env(safe-area-inset-left,0px) + 12px));
+}
+@media(orientation:landscape) and (pointer:coarse){
+ .tv-shell,.tv-pair-page{
+  padding-left:max(14px,calc(env(safe-area-inset-left,0px) + 14px));
+  padding-right:max(14px,calc(env(safe-area-inset-right,0px) + 14px));
+ }
+}
