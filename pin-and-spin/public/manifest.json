@@ -5,6 +5,7 @@
   "id": "/",
   "start_url": "/",
   "scope": "/",
+  "handle_links": "preferred",
   "display": "standalone",
   "background_color": "#0d0c22",
   "theme_color": "#0d0c22",
