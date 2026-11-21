@@ -1706,3 +1706,64 @@ img,video,canvas,svg{max-width:100%}
  .local-game-tabs>button{min-height:46px;padding:9px 5px}
  .local-replay-empty{padding:23px 12px}
 }
+
+
+/* Unique, scalable arcade emblems for all nine game modes. */
+.mode-picker-label{margin:18px 0 10px;color:#ffe69b;font-size:11px;font-weight:900;letter-spacing:.14em}
+.mode-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 12px;max-width:100%}
+.mode-choice{
+ --mode-accent:#ff8a9a;
+ min-width:0;position:relative;display:flex;align-items:center;text-align:left;gap:9px;
+ padding:11px 9px;border-radius:12px;border:1px solid #6776a177;
+ background:linear-gradient(140deg,#1a2747,#101a35);color:#ecf2ff;
+ font:inherit;cursor:pointer;min-height:76px;transition:border-color .16s,box-shadow .16s,background .16s;
+}
+.mode-choice.mode-tone-gold{--mode-accent:#ffce65}
+.mode-choice.mode-tone-cyan{--mode-accent:#55dfff}
+.mode-choice.mode-tone-red{--mode-accent:#ff718b}
+.mode-choice.mode-tone-orange{--mode-accent:#ffaa60}
+.mode-choice.mode-tone-violet{--mode-accent:#b38cff}
+.mode-choice.mode-tone-mint{--mode-accent:#65efce}
+.mode-choice.mode-tone-yellow{--mode-accent:#ffe776}
+.mode-choice.mode-tone-blue{--mode-accent:#7aafff}
+.mode-choice:hover{border-color:var(--mode-accent);background:linear-gradient(140deg,#263a62,#192345)}
+.mode-choice.is-selected{
+ border:2px solid var(--mode-accent);
+ background:linear-gradient(140deg,#2c3b63,#202b50);
+ box-shadow:0 0 0 1px #ffffff18,inset 0 1px 0 #ffffff22,0 0 16px color-mix(in srgb,var(--mode-accent) 32%,transparent);
+}
+.mode-choice:focus-visible{outline:3px solid #ffe297;outline-offset:2px}
+.mode-choice-emblem{
+ display:grid;place-items:center;flex:0 0 47px;height:47px;border-radius:12px;
+ color:var(--mode-accent);background:color-mix(in srgb,var(--mode-accent) 12%,#0a132a);
+ border:1px solid color-mix(in srgb,var(--mode-accent) 42%,transparent);
+ box-shadow:inset 0 1px 0 #ffffff14;
+}
+.mode-choice-emblem svg{display:block;width:34px;height:34px;max-width:100%;max-height:100%}
+.mode-choice-copy{display:flex;flex-direction:column;min-width:0;gap:4px;line-height:1.2}
+.mode-choice-copy strong{font-weight:900;color:#fff;overflow-wrap:anywhere;font-size:12px}
+.mode-choice-copy small{color:#b4c8e5;overflow-wrap:anywhere;font-size:10px;line-height:1.35}
+.mode-choice-preview{position:absolute;right:5px;top:4px;font-size:8px;color:#d9d6ff;letter-spacing:.045em;font-weight:900}
+.mode-choice:has(.mode-choice-preview){padding-top:16px}
+.mode-selected-banner{
+ display:flex;align-items:center;gap:10px;background:#2737537d;border:1px solid #6882af77;
+ padding:9px 12px;border-radius:11px;color:#ffdc8a;
+}
+.mode-selected-banner svg{flex-shrink:0}
+.mode-selected-banner span{display:flex;flex-direction:column;gap:3px}
+.mode-selected-banner strong{color:#fff;font-size:13px}
+.mode-selected-banner small{color:#b1c7e9;font-size:9px;letter-spacing:.08em;font-weight:800}
+.mode-icon-heading,.mode-icon-sub{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mode-icon-heading svg,.mode-icon-sub svg{flex:0 0 auto;color:#ffdb86}
+@media(max-width:950px){.mode-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){
+ .mode-choice-grid{gap:7px;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mode-choice{padding:9px 7px;gap:7px;min-height:72px}
+ .mode-choice-emblem{flex-basis:40px;height:40px;border-radius:10px}
+ .mode-choice-emblem svg{width:29px;height:29px}
+ .mode-choice-copy strong{font-size:11px}
+ .mode-choice-copy small{font-size:9px}
+ .mode-icon-heading{gap:8px}
+}
+@media(max-width:350px){.mode-choice-emblem{flex-basis:34px;height:36px}.mode-choice-emblem svg{width:25px;height:25px}}
+@media(prefers-reduced-motion:reduce){.mode-choice{transition:none}}
