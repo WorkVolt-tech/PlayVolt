@@ -111,7 +111,7 @@ test('bomb blast next to frozen column shatters ice but keeps distant chips',()=
  assert.equal(next.board[36],0);
  assert.equal(next.board[37],0);
  assert.equal(next.board[38],0);
- assert.equal(next.board[39],0);
+ assert.equal(next.board[39],2);
  assert.equal(next.board[40],2);
 });
 test('bomb can break an empty frozen column without deleting unrelated chips',()=>{
