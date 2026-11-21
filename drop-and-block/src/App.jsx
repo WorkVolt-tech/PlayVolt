@@ -35,7 +35,8 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
   const columns = Array.from({length: width}, (_,i) => i);
   const rows = Array.from({length: height}, (_,i) => i);
   const grid = { gridTemplateColumns: 'repeat(' + width + ', minmax(0, 1fr))' };
-  const minWidth=wideBoardMinWidth(width,readOnly);
+  // Keep column targets usable on narrow phones; the board scrolls inside its own viewport.
+  const minWidth=readOnly?0:Math.max(wideBoardMinWidth(width,readOnly),width*42);
   const available=col=>power?(!disabled&&turn===me&&powerTargetAllowed({board,turn,...power},selectedPower,col,width,height)):canPlayColumn(board,width,height,col,moveKind,disabled||turn!==me);
   const actionLabel=power?(selectedPower==='freeze'?'Freeze':selectedPower==='bomb'?'Bomb':selectedPower==='shield'?'Shield':selectedPower==='double'?'Double-drop chip':'Drop chip'):moveKind==='blast'?'Blast':'Place '+(moveKind==='block'?'barrier':'chip');
   const lastCell=lastMoveCell(board,width,height,lastMove);
@@ -49,7 +50,7 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
   useArcadeLandingSounds(flights,soundEnabled);
   return <div className="board-wrap">
     <div className={'board-scroll'+(minWidth?' is-wide':'')}
-      role={minWidth?'region':undefined} aria-label={minWidth?'Swipe horizontally to view the entire game board':undefined}
+      role={minWidth?'region':undefined} aria-label={minWidth?'Game board. On small phones, swipe horizontally to reach additional columns.':undefined}
       tabIndex={minWidth?0:undefined}>
       <div className="board-inner" style={minWidth?{minWidth:minWidth+'px'}:undefined}>
         {!readOnly&&<div className="board-controls" style={grid}>
@@ -89,7 +90,7 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
       </div>
     </div>
     {!readOnly&&<p className="board-mobile-hint">
-      Tap anywhere in a column to play{minWidth?' · Swipe sideways to see the whole board':''}
+      Tap a column to play{width>=9?' · Swipe the board sideways for more columns':''}
     </p>}
   </div>;
 }
