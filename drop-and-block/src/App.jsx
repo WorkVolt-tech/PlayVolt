@@ -26,6 +26,7 @@ import {TvPairHost} from './TvPairHost.jsx';
 import {initPowerState,playPowerTurn,powerTargetAllowed,activateDouble} from './powerRules.js';
 import {playGravityTurn,emptyRivalry,registerRivalry,SHIFT_EVERY} from './arcadeModes.js';
 import {MatchScoreboard} from './MatchScoreboard.jsx';
+import {GameModeIcon,ModeChoiceGrid} from './GameModeIcons.jsx';
 
 const icons = ['','◆','●','▲','■','★','⬡','✦','✳','⬢'];
 const colors = ['','Coral','Cyan','Gold','Mint','Violet','Orange','Pink','Silver'];
@@ -152,7 +153,7 @@ function LocalDemo({ onBack, count, mode, loadout }) {
   const useDouble=()=>{setState(old=>activateDouble(old,count));setPowerChoice('drop');};
   return <div className="panel panel-wide">
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
-    <h2>{modeName(mode)} · {count} Players</h2>
+    <h2 className="mode-icon-heading"><GameModeIcon mode={mode} size={31}/>{modeName(mode)} · {count} Players</h2>
     <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
     <div className="local-game-tabs" role="tablist" aria-label="Local match views">
       <button id="local-game-tab" type="button" role="tab"
@@ -605,7 +606,7 @@ export default function App() {
        demo ? <LocalDemo key={maxPlayers+'-'+mode} onBack={()=>setDemo(false)} count={maxPlayers} mode={mode} loadout={myLoadout}/> :
       room ? <section className="panel panel-wide">
         <div className="room-top"><div><div className="section-eyebrow">PRIVATE ROOM</div>
-        <h2>{room.code}</h2><p className="sub">{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p>
+        <h2>{room.code}</h2><p className="sub mode-icon-sub"><GameModeIcon mode={room.mode} size={22}/>{modeName(room.mode)} · Match {room.matchNumber || 1} · {room.players.length}/{room.maxPlayers} players</p>
         <p className="lobby-win-target">{room.status==='lobby'?'Start with '+room.players.length+' player'+(room.players.length===1?'':'s')+': Connect '+balancedWinLength(room.players.length,room.mode):
          'Match rule · Connect '+(room.winLength===3?3:4)+(room.mode==='team'?' team chips':' chips')}</p></div>
         <div className="room-share-actions">
@@ -694,17 +695,9 @@ export default function App() {
         <section className="panel">
           <div className="section-eyebrow">START A MATCH</div>
           <h2>Choose your battle</h2>
-          <label>Game mode<select value={mode} onChange={e=>{setMode(e.target.value);if(e.target.value==='team'&&maxPlayers<4)setMaxPlayers(4);if(e.target.value==='team'&&maxPlayers%2===1)setMaxPlayers(maxPlayers+1);}}>
-            <option value="classic">Classic · Balanced Connect 3 / 4</option>
-            <option value="speed">⚡ Speed Round · Everyone drops at once!</option>
-            <option value="territory">Territory · Score until board is full</option>
-            <option value="elimination">Elimination · Previous player is knocked out</option>
-            <option value="collapse">Bottom Drop · Clear the floor when stacks rise</option>
-            <option value="chaos">Chaos · Drop, Barrier and Blast</option>
-             <option value="gravity">🌪 Gravity Shift · Board slides every 4 drops (local preview)</option>
-             <option value="power">⚡ Power-Up Arcade · Local preview</option>
-            <option value="team">Team Battle · 2v2 / 3v3 / 4v4</option>
-          </select></label>
+          <div className="mode-picker-label">SELECT GAME MODE</div>
+          <ModeChoiceGrid value={mode} onChange={next=>{setMode(next);if(next==='team')setMaxPlayers(old=>Math.max(4,old+(old%2)));}}/>
+          <div className="mode-selected-banner"><GameModeIcon mode={mode} size={26}/><span><strong>{modeName(mode)}</strong><small>SELECTED MODE</small></span></div>
           <p className="balanced-rule-hint">{mode==='team'
             ? 'TEAM BATTLE · Always Connect 4 using teammates’ chips.'
             : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
