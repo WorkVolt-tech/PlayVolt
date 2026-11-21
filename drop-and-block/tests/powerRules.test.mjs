@@ -105,7 +105,7 @@ test('bomb blast next to frozen column shatters ice but keeps distant chips',()=
  state.board[36]=1;state.board[37]=2;state.board[38]=1;
  state.board[39]=2;state.board[40]=2;
  state.power.energy[0]=100;
- state.power.frozen={column:3,owner:2};
+ state.power.frozen={column:3,owner:1};
  const next=playPowerTurn(state,2,count,width,height,'bomb');
  assert.equal(next.power.frozen,null);
  assert.equal(next.board[36],0);
@@ -117,7 +117,7 @@ test('bomb blast next to frozen column shatters ice but keeps distant chips',()=
 test('bomb can break an empty frozen column without deleting unrelated chips',()=>{
  const state=initial();
  state.power.energy[0]=100;
- state.power.frozen={column:3,owner:2};
+ state.power.frozen={column:3,owner:1};
  assert.equal(powerTargetAllowed({...state,...state.power},'bomb',3,width,height),true);
  const next=playPowerTurn(state,3,count,width,height,'bomb');
  assert.equal(next.power.frozen,null);
@@ -127,7 +127,7 @@ test('bomb can break an empty frozen column without deleting unrelated chips',()
 test('bomb does not thaw a frozen column outside its blast width',()=>{
  const state=initial();
  state.board[35]=2;state.power.energy[0]=100;
- state.power.frozen={column:3,owner:2};
+ state.power.frozen={column:3,owner:1};
  const next=playPowerTurn(state,0,count,width,height,'bomb');
  assert.equal(next.power.frozen?.column,3);
 });
