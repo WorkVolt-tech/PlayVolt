@@ -476,7 +476,9 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .guide-example .feedback-dots{grid-template-columns:repeat(2,11px);gap:4px}
 .guide-example .feedback-dots i{width:11px;height:11px}
 .guide-link{font:700 13px ui-monospace,Menlo,monospace;color:#fff;background:#2a2048;border:1px solid #6a5394;border-radius:6px;padding:1px 6px;word-break:break-all;user-select:all}
-.tv-sheet .tv-guide{max-height:52vh;overflow-y:auto;overscroll-behavior:contain;margin-bottom:10px;padding-right:2px}
+.tv-sheet .tv-guide{margin-bottom:10px}
+.tv-downloader-code{padding:12px;border:1px solid #a56fe0;border-radius:12px;background:#2a2048;text-align:center}
+.tv-downloader-code strong{display:block;font-size:28px;letter-spacing:.12em;color:#fff;user-select:all}
 
 /* In-game dialog (replaces the browser's confirm/prompt pop-ups). */
 .dialog-backdrop{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:#05040fcc;backdrop-filter:blur(3px);animation:fade-in .18s ease}
