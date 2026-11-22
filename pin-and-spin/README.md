@@ -326,3 +326,5 @@ or use Leave Room before exiting. Rooms expire after 24 hours.
 ## Optional
 
 To point the game header's PlayVolt link to a deployed hub (instead of the GitHub repository), add the Cloudflare build environment variable `VITE_PLAYVOLT_HUB_URL` with the verified hub URL.
+
+Friends: add players by their shared PlayVolt username (profile nickname). The Friends screen shows your own username and accepts a friend’s username without a friend code. Existing shared friend links still work through a separate invitation button. Uses the existing `friend_request_by_nickname` RPC; no database changes.
