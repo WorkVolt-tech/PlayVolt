@@ -15,7 +15,6 @@ export function ShowOnTv({ game, pairTv, onClose }) {
   const [code, setCode] = useState('');
   const [status, setStatus] = useState({ busy: false, done: false, error: '' });
   const [showLink, setShowLink] = useState(!pairTv);
-  const [guide, setGuide] = useState(false);
   const [copyFallback, setCopyFallback] = useState(false);
 
   async function copy() {
@@ -42,6 +41,8 @@ export function ShowOnTv({ game, pairTv, onClose }) {
     <div className="sheet surface tv-sheet" role="dialog" aria-modal="true" aria-label="Show on TV" onClick={(e) => e.stopPropagation()}>
       <div className="panel-title"><h2>📺 Show on TV</h2><button type="button" className="sheet-close" onClick={onClose} aria-label="Close">✕</button></div>
 
+      <TvSetupGuide />
+
       {pairTv && <form className="tv-pair-form" onSubmit={connect}>
         <p className="field-help">On the TV’s web browser (Fire TV, Samsung, LG, a laptop…), go to
           <strong className="tv-pair-address"> {tvPairAddress()}</strong> and type the 4-letter code it shows:</p>
@@ -56,10 +57,6 @@ export function ShowOnTv({ game, pairTv, onClose }) {
         {status.error && <p className="tv-pair-error" role="alert">{status.error}</p>}
         <p className="field-help small">Tip: bookmark that page on the TV. Several TVs can show the same room.</p>
       </form>}
-
-      <button type="button" className="text-btn tv-link-toggle" aria-expanded={guide} onClick={() => setGuide(!guide)}>
-        {guide ? 'Hide TV setup steps' : 'First time? How to set up your TV (Fire TV app & more)'}</button>
-      {guide && <TvSetupGuide />}
 
       {pairTv && !showLink && <button type="button" className="text-btn tv-link-toggle" onClick={() => setShowLink(true)}>
         Use a link instead (laptop or computer)</button>}
