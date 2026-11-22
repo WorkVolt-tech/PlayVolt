@@ -15,7 +15,6 @@ export function ShowOnTv({ game, pairTv, onClose }) {
   const [code, setCode] = useState('');
   const [status, setStatus] = useState({ busy: false, done: false, error: '' });
   const [showLink, setShowLink] = useState(!pairTv);
-  const [guide, setGuide] = useState(false);
   const [copyFallback, setCopyFallback] = useState(false);
 
   async function copy() {
@@ -57,9 +56,7 @@ export function ShowOnTv({ game, pairTv, onClose }) {
         <p className="field-help small">Tip: bookmark that page on the TV. Several TVs can show the same room.</p>
       </form>}
 
-      <button type="button" className="text-btn tv-link-toggle" aria-expanded={guide} onClick={() => setGuide(!guide)}>
-        {guide ? 'Hide TV setup steps' : 'First time? How to set up your TV (Fire TV app & more)'}</button>
-      {guide && <TvSetupGuide />}
+      <TvSetupGuide />
 
       {pairTv && !showLink && <button type="button" className="text-btn tv-link-toggle" onClick={() => setShowLink(true)}>
         Use a link instead (laptop or computer)</button>}

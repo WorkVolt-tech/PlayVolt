@@ -6,16 +6,18 @@ export function TvSetupGuide() {
   const host = location.host;
   return <div className="guide tv-guide">
     <section>
-      <h3>🔥 Amazon Fire TV / Fire Stick <span className="guide-tag">best</span></h3>
-      <p className="guide-note">Install the free Pin &amp; Spin TV app once (about 5 minutes):</p>
+      <h3>Download for Fire TV / Android TV</h3>
+      <p className="guide-note">Install the free Pin &amp; Spin TV display app using Downloader:</p>
+      <p className="tv-downloader-code">Downloader code <strong>7035674</strong></p>
       <ol>
         <li>On the Fire TV: <b>Settings → My Fire TV → About</b>. Click your device name <b>7 times</b> until it says you are a developer.</li>
         <li>Search for and install the free <b>Downloader</b> app (orange icon).</li>
         <li><b>Settings → My Fire TV → Developer Options → Install unknown apps</b> → turn on <b>Downloader</b>.</li>
-        <li>Open Downloader, type <code className="guide-link">{host}/app</code>, press <b>Go</b>, then <b>Install</b>.</li>
-        <li>Open <b>Pin &amp; Spin TV</b> from your apps. It shows a 4-letter code.</li>
+        <li>Open Downloader, enter <b>7035674</b> in its address field, press <b>Go</b>, then download and <b>Install</b>.</li>
+        <li>Open <b>Pin &amp; Spin TV</b> from your apps. It shows a separate 4-letter pairing code to enter in the Connect TV field on your phone.</li>
       </ol>
-      <p className="guide-note">Google TV / Android TV: the same steps and link work with Downloader.</p>
+      <p className="guide-note">Google TV / Android TV: allow Downloader to install unknown apps in your device settings, then enter the same code.</p>
+      <p className="guide-note">Or use the direct download: <a className="guide-link" href="/app">{host}/app</a></p>
     </section>
     <section>
       <h3>📺 Samsung, LG or any TV with a web browser</h3>

@@ -233,7 +233,7 @@ normal snapshots never contain the secret, so the switch gives non-admins nothin
 
 **How to play (ⓘ):** the ⓘ button in the top bar opens Rules, Game modes and Play on a TV
 (`src/components/HowToPlay.jsx`). The TV setup steps (`TvSetupGuide.jsx`: Fire TV app via
-Downloader + `<site>/app`, TV browsers via `<site>/tv`) also appear under Show on TV.
+Downloader code **7035674** + `<site>/app`, TV browsers via `<site>/tv`) appear immediately under Show on TV, without expanding a setup section. The numeric Downloader code installs the TV app; the separate four-letter pairing code connects the TV to a room.
 
 **TV pairing (no long link to type):** on the TV, open `<site>/tv` (bookmark it). It
 shows a 4-letter code (no look-alike letters, new code every 10 minutes). A player in
