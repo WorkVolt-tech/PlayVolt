@@ -14,7 +14,7 @@ export function TvSetupGuide() {
         <li>Search for and install the free <b>Downloader</b> app (orange icon).</li>
         <li><b>Settings → My Fire TV → Developer Options → Install unknown apps</b> → turn on <b>Downloader</b>.</li>
         <li>Open Downloader, enter <b>7035674</b> in its address field, press <b>Go</b>, then download and <b>Install</b>.</li>
-        <li>Open <b>Pin &amp; Spin TV</b> from your apps. It shows a separate 4-letter pairing code to enter below on your phone.</li>
+        <li>Open <b>Pin &amp; Spin TV</b> from your apps. It shows a separate 4-letter pairing code to enter in the Connect TV field on your phone.</li>
       </ol>
       <p className="guide-note">Google TV / Android TV: allow Downloader to install unknown apps in your device settings, then enter the same code.</p>
       <p className="guide-note">Or use the direct download: <a className="guide-link" href="/app">{host}/app</a></p>
