@@ -40,6 +40,7 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
     <div className="surface">
       <PointsLeaderLine players={activePlayers} leaders={speedLeaders} me={game.me} />
       <LeaderLine players={activePlayers} leaders={leaders} me={game.me} />
+      {game.mode !== 'classic' && <p className="lobby-help">🏅 Correct-answer points this match: first correct = {activePlayers.length}, second = {Math.max(1, activePlayers.length - 1)}, and so on to 1. This scale locks when the game starts.</p>}
       <div className="panel-title"><h2>Players</h2><span>{readyCount} READY · {activePlayers.length} / {MODES[game.mode].maxPlayers}</span></div>
       {game.mode === 'classic' && <p className="classic-note">↪ Classic is a 2-player duel. For more friends, start a Reveal, Timed Reveal or Rush room.</p>}
       {game.mode !== 'classic' && <p className="classic-note colors-note">{activePlayers.length > 3
