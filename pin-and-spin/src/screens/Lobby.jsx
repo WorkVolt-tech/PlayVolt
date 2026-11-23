@@ -6,7 +6,7 @@ import { play } from '../sound/sfx.js';
 import { ShowOnTv } from './ShowOnTv.jsx';
 import { InviteFriends } from '../social/InviteFriends.jsx';
 import { WinsBadge, LeaderLine, PointsBadge, PointsLeaderLine } from '../components/WinsBadge.jsx';
-import { winLeaders, pointsLeaders } from '../game/selectors.js';
+import { winLeaders, pointsLeaders, countsReadyForLobby } from '../game/selectors.js';
 
 // Waiting room: code/invite, chosen mode, players and ready/start controls.
 export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRemove, onCustomize }) {
@@ -16,7 +16,7 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
   const speedLeaders = pointsLeaders(game.players);
   const host = game.hostId === game.me;
   // A host has Start instead of Ready, including after an ownership transfer.
-  const countsReady = (player) => player.ready || player.id === game.hostId;
+  const countsReady = (player) => countsReadyForLobby(player, game.hostId);
   const allReady = activePlayers.length >= 2 && activePlayers.every(countsReady);
   const readyCount = activePlayers.filter(countsReady).length;
   const [tvOpen, setTvOpen] = useState(false);
