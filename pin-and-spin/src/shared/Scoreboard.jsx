@@ -43,7 +43,8 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
         ? <span className="status-pill">{simultaneous ? `ROUND ${game.round} / 4` : game.mode === 'rush' ? 'RUSH · LIVE' : 'CLASSIC · LIVE'}</span>
         : <span className="status-pill done">FINAL RESULTS</span>}
       {playing && simultaneous && <span className="status-text">{submittedCount} of {active.length} locked in · reveal when everyone submits{game.mode === 'timed-reveal' ? ' or time runs out' : ''}</span>}
-      {playing && !simultaneous && <span className="status-text">Guesses appear the moment they are played</span>}
+      {playing && game.mode === 'rush' && <span className="status-text">Five guesses · each submitted row stays sealed until its minute reveal</span>}
+      {playing && game.mode === 'classic' && <span className="status-text">Guesses appear the moment they are played</span>}
       <span className="board-legend inline"><span><i className="pin-dot" /> Pin</span><span><i className="spin-dot" /> Spin</span></span>
     </div>
 
