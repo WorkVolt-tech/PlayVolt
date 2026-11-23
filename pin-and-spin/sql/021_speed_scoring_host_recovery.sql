@@ -24,15 +24,22 @@ BEGIN
   IF NEW.mode = 'classic' THEN
     RETURN NULL;
   END IF;
-  WITH ranked AS (
-    SELECT g.player_id,
+  WITH first_correct AS (
+    -- Rush keeps its first-correct trophy; later solvers still earn points.
+    -- Count each player's earliest correct submission only once.
+    SELECT DISTINCT ON (g.player_id) g.player_id, g.id
+    FROM public.pin_and_spin_guesses g
+    WHERE g.room_id = NEW.id AND g.puzzle = NEW.puzzle
+      AND g.colors IS NOT NULL AND g.pins = NEW.slots
+      AND (NEW.mode='rush' OR g.player_id = ANY(NEW.winners))
+    ORDER BY g.player_id, g.id
+  ), ranked AS (
+    SELECT fc.player_id,
       greatest(1, coalesce(nullif(NEW.points_pool,0),
         (select count(*)::integer from public.pin_and_spin_players p
           where p.room_id=NEW.id and p.active))
-        - row_number() OVER (ORDER BY g.id) + 1)::integer AS earned
-    FROM public.pin_and_spin_guesses g
-    WHERE g.room_id = NEW.id AND g.puzzle = NEW.puzzle AND g.pins = NEW.slots
-      AND g.player_id = ANY(NEW.winners)
+        - row_number() OVER (ORDER BY fc.id) + 1)::integer AS earned
+    FROM first_correct fc
   )
   UPDATE public.pin_and_spin_players p
     SET points = p.points + ranked.earned, last_points = ranked.earned
@@ -53,7 +60,7 @@ CREATE OR REPLACE FUNCTION public.pin_and_spin_advance(rid uuid)
  LANGUAGE plpgsql
  SET search_path TO ''
 AS $function$
-declare r public.pin_and_spin_rooms; remaining integer; wins uuid[]; next_player uuid;
+declare r public.pin_and_spin_rooms; remaining integer; wins uuid[]; next_player uuid; rush_revealed integer;
 begin
   select * into r from public.pin_and_spin_rooms where id=rid;
   if r.status <> 'playing' then return; end if;
@@ -82,11 +89,29 @@ begin
       update public.pin_and_spin_rooms set round=round+1,deadline=case when mode='timed-reveal' then clock_timestamp()+interval '3 minutes' end where id=rid;
     end if;
   elsif r.mode='rush' then
-    if clock_timestamp()>=r.deadline or not exists(
-      select 1 from public.pin_and_spin_players p where p.room_id=rid and p.active and
-      (select count(*) from public.pin_and_spin_guesses g where g.room_id=rid and g.puzzle=r.puzzle and g.player_id=p.id)<8
-    ) then
-      update public.pin_and_spin_rooms set status='finished',deadline=null where id=rid;
+    -- Players may submit all five rows anytime; clues stay sealed until that
+    -- row's scheduled reveal: row 1 at minute 1 ... row 5 at minute 5.
+    if r.deadline is null then return; end if;
+    rush_revealed := least(5, greatest(0,
+      floor(extract(epoch from (clock_timestamp() -
+        (r.deadline - interval '5 minutes')))/60)::integer));
+    if rush_revealed > r.round then
+      update public.pin_and_spin_guesses set revealed=true
+        where room_id=rid and puzzle=r.puzzle and attempt<=rush_revealed;
+      update public.pin_and_spin_rooms set round=rush_revealed where id=rid;
+    end if;
+    -- All five scheduled reveals run even when somebody has already solved.
+    if clock_timestamp()>=r.deadline then
+      update public.pin_and_spin_guesses set revealed=true
+        where room_id=rid and puzzle=r.puzzle;
+      select g.player_id into next_player
+        from public.pin_and_spin_guesses g
+        where g.room_id=rid and g.puzzle=r.puzzle and g.colors is not null
+          and g.pins=r.slots
+        order by g.id limit 1;
+      update public.pin_and_spin_rooms set status='finished',round=5,
+        winners=case when next_player is null then '{}'::uuid[] else array[next_player] end,
+        deadline=null where id=rid;
     end if;
   else
     -- Classic also needs recovery: a disconnected player's turn is forfeited
@@ -284,13 +309,14 @@ begin
    select array_agg(('x'||substr(replace(gen_random_uuid()::text,'-',''),1,2))::bit(8)::integer % v_colors) into choices from generate_series(1,v_slots);
    select id into next_player from public.pin_and_spin_players where room_id=r.id and active order by seat offset (case when r.mode='classic' then floor(random() * n)::integer else r.starter % n end) limit 1;
    update public.pin_and_spin_players set last_points=0 where room_id=r.id and active;
-   update public.pin_and_spin_rooms set status='playing',secret=choices,colors=v_colors,slots=v_slots,points_pool=n,puzzle=puzzle+1,round=1,starter=starter+1,turn_id=next_player,winners='{}',
-     deadline=case when mode in ('rush','timed-reveal') then clock_timestamp()+interval '3 minutes' end where id=r.id;
+   update public.pin_and_spin_rooms set status='playing',secret=choices,colors=v_colors,slots=v_slots,points_pool=n,puzzle=puzzle+1,round=case when mode='rush' then 0 else 1 end,starter=starter+1,turn_id=next_player,winners='{}',
+     deadline=case when mode='rush' then clock_timestamp()+interval '5 minutes'
+                   when mode='timed-reveal' then clock_timestamp()+interval '3 minutes' end where id=r.id;
  elsif p_action='guess' then
    -- A late request returns current state without accepting or rolling back deadline advancement.
    if r.status='playing' and (p_data->>'puzzle')::integer=r.puzzle then
      select count(*)+1 into a from public.pin_and_spin_guesses where room_id=r.id and puzzle=r.puzzle and player_id=me.id;
-     lim := case when r.mode='rush' then 8 else 4 end;
+     lim := case when r.mode='rush' then 5 else 4 end;
      if r.mode in ('reveal','timed-reveal') then a:=r.round; end if;
      if (p_data->>'attempt')::integer=a and a<=lim and (r.mode<>'classic' or r.turn_id=me.id)
        and not exists(select 1 from public.pin_and_spin_guesses where room_id=r.id and puzzle=r.puzzle and player_id=me.id and attempt=a) then
@@ -301,8 +327,9 @@ begin
        -- Preserve the server's accepted guess order (the generated guess ID)
        -- after room locking. No elapsed-time calculation affects points.
        insert into public.pin_and_spin_guesses(room_id,player_id,puzzle,attempt,colors,pins,spins,revealed,submitted_at)
-         values(r.id,me.id,r.puzzle,a,choices,score[1],score[2],r.mode in ('classic','rush'),clock_timestamp());
-       if r.mode in ('classic','rush') and score[1]=r.slots then
+         values(r.id,me.id,r.puzzle,a,choices,score[1],score[2],
+           (r.mode='classic' or (r.mode='rush' and a<=r.round)),clock_timestamp());
+       if r.mode='classic' and score[1]=r.slots then
          update public.pin_and_spin_rooms set status='finished',winners=array[me.id],deadline=null where id=r.id;
        elsif r.mode='classic' then
          select p.id into next_player from public.pin_and_spin_players p where p.room_id=r.id and p.active and
@@ -345,7 +372,11 @@ begin
    'displayToken',case when not is_display then r.display_token else null end,
    'players',coalesce((select jsonb_agg(jsonb_build_object('id',p.id,'name',p.name,'seat',p.seat,'ready',p.ready,'active',p.active,'wins',p.wins,'points',p.points,'lastPoints',p.last_points,'appearance',p.appearance,
      'away',p.active and p.last_seen<clock_timestamp()-interval '45 seconds',
-     'submitted',exists(select 1 from public.pin_and_spin_guesses g where g.room_id=r.id and g.puzzle=r.puzzle and g.player_id=p.id and g.attempt=r.round)) order by p.seat)
+     'submitted',exists(select 1 from public.pin_and_spin_guesses g where g.room_id=r.id and g.puzzle=r.puzzle and g.player_id=p.id
+       and ((r.mode='rush' and not g.revealed) or (r.mode<>'rush' and g.attempt=r.round))),
+     'submittedCount',case when r.mode='rush' then
+       (select count(*) from public.pin_and_spin_guesses g where g.room_id=r.id and g.puzzle=r.puzzle
+          and g.player_id=p.id and g.colors is not null) else 0 end) order by p.seat)
      from public.pin_and_spin_players p where p.room_id=r.id and (p.active or r.status<>'lobby')),'[]'::jsonb),
    'guesses',coalesce((select jsonb_agg(jsonb_build_object('playerId',g.player_id,'attempt',g.attempt,'colors',g.colors,
      'pins',case when g.revealed then g.pins else null end,'spins',case when g.revealed then g.spins else null end,'revealed',g.revealed) order by g.id)
