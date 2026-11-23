@@ -72,7 +72,7 @@ function Rules() {
     <section>
       <h3>🏆 Winning</h3>
       <p>The first player to get <b>4 Pins</b> wins. If nobody cracks it, the secret is shown at the end.
-        In simultaneous modes, players who solve in the same reveal share the win, but earn different speed points: first correct answer gets 10, second 9, third 8, and so on. Submitting a wrong answer quickly earns no points.</p>
+        Outside Classic, only correct answers earn points, based on submission order: first correct gets 10, second 9, third 8, and so on. There is no extra bonus for answering within a certain number of seconds. Reveal modes still allow shared wins; Classic scoring stays unchanged.</p>
     </section>
     <section>
       <h3>🕹️ Playing</h3>
