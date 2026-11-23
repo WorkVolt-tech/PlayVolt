@@ -4,14 +4,14 @@ import { Peg } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { QrCode } from './QrCode.jsx';
 import { WinsBadge, LeaderLine, PointsBadge, PointsLeaderLine } from '../components/WinsBadge.jsx';
-import { winLeaders, pointsLeaders } from '../game/selectors.js';
+import { winLeaders, pointsLeaders, countsReadyForLobby } from '../game/selectors.js';
 
 // The TV before a match: how to join, who is in, and who is ready.
 export function TvLobby({ game }) {
   const players = (game.players || []).filter((p) => p.active);
   const leaders = winLeaders(players);
   const speedLeaders = pointsLeaders(players);
-  const countsReady = (player) => player.ready || player.id === game.hostId;
+  const countsReady = (player) => countsReadyForLobby(player, game.hostId);
   const ready = players.filter(countsReady).length;
   const joinUrl = `${location.origin}/?room=${encodeURIComponent(game.code)}&install=1`;
   const mode = MODES[game.mode];
