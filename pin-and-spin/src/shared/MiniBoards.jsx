@@ -68,7 +68,8 @@ export function MiniBoards({ game, onOpen }) {
               {guess.colors ? <PegRow colors={guess.colors} tiny shape={appearance.piece} /> : <span className="mini-missed">missed</span>}
               {guess.colors ? <Feedback guess={guess} shape={appearance.pin} /> : <span className="mini-gap" />}
             </span>;
-            if (i === rows.length && lane.sealed) return <span className="mini-row sealed" key={i}>
+            if ((game.mode === 'rush' && lane.sealedAttempts?.includes(i + 1)) ||
+                (game.mode !== 'rush' && i === rows.length && lane.sealed)) return <span className="mini-row sealed" key={i}>
               <span className="sealed-balls">{empty.map((_, n) => <i key={n} />)}</span><span className="mini-gap" />
             </span>;
             return <span className="mini-row empty" key={i}><PegRow colors={empty} tiny /><span className="mini-gap" /></span>;
