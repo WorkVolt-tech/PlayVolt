@@ -72,7 +72,7 @@ function Rules() {
     <section>
       <h3>🏆 Winning</h3>
       <p>The first player to get <b>4 Pins</b> wins. If nobody cracks it, the secret is shown at the end.
-        In the modes where everyone guesses together, players who solve in the same reveal share the win.</p>
+        In simultaneous modes, players who solve in the same reveal share the win, but earn different speed points: first correct answer gets 10, second 9, third 8, and so on. Submitting a wrong answer quickly earns no points.</p>
     </section>
     <section>
       <h3>🕹️ Playing</h3>
