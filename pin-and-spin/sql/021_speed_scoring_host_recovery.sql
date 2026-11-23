@@ -307,7 +307,10 @@ begin
  elsif p_action='leave' then
    update public.pin_and_spin_players set active=false,ready=false where id=me.id;
    if me.id=r.host_id then
-     select id into next_player from public.pin_and_spin_players where room_id=r.id and active order by seat limit 1;
+     -- Prefer someone still connected, instead of promoting a sleeping device.
+     select id into next_player from public.pin_and_spin_players
+       where room_id=r.id and active
+       order by case when last_seen >= clock_timestamp()-interval '90 seconds' then 0 else 1 end, seat limit 1;
      update public.pin_and_spin_rooms set host_id=next_player,status=case when next_player is null then 'closed' else status end where id=r.id;
      -- A new host cannot click Ready: they automatically count as ready.
      if next_player is not null then
