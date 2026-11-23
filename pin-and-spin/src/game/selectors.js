@@ -153,3 +153,8 @@ export function pointsLeaders(players) {
   const best = Math.max(0, ...here.map((p) => Number(p.points) || 0));
   return best > 0 ? new Set(here.filter((p) => (Number(p.points) || 0) === best).map((p) => p.id)) : new Set();
 }
+
+// The host never sees an I'M READY control: their Start button means ready.
+export function countsReadyForLobby(player, hostId) {
+  return !!player && (player.ready === true || player.id === hostId);
+}
