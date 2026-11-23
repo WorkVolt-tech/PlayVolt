@@ -5,10 +5,16 @@ ALTER TABLE public.pin_and_spin_players
   ADD COLUMN IF NOT EXISTS points integer NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS last_points integer NOT NULL DEFAULT 0;
 
+-- Freeze the size of each match when Start is pressed. A player leaving mid-game
+-- must not lower everybody else's possible points.
+ALTER TABLE public.pin_and_spin_rooms
+  ADD COLUMN IF NOT EXISTS points_pool integer NOT NULL DEFAULT 0;
+
 -- Points depend ONLY on the order of CORRECT submitted answers, not how many
 -- seconds a player took. Room locking serializes guess inserts, so the server
 -- generated guess ID records that order. Incorrect guesses receive zero points.
--- 1st correct: 10 points, 2nd: 9, 3rd: 8, ... minimum 1.
+-- Match with N players: 1st correct = N points, 2nd = N-1, ...
+-- Last correct = 1 point. Freeze N at start; do not recalculate on disconnect.
 -- CLASSIC stays unchanged: no order-point awards in Classic.
 -- Existing win counts and achievements are untouched.
 CREATE OR REPLACE FUNCTION public.pin_and_spin_correct_order_points()
@@ -20,7 +26,10 @@ BEGIN
   END IF;
   WITH ranked AS (
     SELECT g.player_id,
-      greatest(1, 11 - row_number() OVER (ORDER BY g.id))::integer AS earned
+      greatest(1, coalesce(nullif(NEW.points_pool,0),
+        (select count(*)::integer from public.pin_and_spin_players p
+          where p.room_id=NEW.id and p.active))
+        - row_number() OVER (ORDER BY g.id) + 1)::integer AS earned
     FROM public.pin_and_spin_guesses g
     WHERE g.room_id = NEW.id AND g.puzzle = NEW.puzzle AND g.pins = NEW.slots
       AND g.player_id = ANY(NEW.winners)
@@ -275,7 +284,7 @@ begin
    select array_agg(('x'||substr(replace(gen_random_uuid()::text,'-',''),1,2))::bit(8)::integer % v_colors) into choices from generate_series(1,v_slots);
    select id into next_player from public.pin_and_spin_players where room_id=r.id and active order by seat offset (case when r.mode='classic' then floor(random() * n)::integer else r.starter % n end) limit 1;
    update public.pin_and_spin_players set last_points=0 where room_id=r.id and active;
-   update public.pin_and_spin_rooms set status='playing',secret=choices,colors=v_colors,slots=v_slots,puzzle=puzzle+1,round=1,starter=starter+1,turn_id=next_player,winners='{}',
+   update public.pin_and_spin_rooms set status='playing',secret=choices,colors=v_colors,slots=v_slots,points_pool=n,puzzle=puzzle+1,round=1,starter=starter+1,turn_id=next_player,winners='{}',
      deadline=case when mode in ('rush','timed-reveal') then clock_timestamp()+interval '3 minutes' end where id=r.id;
  elsif p_action='guess' then
    -- A late request returns current state without accepting or rolling back deadline advancement.
@@ -330,7 +339,7 @@ begin
  select * into r from public.pin_and_spin_rooms where id=r.id;
  select jsonb_build_object(
    'code',r.code,'mode',r.mode,'status',r.status,'hostId',r.host_id,'me',me.id,
-   'puzzle',r.puzzle,'round',r.round,'turnId',r.turn_id,'deadline',r.deadline,
+   'puzzle',r.puzzle,'round',r.round,'pointsPool',r.points_pool,'turnId',r.turn_id,'deadline',r.deadline,
    'serverTime',clock_timestamp(),'winners',r.winners,'colors',r.colors,'slots',r.slots,
    'answer',case when r.status='finished' then to_jsonb(r.secret) else null end,
    'displayToken',case when not is_display then r.display_token else null end,
