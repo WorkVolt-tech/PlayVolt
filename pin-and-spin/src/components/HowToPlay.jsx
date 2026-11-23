@@ -71,7 +71,7 @@ function Rules() {
     </section>
     <section>
       <h3>🏆 Winning</h3>
-      <p>The first player to get <b>4 Pins</b> wins. If nobody cracks it, the secret is shown at the end.
+      <p>The first player to get the full set of <b>Pins</b> wins. If nobody cracks it, the secret is shown at the end.
         Outside Classic, the number of players at the start sets the maximum points. In a 6-player game, the first correct answer earns 6 points, second 5, and so on. In a 10-player game, the first correct gets 10. Only correct answers score, ranked by submission order, not elapsed time. A player leaving does not change the point scale for that match. Reveal modes can still have shared wins; Classic stays unchanged.</p>
     </section>
     <section>
