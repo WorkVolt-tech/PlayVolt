@@ -5,17 +5,20 @@ import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { play } from '../sound/sfx.js';
 import { ShowOnTv } from './ShowOnTv.jsx';
 import { InviteFriends } from '../social/InviteFriends.jsx';
-import { WinsBadge, LeaderLine } from '../components/WinsBadge.jsx';
-import { winLeaders } from '../game/selectors.js';
+import { WinsBadge, LeaderLine, PointsBadge, PointsLeaderLine } from '../components/WinsBadge.jsx';
+import { winLeaders, pointsLeaders } from '../game/selectors.js';
 
 // Waiting room: code/invite, chosen mode, players and ready/start controls.
 export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRemove, onCustomize }) {
   const activePlayers = (game.players || []).filter((player) => player.active);
   const me = activePlayers.find((player) => player.id === game.me);
   const leaders = winLeaders(game.players);
+  const speedLeaders = pointsLeaders(game.players);
   const host = game.hostId === game.me;
-  const allReady = activePlayers.length >= 2 && activePlayers.every((player) => player.ready);
-  const readyCount = activePlayers.filter((player) => player.ready).length;
+  // A host has Start instead of Ready, including after an ownership transfer.
+  const countsReady = (player) => player.ready || player.id === game.hostId;
+  const allReady = activePlayers.length >= 2 && activePlayers.every(countsReady);
+  const readyCount = activePlayers.filter(countsReady).length;
   const [tvOpen, setTvOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
   return <>
@@ -35,6 +38,7 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
     <div className="surface lobby-mode"><Peg value={MODES[game.mode].color} tiny />
       <div><strong>{MODES[game.mode].label}</strong><p>{MODES[game.mode].hint}</p></div></div>
     <div className="surface">
+      <PointsLeaderLine players={activePlayers} leaders={speedLeaders} me={game.me} />
       <LeaderLine players={activePlayers} leaders={leaders} me={game.me} />
       <div className="panel-title"><h2>Players</h2><span>{readyCount} READY · {activePlayers.length} / {MODES[game.mode].maxPlayers}</span></div>
       {game.mode === 'classic' && <p className="classic-note">↪ Classic is a 2-player duel. For more friends, start a Reveal, Timed Reveal or Rush room.</p>}
@@ -46,12 +50,12 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
         {activePlayers.map((player) => <div className="player-item" key={player.id}>
           <PlayerAvatar player={player} />
           <div className="player-info"><div className="player-name">{player.name}{player.id === game.me ? ' (YOU)' : ''}<WinsBadge player={player} leaders={leaders} /></div>
-            <div className="player-description">{player.id === game.hostId ? <span className="host-badge">★ HOST</span> : 'PLAYER ' + player.seat}</div>
+            <div className="player-description">{player.id === game.hostId ? <span className="host-badge">★ HOST</span> : 'PLAYER ' + player.seat} <PointsBadge player={player} leaders={speedLeaders} /></div>
           </div>
           {player.away
             ? <span className="ready-pill away">◌ AWAY</span>
-            : <span className={'ready-pill' + (player.ready ? '' : ' wait')}>
-                {player.ready ? '● READY' : '○ WAITING'}
+            : <span className={'ready-pill' + (countsReady(player) ? '' : ' wait')}>
+                {countsReady(player) ? '● READY' : '○ WAITING'}
               </span>}
           {host && player.id !== game.me && <button type="button" className="remove-btn" disabled={busy}
             aria-label={`Remove ${player.name}`} onClick={() => onRemove(player)}>✕</button>}
