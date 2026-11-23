@@ -75,6 +75,11 @@ function Rules() {
         Outside Classic, the number of players at the start sets the maximum points. In a 6-player game, the first correct answer earns 6 points, second 5, and so on. In a 10-player game, the first correct gets 10. Only correct answers score, ranked by submission order, not elapsed time. A player leaving does not change the point scale for that match. Reveal modes can still have shared wins; Classic stays unchanged.</p>
     </section>
     <section>
+      <h3>⚡ Rush: five-minute staggered reveal</h3>
+      <p>Each player has five guesses and may submit them without waiting for clues. The first submitted row reveals after one minute, the second after two minutes, and so on until the fifth row at five minutes. Until its scheduled reveal, each row remains sealed on every screen.</p>
+      <p>The five-minute clock does not stop when someone solves the code. The first correct submission is the winner; other players who solve it receive points based on the order of their first correct answer and the starting player count.</p>
+    </section>
+    <section>
       <h3>🕹️ Playing</h3>
       <ol>
         <li>One player creates a room and shares the 6-character code. Everyone joins on their phone (2–10 players; Classic is a 2-player duel).</li>
