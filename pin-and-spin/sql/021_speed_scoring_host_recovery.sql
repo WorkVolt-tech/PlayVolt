@@ -1,20 +1,26 @@
--- Pin & Spin: server-timed points, stable host, and idle-player round recovery.
+-- Pin & Spin: correct-answer order points, stable host, and idle-player round recovery.
 -- Preview branch only; run against Game DB at production rollout, not in preview.
 -- Existing rooms and earned wins are preserved.
 ALTER TABLE public.pin_and_spin_players
   ADD COLUMN IF NOT EXISTS points integer NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS last_points integer NOT NULL DEFAULT 0;
 
--- Award one room score per completed puzzle, ordered by the SERVER's guess timestamp.
--- Only correct answers earn points; simultaneous same-reveal winners have different
--- points (first 10, next 9, ...). Winners and win-count achievements stay intact.
-CREATE OR REPLACE FUNCTION public.pin_and_spin_speed_points()
+-- Points depend ONLY on the order of CORRECT submitted answers, not how many
+-- seconds a player took. Room locking serializes guess inserts, so the server
+-- generated guess ID records that order. Incorrect guesses receive zero points.
+-- 1st correct: 10 points, 2nd: 9, 3rd: 8, ... minimum 1.
+-- CLASSIC stays unchanged: no order-point awards in Classic.
+-- Existing win counts and achievements are untouched.
+CREATE OR REPLACE FUNCTION public.pin_and_spin_correct_order_points()
 RETURNS trigger LANGUAGE plpgsql SET search_path TO ''
-AS $speed$
+AS $order_points$
 BEGIN
+  IF NEW.mode = 'classic' THEN
+    RETURN NULL;
+  END IF;
   WITH ranked AS (
     SELECT g.player_id,
-      greatest(1, 11 - row_number() OVER (ORDER BY g.submitted_at, g.id))::integer AS earned
+      greatest(1, 11 - row_number() OVER (ORDER BY g.id))::integer AS earned
     FROM public.pin_and_spin_guesses g
     WHERE g.room_id = NEW.id AND g.puzzle = NEW.puzzle AND g.pins = NEW.slots
       AND g.player_id = ANY(NEW.winners)
@@ -24,13 +30,13 @@ BEGIN
     FROM ranked WHERE p.id = ranked.player_id;
   RETURN NULL;
 END;
-$speed$;
+$order_points$;
 
-REVOKE ALL ON FUNCTION public.pin_and_spin_speed_points() FROM PUBLIC, anon, authenticated;
-DROP TRIGGER IF EXISTS pin_and_spin_speed_points_finished ON public.pin_and_spin_rooms;
-CREATE TRIGGER pin_and_spin_speed_points_finished AFTER UPDATE OF status ON public.pin_and_spin_rooms
+REVOKE ALL ON FUNCTION public.pin_and_spin_correct_order_points() FROM PUBLIC, anon, authenticated;
+DROP TRIGGER IF EXISTS pin_and_spin_correct_order_points_finished ON public.pin_and_spin_rooms;
+CREATE TRIGGER pin_and_spin_correct_order_points_finished AFTER UPDATE OF status ON public.pin_and_spin_rooms
   FOR EACH ROW WHEN (OLD.status IS DISTINCT FROM 'finished' AND NEW.status = 'finished')
-  EXECUTE FUNCTION public.pin_and_spin_speed_points();
+  EXECUTE FUNCTION public.pin_and_spin_correct_order_points();
 
 -- Replace the live functions with surgical fixes; keep all other game behavior.
 CREATE OR REPLACE FUNCTION public.pin_and_spin_advance(rid uuid)
@@ -283,8 +289,8 @@ begin
        select array_agg(value::integer) into choices from jsonb_array_elements_text(p_data->'colors');
        if choices is null or exists(select 1 from unnest(choices) c where c is null or c<0 or c>=r.colors) then raise exception 'Invalid color'; end if;
        score:=public.pin_and_spin_score(r.secret,choices);
-       -- Record acceptance order on the server, after the room row is locked.
-       -- Transaction-start now() is not a reliable speed tiebreak under contention.
+       -- Preserve the server's accepted guess order (the generated guess ID)
+       -- after room locking. No elapsed-time calculation affects points.
        insert into public.pin_and_spin_guesses(room_id,player_id,puzzle,attempt,colors,pins,spins,revealed,submitted_at)
          values(r.id,me.id,r.puzzle,a,choices,score[1],score[2],r.mode in ('classic','rush'),clock_timestamp());
        if r.mode in ('classic','rush') and score[1]=r.slots then
