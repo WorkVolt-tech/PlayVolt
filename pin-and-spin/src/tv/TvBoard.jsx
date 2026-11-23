@@ -4,9 +4,9 @@ import { Confetti } from '../components/Confetti.jsx';
 import { Feedback } from '../components/Feedback.jsx';
 import { Peg, PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
-import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders, codeSlots } from '../game/selectors.js';
+import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders, pointsLeaders, codeSlots } from '../game/selectors.js';
 import { tvGrid } from './tvGrid.js';
-import { WinsBadge } from '../components/WinsBadge.jsx';
+import { WinsBadge, PointsBadge } from '../components/WinsBadge.jsx';
 import { cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
 
 
@@ -15,6 +15,7 @@ import { cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
 export function TvBoard({ game, remainingMs }) {
   const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
   const leaders = winLeaders(game.players);
+  const speedLeaders = pointsLeaders(game.players);
   const limit = guessLimit(game.mode);
   const simultaneous = isSimultaneous(game.mode);
   const playing = game.status === 'playing';
@@ -52,7 +53,8 @@ export function TvBoard({ game, remainingMs }) {
   }, [cols, rows, limit, balls.length]);
 
   const players = game.players || [];
-  const winners = (game.winners || []).map((id) => players.find((p) => p.id === id)).filter(Boolean);
+  const winners = (game.winners || []).map((id) => players.find((p) => p.id === id)).filter(Boolean)
+    .sort((a, b) => (Number(b.lastPoints) || 0) - (Number(a.lastPoints) || 0));
 
   return <div className="tvb">
     <div className="tvb-status">
@@ -72,7 +74,7 @@ export function TvBoard({ game, remainingMs }) {
       <div className="tvb-result-text">
         <strong>{winners.length ? 'CODE CRACKED!' : 'NO WINNER THIS TIME'}</strong>
         {winners.length > 0
-          ? <span className="tvb-winners">{winners.map((p) => <span className="winner-chip" key={p.id}><PlayerAvatar player={p} size="sm" />{p.name}</span>)}
+          ? <span className="tvb-winners">{winners.map((p) => <span className="winner-chip" key={p.id}><PlayerAvatar player={p} size="sm" />{p.name}{Number(p.lastPoints) > 0 && <b className="speed-earned">+{p.lastPoints} pts</b>}</span>)}
               {winners.length > 1 ? ' share the win!' : ' wins!'}</span>
           : <span className="tvb-winners">Nobody solved the combination.</span>}
       </div>
@@ -95,7 +97,13 @@ export function TvBoard({ game, remainingMs }) {
           <header>
             {lane.order && <span className="turn-no" title={`Plays ${ordinal(lane.order)}`}>{lane.order}</span>}
             <PlayerAvatar player={lane.player} />
-            <strong>{lane.player.name}<WinsBadge player={lane.player} leaders={leaders} /></strong>
+            <div className="tvb-player-label">
+              <strong title={lane.player.name}>{lane.player.name}</strong>
+              <span className="tvb-player-tallies">
+                <WinsBadge player={lane.player} leaders={leaders} />
+                <PointsBadge player={lane.player} leaders={speedLeaders} />
+              </span>
+            </div>
             <small>{status}</small>
           </header>
           <ol>
