@@ -48,6 +48,9 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
     </div>
 
     {game.status === 'finished' && <WinnerBanner game={game} compact>{actions}</WinnerBanner>}
+    {game.mode === 'rush' && game.status === 'playing' && <p className="rush-reveal-hint">
+      🔓 {game.round} / 5 rows revealed · Row {Math.min(5, game.round + 1)} unlocks next · Submit all five guesses anytime
+    </p>}
     <PointsLeaderLine players={game.players || []} leaders={speedLeaders} me={game.me} />
 
     {showFilter && lanes.length > 1 && <div className="lane-filter" role="group" aria-label="Show players">
@@ -60,7 +63,12 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
       <Empty>Nothing has been revealed yet. {simultaneous ? 'Guesses stay sealed until the round reveals.' : 'Guesses appear here as soon as they are played.'}</Empty>}
 
     <div className="lanes">
-      {shown.map((lane) => <section key={lane.player.id}
+      {shown.map((lane) => {
+        const visibleRows = game.mode === 'rush'
+          ? Array.from({ length: lane.used }, (_, i) =>
+              lane.guesses.find((g) => g.attempt === i + 1) || { attempt: i + 1, revealed: false })
+          : lane.guesses;
+        return <section key={lane.player.id}
         style={cosmeticStyle(lane.player.appearance, lane.player.seat)}
         className={'lane board-theme-' + normalizeCosmetics(lane.player.appearance, lane.player.seat).board + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
         <header className="lane-head">
@@ -74,19 +82,26 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
           </div>
         </header>
         <ol className="lane-rows">
-          {lane.guesses.map((guess, i) => <li className="lane-row" key={guess.attempt} style={{ '--i': i }}>
+          {visibleRows.map((guess, i) => <li className={'lane-row' + (!guess.revealed ? ' sealed-row' : '')}
+            key={guess.attempt} style={{ '--i': i }}>
             <span className="lane-try">{simultaneous ? 'R' : '#'}{guess.attempt}</span>
-            {guess.colors ? <PegRow colors={guess.colors} tiny shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).piece} /> : <span className="missed-row">No guess in time</span>}
-            {guess.colors ? <Feedback guess={guess} shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).pin} /> : <span className="count-missed">MISSED</span>}
+            {!guess.revealed
+              ? <span className="sealed-balls" role="img" aria-label="Submitted guess sealed until its minute reveal">{Array.from({ length: codeSlots(game) }, (_, j) => <i key={j} />)}</span>
+              : guess.colors ? <PegRow colors={guess.colors} tiny shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).piece} />
+              : <span className="missed-row">No guess in time</span>}
+            {!guess.revealed ? <span className="count-missed">SEALED</span>
+              : guess.colors ? <Feedback guess={guess} shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).pin} />
+              : <span className="count-missed">MISSED</span>}
           </li>)}
-          {lane.sealed && <li className="lane-row sealed-row">
+          {lane.sealed && game.mode !== 'rush' && <li className="lane-row sealed-row">
             <span className="lane-try">R{game.round}</span>
             <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{Array.from({ length: codeSlots(game) }, (_, i) => <i key={i} />)}</span>
             <span className="count-missed">SEALED</span>
           </li>}
           {!lane.guesses.length && !lane.sealed && <li className="lane-empty">No guesses yet</li>}
         </ol>
-      </section>)}
+      </section>;
+      })}
     </div>
   </div>;
 }
