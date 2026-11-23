@@ -17,11 +17,11 @@ export function MatchAnnouncer({ game, audience = 'player' }) {
     prevRef.current = game;
     if (!events.length) return;
     const has = (type) => events.find((e) => e.type === type);
-    const end = has('end'), scored = has('scored'), round = has('round');
+    const end = has('end'), scored = has('scored'), round = has('round'), rushReveal = has('rush-reveal');
     if (tv) { /* the shared screen does not vibrate */ }
     else if (end) buzz(end.won ? BUZZ.win : BUZZ.end);
     else if (scored?.pins === 4) buzz(BUZZ.solved);
-    else if (round) buzz(BUZZ.round);
+    else if (round || rushReveal) buzz(BUZZ.round);
     else if (has('turn')) buzz(BUZZ.turn);
     else if (scored) buzz(BUZZ.scored);
     else if (has('start')) buzz(BUZZ.start);
@@ -31,7 +31,9 @@ export function MatchAnnouncer({ game, audience = 'player' }) {
       const first = (game.players || []).find((p) => p.id === game.turnId)?.name;
       setBanner({ key: Date.now(), title: 'Game on!', sub: game.mode === 'classic'
         ? (tv ? `${first || 'A random player'} goes first` : game.turnId === game.me ? 'You go first' : 'Watch for your turn')
-        : game.mode === 'rush' ? 'Three minutes on the clock' : `Round 1 of 4 · ${mode.label}` });
+        : game.mode === 'rush' ? 'Five minutes · five guesses · one reveal per minute' : `Round 1 of 4 · ${mode.label}` });
+    } else if (rushReveal && game.status === 'playing') {
+      setBanner({ key: Date.now(), title: `Row ${rushReveal.row} revealed!`, sub: 'Clues unlocked · keep guessing at your own pace' });
     } else if (round) {
       setBanner({ key: Date.now(), title: `Round ${round.round}`, sub: tv ? `Round ${round.round - 1} revealed · next guesses please!` : `Round ${round.round - 1} revealed · make your next guess` });
     } else if (has('turn')) {
