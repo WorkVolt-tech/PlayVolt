@@ -55,6 +55,10 @@ export function TvBoard({ game, remainingMs }) {
   const players = game.players || [];
   const winners = (game.winners || []).map((id) => players.find((p) => p.id === id)).filter(Boolean)
     .sort((a, b) => (Number(b.lastPoints) || 0) - (Number(a.lastPoints) || 0));
+  const otherCorrect = game.mode === 'rush' && game.status === 'finished'
+    ? players.filter((p) => Number(p.lastPoints) > 0 && !winners.some((w) => w.id === p.id))
+        .sort((a, b) => Number(b.lastPoints) - Number(a.lastPoints))
+    : [];
 
   return <div className="tvb">
     <div className="tvb-status">
@@ -78,6 +82,9 @@ export function TvBoard({ game, remainingMs }) {
           ? <span className="tvb-winners">{winners.map((p) => <span className="winner-chip" key={p.id}><PlayerAvatar player={p} size="sm" />{p.name}{Number(p.lastPoints) > 0 && <b className="speed-earned">+{p.lastPoints} pts</b>}</span>)}
               {winners.length > 1 ? ' share the win!' : ' wins!'}</span>
           : <span className="tvb-winners">Nobody solved the combination.</span>}
+        {otherCorrect.length > 0 && <span className="rush-other-correct" title="Other correct answers, ranked by submission order">
+          Other correct: {otherCorrect.map((p) => `${p.name} +${p.lastPoints}`).join(' · ')} pts
+        </span>}
       </div>
       <div className="tvb-secret">
         <small>SECRET</small>
