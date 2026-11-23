@@ -91,6 +91,7 @@ export function Match({ state, onShare, onRemove, onLeave, onCustomize }) {
     {game.status === 'finished'
       ? <FinishPanel game={game} onViewResults={() => openBoard()}>{playAgain}</FinishPanel>
       : <GuessPanel mine={mine} limit={limit} attempt={attempt} canSubmit={canSubmit}
+          help={game.mode === 'rush' ? '5 guesses in 5 minutes. Submit your next row anytime; each row’s clues unlock at its matching minute.' : undefined}
           draft={draft} selected={selected} onSelect={(i) => { play('tap-ui-tick'); setSelected(i); }}
           onColor={addColor} onClear={() => { play('swipe'); resetDraft(); }} onSubmit={submitGuess} peek={peek}
           colorCount={game.colors === 8 ? 8 : 6} appearance={appearance} />}
