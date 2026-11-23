@@ -22,14 +22,14 @@ export function LeaderLine({ players, leaders, me }) {
   return <p className="leader-line">👑 {who} · {wins} round{wins === 1 ? '' : 's'} won</p>;
 }
 
-// Speed points are assigned server-side after a solved puzzle.
+// Correct-answer order points are assigned server-side after a solved puzzle.
 // They are separate from trophy/win counts so existing achievements remain unchanged.
 export function PointsBadge({ player, leaders }) {
   const points = Number(player?.points) || 0;
   if (!points) return null;
   const leading = leaders?.has(player.id);
   return <span className={'points-badge' + (leading ? ' leads' : '')}
-    title={`${points} speed point${points === 1 ? '' : 's'} earned in this room`}>
+    title={`${points} point${points === 1 ? '' : 's'} earned for correct answers in this room`}>
     ⭐ {points} pts
   </span>;
 }
