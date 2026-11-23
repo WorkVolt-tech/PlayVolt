@@ -105,8 +105,7 @@ begin
     end if;
   end if;
 end;
-$function$
-
+$function$;
 
 CREATE OR REPLACE FUNCTION public.pin_and_spin_api(p_action text, p_code text DEFAULT ''::text, p_token text DEFAULT ''::text, p_data jsonb DEFAULT '{}'::jsonb, p_origin_hash text DEFAULT ''::text)
  RETURNS jsonb
@@ -336,5 +335,4 @@ begin
  ) into result;
  return result;
 end;
-$function$
-
+$function$;
