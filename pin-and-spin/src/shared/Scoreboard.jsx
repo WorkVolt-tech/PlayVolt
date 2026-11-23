@@ -4,9 +4,9 @@ import { Feedback } from '../components/Feedback.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { Empty } from '../components/Empty.jsx';
-import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders, codeSlots } from '../game/selectors.js';
+import { formatClock, guessLimit, inTurnOrder, isSimultaneous, ordinal, playerProgress, winLeaders, pointsLeaders, codeSlots } from '../game/selectors.js';
 import { WinnerBanner } from './WinnerBanner.jsx';
-import { WinsBadge } from '../components/WinsBadge.jsx';
+import { WinsBadge, PointsBadge, PointsLeaderLine } from '../components/WinsBadge.jsx';
 import { cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
 
 // "Everyone's Guesses": the full-screen shared results board.
@@ -17,6 +17,7 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
   const [focus, setFocus] = useState(initialFocus);
   const lanes = inTurnOrder(game, playerProgress(game)).filter((lane) => lane.guesses.length || lane.sealed || !lane.left);
   const leaders = winLeaders(game.players);
+  const speedLeaders = pointsLeaders(game.players);
   const shown = focus === 'all' ? lanes : lanes.filter((lane) => lane.player.id === focus);
   const limit = guessLimit(game.mode);
   const simultaneous = isSimultaneous(game.mode);
@@ -47,6 +48,7 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
     </div>
 
     {game.status === 'finished' && <WinnerBanner game={game} compact>{actions}</WinnerBanner>}
+    <PointsLeaderLine players={game.players || []} leaders={speedLeaders} me={game.me} />
 
     {showFilter && lanes.length > 1 && <div className="lane-filter" role="group" aria-label="Show players">
       <button type="button" className={focus === 'all' ? 'on' : ''} aria-pressed={focus === 'all'} onClick={() => setFocus('all')}>All players</button>
@@ -66,6 +68,7 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
           <PlayerAvatar player={lane.player} />
           <div className="lane-name">
             <strong>{lane.player.name}{lane.player.id === game.me ? ' (you)' : ''}<WinsBadge player={lane.player} leaders={leaders} /></strong>
+            <div className="lane-score"><PointsBadge player={lane.player} leaders={speedLeaders} /></div>
             <small>{lane.won ? 'WINNER' : lane.left ? 'LEFT THE ROOM' : lane.away ? 'AWAY · NOT CONNECTED' : lane.isTurn ? 'PLAYING NOW'
               : lane.thinking ? 'THINKING…' : lane.sealed ? 'LOCKED IN' : `${lane.used} / ${limit} TRIES`}</small>
           </div>
