@@ -146,3 +146,10 @@ export function winLeaders(players) {
   const best = Math.max(0, ...here.map((p) => Number(p.wins) || 0));
   return best > 0 ? new Set(here.filter((p) => (Number(p.wins) || 0) === best).map((p) => p.id)) : new Set();
 }
+
+// New speed-points leaderboard: room score is cumulative, independent of win count.
+export function pointsLeaders(players) {
+  const here = (players || []).filter((p) => p.active !== false);
+  const best = Math.max(0, ...here.map((p) => Number(p.points) || 0));
+  return best > 0 ? new Set(here.filter((p) => (Number(p.points) || 0) === best).map((p) => p.id)) : new Set();
+}
