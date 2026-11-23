@@ -790,3 +790,38 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .qr-entry-existing p{font-size:13px;color:#cfc7e5;line-height:1.55;margin:6px 0 0}
 .qr-entry-browser{display:flex;align-items:center;justify-content:center;width:100%;text-decoration:none;min-height:46px}
 @media(max-width:390px){.qr-entry-card{padding:21px 15px}.qr-entry-main{padding:8px 0}}
+
+/* Speed points: independent of the existing win/trophy counters. */
+.points-badge{display:inline-flex;align-items:center;gap:2px;margin-left:5px;padding:1px 6px;border:1px solid #8160ad;border-radius:999px;background:#2b2044;color:#e9d6ff;font-size:11px;font-weight:900;line-height:16px;letter-spacing:0;white-space:nowrap;vertical-align:middle}
+.points-badge.leads{border-color:#f1bc52;background:#493616;color:#fff0ba}
+.points-leader-line{font-size:13px;font-weight:800;color:#ffd98e;margin:0 0 8px;line-height:1.4}
+.lane-score{margin:2px 0}
+.lane-score:empty{display:none}
+.lane-score .points-badge{margin-left:0}
+.speed-awards{display:flex;flex-direction:column;gap:6px;text-align:left;margin:10px 0 16px;padding:12px;border-radius:12px;background:#221935;border:1px solid #6a5394;color:#eadcff}
+.speed-awards>strong{font-size:12px;color:#ffc96c}
+.speed-awards>span{display:flex;justify-content:space-between;gap:10px;overflow-wrap:anywhere;font-size:13px}
+.speed-awards>span b{color:var(--volt);white-space:nowrap}
+.speed-earned{margin-left:8px;color:#ffdfa4;font-size:.85em;white-space:nowrap}
+
+/* TV waiting room: keep trophies / points independent from long player names. */
+.tv-player{min-width:0}
+.tv-player-identity{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;width:100%}
+.tv-player strong.tv-player-name{display:block;width:100%;max-width:100%;min-width:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
+.tv-player-tallies{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;width:100%;min-height:24px}
+.tv-player .tv-player-tallies .wins-badge,.tv-player .tv-player-tallies .points-badge{
+  display:inline-flex;align-items:center;flex:none;margin:0;padding:3px 7px;
+  max-width:100%;font-size:clamp(11px,1vw,20px);line-height:1.15;
+  letter-spacing:0;white-space:nowrap;color:#fff4c9;overflow:visible
+}
+.tv-player .tv-player-tallies .points-badge{color:#e8d5ff}
+.tv-mode{flex-wrap:wrap}
+.tv-mode .points-leader-line{margin:0 0 0 auto;font-size:clamp(13px,1.3vw,23px)}
+.tv-mode .leader-line{margin-left:0}
+@media(max-width:760px){.tv-players{grid-template-columns:repeat(auto-fit,minmax(115px,1fr))}.tv-player-tallies{gap:3px}}
+
+/* TV match lanes: dedicated second line keeps the win count from clipping. */
+.tvb-player-label{display:flex;flex:1;min-width:0;flex-direction:column;gap:2px}
+.tvb-lane header .tvb-player-label>strong{display:block;flex:none;min-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvb-player-tallies{display:flex;gap:3px;align-items:center;min-width:0;white-space:nowrap}
+.tvb-player-tallies .wins-badge,.tvb-player-tallies .points-badge{margin:0;padding:0 4px;font-size:clamp(9px,calc(var(--tvb)*.28),14px);line-height:1.2;letter-spacing:0}
