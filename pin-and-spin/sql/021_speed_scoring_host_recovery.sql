@@ -284,8 +284,10 @@ begin
        select array_agg(value::integer) into choices from jsonb_array_elements_text(p_data->'colors');
        if choices is null or exists(select 1 from unnest(choices) c where c is null or c<0 or c>=r.colors) then raise exception 'Invalid color'; end if;
        score:=public.pin_and_spin_score(r.secret,choices);
-       insert into public.pin_and_spin_guesses(room_id,player_id,puzzle,attempt,colors,pins,spins,revealed)
-         values(r.id,me.id,r.puzzle,a,choices,score[1],score[2],r.mode in ('classic','rush'));
+       -- Record acceptance order on the server, after the room row is locked.
+       -- Transaction-start now() is not a reliable speed tiebreak under contention.
+       insert into public.pin_and_spin_guesses(room_id,player_id,puzzle,attempt,colors,pins,spins,revealed,submitted_at)
+         values(r.id,me.id,r.puzzle,a,choices,score[1],score[2],r.mode in ('classic','rush'),clock_timestamp());
        if r.mode in ('classic','rush') and score[1]=r.slots then
          update public.pin_and_spin_rooms set status='finished',winners=array[me.id],deadline=null where id=r.id;
        elsif r.mode='classic' then
