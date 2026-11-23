@@ -14,8 +14,8 @@ export function FinishPanel({ game, children, onViewResults }) {
   return <div className="surface finish-panel">
     <WinnerBanner game={game} headline={headline}>
       {ranked.some((p) => Number(p.lastPoints) > 0) &&
-        <div className="speed-awards" aria-label="Speed points this puzzle">
-          <strong>⚡ Correct-answer speed points</strong>
+        <div className="speed-awards" aria-label="Correct-answer order points this puzzle">
+          <strong>🏅 Correct-answer points · awarded by order</strong>
           {ranked.map((p, i) => <span key={p.id}>
             {i + 1}. {p.id === game.me ? 'You' : p.name} <b>+{p.lastPoints} pts</b>
           </span>)}
