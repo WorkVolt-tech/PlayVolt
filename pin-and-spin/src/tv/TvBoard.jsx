@@ -63,6 +63,7 @@ export function TvBoard({ game, remainingMs }) {
       </span>
       <span className="tvb-mode">{MODES[game.mode]?.label}</span>
       {playing && simultaneous && <span className="tvb-note">{locked} of {active.length} locked in</span>}
+      {playing && game.mode === 'rush' && <span className="tvb-note">🔓 {game.round} / 5 rows revealed · Next row {Math.min(5, game.round + 1)}</span>}
       {game.mode === 'classic' && <span className="tvb-note">Turn order: 1 → {active.length}</span>}
       <span className="tvb-legend"><span><i className="pin-dot" /> Pin</span><span><i className="spin-dot" /> Spin</span></span>
       {hasTimer && <span className={'tvb-timer' + (remainingMs <= 20000 ? ' urgent' : '')}>{minutes}:{seconds}</span>}
@@ -91,6 +92,7 @@ export function TvBoard({ game, remainingMs }) {
           : lane.thinking ? 'THINKING…' : lane.sealed ? 'LOCKED IN' : `${lane.used} / ${limit}`;
         const tries = Array.from({ length: limit }, (_, i) => lane.guesses.find((g) => g.attempt === i + 1) || null);
         const sealedAt = !lane.sealed ? -1 : simultaneous ? game.round - 1 : lane.guesses.length;
+        const isSealed = (attempt) => game.mode === 'rush' ? lane.sealedAttempts?.includes(attempt) : attempt - 1 === sealedAt;
         return <section key={lane.player.id}
           style={cosmeticStyle(lane.player.appearance, lane.player.seat)}
           className={'tvb-lane board-theme-' + normalizeCosmetics(lane.player.appearance, lane.player.seat).board + (lane.won ? ' won' : '') + (lane.isTurn ? ' turn' : '') + (lane.player.id === upNext ? ' next' : '') + (lane.left ? ' left' : '') + (lane.away ? ' away' : '')}>
@@ -107,11 +109,11 @@ export function TvBoard({ game, remainingMs }) {
             <small>{status}</small>
           </header>
           <ol>
-            {tries.map((guess, i) => <li key={i} className={guess ? 'played' : i === sealedAt ? 'sealed' : 'open'} style={{ '--i': i }}>
+            {tries.map((guess, i) => <li key={i} className={guess ? 'played' : isSealed(i + 1) ? 'sealed' : 'open'} style={{ '--i': i }}>
               <span className="tvb-try">{i + 1}</span>
               {guess?.colors ? <PegRow colors={guess.colors} tiny shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).piece} />
                 : guess ? <span className="tvb-missed">No guess in time</span>
-                : i === sealedAt ? <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{balls.map((k) => <i key={k} />)}</span>
+                : isSealed(i + 1) ? <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{balls.map((k) => <i key={k} />)}</span>
                 : <span className="tvb-empty">{balls.map((k) => <i key={k} />)}</span>}
               {guess?.colors ? <Feedback guess={guess} shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).pin} /> : <span className="tvb-fb-space" />}
             </li>)}
