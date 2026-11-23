@@ -6,7 +6,8 @@ import { winLeaders, pointsLeaders } from '../game/selectors.js';
 // Winner announcement and secret reveal on the player's own board.
 export function FinishPanel({ game, children, onViewResults }) {
   const winners = game.winners || [];
-  const ranked = (game.players || []).filter((p) => winners.includes(p.id))
+  const ranked = (game.players || []).filter((p) => game.mode === 'rush'
+    ? Number(p.lastPoints) > 0 : winners.includes(p.id))
     .sort((a, b) => (Number(b.lastPoints) || 0) - (Number(a.lastPoints) || 0));
   const headline = winners.includes(game.me)
     ? (winners.length > 1 ? 'SHARED VICTORY!' : 'YOU CRACKED IT!')
