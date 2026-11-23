@@ -825,3 +825,8 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .tvb-lane header .tvb-player-label>strong{display:block;flex:none;min-width:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tvb-player-tallies{display:flex;gap:3px;align-items:center;min-width:0;white-space:nowrap}
 .tvb-player-tallies .wins-badge,.tvb-player-tallies .points-badge{margin:0;padding:0 4px;font-size:clamp(9px,calc(var(--tvb)*.28),14px);line-height:1.2;letter-spacing:0}
+
+/* Rush: one scheduled reveal for each of the five rows. */
+.rush-reveal-status{display:block;margin-top:4px;font-size:11px;font-weight:800;color:#dfc4fb;line-height:1.35}
+.rush-reveal-hint{padding:8px 12px;margin:5px 0 12px;border:1px solid #665083;border-radius:10px;background:#1d1730;color:#e6d6fa;font-size:12px;font-weight:700;line-height:1.4}
+.rush-other-correct{display:block;max-width:100%;font-size:clamp(11px,1vw,19px);line-height:1.25;color:#ffe0ac;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
