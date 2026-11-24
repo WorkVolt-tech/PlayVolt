@@ -68,6 +68,8 @@ export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, us
                 : option.icon}
             </span>}
           <span>{option.name}</span>
+          {(key === 'board' || key === 'accent') && choice[key] === option.id
+            && <small className="selected-board-label" aria-hidden="true">✓ Selected</small>}
           {locked(key, option) && <small>🔒 {byCode[option.trophy]?.title || option.trophy}</small>}
           {key === 'accent' && inRoom && option.id === value?.accent && option.trophy && !earned[option.trophy]
             && <small>Assigned in this room</small>}
