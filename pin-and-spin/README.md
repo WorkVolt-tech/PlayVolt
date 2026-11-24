@@ -326,3 +326,5 @@ or use Leave Room before exiting. Rooms expire after 24 hours.
 ## Optional
 
 To point the game header's PlayVolt link to a deployed hub (instead of the GitHub repository), add the Cloudflare build environment variable `VITE_PLAYVOLT_HUB_URL` with the verified hub URL.
+
+Rush uses five minutes and five guesses. Row 1 reveals at minute 1, through row 5 at minute 5. Players can submit ahead while clues remain sealed. Start a new match after deploying migration 021.

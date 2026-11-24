@@ -25,11 +25,11 @@ test('Reveal modes: one guess per round, blocked once the timer reaches zero', (
   assert.equal(statusText({ ...g, guesses: [gs('a', 2, false)] }, { busy: false, canSubmit: false }), 'WAIT FOR THE REVEAL');
 });
 
-test('Rush: eight guesses, next attempt counts your own guesses', () => {
-  const seven = mk({ mode: 'rush', turnId: null, guesses: [1, 2, 3, 4, 5, 6, 7].map((i) => gs('a', i)) });
-  assert.equal(nextAttempt(seven), 8);
-  assert.equal(ok(seven, 1000), true);
-  assert.equal(ok({ ...seven, guesses: [...seven.guesses, gs('a', 8)] }, 1000), false);
+test('Rush: five guesses, next attempt counts your own guesses', () => {
+  const four = mk({ mode: 'rush', turnId: null, guesses: [1, 2, 3, 4].map((i) => gs('a', i)) });
+  assert.equal(nextAttempt(four), 5);
+  assert.equal(ok(four, 1000), true);
+  assert.equal(ok({ ...four, guesses: [...four.guesses, gs('a', 5)] }, 1000), false);
 });
 
 test('nothing can be submitted outside a live match', () => {

@@ -17,10 +17,16 @@ export function MatchRoomBar({ game, onShare, onPlayers, onTv, onLeave }) {
 // Mode/round label, the player's status line and the server-synchronized countdown.
 export function MatchStatus({ game, statusText, remainingMs }) {
   const [minutes, seconds] = remainingMs !== null ? formatClock(remainingMs) : [];
+  const rushNext = game.mode === 'rush' && game.status === 'playing' && game.round < 5 && remainingMs !== null
+    ? Math.max(0, remainingMs - (4 - game.round) * 60000) : null;
+  const [rushMinutes, rushSeconds] = rushNext !== null ? formatClock(rushNext) : [];
   return <div className="match-meta">
     <div><span>{game.mode === 'rush' ? 'RUSH MODE' :
       isSimultaneous(game.mode) ? 'ROUND ' + game.round + ' / 4' : 'CLASSIC · 4 TRIES EACH'}</span>
       <strong>{statusText}</strong>
+      {game.mode === 'rush' && game.status === 'playing' && <small className="rush-reveal-status">
+        {game.round} / 5 rows revealed · Next: row {Math.min(5, game.round + 1)} in {rushMinutes}:{rushSeconds}
+      </small>}
     </div>
     {remainingMs !== null && game.status === 'playing' &&
       <div className={'timer' + (remainingMs <= 20000 ? ' urgent' : '')}>
