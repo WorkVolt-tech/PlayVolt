@@ -99,11 +99,11 @@ export function TvBoard({ game, remainingMs }) {
             <small>{status}</small>
           </header>
           <ol>
-            {tries.map((guess, i) => <li key={i} className={guess ? 'played' : i === sealedAt ? 'sealed' : 'open'} style={{ '--i': i }}>
+            {tries.map((guess, i) => <li key={i} className={guess ? 'played' : (game.mode === 'rush' ? lane.sealedAttempts.includes(i + 1) : i === sealedAt) ? 'sealed' : 'open'} style={{ '--i': i }}>
               <span className="tvb-try">{i + 1}</span>
               {guess?.colors ? <PegRow colors={guess.colors} tiny shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).piece} />
                 : guess ? <span className="tvb-missed">No guess in time</span>
-                : i === sealedAt ? <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{balls.map((k) => <i key={k} />)}</span>
+                : (game.mode === 'rush' ? lane.sealedAttempts.includes(i + 1) : i === sealedAt) ? <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{balls.map((k) => <i key={k} />)}</span>
                 : <span className="tvb-empty">{balls.map((k) => <i key={k} />)}</span>}
               {guess?.colors ? <Feedback guess={guess} shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).pin} /> : <span className="tvb-fb-space" />}
             </li>)}

@@ -55,7 +55,7 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
     </div>}
 
     {revealedTotal === 0 && !lanes.some((lane) => lane.sealed) &&
-      <Empty>Nothing has been revealed yet. {simultaneous ? 'Guesses stay sealed until the round reveals.' : 'Guesses appear here as soon as they are played.'}</Empty>}
+      <Empty>Nothing has been revealed yet. {(simultaneous || game.mode === 'rush') ? 'Guesses stay sealed until the round reveals.' : 'Guesses appear here as soon as they are played.'}</Empty>}
 
     <div className="lanes">
       {shown.map((lane) => <section key={lane.player.id}
@@ -76,11 +76,11 @@ export function Scoreboard({ game, remainingMs, nav, actions, initialFocus = 'al
             {guess.colors ? <PegRow colors={guess.colors} tiny shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).piece} /> : <span className="missed-row">No guess in time</span>}
             {guess.colors ? <Feedback guess={guess} shape={normalizeCosmetics(lane.player.appearance, lane.player.seat).pin} /> : <span className="count-missed">MISSED</span>}
           </li>)}
-          {lane.sealed && <li className="lane-row sealed-row">
-            <span className="lane-try">R{game.round}</span>
+          {(game.mode === 'rush' ? lane.sealedAttempts : lane.sealed ? [game.round] : []).map((attempt) => <li key={'sealed-' + attempt} className="lane-row sealed-row">
+            <span className="lane-try">#{attempt}</span>
             <span className="sealed-balls" role="img" aria-label="Guess sealed until the reveal">{Array.from({ length: codeSlots(game) }, (_, i) => <i key={i} />)}</span>
             <span className="count-missed">SEALED</span>
-          </li>}
+          </li>)}
           {!lane.guesses.length && !lane.sealed && <li className="lane-empty">No guesses yet</li>}
         </ol>
       </section>)}

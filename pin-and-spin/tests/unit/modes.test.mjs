@@ -36,7 +36,9 @@ describe('secrecy', () => {
     assert.equal(room.state.answer, null);
     assert.equal((await state(room, room.players[1])).answer, null);
     assert.equal((await guess(room, room.players[1], WRONG, 1)).answer, null);
-    const end = await guess(room, room.players[0], SECRET, 1);
+    await guess(room, room.players[0], SECRET, 1);
+    await g.expireDeadline(room.code);
+    const end = await state(room, room.players[0]);
     assert.deepEqual(end.answer, SECRET);
   });
 
@@ -249,54 +251,25 @@ describe('Timed Reveal', () => {
 });
 
 describe('Rush', () => {
-  test('players guess freely without waiting, and results are visible live', async () => {
-    const room = await started('rush', 2);
-    const [a, b] = room.players;
-    await guess(room, a, WRONG, 1);
-    await guess(room, a, [0, 5, 5, 5], 2);
-    const s = await state(room, b);
-    assert.equal(s.guesses.length, 2);
-    assert.ok(s.guesses.every((x) => x.revealed && x.pins !== null));
+  test('five guesses each stay sealed until the scheduled minute', async () => {
+    const room = await started('rush');
+    const [a,b] = room.players;
+    for (let i=1;i<=6;i++) await guess(room,a,WRONG,i);
+    const mine = await state(room,a);
+    assert.equal(mine.guesses.length,5);
+    assert.ok(mine.guesses.every(x=>!x.revealed && x.pins===null));
+    assert.equal((await state(room,b)).guesses.length,0);
   });
-
-  test('eight guesses each; a ninth is rejected', async () => {
-    const room = await started('rush', 2);
-    const [a] = room.players;
-    let s;
-    for (let i = 1; i <= 8; i++) s = await guess(room, a, WRONG, i);
-    s = await guess(room, a, SECRET, 9);
-    assert.equal(s.guesses.filter((x) => x.playerId === a.id).length, 8);
-    assert.equal(s.status, 'playing', 'other player still has guesses');
-  });
-
-  test('the first correct submission wins; later ones are not accepted', async () => {
-    const room = await started('rush', 3);
-    const [a, b] = room.players;
-    await guess(room, a, WRONG, 1);
-    let s = await guess(room, b, SECRET, 1);
-    assert.deepEqual(s.winners, [b.id]);
-    s = await guess(room, a, SECRET, 2);
-    assert.deepEqual(s.winners, [b.id]);
-    assert.equal(s.guesses.filter((x) => x.playerId === a.id).length, 1);
-  });
-
-  test('the whole match has one three-minute timer; a solve after it expires does not count', async () => {
-    const room = await started('rush', 2);
-    const left = new Date(room.state.deadline) - new Date(room.state.serverTime);
-    assert.ok(left > 179000 && left <= 180000);
+  test('first correct wins at the five-minute deadline and later submissions are accepted', async () => {
+    const room = await started('rush');
+    const [a,b] = room.players;
+    assert.ok(new Date(room.state.deadline)-new Date(room.state.serverTime)>299000);
+    await guess(room,b,SECRET,1);
+    assert.equal((await guess(room,a,SECRET,1)).status,'playing');
     await g.expireDeadline(room.code);
-    const s = await guess(room, room.players[0], SECRET, 1);
-    assert.equal(s.status, 'finished');
-    assert.deepEqual(s.winners, []);
-    assert.deepEqual(s.answer, SECRET);
-  });
-
-  test('the match ends when every player has used all eight guesses', async () => {
-    const room = await started('rush', 2);
-    let s;
-    for (const p of room.players) for (let i = 1; i <= 8; i++) s = await guess(room, p, WRONG, i);
-    assert.equal(s.status, 'finished');
-    assert.deepEqual(s.winners, []);
+    const end=await state(room,a);
+    assert.deepEqual(end.winners,[b.id]);
+    assert.equal(end.status,'finished');
   });
 });
 
@@ -345,6 +318,8 @@ describe('rooms, reconnects and rematches', () => {
     const room = await started('rush', 2);
     const [a, b] = room.players;
     await guess(room, a, SECRET, 1);
+    await g.expireDeadline(room.code);
+    await state(room,a);
     await rejects(g.api('replay', room.code, b.token), /host/);
     let s = await g.api('replay', room.code, a.token);
     assert.equal(s.status, 'lobby');
@@ -404,7 +379,9 @@ describe('host controls and presence', () => {
     const [host, b] = room.players;
     const s = await kick(room, host, b);
     assert.equal(s.status, 'playing');
-    assert.equal((await guess(room, host, SECRET, 1)).status, 'finished');
+    assert.equal((await guess(room, host, SECRET, 1)).status, 'playing');
+    await g.expireDeadline(room.code);
+    assert.equal((await state(room, host)).status, 'finished');
   });
 
   test('players silent for 45 seconds show as away; any request clears it', async () => {
@@ -506,7 +483,9 @@ describe('more colors for bigger groups (migration 014)', () => {
     room.state = await g.api('start', room.code, room.players[0].token, { maxColors: 8 });
     assert.equal(room.state.colors, 8);
     await g.setSecret(room.code, [6, 7, 0, 1]);
-    const s = await guess(room, room.players[1], [6, 7, 0, 1], 1);
+    await guess(room, room.players[1], [6, 7, 0, 1], 1);
+    await g.expireDeadline(room.code);
+    const s = await state(room, room.players[1]);
     assert.equal(s.status, 'finished');
     assert.deepEqual(s.winners, [room.players[1].id]);
   });
@@ -528,7 +507,9 @@ describe('more colors for bigger groups (migration 014)', () => {
     const room = await g.room('rush', 4);
     await g.api('start', room.code, room.players[0].token, { maxColors: 8 });
     await g.setSecret(room.code, SECRET);
-    await guess(room, room.players[0], SECRET, 1);                      // game over
+    await guess(room, room.players[0], SECRET, 1);
+    await g.expireDeadline(room.code);
+    await state(room, room.players[0]);
     await g.api('leave', room.code, room.players[3].token);
     await g.api('replay', room.code, room.players[0].token);
     for (const p of room.players.slice(1, 3)) await g.api('ready', room.code, p.token, { ready: true });
@@ -547,14 +528,18 @@ describe('rounds won in this room (migration 015)', () => {
   const winsOf = (s) => Object.fromEntries(s.players.map((p) => [p.name, p.wins]));
   test('each round won adds one to the winner, across rematches; guests count too', async () => {
     const room = await started('rush', 3);
-    let s = await guess(room, room.players[1], SECRET, 1);
+    await guess(room, room.players[1], SECRET, 1);
+    await g.expireDeadline(room.code);
+    let s = await state(room,room.players[0]);
     assert.deepEqual(winsOf(s), { P1: 0, P2: 1, P3: 0 });
     for (const winner of [1, 2]) {                                   // two rematches
       await g.api('replay', room.code, room.players[0].token);
       for (const p of room.players.slice(1)) await g.api('ready', room.code, p.token, { ready: true });
       await g.api('start', room.code, room.players[0].token);
       await g.setSecret(room.code, SECRET);
-      s = await guess(room, room.players[winner], SECRET, 1, (await state(room, room.players[0])).puzzle);
+      await guess(room, room.players[winner], SECRET, 1, (await state(room, room.players[0])).puzzle);
+      await g.expireDeadline(room.code);
+      s = await state(room,room.players[0]);
     }
     assert.deepEqual(winsOf(s), { P1: 0, P2: 2, P3: 1 });
     const lobby = await g.api('replay', room.code, room.players[0].token);
@@ -571,6 +556,7 @@ describe('rounds won in this room (migration 015)', () => {
     db = await freshDb(); g = game(db);
     const other = await started('rush', 2);
     for (let t = 1; t <= 8; t++) for (const p of other.players) await guess(other, p, WRONG, t);
+    await g.expireDeadline(other.code);
     const end = await state(other, other.players[0]);
     assert.equal(end.status, 'finished');
     assert.deepEqual(end.players.map((p) => p.wins), [0, 0]);
@@ -601,8 +587,10 @@ describe('longer codes for big groups (migration 017)', () => {
     await g.setSecret(room.code, [0, 1, 2, 3, 4, 5]);
     const near = await guess(room, room.players[1], [0, 1, 2, 3, 4, 7], 1);
     assert.equal(near.status, 'playing');
-    assert.deepEqual([near.guesses[0].pins, near.guesses[0].spins], [5, 0]);
-    const s = await guess(room, room.players[2], [0, 1, 2, 3, 4, 5], 1);
+    assert.deepEqual([near.guesses[0].pins, near.guesses[0].spins], [null, null]);
+    await guess(room, room.players[2], [0, 1, 2, 3, 4, 5], 1);
+    await g.expireDeadline(room.code);
+    const s = await state(room, room.players[2]);
     assert.equal(s.status, 'finished');
     assert.deepEqual(s.winners, [room.players[2].id]);
   });

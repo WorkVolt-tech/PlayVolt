@@ -2,7 +2,7 @@
 // safe to reuse in a future shared (TV) display and easy to unit test.
 
 export const isSimultaneous = (mode) => mode === 'reveal' || mode === 'timed-reveal';
-export const guessLimit = (mode) => (mode === 'rush' ? 8 : 4);
+export const guessLimit = (mode) => (mode === 'rush' ? 5 : 4);
 export const myGuesses = (game) => (game?.guesses || []).filter((guess) => guess.playerId === game?.me);
 
 // The attempt number the current player would submit next.
@@ -81,14 +81,19 @@ export function playerProgress(game) {
   const playing = game?.status === 'playing';
   return (game?.players || []).map((player) => {
     const own = revealed.filter((guess) => guess.playerId === player.id).sort((a, b) => a.attempt - b.attempt);
-    const sealed = isSimultaneous(game.mode) && playing && player.submitted &&
-      !own.some((guess) => guess.attempt === game.round);
+    const sealedAttempts = game.mode === 'rush' && playing
+      ? Array.from({ length: Math.min(5, Number(player.submittedCount) || 0) }, (_, i) => i + 1)
+          .filter((attempt) => !own.some((guess) => guess.attempt === attempt))
+      : [];
+    const sealed = (isSimultaneous(game.mode) && playing && player.submitted &&
+      !own.some((guess) => guess.attempt === game.round)) || sealedAttempts.length > 0;
     const scored = own.filter((guess) => guess.colors);
     return {
       player,
       guesses: own,
-      used: own.length + (sealed ? 1 : 0),
+      used: game.mode === 'rush' ? Math.max(own.length, Number(player.submittedCount) || 0) : own.length + (sealed ? 1 : 0),
       sealed,
+      sealedAttempts,
       best: scored.length ? Math.max(...scored.map((guess) => guess.pins || 0)) : null,
       won: winners.includes(player.id),
       isTurn: playing && game.mode === 'classic' && game.turnId === player.id,
@@ -108,6 +113,7 @@ export function matchEvents(prev, next) {
   if (prev.puzzle !== next.puzzle) return events;
   const playing = next.status === 'playing';
   if (playing && isSimultaneous(next.mode) && next.round > prev.round) events.push({ type: 'round', round: next.round });
+  if (next.mode === 'rush' && next.round > prev.round) events.push({ type: 'rush-reveal', row: next.round });
   const seen = new Set((prev.guesses || []).filter((g) => g.revealed).map((g) => g.playerId + ':' + g.attempt));
   for (const g of next.guesses || []) {
     if (g.playerId === next.me && g.revealed && g.colors && !seen.has(g.playerId + ':' + g.attempt)) {
@@ -145,4 +151,11 @@ export function winLeaders(players) {
   const here = (players || []).filter((p) => p.active !== false);
   const best = Math.max(0, ...here.map((p) => Number(p.wins) || 0));
   return best > 0 ? new Set(here.filter((p) => (Number(p.wins) || 0) === best).map((p) => p.id)) : new Set();
+}
+
+// Server timestamp for the next scheduled reveal, shared by phone and TV.
+export function nextRevealAt(game) {
+  if (game?.status !== 'playing' || !game.deadline) return null;
+  const end = new Date(game.deadline).getTime();
+  return game.mode === 'rush' ? end - Math.max(0, 4 - game.round) * 60000 : end;
 }

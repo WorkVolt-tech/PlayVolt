@@ -22,7 +22,15 @@ async function match(mode, people) {
     await g.api('ready', first.code, p.token, as(p, { ready: true }));
   }
   const room = { code: first.code, people, as };
-  room.call = (p, action, data = {}) => g.api(action, room.code, p.token, as(p, data));
+  room.call = async (p, action, data = {}) => {
+    const result = await g.api(action, room.code, p.token, as(p, data));
+    // Leaderboard assertions inspect finished matches. Rush settles at its deadline.
+    if (mode === 'rush' && action === 'guess' && JSON.stringify(data.colors) === JSON.stringify(SECRET)) {
+      await g.expireDeadline(room.code);
+      return g.api('state', room.code, p.token, as(p));
+    }
+    return result;
+  };
   await room.call(people[0], 'start');
   await g.setSecret(room.code, SECRET);
   return room;
