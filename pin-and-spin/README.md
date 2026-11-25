@@ -328,3 +328,13 @@ or use Leave Room before exiting. Rooms expire after 24 hours.
 To point the game header's PlayVolt link to a deployed hub (instead of the GitHub repository), add the Cloudflare build environment variable `VITE_PLAYVOLT_HUB_URL` with the verified hub URL.
 
 Rush uses five minutes and five guesses. Row 1 reveals at minute 1, through row 5 at minute 5. Players can submit ahead while clues remain sealed. Start a new match after deploying migration 021.
+
+
+## Code Rally (preview)
+Migration 022 adds Code Rally using server-only `pin_and_spin_rally_codes`, `pin_and_spin_rally_runs`, and `pin_and_spin_rally_guesses`. The existing room, shared account, cosmetics, invites, TV pairing and results systems are reused. No Edge Function changes are required.
+
+Everyone starts together and shares four stage codes (4, 4, 5, 6 balls). Each player advances independently with six fresh guesses and three minutes per stage. Stage 1 has distinct colors; stage 2 must contain a repeat; stages 3–4 allow repeats. These generation rules are intentionally absent from player-facing text. Six colors are available regardless of player count.
+
+Feedback is immediate and private. Opponents and TV see only progress until the race ends. A timeout or six incorrect guesses ends that player's run. First to finish all four wins immediately. If all runs end first, active players rank by completed codes, fewer total guesses, then elapsed time to their last solve; exact ties share a win. Zero solved codes means no winner. Submitted stage and puzzle IDs prevent duplicate/stale requests crossing stages or rematches.
+
+Preview testing: Create Room → Code Rally, join on a second device using the same preview URL, ready both players, and start. TV pairing is available from the room's TV button. Migration 022 is additive to the existing modes; do not re-run the base schema.

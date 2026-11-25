@@ -24,6 +24,7 @@ export function useGameSounds(game, { audience = 'player' } = {}) {
     const someoneWon = (game.winners || []).length > 0;
     if (end) play(end.won || (audience === 'tv' && someoneWon) ? 'level-up' : someoneWon ? 'error-soft-thud' : 'modal-close-fall');
     else if (scored?.pins === 4) play('achievement');
+    else if (has('rally-stage')) play('achievement');
     else if (has('round')) play('notification-ding');
     else if (has('turn')) play('mention-pop');
     else if (scored) play(scored.pins > 0 ? 'xp-up' : scored.spins > 0 ? 'success-subtle-ping' : 'error-soft-thud');
