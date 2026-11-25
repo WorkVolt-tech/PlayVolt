@@ -70,12 +70,13 @@ export function useSolo(notify, userId) {
     setBusy(true);
     play('message-sent-swish');
     try {
-      const next = await call('solo_guess', { id: game.id, colors: draft, attempt: game.guesses.length + 1 });
+      const next = await call('solo_guess', { id: game.id, colors: draft, attempt: game.guesses.length + 1, stage: game.stage });
       show(next); resetDraft();
       if (next.kind === 'clock' && next.lastResult) {
         setFlash({ result: next.lastResult, code: next.lastSecret, at: Date.now() });
         play(next.lastResult === 'solved' ? 'xp-up' : 'error-soft-thud');
-      } else if (next.status === 'won') play('level-up');
+      } else if (next.kind === 'rally' && next.stage > game.stage) play('xp-up');
+      else if (next.status === 'won') play('level-up');
       else if (next.status === 'lost') play('modal-close-fall');
       else play('pop-bubble');
     } catch (e) { play('invalid-thunk'); notify(e.message || 'That guess did not go through. Try again.'); }

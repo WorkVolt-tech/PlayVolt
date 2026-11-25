@@ -338,3 +338,11 @@ Everyone starts together and shares four stage codes (4, 4, 5, 6 balls). Each pl
 Feedback is immediate and private. Opponents and TV see only progress until the race ends. A timeout or six incorrect guesses ends that player's run. First to finish all four wins immediately. If all runs end first, active players rank by completed codes, fewer total guesses, then elapsed time to their last solve; exact ties share a win. Zero solved codes means no winner. Submitted stage and puzzle IDs prevent duplicate/stale requests crossing stages or rematches.
 
 Preview testing: Create Room → Code Rally, join on a second device using the same preview URL, ready both players, and start. TV pairing is available from the room's TV button. Migration 022 is additive to the existing modes; do not re-run the base schema.
+
+### Solo Classic and Code Rally
+Play Solo includes Classic (4 balls, 6 colors, no timer, 8 guesses) and Code Rally
+(4/4/5/6 balls, 8 guesses and 3 minutes per stage). Rally is last in both mode lists.
+Solo Rally preserves the hidden stage repetition rules and ends on timeout or eight
+incorrect guesses. Games resume through the existing shared account. Migration 023
+extends the private solo game records; the Edge Function accepts six-ball solo guesses.
+Multiplayer remains Classic 4 guesses and Code Rally 6 guesses.

@@ -39,6 +39,12 @@ function SoloHub({ solo, onBack }) {
     {error && <div className="surface lb-empty"><p>{error}</p></div>}
     {!home && !error && <div className="surface lb-empty"><p>Loading…</p></div>}
     {home && <>
+      <div className="surface solo-card">
+        <div className="solo-card-head"><span className="solo-icon">↪</span>
+          <div><h2>Classic</h2><p>4 balls · 6 colors · 8 guesses · no timer</p></div></div>
+        <button type="button" className="primary-btn" disabled={busy} onClick={() => start('classic')}>
+          {active['classic:normal'] ? 'Continue Classic' : 'Play Classic'} <span>→</span></button>
+      </div>
       <div className="surface solo-card daily-card">
         <div className="solo-card-head"><span className="solo-icon">📅</span>
           <div><h2>Daily Puzzle #{home.number}</h2><p>Same code for everyone today · 6 tries</p></div></div>
@@ -73,6 +79,12 @@ function SoloHub({ solo, onBack }) {
         <button type="button" className="primary-btn" disabled={busy} onClick={() => start('clock')}>
           {active['clock:normal'] ? 'Continue' : 'Start the clock'} <span>→</span></button>
       </div>
+      <div className="surface solo-card">
+        <div className="solo-card-head"><span className="solo-icon">⚑</span>
+          <div><h2>Code Rally</h2><p>4 stages: 4 → 4 → 5 → 6 balls.<br />8 guesses and 3 minutes per stage.</p></div></div>
+        <button type="button" className="primary-btn" disabled={busy} onClick={() => start('rally')}>
+          {active['rally:normal'] ? 'Continue Code Rally' : 'Play Code Rally'} <span>→</span></button>
+      </div>
     </>}
   </section>;
 }
@@ -86,11 +98,12 @@ export function SoloGame({ solo, notify, story, appearance }) {
   // Beat the clock gets a new code after each one is cracked or skipped.
   const peek = usePeek(adminOn && playing, { id: game.id }, `${game.solved}:${game.lastSecret?.join('')}:${game.guesses.length === 0}`);
   const title = story ? `Level ${story.level.level} · ${story.level.title}` : game.kind === 'daily' ? `Daily Puzzle #${game.number}`
-    : game.kind === 'clock' ? 'Beat the Clock' : `Free Play · ${LEVELS[game.level].label}`;
-  const timed = game.kind === 'clock' || (game.kind === 'story' && game.deadline);
+    : game.kind === 'rally' ? `Code Rally · Stage ${game.stage} / 4` : game.kind === 'classic' ? 'Classic' : game.kind === 'clock' ? 'Beat the Clock' : `Free Play · ${LEVELS[game.level].label}`;
+  const timed = game.kind === 'rally' || game.kind === 'clock' || (game.kind === 'story' && game.deadline);
   const [minutes, seconds] = remainingMs === null ? [] : formatClock(remainingMs);
   const help = story ? (story.level.kind === 'logic' ? 'Only one code fits every clue above. Work it out, then enter it.'
       : `${game.colors} colors${story.level.repeats ? ', repeats allowed' : ', no repeats'}. ${story.level.intro}`)
+    : game.kind === 'rally' ? `${game.solved} / 4 codes solved. 8 guesses per stage. Solve to advance.`
     : game.kind === 'clock' ? 'Crack it to score, then a new code appears. 8 tries per code.'
     : game.level === 'easy' ? '4 colors, and the code never repeats a color.' : '';
 
@@ -153,7 +166,9 @@ function SoloResult({ game, notify, onAgain, solo, story, appearance }) {
     {story && won && <div className="story-stars" aria-label={`${storyStars(story.level, game.guesses.length)} of 3 stars`}>
       {[1, 2, 3].map((n) => <span key={n} className={n <= storyStars(story.level, game.guesses.length) ? 'on' : ''} style={{ '--i': n }}>★</span>)}
     </div>}
-    {game.kind === 'clock'
+    {game.kind === 'rally'
+      ? <><h2>{won ? 'RALLY COMPLETE!' : 'RUN COMPLETE'}</h2><p>You solved {game.solved} of 4 codes in {game.totalGuesses} guesses.</p></>
+      : game.kind === 'clock'
       ? <><h2>Time’s up!</h2><p>You cracked <b>{game.solved}</b> code{game.solved === 1 ? '' : 's'} in 3 minutes ({game.totalGuesses} guesses).</p></>
       : won ? <><h2>YOU CRACKED IT!</h2><p>Solved in <b>{game.guesses.length}</b> of {game.maxTries} tries.</p></>
       : <><h2>{game.deadline && new Date(game.deadline) <= new Date(game.serverTime) ? 'Out of time!' : 'So close!'}</h2>
@@ -176,7 +191,8 @@ function SoloResult({ game, notify, onAgain, solo, story, appearance }) {
           <p className="solo-next">Next puzzle in <b>{pad(hours)}:{pad(mins)}:{pad(secs)}</b></p>
         </>
       : <button type="button" className="primary-btn" disabled={solo.busy} onClick={onAgain}>Play again <span>↻</span></button>}
-    {game.guesses.length > 0 && game.kind !== 'clock' && <div className="solo-recap">
+    {game.kind === 'rally' && game.history?.map((stage) => <details className="solo-recap" key={stage.stage}><summary>Stage {stage.stage} · solved</summary>{stage.guesses.map((g) => <div className="solo-recap-row" key={g.attempt}><PegRow colors={g.colors} tiny shape={appearance.piece} /><Feedback guess={{ ...g, revealed: true }} shape={appearance.pin} /></div>)}</details>)}
+    {game.guesses.length > 0 && !(game.kind === 'rally' && won) && game.kind !== 'clock' && <div className="solo-recap">
       {game.guesses.map((g) => <div key={g.attempt} className="solo-recap-row"><PegRow colors={g.colors} tiny shape={appearance.piece} />
         <Feedback guess={{ ...g, revealed: true }} shape={appearance.pin} /></div>)}
     </div>}
