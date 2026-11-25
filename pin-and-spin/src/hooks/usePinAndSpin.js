@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { DRAFT_KEY, EMPTY_GUESS, NAME_KEY, SESSION_KEY } from '../game/constants.js';
 import { callGame } from '../game/api.js';
 import { savedName, savedSession, token } from '../game/session.js';
-import { codeSlots, isValidDraft, nextAttempt } from '../game/selectors.js';
+import { codeSlots, isValidDraft, nextAttempt, nextRevealAt } from '../game/selectors.js';
 import { getSupabase } from '../game/auth.js';
 import { play } from '../sound/sfx.js';
 import { readSavedAppearance } from '../game/appearance.js';
@@ -187,7 +187,7 @@ export function usePinAndSpin() {
   }, [roomCode, refresh]);
 
   // Ask the server right when a round or match timer runs out, so the reveal is immediate.
-  const deadline = game?.status === 'playing' ? game?.deadline : null;
+  const deadline = nextRevealAt(game);
   useEffect(() => {
     if (!deadline) return undefined;
     const wait = new Date(deadline).getTime() - (Date.now() + offsetRef.current) + 400;

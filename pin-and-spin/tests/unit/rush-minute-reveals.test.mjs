@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canSubmitGuess, guessLimit, matchEvents, myGuesses, playerProgress } from '../../src/game/selectors.js';
+import { canSubmitGuess, guessLimit, matchEvents, nextRevealAt, myGuesses, playerProgress } from '../../src/game/selectors.js';
 
 const players = [
   { id: 'a', name: 'Ana', seat: 1, active: true, submittedCount: 3 },
@@ -55,4 +55,14 @@ test('Rush produces a per-minute reveal event, while normal reveal rounds still 
   const old = { ...previous, mode: 'reveal', round: 1 };
   const current = { ...next, mode: 'reveal', round: 2 };
   assert.ok(matchEvents(old, current).some((e) => e.type === 'round' && e.round === 2));
+});
+
+test('phones and TVs schedule each minute reveal and keep other deadlines unchanged', () => {
+  const deadline = '2026-11-25T00:05:00Z';
+  for (let round = 0; round < 5; round++) {
+    assert.equal(nextRevealAt({ ...rush({ round }), deadline }),
+      Date.parse('2026-11-25T00:00:00Z') + (round + 1) * 60000);
+  }
+  assert.equal(nextRevealAt({ ...rush(), mode: 'timed-reveal', deadline }), Date.parse(deadline));
+  assert.equal(nextRevealAt({ ...rush({ status: 'finished' }), deadline }), null);
 });

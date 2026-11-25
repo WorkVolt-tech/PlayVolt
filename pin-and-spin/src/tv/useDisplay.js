@@ -2,6 +2,7 @@
 // (no seat, no player token). The server sends only public data: no secret until the
 // match ends and no guess before its reveal.
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { nextRevealAt } from '../game/selectors.js';
 import { callGame } from '../game/api.js';
 import { getSupabase } from '../game/auth.js';
 
@@ -64,7 +65,7 @@ export function useDisplay(link) {
   }, [link, refresh]);
 
   // Refresh right when a timer runs out so the reveal shows immediately.
-  const deadline = game?.status === 'playing' ? game?.deadline : null;
+  const deadline = nextRevealAt(game);
   useEffect(() => {
     if (!deadline) return undefined;
     const wait = new Date(deadline).getTime() - (Date.now() + offsetRef.current) + 400;

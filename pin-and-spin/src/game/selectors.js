@@ -152,3 +152,10 @@ export function winLeaders(players) {
   const best = Math.max(0, ...here.map((p) => Number(p.wins) || 0));
   return best > 0 ? new Set(here.filter((p) => (Number(p.wins) || 0) === best).map((p) => p.id)) : new Set();
 }
+
+// Server timestamp for the next scheduled reveal, shared by phone and TV.
+export function nextRevealAt(game) {
+  if (game?.status !== 'playing' || !game.deadline) return null;
+  const end = new Date(game.deadline).getTime();
+  return game.mode === 'rush' ? end - Math.max(0, 4 - game.round) * 60000 : end;
+}
