@@ -364,3 +364,10 @@ equal solves tie. If nobody cracks the code, there is no winner.
 
 Migration 024 adds private Duel records. The Pin & Spin Edge Function routes signed-in
 Duel actions through the existing PlayVolt account verification.
+
+### Duel and Rally trophies
+Duel and Rally Relay each count signed-in wins toward first-win and five-win trophies.
+Code Rally counts signed-in multiplayer wins and four-stage solo clears toward the same milestones.
+Each first trophy unlocks a board and feedback pin. Each five-result trophy unlocks
+an avatar and piece shape. Past qualifying results count. Browse the rewards in
+Achievements or see the locked styles in Customize.

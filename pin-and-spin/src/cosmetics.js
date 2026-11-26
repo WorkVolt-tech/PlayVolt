@@ -25,6 +25,9 @@ export const AVATARS = [
   { id: 'carrot', name: 'Carrot Keeper', icon: '🥕', trophy: 'world_1' },
   { id: 'crystal', name: 'Crystal Golem', icon: '💎', trophy: 'world_4' },
   { id: 'dragon', name: 'Desert Dragon', icon: '🐉', trophy: 'world_5' },
+  { id: 'onyx-knight', name: 'Onyx Knight', icon: '⚔️', trophy: 'duel_five' },
+  { id: 'nitro-pilot', name: 'Nitro Pilot', icon: '🏁', trophy: 'rally_five' },
+  { id: 'circuit-falcon', name: 'Circuit Falcon', icon: '🤝', trophy: 'relay_five' },
 ];
 export const BOARDS = [
   { id: 'nebula', name: 'Nebula' },
@@ -33,6 +36,9 @@ export const BOARDS = [
   { id: 'gold', name: 'Gold', trophy: 'wins_10' },
   { id: 'prism', name: 'Prism', trophy: 'all_modes' },
   { id: 'crystal', name: 'Crystal', trophy: 'world_4' },
+  { id: 'obsidian-arena', name: 'Obsidian Arena', trophy: 'duel_first' },
+  { id: 'overdrive', name: 'Overdrive', trophy: 'rally_first' },
+  { id: 'night-circuit', name: 'Night Circuit', trophy: 'relay_first' },
 ];
 export const PIECES = [
   { id: 'round', name: 'Round', icon: '●' },
@@ -41,11 +47,17 @@ export const PIECES = [
   { id: 'gem', name: 'Gem', icon: '◆', trophy: 'world_3' },
   { id: 'hex', name: 'Hexagon', icon: '⬢', trophy: 'hard_win' },
   { id: 'crown', name: 'Crown', icon: '♛', trophy: 'wins_50' },
+  { id: 'shield', name: 'Shield', icon: '⬟', trophy: 'duel_five' },
+  { id: 'turbo-arrow', name: 'Turbo Arrow', icon: '➤', trophy: 'rally_five' },
+  { id: 'wing', name: 'Wing', icon: '◥', trophy: 'relay_five' },
 ];
 export const RESULT_PINS = [
   { id: 'round', name: 'Round', icon: '●' },
   { id: 'square', name: 'Square', icon: '■', trophy: 'world_2' },
   { id: 'star', name: 'Star', icon: '★', trophy: 'perfectionist' },
+  { id: 'crosshair', name: 'Crosshair', icon: '⊕', trophy: 'duel_first' },
+  { id: 'bolt', name: 'Bolt', icon: 'ϟ', trophy: 'rally_first' },
+  { id: 'chevron', name: 'Chevron', icon: '❯', trophy: 'relay_first' },
 ];
 export const DEFAULT_COSMETICS = { avatar: 'initial', board: 'nebula', piece: 'round', pin: 'round', accent: 'violet' };
 export const GROUPS = { avatar: AVATARS, board: BOARDS, piece: PIECES, pin: RESULT_PINS, accent: ACCENTS };

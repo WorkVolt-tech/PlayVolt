@@ -15,3 +15,8 @@
 .relay-tv .code-board { gap: clamp(2px, .45vh, 6px); }
 .relay-tv .relay-lane { padding-block: clamp(.35rem, 1.2vh, 1rem); }
 @media (max-width: 580px) { .relay-boards:not(.relay-tv) .relay-grid { grid-template-columns: 1fr; } }
+
+.relay-avatar-roster{display:flex;gap:.25rem .6rem;flex-wrap:wrap;margin:.4rem 0}
+.relay-avatar-roster>span{min-width:0;display:inline-flex;align-items:center;gap:.25rem}
+.relay-avatar-roster .avatar{width:1.4em;height:1.4em;flex-shrink:0}
+.relay-styled-board{border:1px solid;border-radius:.6rem;padding:.35rem}
