@@ -12,6 +12,7 @@ const actions = new Set(['create', 'join', 'state', 'ready', 'start', 'guess', '
 const tvActions = new Set(['tv_start', 'tv_check', 'tv_pair']);
 // Leaderboard (migration 006): public, needs no room or session.
 // Solo modes (migration 007): signed-in account only, no room or guest session.
+const duelActions = new Set(['duel_list', 'duel_create', 'duel_respond', 'duel_get', 'duel_guess']);
 const soloActions = new Set(['solo_home', 'solo_start', 'solo_guess', 'solo_get']);
 // Story mode (migration 008): signed-in account only; guesses use solo_guess.
 const storyActions = new Set(['story_home', 'story_start']);
@@ -34,13 +35,14 @@ Deno.serve(async (req: Request) => {
     // Admin peek (migration 012): the database itself checks the PlayVolt admins list.
     const peek = body.action === 'admin_peek';
     const story = storyActions.has(body.action);
+    const duel = duelActions.has(body.action);
     const solo = soloActions.has(body.action) || story;
-    if (!board && !solo && !badges && !cosmetics && !social && !peek && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
+    if (!board && !duel && !solo && !badges && !cosmetics && !social && !peek && (!(actions.has(body.action) || tv) || typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token))) {
       return reply({ error: 'Invalid player session' }, 400);
     }
     if (board && !['week', 'all'].includes(body.data?.period)) return reply({ error: 'Choose a leaderboard period' }, 400);
     if (board && !['multi', 'daily', 'clock', 'story', undefined].includes(body.data?.board)) return reply({ error: 'Choose a leaderboard' }, 400);
-    if (!['create', 'tv_start', 'tv_check', 'leaderboard', 'achievements', 'cosmetics'].includes(body.action) && !solo && !social && !peek && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
+    if (!['create', 'tv_start', 'tv_check', 'leaderboard', 'achievements', 'cosmetics'].includes(body.action) && !duel && !solo && !social && !peek && (typeof body.code !== 'string' || !/^[A-F0-9]{6}$/i.test(body.code))) {
       return reply({ error: 'Enter the six-character room code' }, 400);
     }
     const data = body.data ?? {};
@@ -88,12 +90,13 @@ Deno.serve(async (req: Request) => {
     if (social && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to invite friends.' }, 401);
     if (badges && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to see your achievements.' }, 401);
     if (cosmetics && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to save your style.' }, 401);
+    if (duel && !accountId) return reply({ error: 'ACCOUNT_REQUIRED: Sign in to play Duel.' }, 401);
     if (solo && !accountId) return reply({ error: `ACCOUNT_REQUIRED: Sign in to play ${story ? 'story mode' : 'solo'}.` }, 401);
     const verifiedData = { ...data, _account_id: accountId };
     const address = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(address + key));
     const originHash = Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
-    const rpc = peek ? 'pin_and_spin_admin_peek' : social ? 'pin_and_spin_social' : badges ? 'pin_and_spin_achievements_for' : cosmetics ? 'pin_and_spin_cosmetic_preferences' : board ? 'pin_and_spin_leaderboard' : story ? 'pin_and_spin_story' : solo ? 'pin_and_spin_solo' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
+    const rpc = duel ? 'pin_and_spin_duel' : peek ? 'pin_and_spin_admin_peek' : social ? 'pin_and_spin_social' : badges ? 'pin_and_spin_achievements_for' : cosmetics ? 'pin_and_spin_cosmetic_preferences' : board ? 'pin_and_spin_leaderboard' : story ? 'pin_and_spin_story' : solo ? 'pin_and_spin_solo' : tv ? 'pin_and_spin_tv' : 'pin_and_spin_api';
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/${rpc}`, {
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(peek
@@ -106,7 +109,7 @@ Deno.serve(async (req: Request) => {
         ? { p_action: data.operation, p_account: accountId, p_data: data }
         : board
         ? { p_period: data.period, p_account: accountId, p_board: data.board ?? 'multi' }
-        : solo
+        : solo || duel
         ? { p_action: body.action, p_account: accountId, p_data: data }
         : tv
         ? { p_action: body.action, p_pair: data.pairCode ?? '', p_token: body.token, p_room: body.code ?? '', p_origin_hash: originHash }

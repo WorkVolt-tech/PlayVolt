@@ -355,3 +355,12 @@ Teams get six guesses and three minutes for each stage (4, 4, 5 and 6 balls).
 Team members take turns submitting, with turn order carrying across stages.
 First to finish wins. If both runs end early, Rally's usual tiebreakers apply.
 Migration 025 adds team rosters and uses the existing Rally scoring and timers.
+### Duel
+From the home screen, open Duel and search for an existing PlayVolt friend by username.
+They can accept later in their Duel inbox. Both players independently get eight guesses
+at one shared four-ball code. Both boards become visible when both players finish.
+A solver beats a player who runs out of guesses. Among solvers, fewest guesses wins;
+equal solves tie. If nobody cracks the code, there is no winner.
+
+Migration 024 adds private Duel records. The Pin & Spin Edge Function routes signed-in
+Duel actions through the existing PlayVolt account verification.
