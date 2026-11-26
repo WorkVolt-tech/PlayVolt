@@ -775,3 +775,27 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 .tvb-lane .feedback-dots.five{grid-template-columns:repeat(3,calc(var(--tvb)*.34))}
 
 .rush-reveal-status{display:block;margin-top:6px;color:var(--sub);font-size:12px;line-height:1.5}
+
+/* Mode trophies: cosmetic silhouettes preserve the color and Pin/Spin scoring. */
+.patterned-peg.piece-shape-shield{border-radius:0!important;clip-path:polygon(12% 12%,50% 3%,88% 12%,84% 58%,70% 77%,50% 97%,30% 77%,16% 58%)}
+.patterned-peg.piece-shape-turbo-arrow{border-radius:0!important;clip-path:polygon(5% 24%,49% 24%,49% 5%,96% 50%,49% 95%,49% 76%,5% 76%,24% 50%)}
+/* A feathered wing uses the piece color as its fill, with a silhouette and
+   tapered feather divisions drawn together so they stay aligned at every size. */
+:is(.patterned-peg,.code-slots .patterned-peg,.answer-slots .patterned-peg.slot.filled).piece-shape-wing{
+  border-radius:0!important;position:relative;
+  background:transparent!important;background-color:transparent!important;
+  box-shadow:none!important;
+}
+.patterned-peg.piece-shape-wing::after{
+  content:"";display:block!important;position:absolute;inset:0;pointer-events:none;
+  background:var(--color);
+  mask:url('./balls/wing-mask.svg') center/contain no-repeat;
+}
+.feedback-dots.pin-shape-crosshair i{border-radius:0;clip-path:polygon(34% 0,66% 0,66% 34%,100% 34%,100% 66%,66% 66%,66% 100%,34% 100%,34% 66%,0 66%,0 34%,34% 34%)}
+.feedback-dots.pin-shape-bolt i{border-radius:0;clip-path:polygon(52% 0,90% 0,63% 37%,95% 37%,27% 100%,39% 55%,5% 55%)}
+.feedback-dots.pin-shape-chevron i{border-radius:0;clip-path:polygon(5% 2%,44% 2%,97% 50%,44% 98%,5% 98%,58% 50%)}
+.board-theme-obsidian-arena,.board-theme-overdrive,.board-theme-night-circuit{border-color:var(--cosmetic-accent)!important}
+.board-theme-obsidian-arena{background:linear-gradient(45deg,#ffe0f008 25%,transparent 25%) 0 0/18px 18px,linear-gradient(145deg,#4f243b,#141321 62%)!important}
+.board-theme-overdrive{background:repeating-linear-gradient(112deg,transparent 0 22px,#ff974220 23px 26px),linear-gradient(145deg,#512917,#17162c 68%)!important}
+.board-theme-night-circuit{background:repeating-linear-gradient(90deg,transparent 0 31px,#63f1eb22 32px 33px),repeating-linear-gradient(0deg,transparent 0 23px,#63f1eb1c 24px 25px),linear-gradient(145deg,#164653,#10192f 65%)!important}
+.badge .badge-reward{color:#d5bcff}

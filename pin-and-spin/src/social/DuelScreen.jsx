@@ -5,6 +5,8 @@ import { placeColor } from '../game/selectors.js';
 import { GuessPanel } from '../screens/GuessPanel.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { Feedback } from '../components/Feedback.jsx';
+import { checkAchievements } from '../achievements.js';
+import { cosmeticStyle, normalizeCosmetics } from '../cosmetics.js';
 import { myFriends } from './friends.js';
 
 const call = (action, data = {}) => callGame('duel_' + action, {}, data);
@@ -35,6 +37,12 @@ export function DuelScreen({ account, appearance, notify, onBack, onSignIn }) {
   }, [account.signedIn, refresh, notify]);
 
   const duel = duels?.find(item => item.id === id);
+  const finishedId = duel?.status === 'finished' ? duel.id : null;
+  const userId = account.user?.id;
+  useEffect(() => {
+    if (finishedId && userId) void checkAchievements(userId, notify);
+  }, [finishedId, userId, notify]);
+  const boardStyle = normalizeCosmetics(appearance);
   function clear() { setDraft(EMPTY_GUESS); select(0); }
   async function act(action, payload) {
     if (busy) return;
@@ -95,7 +103,7 @@ export function DuelScreen({ account, appearance, notify, onBack, onSignIn }) {
         <p>Waiting for {duel.opponent} to finish.</p>
         <DuelBoard name="Your guesses" run={duel.mine} appearance={appearance} />
       </div>}
-      {duel.status === 'finished' && <div className="surface solo-card">
+      {duel.status === 'finished' && <div className={'surface solo-card board-theme-' + boardStyle.board} style={cosmeticStyle(boardStyle)}>
         <h2>{titles[duel.result]}</h2>
         <p>The code</p><PegRow colors={duel.answer} tiny shape={appearance?.piece} />
         <DuelBoard name="Your guesses" run={duel.mine} appearance={appearance} />

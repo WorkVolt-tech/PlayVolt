@@ -37,6 +37,7 @@ export function AchievementsScreen({ account, onBack, onSignIn }) {
               <span className="badge-icon" aria-hidden="true">{when ? a.icon : '🔒'}</span>
               <strong>{a.title}</strong>
               <small>{a.text}</small>
+              {a.reward && <small className="badge-reward">Unlocks {a.reward}</small>}
               {when && <em>{new Date(when).toLocaleDateString()}</em>}
             </div>;
           })}

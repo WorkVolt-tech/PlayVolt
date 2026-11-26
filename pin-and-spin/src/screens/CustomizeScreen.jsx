@@ -3,7 +3,7 @@ import { AVATARS, BOARDS, PIECES, RESULT_PINS, ACCENTS, cosmeticStyle, normalize
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
 import { PegRow } from '../components/Peg.jsx';
 import { Feedback } from '../components/Feedback.jsx';
-import { AvatarArt } from '../components/AvatarArt.jsx';
+import { AvatarArt, illustratedAvatars } from '../components/AvatarArt.jsx';
 import { byCode } from '../achievements.js';
 
 const categories = [
@@ -64,8 +64,9 @@ export function CustomizeScreen({ value, earned = {}, name = 'You', seat = 1, us
               accent={key === 'accent' ? option.id : choice.accent} piece={choice.piece} seat={seat} />
             : <span className="customize-swatch">
               {key === 'avatar' ? option.id === 'initial' ? name[0]?.toUpperCase()
-                : ['bunny', 'bear', 'fox', 'wolf', 'cat', 'robot', 'champion', 'royal', 'carrot', 'crystal', 'dragon'].includes(option.id) ? <AvatarArt variant={option.id} /> : option.icon
-                : option.icon}
+                : illustratedAvatars.has(option.id) ? <AvatarArt variant={option.id} /> : option.icon
+                : key === 'piece' ? <PegRow colors={[0]} tiny shape={option.id} />
+                  : <Feedback guess={{ colors: [0, 1, 2, 3], pins: 2, spins: 2, revealed: true }} shape={option.id} />}
             </span>}
           <span>{option.name}</span>
           {locked(key, option) && <small>🔒 {byCode[option.trophy]?.title || option.trophy}</small>}

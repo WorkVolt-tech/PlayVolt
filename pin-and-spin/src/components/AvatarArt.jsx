@@ -1,7 +1,34 @@
 import React from 'react';
 
+export const illustratedAvatars = new Set([
+  'bunny', 'bear', 'fox', 'wolf', 'cat', 'robot', 'champion', 'royal', 'carrot', 'crystal', 'dragon',
+  'onyx-knight', 'nitro-pilot', 'circuit-falcon',
+]);
+
 // Original character portraits. Distinct silhouettes read clearly on phone and TV.
 export function AvatarArt({ variant }) {
+  if (variant === 'onyx-knight') return <svg className="avatar-art" viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M11 20 22 9l10-5 10 5 11 11-3 29-18 13-18-13Z" fill="#33344d" stroke="#121224" strokeWidth="3"/>
+    <path d="M32 6v19L13 22l10-12Zm0 0v19l19-3-10-12Z" fill="#aab1cf"/>
+    <path d="m12 25 20 4 20-4-4 10-16 4-16-4Z" fill="#171629"/>
+    <path d="m17 30 12 3m6 0 12-3" stroke="#ed75ad" strokeWidth="3" strokeLinecap="round"/>
+    <path d="m16 39 16 4 16-4-2 9-14 11-14-11Z" fill="#676b8c"/>
+    <path d="M28 45v7m8-7v7" stroke="#282840" strokeWidth="3"/>
+  </svg>;
+  if (variant === 'nitro-pilot') return <svg className="avatar-art" viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M8 31C8 12 18 5 32 5s24 10 24 26l-4 18-9 10H23L11 48Z" fill="#ee7a33" stroke="#391d39" strokeWidth="3"/>
+    <path d="M29 6h10l-6 19H23Z" fill="#ffe8a3"/>
+    <path d="M11 29q20-11 44-7l-3 20-12 6H23L12 38Z" fill="#191a35" stroke="#ffd394" strokeWidth="2"/>
+    <path d="M17 30q13-6 31-6l-7 7-19 4Z" fill="#67e8ef"/><path d="M41 33h7l-2 4h-9Z" fill="#bccaff"/>
+    <path d="M24 52h17l-3 4H26Z" fill="#f9c76e"/>
+  </svg>;
+  if (variant === 'circuit-falcon') return <svg className="avatar-art" viewBox="0 0 64 64" aria-hidden="true">
+    <path d="M4 14 21 19l11-11 11 11 17-5-7 25-7 14-14 9-14-9-7-14Z" fill="#2d5d86" stroke="#112a49" strokeWidth="3"/>
+    <path d="m5 16 24 12-8 12L9 29Zm54 0L35 28l8 12 12-11Z" fill="#75c4e8"/>
+    <path d="m16 30 12 5-4 6-7-3Zm32 0-12 5 4 6 7-3Z" fill="#15304b"/>
+    <path d="m18 34 6 3m22-3-6 3" stroke="#81f9ee" strokeWidth="2.5" strokeLinecap="round"/>
+    <path d="m26 41 6-7 9 7-9 13Z" fill="#ffd46e"/><path d="m32 54 9-13-9 4Z" fill="#d5863e"/>
+  </svg>;
   if (variant === 'bear') return <svg className="avatar-art" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
     <circle cx="13" cy="17" r="10" fill="#8c5947" stroke="#482d43" strokeWidth="3" /><circle cx="51" cy="17" r="10" fill="#8c5947" stroke="#482d43" strokeWidth="3" />
     <circle cx="13" cy="17" r="4" fill="#d8a586" /><circle cx="51" cy="17" r="4" fill="#d8a586" />
