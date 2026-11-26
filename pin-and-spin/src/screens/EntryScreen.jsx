@@ -24,6 +24,7 @@ export function EntryScreen({ form, busy, account, onCustomize }) {
           <div className="home-grid">
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('story'); }}><span>🗺️</span> Story Mode</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('solo'); }}><span>🎯</span> Play Solo</button>
+            <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('duel'); }}><span>⚔</span> Duel</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('friends'); }}><span>👥</span> Friends</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('leaderboard'); }}><span>🏆</span> Leaderboard</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('achievements'); }}><span>🏅</span> Achievements</button>

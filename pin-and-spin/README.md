@@ -346,3 +346,13 @@ Solo Rally preserves the hidden stage repetition rules and ends on timeout or ei
 incorrect guesses. Games resume through the existing shared account. Migration 023
 extends the private solo game records; the Edge Function accepts six-ball solo guesses.
 Multiplayer remains Classic 4 guesses and Code Rally 6 guesses.
+
+### Duel
+From the home screen, open Duel and search for an existing PlayVolt friend by username.
+They can accept later in their Duel inbox. Both players independently get eight guesses
+at one shared four-ball code. Both boards become visible when both players finish.
+A solver beats a player who runs out of guesses. Among solvers, fewest guesses wins;
+equal solves tie. If nobody cracks the code, there is no winner.
+
+Migration 024 adds private Duel records. The Pin & Spin Edge Function routes signed-in
+Duel actions through the existing PlayVolt account verification.
