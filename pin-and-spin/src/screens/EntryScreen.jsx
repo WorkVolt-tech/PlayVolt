@@ -24,6 +24,7 @@ export function EntryScreen({ form, busy, account, onCustomize }) {
           <div className="home-grid">
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('story'); }}><span>🗺️</span> Story Mode</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('solo'); }}><span>🎯</span> Play Solo</button>
+            <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('duel'); }}><span>⚔</span> Duel</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('friends'); }}><span>👥</span> Friends</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('leaderboard'); }}><span>🏆</span> Leaderboard</button>
             <button className="outline-btn" onClick={() => { play('tap-ui-tick'); setFormTab('achievements'); }}><span>🏅</span> Achievements</button>
@@ -59,7 +60,7 @@ export function EntryScreen({ form, busy, account, onCustomize }) {
             <span className="mode-check">✓</span>
           </label>)}
         </div>}
-        {formTab === 'create' && mode === 'rally' && <RallyStages />}
+        {formTab === 'create' && ['rally', 'relay'].includes(mode) && <RallyStages />}
         {account.signedIn
           ? <div className="playing-as"><span className="field-label">PLAYING AS</span><strong>{accountName || '…'}</strong>
               <small>Your PlayVolt account name</small></div>
@@ -77,7 +78,7 @@ export function EntryScreen({ form, busy, account, onCustomize }) {
         <button type="submit" className="primary-btn" disabled={busy}>
           {busy ? 'Connecting…' : formTab === 'create' ? 'Create Room' : 'Join Room'}<span>→</span>
         </button>
-        <div className="bottom-note">{account.signedIn ? 'Signed in' : 'No sign-up needed'} <span>•</span> {formTab === 'create' ? (mode === 'classic' ? '2 players' : '2–10 players') : '2–10 players'}</div>
+        <div className="bottom-note">{account.signedIn ? 'Signed in' : 'No sign-up needed'} <span>•</span> {formTab === 'create' ? (mode === 'classic' ? '2 players' : mode === 'relay' ? '4–10 players' : '2–10 players') : '2–10 players'}</div>
       </form>}
     </>}
   </section>;

@@ -2,7 +2,7 @@
 // safe to reuse in a future shared (TV) display and easy to unit test.
 
 export const isSimultaneous = (mode) => mode === 'reveal' || mode === 'timed-reveal';
-export const guessLimit = (mode) => (mode === 'rally' ? 6 : mode === 'rush' ? 5 : 4);
+export const guessLimit = (mode) => (['rally', 'relay'].includes(mode) ? 6 : mode === 'rush' ? 5 : 4);
 export const myGuesses = (game) => (game?.guesses || []).filter((guess) => guess.playerId === game?.me);
 
 // The attempt number the current player would submit next.
@@ -25,9 +25,9 @@ export function canSubmitGuess(game, { busy, remainingMs }) {
   if (!game) return false;
   const mine = myGuesses(game);
   return game.status === 'playing' && !busy &&
-    (game.mode !== 'rally' || game.runState === 'racing') &&
+    (!['rally', 'relay'].includes(game.mode) || game.runState === 'racing') &&
     (remainingMs === null || remainingMs > 0) &&
-    (game.mode !== 'classic' || game.turnId === game.me) &&
+    (!['classic', 'relay'].includes(game.mode) || game.turnId === game.me) &&
     mine.length < guessLimit(game.mode) &&
     (!isSimultaneous(game.mode) || !mine.some((guess) => guess.attempt === game.round));
 }
@@ -115,7 +115,7 @@ export function matchEvents(prev, next) {
   const playing = next.status === 'playing';
   if (playing && isSimultaneous(next.mode) && next.round > prev.round) events.push({ type: 'round', round: next.round });
   if (next.mode === 'rush' && next.round > prev.round) events.push({ type: 'rush-reveal', row: next.round });
-  if (playing && next.mode === 'rally' && next.stage > prev.stage) events.push({type:'rally-stage',stage:next.stage});
+  if (playing && ['rally', 'relay'].includes(next.mode) && next.stage > prev.stage) events.push({type:'rally-stage',stage:next.stage});
   const seen = new Set((prev.guesses || []).filter((g) => g.revealed).map((g) => g.playerId + ':' + (g.stage || 1) + ':' + g.attempt));
   for (const g of next.guesses || []) {
     if (g.playerId === next.me && g.revealed && g.colors && !seen.has(g.playerId + ':' + (g.stage || 1) + ':' + g.attempt)) {
