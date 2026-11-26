@@ -779,11 +779,17 @@ html.tv-fit .tv-top .brand{font-size:clamp(22px,2vw,44px)}
 /* Mode trophies: cosmetic silhouettes preserve the color and Pin/Spin scoring. */
 .patterned-peg.piece-shape-shield{border-radius:0!important;clip-path:polygon(12% 12%,50% 3%,88% 12%,84% 58%,70% 77%,50% 97%,30% 77%,16% 58%)}
 .patterned-peg.piece-shape-turbo-arrow{border-radius:0!important;clip-path:polygon(5% 24%,49% 24%,49% 5%,96% 50%,49% 95%,49% 76%,5% 76%,24% 50%)}
-.patterned-peg.piece-shape-wing{border-radius:0!important;clip-path:polygon(4% 22%,97% 6%,83% 40%,68% 43%,61% 60%,43% 60%,32% 80%,10% 95%,17% 56%);position:relative}
-/* Keep each color texture visible beneath the high-contrast feather grooves. */
+/* A feathered wing uses the piece color as its fill, with a silhouette and
+   tapered feather divisions drawn together so they stay aligned at every size. */
+:is(.patterned-peg,.code-slots .patterned-peg,.answer-slots .patterned-peg.slot.filled).piece-shape-wing{
+  border-radius:0!important;position:relative;
+  background:transparent!important;background-color:transparent!important;
+  box-shadow:none!important;
+}
 .patterned-peg.piece-shape-wing::after{
   content:"";display:block!important;position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(150deg,transparent 33%,#10121be6 34% 39%,#fff9 40% 42%,transparent 43% 49%,#10121be6 50% 55%,#fff9 56% 58%,transparent 59% 65%,#10121be6 66% 71%,#fff9 72% 74%,transparent 75%);
+  background:var(--color);
+  mask:url('./balls/wing-mask.svg') center/contain no-repeat;
 }
 .feedback-dots.pin-shape-crosshair i{border-radius:0;clip-path:polygon(34% 0,66% 0,66% 34%,100% 34%,100% 66%,66% 66%,66% 100%,34% 100%,34% 66%,0 66%,0 34%,34% 34%)}
 .feedback-dots.pin-shape-bolt i{border-radius:0;clip-path:polygon(52% 0,90% 0,63% 37%,95% 37%,27% 100%,39% 55%,5% 55%)}
