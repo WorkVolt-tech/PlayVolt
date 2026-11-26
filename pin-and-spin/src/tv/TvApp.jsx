@@ -3,6 +3,7 @@ import { MatchAnnouncer } from '../components/MatchAnnouncer.jsx';
 import { remainingTime } from '../game/selectors.js';
 import { play, unlockNow } from '../sound/sfx.js';
 import { useGameSounds } from '../sound/useGameSounds.js';
+import { RallyProgress } from '../rally/RallyProgress.jsx';
 import { TvBoard } from './TvBoard.jsx';
 import { TvLobby } from './TvLobby.jsx';
 import { useDisplay } from './useDisplay.js';
@@ -69,7 +70,7 @@ function TvRoom({ link, onChangeRoom }) {
     {!error && game?.status === 'lobby' && <TvLobby game={game} />}
     {board && <>
       <MatchAnnouncer game={game} audience="tv" />
-      <TvBoard game={game} remainingMs={remainingMs} />
+      {game.mode === 'rally' ? <RallyProgress game={game} clock={clock} offset={offset} tv /> : <TvBoard game={game} remainingMs={remainingMs} />}
     </>}
   </>;
 }

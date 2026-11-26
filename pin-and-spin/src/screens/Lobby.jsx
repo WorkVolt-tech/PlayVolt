@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { RallyStages } from '../rally/RallyProgress.jsx';
 import { MODES } from '../game/constants.js';
 import { Peg } from '../components/Peg.jsx';
 import { PlayerAvatar } from '../components/PlayerAvatar.jsx';
@@ -38,7 +39,8 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
       <LeaderLine players={activePlayers} leaders={leaders} me={game.me} />
       <div className="panel-title"><h2>Players</h2><span>{readyCount} READY · {activePlayers.length} / {MODES[game.mode].maxPlayers}</span></div>
       {game.mode === 'classic' && <p className="classic-note">↪ Classic is a 2-player duel. For more friends, start a Reveal, Timed Reveal or Rush room.</p>}
-      {game.mode !== 'classic' && <p className="classic-note colors-note">{activePlayers.length > 3
+      {game.mode === 'rally' && <RallyStages />}
+      {game.mode !== 'classic' && game.mode !== 'rally' && <p className="classic-note colors-note">{activePlayers.length > 3
         ? <><Peg value={6} tiny /><Peg value={7} tiny /> {activePlayers.length >= 9 ? '9+ players: a 6-ball code with 8 colors.'
             : activePlayers.length >= 7 ? '7+ players: a 5-ball code with 8 colors.' : '4+ players: 8 colors this game (orange and pink join).'}</>
         : '4+ players: 8 colors. 7+ players: 5-ball code. 9+: 6 balls.'}</p>}

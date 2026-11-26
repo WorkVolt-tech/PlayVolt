@@ -49,7 +49,7 @@ export function usePinAndSpin() {
     const old = gameRef.current;
     gameRef.current = next;
     offsetRef.current = new Date(next.serverTime || Date.now()).getTime() - Date.now();
-    const draftId = `${next.code}:${next.puzzle}:${nextAttempt(next)}`;
+    const draftId = `${next.code}:${next.puzzle}:${next.stage || 1}:${nextAttempt(next)}`;
     if (draftIdRef.current !== draftId) {
       draftIdRef.current = draftId;
       let saved;

@@ -7,6 +7,7 @@ import { VersionAlert } from './components/VersionAlert.jsx';
 import './pwa.js';
 import '../styles.css';
 import './polish.css';
+import './rally/rally.css';
 
 // "?tv=ROOM#token" opens the shared big-screen display; anything else is the phone game.
 const tv = isTvLink();

@@ -1,4 +1,5 @@
 import React from 'react';
+import { RallyStages } from '../rally/RallyProgress.jsx';
 import { MODES } from '../game/constants.js';
 import { Peg } from '../components/Peg.jsx';
 import { play } from '../sound/sfx.js';
@@ -58,6 +59,7 @@ export function EntryScreen({ form, busy, account, onCustomize }) {
             <span className="mode-check">✓</span>
           </label>)}
         </div>}
+        {formTab === 'create' && mode === 'rally' && <RallyStages />}
         {account.signedIn
           ? <div className="playing-as"><span className="field-label">PLAYING AS</span><strong>{accountName || '…'}</strong>
               <small>Your PlayVolt account name</small></div>
