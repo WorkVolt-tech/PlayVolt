@@ -31,7 +31,7 @@ export function MatchAnnouncer({ game, audience = 'player' }) {
       const first = (game.players || []).find((p) => p.id === game.turnId)?.name;
       setBanner({ key: Date.now(), title: 'Game on!', sub: game.mode === 'classic'
         ? (tv ? `${first || 'A random player'} goes first` : game.turnId === game.me ? 'You go first' : 'Watch for your turn')
-        : game.mode === 'rally' ? 'Four stages · six guesses · three minutes each' : game.mode === 'rush' ? 'Five minutes · five guesses · one reveal per minute' : `Round 1 of 4 · ${mode.label}` });
+        : ['rally', 'relay'].includes(game.mode) ? 'Four stages · six guesses · three minutes each' : game.mode === 'rush' ? 'Five minutes · five guesses · one reveal per minute' : `Round 1 of 4 · ${mode.label}` });
     } else if (rushReveal && game.status === 'playing') {
       setBanner({ key: Date.now(), title: `Row ${rushReveal.row} revealed!`, sub: 'Clues unlocked · keep guessing at your own pace' });
     } else if (round) {

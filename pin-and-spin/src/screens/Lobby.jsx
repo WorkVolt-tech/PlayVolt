@@ -15,7 +15,8 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
   const me = activePlayers.find((player) => player.id === game.me);
   const leaders = winLeaders(game.players);
   const host = game.hostId === game.me;
-  const allReady = activePlayers.length >= 2 && activePlayers.every((player) => player.ready);
+  const minPlayers = game.mode === 'relay' ? 4 : 2;
+  const allReady = activePlayers.length >= minPlayers && activePlayers.every((player) => player.ready);
   const readyCount = activePlayers.filter((player) => player.ready).length;
   const [tvOpen, setTvOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
@@ -39,16 +40,16 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
       <LeaderLine players={activePlayers} leaders={leaders} me={game.me} />
       <div className="panel-title"><h2>Players</h2><span>{readyCount} READY · {activePlayers.length} / {MODES[game.mode].maxPlayers}</span></div>
       {game.mode === 'classic' && <p className="classic-note">↪ Classic is a 2-player duel. For more friends, start a Reveal, Timed Reveal or Rush room.</p>}
-      {game.mode === 'rally' && <RallyStages />}
-      {game.mode !== 'classic' && game.mode !== 'rally' && <p className="classic-note colors-note">{activePlayers.length > 3
+      {['rally', 'relay'].includes(game.mode) && <RallyStages />}
+      {!['classic', 'rally', 'relay'].includes(game.mode) && <p className="classic-note colors-note">{activePlayers.length > 3
         ? <><Peg value={6} tiny /><Peg value={7} tiny /> {activePlayers.length >= 9 ? '9+ players: a 6-ball code with 8 colors.'
             : activePlayers.length >= 7 ? '7+ players: a 5-ball code with 8 colors.' : '4+ players: 8 colors this game (orange and pink join).'}</>
         : '4+ players: 8 colors. 7+ players: 5-ball code. 9+: 6 balls.'}</p>}
       <div className="player-list">
-        {activePlayers.map((player) => <div className="player-item" key={player.id}>
+        {activePlayers.map((player, index) => <div className="player-item" key={player.id}>
           <PlayerAvatar player={player} />
           <div className="player-info"><div className="player-name">{player.name}{player.id === game.me ? ' (YOU)' : ''}<WinsBadge player={player} leaders={leaders} /></div>
-            <div className="player-description">{player.id === game.hostId ? <span className="host-badge">★ HOST</span> : 'PLAYER ' + player.seat}</div>
+            <div className="player-description">{player.id === game.hostId ? <span className="host-badge">★ HOST</span> : 'PLAYER ' + player.seat}{game.mode === 'relay' && (index % 2 === 0 ? ' · TEAM BLUE' : ' · TEAM GOLD')}</div>
           </div>
           {player.away
             ? <span className="ready-pill away">◌ AWAY</span>
@@ -68,7 +69,7 @@ export function Lobby({ game, busy, act, pairTv, signedIn, onCopy, onShare, onRe
         aria-valuemax={activePlayers.length} aria-valuenow={readyCount}>
         <span style={{ width: `${activePlayers.length ? readyCount / activePlayers.length * 100 : 0}%` }} />
       </div>
-      <p className="lobby-help">{activePlayers.length < 2
+      <p className="lobby-help">{game.mode === 'relay' && activePlayers.length < 4 ? 'Invite at least four players total. Teams are assigned by join order.' : activePlayers.length < 2
         ? 'Invite at least one friend with your room code to start.'
         : allReady ? 'Everybody is ready. Time to crack the code!' : 'Wait for everybody to mark themselves ready.'}</p>
       {!host && <button className="outline-btn full" disabled={busy}

@@ -346,3 +346,12 @@ Solo Rally preserves the hidden stage repetition rules and ends on timeout or ei
 incorrect guesses. Games resume through the existing shared account. Migration 023
 extends the private solo game records; the Edge Function accepts six-ball solo guesses.
 Multiplayer remains Classic 4 guesses and Code Rally 6 guesses.
+
+### Rally Relay
+Create a Rally Relay room with 4–10 players and choose **Show on TV** to pair a display.
+The lobby splits players into Team Blue and Team Gold in join order. Each team has
+its own code of the same length, so the TV can show both sets of clues during play.
+Teams get six guesses and three minutes for each stage (4, 4, 5 and 6 balls).
+Team members take turns submitting, with turn order carrying across stages.
+First to finish wins. If both runs end early, Rally's usual tiebreakers apply.
+Migration 025 adds team rosters and uses the existing Rally scoring and timers.
