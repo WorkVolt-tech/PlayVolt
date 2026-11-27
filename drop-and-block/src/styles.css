@@ -1767,3 +1767,30 @@ img,video,canvas,svg{max-width:100%}
 }
 @media(max-width:350px){.mode-choice-emblem{flex-basis:34px;height:36px}.mode-choice-emblem svg{width:25px;height:25px}}
 @media(prefers-reduced-motion:reduce){.mode-choice{transition:none}}
+
+
+/* Keep the host action visible before the long arcade-mode gallery.
+   Joiners still use a separate room-code panel. */
+.create-room-panel{min-width:0}
+.create-room-intro{margin:5px 0 14px;line-height:1.55}
+.create-room-quickstart{
+  display:flex;flex-direction:column;gap:10px;
+  margin:12px 0 16px;padding:13px;
+  border:1px solid #e8bd717a;border-radius:14px;
+  background:linear-gradient(135deg,#293757,#191f3b);
+}
+.create-room-selected{display:flex;align-items:center;gap:11px;min-width:0}
+.create-room-selected svg{flex:none;color:#ffdb8b}
+.create-room-selected span{display:flex;flex-direction:column;min-width:0;gap:3px}
+.create-room-selected strong{color:#fff;overflow-wrap:anywhere;font-size:14px}
+.create-room-selected small{color:#b7caea;font-size:11px}
+.create-room-cta{min-height:51px;font-weight:900;font-size:15px}
+.create-room-bottom-cta{min-height:48px;margin-top:6px;font-weight:900}
+.create-room-signin-help{font-size:12px;color:#ffdf9c;line-height:1.45;margin:0 0 12px}
+#drop-block-auth-panel{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 16px)}
+#drop-block-auth-panel .sub a{color:#ffdd8e;text-underline-offset:3px}
+@media(max-width:720px){
+  .create-room-quickstart{margin:10px 0 14px;padding:11px}
+  .create-room-cta{min-height:49px}
+  .create-room-bottom-cta{min-height:49px}
+}
