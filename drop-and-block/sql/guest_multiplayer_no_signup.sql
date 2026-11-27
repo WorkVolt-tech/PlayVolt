@@ -930,9 +930,9 @@ begin
  if p_action='register' then
   v_name:=left(btrim(regexp_replace(coalesce(p_data->>'nickname',''),'\s+',' ','g')),24);
   if length(v_name)<2 then
-    v_name:='Guest '||upper(substr(encode(gen_random_bytes(4),'hex'),1,4));
+    v_name:='Guest '||upper(substr(encode(extensions.gen_random_bytes(4),'hex'),1,4));
   end if;
-  v_token:=encode(gen_random_bytes(32),'hex');
+  v_token:=encode(extensions.gen_random_bytes(32),'hex');
   insert into public.drop_block_guest_sessions(token_hash,nickname)
   values(sha256(decode(v_token,'hex')),v_name)
   returning guest_id into v_uid;
