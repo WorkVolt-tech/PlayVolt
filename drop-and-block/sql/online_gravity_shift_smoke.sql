@@ -2,7 +2,7 @@
 -- This exercises the actual existing no-signup guest dispatcher and room rules.
 do $gravity_test$
 declare
- g1 jsonb;g2 jsonb;t1 text;t2 text;c text;c2 text;r jsonb;
+ g1 jsonb;g2 jsonb;t1 text;t2 text;c text;c2 text;r jsonb;v_tv jsonb;
  v_id uuid;v_board jsonb;v_old text;v_row integer;v_col integer;v_count integer;
 begin
  g1:=public.drop_block_guest_action('register','','{"nickname":"Gravity Tester One"}','');
@@ -30,6 +30,14 @@ begin
      case when v_count%2=1 then t1 else t2 end);
    if (r->'gravity'->>'drops')::integer<>v_count then
      raise exception 'Move count mismatch on move %',v_count;end if;
+   if v_count=4 then
+     v_tv:=public.drop_block_tv_state(c,r->>'displayToken');
+     if v_tv->'gravity'->>'nextDirection'<>'right' or
+       v_tv->'lastMove'->>'shiftDirection'<>'left' or
+       (v_tv->'lastMove'->>'shifted')::boolean is distinct from true then
+       raise exception 'Read-only TV board missing shift metadata: %',v_tv;
+     end if;
+   end if;
    if v_count in (4,8) then
      if (r->'lastMove'->>'shifted')::boolean is distinct from true then
        raise exception 'Expected shift on move %',v_count;end if;
