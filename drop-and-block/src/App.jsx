@@ -750,7 +750,7 @@ export default function App() {
           <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
             {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
           </button>
-          {user&&!user.is_anonymous&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>
+          {user&&!user.is_anonymous&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>}
         </section>
         <section className="panel" id="drop-block-auth-panel">
           <div className="section-eyebrow">JOIN WITH A CODE</div>
@@ -792,7 +792,7 @@ export default function App() {
     </main>
     <footer>DROP & BLOCK <span>·</span> A PLAYVOLT GAME</footer>
     <VersionAlert />
-    <TrophyUnlockNotice codes={freshTrophies} onClose={()=>setFreshTrophies([])}
-      onView={()=>{setFreshTrophies([]);setShowProgress(true);}} />
+    {!user?.is_anonymous&&<TrophyUnlockNotice codes={freshTrophies} onClose={()=>setFreshTrophies([])}
+      onView={()=>{setFreshTrophies([]);setShowProgress(true);}} />}
   </div>;
 }
