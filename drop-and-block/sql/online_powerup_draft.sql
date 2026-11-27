@@ -386,3 +386,8 @@ begin
 end $$;
 revoke all on function public.drop_block_power_action(text,text,jsonb) from public,anon;
 grant execute on function public.drop_block_power_action(text,text,jsonb) to authenticated;
+
+-- Internal pure rule helpers and the trigger are not public API endpoints.
+revoke execute on function public.drop_block_power_winners(jsonb,integer,integer,integer,integer) from public,anon,authenticated;
+revoke execute on function public.drop_block_power_threats(jsonb,integer,integer,integer,integer,integer) from public,anon,authenticated;
+revoke execute on function public.drop_block_power_guard() from public,anon,authenticated;
