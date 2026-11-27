@@ -33,8 +33,8 @@ begin
    if v_count in (4,8) then
      if (r->'lastMove'->>'shifted')::boolean is distinct from true then
        raise exception 'Expected shift on move %',v_count;end if;
-     if r->'lastMove'->>'shiftDirection' <>
-         case when v_count=4 then 'left' else 'right' end then
+     if (v_count=4 and r->'lastMove'->>'shiftDirection'<>'left') or
+        (v_count=8 and r->'lastMove'->>'shiftDirection'<>'right') then
        raise exception 'Shift direction wrong at move %: %',v_count,r->'lastMove';end if;
    elsif (r->'lastMove'->>'shifted')::boolean is distinct from false then
      raise exception 'Early/unexpected shift on move %',v_count;
@@ -42,11 +42,6 @@ begin
  end loop;
  if r->>'status'<>'playing' or r->'gravity'->>'nextDirection'<>'left' then
    raise exception 'Shift parity/turn failed after 8 moves';end if;
- if r->'board'->>3<>'1' or r->'board'->>4<>'2' then
-   -- Expected visible rightward compaction in the bottom two rows, not
-   -- necessarily at the first row: test specific row positions below.
-   null;
- end if;
  v_board:=r->'board';
  if (v_board->>(5*7+3))::integer<>1
     or (v_board->>(5*7+4))::integer<>2
