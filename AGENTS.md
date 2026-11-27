@@ -32,7 +32,10 @@
 ## 3. One shared Game DB; game-specific database names
 
 - PlayVolt games use the **existing shared Supabase Game DB**. Do not create another permanent Supabase project or paid database branch unless expressly requested.
-- Reuse the existing shared PlayVolt account system (`auth.users` and `public.profiles`) for **signed-in** players.
+- **One login for every PlayVolt game — mandatory:** All games must use the **same existing Supabase authentication user table, `auth.users`**, as the single source of truth for login credentials and user identity. The existing shared `public.profiles` table supplies the cross-game player profile/nickname. **Never create a separate login, account, password, or authentication-user table for an individual game.**
+- A player registers **once** and uses the **same email/password, account identity, and login session** across Dekabess, Pin & Spin, Drop & Block, and every future game in this shared Game DB. Signing up in one game must not require signing up again in another.
+- Each game may have its own **prefixed, game-specific progress, settings, achievements, leaderboard and player-seat tables**, but registered account references must link back to the **same shared `auth.users.id`** (and `public.profiles.id` where appropriate), never to a second game-specific account system. Never store duplicate passwords or credentials in game tables.
+- **Guest access remains optional-account play:** Do not force a login to play. Guest seat/session records are distinct from registered account identities, and guest matches do not produce permanent competitive rewards.
 - Prefix **every game-owned database table, RPC/function, trigger, and other game-specific object** to identify its game. Preserve each game's existing naming:
   - Drop & Block: `drop_block_`
   - Pin & Spin: `pin_and_spin_`
@@ -63,6 +66,7 @@ Before proposing a new feature, setting, table, or service:
 - Before considering a multiplayer guest feature complete, test:
   - Guest creates room; another guest joins by code; guest reconnects.
   - Guest and registered player can play together without unequal gameplay.
+  - One registered PlayVolt login works across all games without a second signup or game-specific credential table; shared player ID remains consistent.
   - Guest gets no leaderboard/trophy/unlockable credit; registered player still gets eligible rewards.
   - Host controls, move authorization, power-ups, rematches, and room codes still work.
   - Mobile portrait/landscape, responsive controls, and iPhone/safe-area insets.
