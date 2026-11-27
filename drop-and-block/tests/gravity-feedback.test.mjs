@@ -36,3 +36,11 @@ test('Normal chip highlighting is unchanged when Gravity Shift did not activate'
  assert.equal(lastMoveCell(board,width,height,move),38);
  assert.deepEqual(winningCells(board,width,height,1,'gravity',move,4),[]);
 });
+
+test('Replay detects a shifted win from recorded event metadata',()=>{
+ const width=7,height=6,board=Array(width*height).fill(0);
+ for(let x=1;x<=4;x++)board[5*width+x]=1;
+ const replayMove={seat:2,column:6,row:5,kind:'drop',event:'🌪 GRAVITY SHIFT LEFT! Player 1 wins after the shift!'};
+ assert.deepEqual(winningCells(board,width,height,1,'gravity',replayMove,4),[36,37,38,39]);
+ assert.equal(lastMoveCell(board,width,height,replayMove),null);
+});
