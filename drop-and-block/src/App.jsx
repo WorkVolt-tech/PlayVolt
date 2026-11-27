@@ -281,7 +281,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
             : readOnly?'ALL PLAYERS CAN DROP NOW · FIRST CHIP GOES FIRST'
             : iSubmitted?'✓ CHIP LOCKED IN · WAITING FOR EVERYONE ELSE'
             : '⚡ DROP NOW · FIRST ACCEPTED CHIP LANDS FIRST!'
-          : showActiveTurn ? <span className="turn-announcement"><span className="turn-announcement-kicker">▶ NOW PLAYING</span><strong>{turnPlayer?.name||'Player '+game.turnSeat}</strong><span className="turn-announcement-instruction">{game.power?.doublePending?'Double Drop — chip '+(3-game.power.doublePending)+' of 2':myTurn?'Choose a column or power-up':'Waiting for their move'}</span></span> : 'Waiting for the next turn…'}
+          : showActiveTurn ? <span className="turn-announcement"><span className="turn-announcement-kicker">▶ NOW PLAYING</span><strong>{turnPlayer?.name||'Player '+game.turnSeat}</strong><span className="turn-announcement-instruction">{game.power?.doublePending?'Double Drop — chip '+(3-game.power.doublePending)+' of 2':myTurn?(game.mode==='power'?'Choose a column or power-up':game.mode==='chaos'?'Choose a column or a Chaos ability':'Tap a column above the board'):'Waiting for their move'}</span></span> : 'Waiting for the next turn…'}
     </div>
     <MatchSpotlight game={game}/>
     {game.rivalry?.lastCallout&&<div className="rivalry-callout" role="status">{game.rivalry.lastCallout}</div>}
@@ -338,7 +338,7 @@ export default function App() {
   const [guestNickname,setGuestNickname] = useState('');
   const [maxPlayers,setMaxPlayers] = useState(4);
   const [mode,setMode] = useState('classic');
-  const [homeTab,setHomeTab] = useState('host');
+  const [homeTab,setHomeTab] = useState(() => new URLSearchParams(location.search).has('room')?'join':'host');
   const [onlinePowerChoice,setOnlinePowerChoice]=useState('drop');
   const [joinCode,setJoinCode] = useState(() => new URLSearchParams(location.search).get('room')?.toUpperCase() || '');
   const [room,setRoom] = useState(null);
