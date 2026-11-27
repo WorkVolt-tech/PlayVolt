@@ -74,11 +74,11 @@ declare
   v_x integer;v_y integer;v_test jsonb;v_threats integer:=0;
 begin
   for v_x in 0..p_width-1 loop
-    v_y:=null;
-    for v_y in reverse p_height-1..0 loop
-      exit when (p_board->>(v_y*p_width+v_x))::integer=0;
-    end loop;
-    if (p_board->>(v_y*p_width+v_x))::integer<>0 then v_y:=null;end if;
+    -- The lowest available slot is the largest row index.
+    -- SELECT avoids PL/pgSQL's loop-variable shadowing of v_y.
+    select max(slot.y) into v_y
+      from generate_series(0,p_height-1) as slot(y)
+     where (p_board->>(slot.y*p_width+v_x))::integer=0;
     if v_y is null then continue; end if;
     v_test:=jsonb_set(p_board,array[(v_y*p_width+v_x)::text],to_jsonb(p_seat),false);
     if p_seat=any(public.drop_block_power_winners(v_test,p_width,p_height,p_count,p_length)) then
