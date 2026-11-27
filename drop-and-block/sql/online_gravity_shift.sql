@@ -333,3 +333,83 @@ end $function$;
 
 revoke all on function public.drop_block_guest_action(text,text,jsonb,text) from public,authenticated;
 grant execute on function public.drop_block_guest_action(text,text,jsonb,text) to anon;
+
+-- The existing TV bearer-token RPC remains the authorization gate.
+-- Gravity metadata is added only after its valid room+display token check.
+CREATE OR REPLACE FUNCTION public.drop_block_tv_state(p_code text, p_token text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+ r public.drop_block_rooms;
+ v_result jsonb;
+begin
+ if p_code is null or p_code !~ '^[A-Fa-f0-9]{6}$'
+    or p_token is null or p_token !~ '^[a-f0-9]{64}$' then
+   raise exception 'Invalid TV display link';
+ end if;
+ select * into r from public.drop_block_rooms
+  where code=upper(p_code) and display_token=p_token
+    and created_at>now()-interval '24 hours';
+ if not found then raise exception 'TV display link is unavailable or expired'; end if;
+ v_result:=jsonb_build_object(
+   'code',r.code,'mode',r.mode,'status',r.status,'maxPlayers',r.max_players,
+   'width',r.width,'height',r.height,'winLength',r.win_length,'board',r.board,
+   'moveCount',r.move_count,'turnSeat',r.turn_seat,'winnerSeat',r.winner_seat,
+   'lastMove',case when r.move_count>0 then (
+      select jsonb_build_object(
+        'seat',m.seat,'column',m.column_number,'row',m.row_number,
+        'kind',m.move_kind,'number',m.number,'earned',m.earned,'round',m.round_after)
+      from public.drop_block_moves m
+      where m.room_id=r.id and m.match_number=r.match_number
+      order by m.number desc limit 1
+   ) else null end,
+   'roundNumber',r.round_number,'floorClears',r.floor_clears,'lastEvent',r.last_event,
+   'eliminationRoundOpensAt',r.elimination_round_opens_at,
+   'eliminationPreviousBoard',r.elimination_previous_board,
+   'eliminationTargetSeat',r.elimination_target_seat,
+   'eliminationScorerSeat',r.elimination_scorer_seat,
+   'matchNumber',r.match_number,
+   'tvReplay',jsonb_build_object('active',r.tv_replay_match is not null and r.status in ('lobby','finished'),
+     'matchNumber',r.tv_replay_match,'mode',r.tv_replay_mode,'startedAt',r.tv_replay_started_at),
+   'turnDeadline',r.turn_deadline,'serverNow',clock_timestamp(),
+   'turnSkips',r.turn_skips,'turnDuration',60,
+   'speedRoundOpensAt',r.speed_round_opens_at,
+   'speedPreviousRound',r.speed_previous_round,
+   'speedPreviousOrder',r.speed_previous_order,
+   'speedOrder',case when r.mode='speed' then
+      public.drop_block_speed_order(r.id,r.match_number,r.round_number)
+     else '[]'::jsonb end,
+   'speedPlayedSeats',case when r.mode='speed' then
+      coalesce((select jsonb_agg(p.seat order by p.seat)
+         from public.drop_block_speed_plays p
+         where p.room_id=r.id and p.match_number=r.match_number
+          and p.round_number=r.round_number),'[]'::jsonb)
+       else '[]'::jsonb end,
+   'endReason',r.ended_reason,'endedAt',r.ended_at,
+   'winnerTeam',case when r.mode='team' and r.winner_seat is not null then
+       case when mod(r.winner_seat,2)=1 then 1 else 2 end else null end,
+   'hostBoardTheme',coalesce((select board_id from public.drop_block_cosmetic_loadouts where user_id=r.host_id),'deep-navy'),
+   'players',coalesce((
+      select jsonb_agg(jsonb_build_object(
+       'seat',seat,'name',name,'ready',ready,'score',score,'eliminated',eliminated,
+        'chaosBlockUsed',chaos_block_used,'chaosBlastUsed',chaos_blast_used,
+        'team',case when mod(seat,2)=1 then 1 else 2 end,
+        'avatarStyle',coalesce(co.avatar_id,'sentinel'),
+        'chipStyle',coalesce(co.chip_id,'round'),
+        'online',p.last_seen_at>=now()-interval '25 seconds',
+        'timedOutTurns',p.timed_out_turns)
+       order by seat)
+      from public.drop_block_players p
+      left join public.drop_block_cosmetic_loadouts co on co.user_id=p.user_id
+      where p.room_id=r.id
+   ),'[]'::jsonb)
+ );
+if r.mode='gravity' then
+   return public.drop_block_gravity_snapshot(r.id,v_result);
+ end if;
+ return v_result;
+end;
+$function$;
