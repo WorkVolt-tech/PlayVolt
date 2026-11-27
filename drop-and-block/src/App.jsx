@@ -154,7 +154,7 @@ function LocalDemo({ onBack, count, mode, loadout }) {
   return <div className="panel panel-wide">
     <div className="section-eyebrow">LOCAL PREVIEW · SAME DEVICE</div>
     <h2 className="mode-icon-heading"><GameModeIcon mode={mode} size={31}/>{modeName(mode)} · {count} Players</h2>
-    <p className="sub">Pass the device around. This demo is offline; your actual online rooms use PlayVolt accounts.</p>
+    <p className="sub">Pass the device around. This demo is offline; online rooms support guests and shared PlayVolt accounts.</p>
     <div className="local-game-tabs" role="tablist" aria-label="Local match views">
       <button id="local-game-tab" type="button" role="tab"
         aria-selected={activeLocalTab==='game'} aria-controls="local-game-panel"
@@ -287,7 +287,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
     <MatchScoreboard game={game}/>
     {game.rivalry?.lastCallout&&<div className="rivalry-callout" role="status">{game.rivalry.lastCallout}</div>}
     {game.sessionCallout&&game.status==='finished'&&<div className="rivalry-callout" role="status">{game.sessionCallout}</div>}
-    {game.mode==='gravity'&&<div className="gravity-status" role="status"><strong>🌪 GRAVITY SHIFT{game.lastMove?.shifted?' · SHIFTED '+game.lastMove.shiftDirection.toUpperCase()+'!':''}</strong><span>Every {SHIFT_EVERY} chips, the board shifts {game.gravity?.nextDirection?.toUpperCase()||'LEFT'}. Next shift in {SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY)} {SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY)===1?'drop':'drops'}.</span><small>Connections are checked both before and after shifting. Multiple simultaneous connections result in a draw.</small></div>}
+    {game.mode==='gravity'&&<div className="gravity-status" role="status"><strong>🌪 GRAVITY SHIFT{game.lastMove?.shifted?' · SHIFTED '+game.lastMove.shiftDirection.toUpperCase()+'!':''}</strong><span>{game.status==='playing'?'Every '+SHIFT_EVERY+' chips, the board shifts '+(game.gravity?.nextDirection?.toUpperCase()||'LEFT')+'. Next shift in '+(SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY))+' '+(SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY)===1?'drop':'drops')+'.':'Match finished · '+(game.gravity?.drops||0)+' chips placed.'}</span><small>Connections are checked both before and after shifting. Multiple simultaneous connections result in a draw.</small></div>}
     {game.mode==='power'&&game.power&&<div className="power-roster">{game.players.map(p=><div key={p.seat} className={'power-player'+(showActiveTurn&&game.turnSeat===p.seat?' active':'')}><b>{p.name}{showActiveTurn&&game.turnSeat===p.seat&&<small className="power-playing-label"> · PLAYING</small>}</b><span>{game.power.energy[p.seat-1]}/100 EP</span><div className="power-track"><i style={{width:(game.power.energy[p.seat-1]||0)+'%'}}/></div></div>)}</div>}
     {game.mode==='power'&&game.power&&<section className="power-help" aria-label="How Power-Up Mode works">
       <div className="power-help-head"><strong>⚡ HOW TO USE POWER-UPS</strong><span>Each ability costs energy (EP) · Each activation uses your turn except Double Drop</span></div>
@@ -316,7 +316,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
       speedOrder={game.speedOrder||[]} speedPreviousOrder={game.speedPreviousOrder||[]}
       soundEnabled={arcadeSound.enabled} winLength={winLength}
       eliminationReset={eliminationReset} eliminationGame={game}/>
-    <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST ACCEPTED DROP GOES FIRST · CONNECT '+winLength+' TO WIN':game.mode==='territory'?'CONNECT '+winLength+' TO SCORE':game.mode==='elimination'?'CONNECT '+winLength+' · PREVIOUS ACTIVE PLAYER IS ELIMINATED':game.mode==='collapse'?'CONNECT '+winLength+' TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT '+winLength+' TO WIN':game.mode==='power'?'POWER-UP ARCADE · CONNECT '+winLength+' TO WIN':game.mode==='team'?'CONNECT 4 TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT '+winLength+' TO WIN'} · {game.width} × {game.height}</div>
+    <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST ACCEPTED DROP GOES FIRST · CONNECT '+winLength+' TO WIN':game.mode==='territory'?'CONNECT '+winLength+' TO SCORE':game.mode==='elimination'?'CONNECT '+winLength+' · PREVIOUS ACTIVE PLAYER IS ELIMINATED':game.mode==='collapse'?'CONNECT '+winLength+' TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT '+winLength+' TO WIN':game.mode==='power'?'POWER-UP ARCADE · CONNECT '+winLength+' TO WIN':game.mode==='gravity'?'SHIFT EVERY '+SHIFT_EVERY+' DROPS · CONNECT '+winLength+' TO WIN':game.mode==='team'?'CONNECT 4 TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT '+winLength+' TO WIN'} · {game.width} × {game.height}</div>
   </>;
 }
 
@@ -662,7 +662,7 @@ export default function App() {
           {room.mode==='team' && <div className="team-lobby-note">Players alternate into Gold and Blue teams by join order. Wait for 4, 6, or 8 players so both teams have the same size.</div>}
           <p className="sub lobby-note">{room.matchNumber > 1
             ? 'Rematch ready! Everyone keeps their seat, and the starting player rotates. Confirm you are ready, then the host can start.'
-            : 'Invite friends using the room code. Each person joins on their own phone with the same PlayVolt login they already use.'}</p>
+            : 'Invite friends using the room code. Everyone can join as a guest or with their shared PlayVolt account.'}</p>
           {room.host
             ? <button className="btn primary full" disabled={busy||room.players.length<2||(room.mode==='team'&&![4,6,8].includes(room.players.length))||room.players.some(p=>!p.ready)}
                 onClick={()=>perform('start')}>Start match</button>
@@ -727,8 +727,8 @@ export default function App() {
                 onChange={e=>setGuestNickname(e.target.value)}/>
             </label>}
             <button className="btn primary full create-room-cta" type="button"
-              disabled={busy||user===undefined||mode==='gravity'} onClick={()=>perform('create',{mode,maxPlayers})}>
-              {mode==='gravity'?'Online Gravity Shift coming soon':busy?'Preparing…':user?'＋ Create Room':'＋ Create Room as Guest'}
+              disabled={busy||user===undefined} onClick={()=>perform('create',{mode,maxPlayers})}>
+              {busy?'Preparing…':user?'＋ Create Room':'＋ Create Room as Guest'}
             </button>
           </div>
           {(!user||user.is_anonymous)&&<p className="create-room-signin-help">No signup required. Guests enjoy full multiplayer gameplay, but don't earn leaderboard points, trophies or unlockables.</p>}
@@ -742,10 +742,10 @@ export default function App() {
             : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
           <p className="mode-explainer">{mode==='speed'
             ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
-            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Play online with server-verified Bomb, Shield, Freeze, and Double Drop. Gain energy from chip placement, threats and blocks.':mode==='gravity'?'Every four valid drops, the whole board slides LEFT, then RIGHT, alternating. Chips settle downward and new connections may appear. Local preview; online support requires server rules.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
-          <button className="btn primary full create-room-bottom-cta" type="button" disabled={busy||user===undefined||mode==='gravity'}
+            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Play online with server-verified Bomb, Shield, Freeze, and Double Drop. Gain energy from chip placement, threats and blocks.':mode==='gravity'?'Every four valid drops, the whole board slides LEFT, then RIGHT, alternating. Chips settle downward and new connections may appear. Available online for guests and signed-in players.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
+          <button className="btn primary full create-room-bottom-cta" type="button" disabled={busy||user===undefined}
               onClick={()=>perform('create',{mode,maxPlayers})}>
-              {mode==='gravity'?'Online Gravity Shift coming soon':'＋ Create '+modeName(mode)+' Room'}
+              {'＋ Create '+modeName(mode)+' Room'}
           </button>
           <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
             {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
