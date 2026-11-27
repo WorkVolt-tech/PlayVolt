@@ -2,15 +2,15 @@ import React from 'react';
 
 // Standalone vector emblems: sharp at every phone resolution, no emoji/font dependency.
 export const MODE_CHOICES=[
- {id:'classic',name:'Classic',subtitle:'Connect to win',tone:'coral'},
- {id:'speed',name:'Speed Round',subtitle:'Race to drop first',tone:'gold'},
- {id:'territory',name:'Territory',subtitle:'Capture more points',tone:'cyan'},
- {id:'elimination',name:'Elimination',subtitle:'Knock rivals out',tone:'red'},
- {id:'collapse',name:'Bottom Drop',subtitle:'The floor disappears',tone:'orange'},
- {id:'chaos',name:'Chaos',subtitle:'Barrier and Blast',tone:'violet'},
- {id:'gravity',name:'Gravity Shift',subtitle:'The board rearranges',tone:'mint'},
- {id:'power',name:'Power-Up Arcade',subtitle:'Charge special abilities',tone:'yellow'},
- {id:'team',name:'Team Battle',subtitle:'Combine team chips',tone:'blue'}
+ {id:'classic',name:'Classic',subtitle:'First to connect a line',tone:'coral'},
+ {id:'speed',name:'Speed Round',subtitle:'Everyone drops together',tone:'gold'},
+ {id:'territory',name:'Territory',subtitle:'Score every completed line',tone:'cyan'},
+ {id:'elimination',name:'Elimination',subtitle:'Last player standing wins',tone:'red'},
+ {id:'collapse',name:'Bottom Drop',subtitle:'Bottom row falls away',tone:'orange'},
+ {id:'chaos',name:'Chaos',subtitle:'One Barrier and Blast each',tone:'violet'},
+ {id:'gravity',name:'Gravity Shift',subtitle:'Shifts every four drops',tone:'mint'},
+ {id:'power',name:'Power-Up Arcade',subtitle:'Earn energy for powers',tone:'yellow'},
+ {id:'team',name:'Team Battle',subtitle:'Connect four as a team',tone:'blue'}
 ];
 
 export function GameModeIcon({mode,size=32,className=''}) {
@@ -32,13 +32,23 @@ export function GameModeIcon({mode,size=32,className=''}) {
 }
 
 export function ModeChoiceGrid({value,onChange}){
- return <div className="mode-choice-grid" role="radiogroup" aria-label="Choose game mode">
-  {MODE_CHOICES.map(choice=><button type="button" key={choice.id} role="radio"
-     aria-checked={value===choice.id} onClick={()=>onChange(choice.id)}
-     className={'mode-choice mode-tone-'+choice.tone+(value===choice.id?' is-selected':'')}>
-     <span className="mode-choice-emblem"><GameModeIcon mode={choice.id} size={32}/></span>
-     <span className="mode-choice-copy"><strong>{choice.name}</strong><small>{choice.subtitle}</small></span>
-     {choice.local&&<span className="mode-choice-preview">LOCAL</span>}
-  </button>)}
+ const groups=[
+   {name:'EASY TO START',help:'Learn the game and play with friends',ids:['classic','territory','team']},
+   {name:'ARCADE CHALLENGES',help:'Extra twists once you know the basics',
+     ids:['speed','elimination','collapse','chaos','gravity','power']}
+ ];
+ return <div className="mode-choice-collection" role="radiogroup" aria-label="Choose game mode">
+  {groups.map(group=><div className="mode-choice-group" key={group.name}>
+    <div className="mode-choice-group-heading"><strong>{group.name}</strong><small>{group.help}</small></div>
+    <div className="mode-choice-grid">{group.ids.map(id=>{
+      const choice=MODE_CHOICES.find(item=>item.id===id);
+      return <button type="button" key={choice.id} role="radio"
+        aria-checked={value===choice.id} onClick={()=>onChange(choice.id)}
+        className={'mode-choice mode-tone-'+choice.tone+(value===choice.id?' is-selected':'')}>
+        <span className="mode-choice-emblem"><GameModeIcon mode={choice.id} size={32}/></span>
+        <span className="mode-choice-copy"><strong>{choice.name}</strong><small>{choice.subtitle}</small></span>
+      </button>;
+    })}</div>
+  </div>)}
  </div>;
 }
