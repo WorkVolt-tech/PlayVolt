@@ -1794,3 +1794,13 @@ img,video,canvas,svg{max-width:100%}
   .create-room-cta{min-height:49px}
   .create-room-bottom-cta{min-height:49px}
 }
+
+
+/* Guest sessions have all gameplay controls, with ranking/reward boundaries
+   explained without forcing players into the account form. */
+.guest-name-field{display:flex;flex-direction:column;gap:6px;margin:5px 0 12px;color:#d5e4ff;font-size:12px;font-weight:700}
+.guest-name-field input{width:100%;min-height:44px;padding:11px 12px;font-size:16px;border:1px solid #7887af;background:#111d39;color:#fff;border-radius:10px;box-sizing:border-box}
+.guest-name-field input:focus-visible{outline:2px solid #ffe49c;outline-offset:2px}
+.guest-status-note{padding:10px 13px;margin:12px 0;border-radius:11px;background:#152540;border:1px solid #7893bf;color:#e8f0ff;font-size:12px;line-height:1.55}
+.create-room-panel .create-room-signin-help{font-size:12px;line-height:1.5;color:#ffe0a2}
+@media(max-width:720px){.guest-name-field input{min-height:46px}.guest-status-note{padding:9px 11px}}
