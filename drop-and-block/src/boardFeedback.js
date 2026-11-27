@@ -5,6 +5,10 @@ function validBoard(board,width,height){
  return Array.isArray(board)&&Number.isInteger(width)&&Number.isInteger(height)&&
   width>0&&height>0&&board.length===width*height;
 }
+function isShifted(move){
+ return Boolean(move?.shifted ||
+   (typeof move?.event==='string'&&move.event.startsWith('🌪 GRAVITY SHIFT ')));
+}
 function validMove(move,width,height){
  return Boolean(move)&&Number.isInteger(move.column)&&move.column>=0&&move.column<width&&
   Number.isInteger(move.row)&&move.row>=0&&move.row<height;
@@ -13,7 +17,7 @@ export function lastMoveCell(board,width,height,move){
  if(!validBoard(board,width,height)||!validMove(move,width,height))return null;
  // The post-shift board is authoritative: a chip might no longer occupy
  // the coordinate where it originally landed.
- if(move.shifted)return null;
+ if(isShifted(move))return null;
  if(move.kind!=='drop'&&move.kind!=='block')return null;
  const i=move.row*width+move.column;
  const expected=move.kind==='block'?9:move.seat;
@@ -23,7 +27,7 @@ export function winningCells(board,width,height,winnerSeat,mode,lastMove,winLeng
  // Gravity may give the win to someone other than the player who just
  // dropped a chip; scan the final shifted board instead of anchoring at
  // the old drop coordinate, which is no longer meaningful after a shift.
- if(mode==='gravity'&&lastMove?.shifted&&validBoard(board,width,height)&&
+ if(mode==='gravity'&&isShifted(lastMove)&&validBoard(board,width,height)&&
     Number.isInteger(winnerSeat)&&winnerSeat>=1&&winnerSeat<=8){
    const completed=new Set();
    const targetLength=winLength===3?3:4;
