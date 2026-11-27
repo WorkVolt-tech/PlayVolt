@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db, action } from './supabase.js';
+import { db, action, readGuestSession, asGuestUser, ensureGuestSession, clearGuestSession } from './supabase.js';
 import { emptyBoard, dimensions, playLocalTurn, playChaosTurn, playTeamTurn, teamOfSeat, balancedWinLength } from './rules.js';
 import { VersionAlert } from './VersionAlert.jsx';
 import { ProgressHub, TrophyUnlockNotice } from './ProgressHub.jsx';
@@ -350,22 +350,23 @@ export default function App() {
 
   useEffect(() => {
     let alive = true;
-    db.auth.getSession().then(({data}) => {if(alive)setUser(data.session?.user??null);})
-      .catch(()=>{if(alive)setUser(null);});
+    db.auth.getSession().then(({data}) => {
+      if(alive)setUser(data.session?.user??asGuestUser(readGuestSession()));
+    }).catch(()=>{if(alive)setUser(asGuestUser(readGuestSession()));});
     const {data:{subscription}} = db.auth.onAuthStateChange((_event,session)=>{
-      if(alive)setUser(session?.user??null);
+      if(alive)setUser(session?.user??asGuestUser(readGuestSession()));
     });
     return ()=>{alive=false;subscription.unsubscribe();};
   },[]);
   useEffect(()=>{
-    if(!user?.id) { setProfile(null); return; }
+    if(!user?.id||user.is_anonymous) { setProfile(null); return; }
     let active=true;
     db.from('profiles').select('nickname').eq('id',user.id).maybeSingle()
       .then(({data})=>{if(active)setProfile(data);}).catch(()=>{if(active)setProfile(null);});
     return ()=>{active=false;};
   },[user?.id]);
   useEffect(()=>{
-    if(!user?.id){setMyLoadout(null);return;}
+    if(!user?.id||user.is_anonymous){setMyLoadout(null);return;}
     let alive=true;
     db.rpc('drop_block_customization',{p_action:'get',p_category:'',p_item:''})
      .then(({data,error})=>{if(alive&&!error)setMyLoadout(data.equipped);})
@@ -502,29 +503,23 @@ export default function App() {
       if(authTab==='sign-in') {
         const {error}=await db.auth.signInWithPassword({email,password});
         if(error)throw error;
+        clearGuestSession();
       } else {
         const {data,error}=await db.auth.signUp({email,password,options:{data:{nickname:nickname.trim()}}});
         if(error)throw error;
+        if(data.session)clearGuestSession();
         setMessage(data.session?'Account created. Welcome!':'Check your email to confirm your existing PlayVolt account sign-up.');
       }
       setPassword('');
     } catch(err){setMessage(err.message);} finally{setBusy(false);}
   }
   async function ensurePlaySession(){
-    const {data:{session},error:sessionError}=await db.auth.getSession();
-    if(sessionError)throw sessionError;
+    const {data:{session},error}=await db.auth.getSession();
+    if(error)throw error;
     if(session?.user)return session.user;
-    const label='Guest '+(guestNickname.trim().replace(/\s+/g,' ').slice(0,17)
-       ||Math.random().toString(36).slice(2,6).toUpperCase());
-    const {data,error}=await db.auth.signInAnonymously({options:{data:{nickname:label}}});
-    if(error){
-      if(/anonymous.*(disabled|not enabled)|signups? (not|are not) allowed/i.test(error.message))
-        throw new Error('Guest sessions must be enabled in Supabase Authentication → Sign In / Providers.');
-      throw error;
-    }
-    if(!data?.user)throw new Error('Could not start a guest session.');
-    setUser(data.user);
-    return data.user;
+    const guest=await ensureGuestSession(guestNickname);
+    setUser(guest);
+    return guest;
   }
   async function perform(type, data={}, code=room?.code||'') {
     setBusy(true);setMessage('');
@@ -584,7 +579,8 @@ export default function App() {
     catch(err){if(err.name!=='AbortError')setMessage('Room code: '+room.code);}
   }
   async function signOut() {
-    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setRoomTransport('connecting');setShowProgress(false);setShowCustomize(false);setShowHistory(false);setMenuOpen(false);setMyLoadout(null);setFreshTrophies([]);
+    if(!user?.is_anonymous)await db.auth.signOut();
+    clearGuestSession();setUser(null);setRoom(null);setMessage('');setRoomTransport('connecting');setShowProgress(false);setShowCustomize(false);setShowHistory(false);setMenuOpen(false);setMyLoadout(null);setFreshTrophies([]);
     history.replaceState(null,'',location.pathname);
   }
   return <div className="shell">
@@ -754,7 +750,7 @@ export default function App() {
           <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
             {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
           </button>
-          {user&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>}
+          {user&&!user.is_anonymous&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>
         </section>
         <section className="panel" id="drop-block-auth-panel">
           <div className="section-eyebrow">JOIN WITH A CODE</div>
