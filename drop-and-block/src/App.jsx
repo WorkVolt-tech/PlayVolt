@@ -339,6 +339,7 @@ export default function App() {
   const [maxPlayers,setMaxPlayers] = useState(4);
   const [mode,setMode] = useState('classic');
   const [homeTab,setHomeTab] = useState(() => new URLSearchParams(location.search).has('room')?'join':'host');
+  const [modePickerOpen,setModePickerOpen] = useState(false);
   const [onlinePowerChoice,setOnlinePowerChoice]=useState('drop');
   const [joinCode,setJoinCode] = useState(() => new URLSearchParams(location.search).get('room')?.toUpperCase() || '');
   const [room,setRoom] = useState(null);
@@ -750,10 +751,13 @@ export default function App() {
           <div className="setup-heading"><span className="setup-number">1</span><div>
             <h3>Choose your game mode</h3><p>New to Drop &amp; Block? Start with Classic.</p>
           </div></div>
-          <ModeChoiceGrid value={mode} onChange={next=>{setMode(next);if(next==='team')setMaxPlayers(old=>Math.max(4,old+(old%2)));}}/>
           <div className="selected-mode-help" role="status">
             <div className="selected-mode-label"><GameModeIcon mode={mode} size={25}/>
-              <strong>{modeName(mode)}</strong><span>Selected</span>
+              <strong>{modeName(mode)}</strong>
+              <button type="button" className="mode-change-button" aria-expanded={modePickerOpen}
+                aria-controls="play-mode-choices" onClick={()=>setModePickerOpen(v=>!v)}>
+                {modePickerOpen?'Close choices':'Change mode'}
+              </button>
             </div>
             <p>{mode==='speed'
               ? 'Everyone drops one chip at the same time. First accepted by the server goes first. A new round begins after everyone plays or time runs out.'
@@ -766,6 +770,13 @@ export default function App() {
               :mode==='team'?'Play on Gold or Blue team. Join with 4, 6 or 8 players and combine your team’s chips into a line of four.'
               :'Take turns dropping chips. Be first to connect four (or three with 4+ players) across, down or diagonally.'}</p>
           </div>
+          {modePickerOpen&&<div id="play-mode-choices" className="play-mode-choices">
+            <ModeChoiceGrid value={mode} onChange={next=>{
+              setMode(next);
+              if(next==='team')setMaxPlayers(old=>Math.max(4,old+(old%2)));
+              setModePickerOpen(false);
+            }}/>
+          </div>}
           <div className="setup-heading"><span className="setup-number">2</span><div>
             <h3>Choose the number of players</h3><p>You can start once at least two players have joined.</p>
           </div></div>
