@@ -300,7 +300,7 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
       </div>
     </section>}
     {game.mode==='power'&&game.power?.frozen&&<div className="frozen-alert" role="status">❄ COLUMN {game.power.frozen.column+1} IS FROZEN — locked until Player {game.power.frozen.owner}'s next turn. Chips in the column are not destroyed.</div>}
-    {game.mode==='power'&&!readOnly&&onPowerChoice&&<div className="power-actions" role="group" aria-label="Power-up abilities">{[['drop','▼ Normal chip',0],['shield','⬡ Shield',70],['freeze','❄ Freeze',80],['bomb','✹ Bomb',100]].map(([kind,title,cost])=><button type="button" key={kind} aria-pressed={powerChoice===kind} className={'power-action'+(powerChoice===kind?' selected':'')} disabled={busy||game.status!=='playing'||cost>(game.power?.energy?.[game.turnSeat-1]||0)||game.power?.doublePending} onClick={()=>onPowerChoice(kind)}>{title}{cost?' · '+cost+' EP':''}</button>)}<button type="button" className={'power-action'+(game.power?.doublePending?' selected':'')} disabled={busy||game.status!=='playing'||game.power?.doublePending||(game.power?.energy?.[game.turnSeat-1]||0)<100} onClick={onDouble}>⇊ Double · 100 EP</button></div>}
+    {game.mode==='power'&&!readOnly&&onPowerChoice&&<div className="power-actions" role="group" aria-label="Power-up abilities">{[['drop','▼ Normal chip',0],['shield','⬡ Shield',70],['freeze','❄ Freeze',80],['bomb','✹ Bomb',100]].map(([kind,title,cost])=><button type="button" key={kind} aria-pressed={powerChoice===kind} className={'power-action'+(powerChoice===kind?' selected':'')} disabled={busy||!myTurn||cost>(game.power?.energy?.[game.turnSeat-1]||0)||game.power?.doublePending} onClick={()=>onPowerChoice(kind)}>{title}{cost?' · '+cost+' EP':''}</button>)}<button type="button" className={'power-action'+(game.power?.doublePending?' selected':'')} disabled={busy||!myTurn||game.power?.doublePending||(game.power?.energy?.[game.turnSeat-1]||0)<100} onClick={onDouble}>⇊ Double · 100 EP</button></div>}
     {game.mode==='power'&&!readOnly&&<div className={'power-instruction'+(game.power?.doublePending?' double-active':'')} role="status">{game.power?.doublePending?'⇊ DOUBLE DROP ACTIVE: place chip '+(3-game.power.doublePending)+' of 2. Tap a column. Your turn continues until both chips are placed.':powerChoice==='shield'?'⬡ SHIELD SELECTED: tap a column whose top chip belongs to you. It will survive one Bomb hit.':powerChoice==='bomb'?'✹ BOMB SELECTED: tap an occupied or frozen column. The blast removes unshielded chips in its row and SHATTERS any frozen column it touches.':powerChoice==='freeze'?'❄ FREEZE SELECTED: tap an available column to lock it for every player until your next turn.':'▼ NORMAL DROP: tap an available column. Placing chips earns EP. Select a power above to use it.'}</div>}
     {game.mode==='chaos' && !readOnly && <div className="chaos-powers" role="group" aria-label="Choose a Chaos move">
       <button type="button" className={'chaos-power'+(moveKind==='drop'?' selected':'')} onClick={()=>setMoveKind('drop')} disabled={busy}>▼ Normal Drop</button>
@@ -329,6 +329,7 @@ export default function App() {
   const [nickname,setNickname] = useState('');
   const [maxPlayers,setMaxPlayers] = useState(4);
   const [mode,setMode] = useState('classic');
+  const [onlinePowerChoice,setOnlinePowerChoice]=useState('drop');
   const [joinCode,setJoinCode] = useState(() => new URLSearchParams(location.search).get('room')?.toUpperCase() || '');
   const [room,setRoom] = useState(null);
   const [demo,setDemo] = useState(false);
@@ -343,6 +344,8 @@ export default function App() {
   const [myLoadout,setMyLoadout] = useState(null);
   const [freshTrophies,setFreshTrophies] = useState([]);
   const [progressRefresh,setProgressRefresh] = useState(0);
+  // A newly accepted move or another player's turn clears stale ability selection.
+  useEffect(()=>setOnlinePowerChoice('drop'),[room?.code,room?.turnSeat,room?.moveCount]);
 
   useEffect(() => {
     let alive = true;
@@ -663,7 +666,10 @@ export default function App() {
               <p>This room code is no longer accepting players. No results or trophies were recorded.</p>
               <button type="button" className="btn secondary" onClick={exitRoom}>Return to menu</button>
             </div>
-          : <GameArea game={room} onDrop={(col,kind)=>perform('drop',{column:col,kind})} busy={busy} boardTheme={myLoadout?.board}/>}
+          : <GameArea game={room} onDrop={(col,kind)=>perform('drop',{column:col,kind})}
+              busy={busy} boardTheme={myLoadout?.board} powerChoice={onlinePowerChoice}
+              onPowerChoice={room.mode==='power'?setOnlinePowerChoice:undefined}
+              onDouble={room.mode==='power'?()=>{setOnlinePowerChoice('drop');return perform('double');}:undefined}/>}
         {room.host&&room.status==='playing'&&<div className="host-room-control">
           <div><strong>Host controls · Abandoned match</strong>
             <span>To prevent unfair cancellations, No Contest becomes available after 3 minutes without a move, plus another player away for 90 seconds or two missed turns.</span>
@@ -703,11 +709,11 @@ export default function App() {
             : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
           <p className="mode-explainer">{mode==='speed'
             ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
-            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Earn energy to activate Bomb, Shield, Freeze and Double Drop. Local hot-seat preview until server support is enabled.':mode==='gravity'?'Every four valid drops, the whole board slides LEFT, then RIGHT, alternating. Chips settle downward and new connections may appear. Local preview; online support requires server rules.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
+            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Play online with server-verified Bomb, Shield, Freeze, and Double Drop. Gain energy from chip placement, threats and blocks.':mode==='gravity'?'Every four valid drops, the whole board slides LEFT, then RIGHT, alternating. Chips settle downward and new connections may appear. Local preview; online support requires server rules.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
           <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
             {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
           </select></label>
-          <button className="btn primary full" disabled={busy||!user||mode==='power'||mode==='gravity'} onClick={()=>perform('create',{mode,maxPlayers})}>{mode==='power'||mode==='gravity'?'Online mode requires server rules':'Create online room'}</button>
+          <button className="btn primary full" disabled={busy||!user||mode==='gravity'} onClick={()=>perform('create',{mode,maxPlayers})}>{mode==='gravity'?'Online mode requires server rules':'Create online room'}</button>
           <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
             {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
           </button>
