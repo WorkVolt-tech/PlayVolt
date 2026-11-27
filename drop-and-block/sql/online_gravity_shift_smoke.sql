@@ -87,4 +87,67 @@ begin
  if v_count<>0 then raise exception 'Guests received competitive results';end if;
  raise notice 'Online Gravity guest moves, LEFT/RIGHT shifts, anti-bypass, direct win and reward rules passed; ROLLBACK';
 end $gravity_test$;
+do $mixed_gravity$
+declare
+ v_registered uuid;g jsonb;t text;c text;r jsonb;v_room_id uuid;v_board jsonb;
+ v_count integer;
+begin
+ select p.id into v_registered from public.profiles p
+ join auth.users u on u.id=p.id
+ where length(btrim(p.nickname))>0 order by p.id limit 1;
+ if v_registered is null then raise exception 'Registered player fixture missing';end if;
+ perform set_config('request.jwt.claim.sub',v_registered::text,true);
+ r:=public.drop_block_gravity_action('create','','{"mode":"gravity","maxPlayers":2}');
+ c:=r->>'code';
+ if r->>'mode'<>'gravity' then raise exception 'Registered user cannot create Gravity room';end if;
+ perform set_config('request.jwt.claim.sub','',true);
+ g:=public.drop_block_guest_action('register','','{"nickname":"Gravity Guest"}','');
+ t:=g->>'guestToken';
+ r:=public.drop_block_guest_action('join',c,'{}',t);
+ r:=public.drop_block_guest_action('ready',c,'{"ready":true}',t);
+ perform set_config('request.jwt.claim.sub',v_registered::text,true);
+ r:=public.drop_block_gravity_action('start',c,'{}');
+ r:=public.drop_block_gravity_action('drop',c,'{"column":2}');
+ if (r->>'turnSeat')::integer<>2 then raise exception 'Registered seat did not advance turn';end if;
+ perform set_config('request.jwt.claim.sub','',true);
+ r:=public.drop_block_guest_action('drop',c,'{"column":4}',t);
+ if (r->>'turnSeat')::integer<>1 then raise exception 'Guest seat did not advance turn';end if;
+
+ -- Seed a direct fourth-chip win for a registered player inside the
+ -- rolled-back test; it must count only for the registered account.
+ v_board:=to_jsonb(array_fill(0,array[42]));
+ v_board:=jsonb_set(v_board,'{35}','1'::jsonb);
+ v_board:=jsonb_set(v_board,'{36}','1'::jsonb);
+ v_board:=jsonb_set(v_board,'{37}','1'::jsonb);
+ perform set_config('drop_block.gravity_write','on',true);
+ update public.drop_block_rooms
+   set board=v_board,move_count=3,total_moves=3,turn_seat=1
+ where code=c returning id into v_room_id;
+ perform set_config('request.jwt.claim.sub',v_registered::text,true);
+ r:=public.drop_block_gravity_action('drop',c,'{"column":3}');
+ if r->>'status'<>'finished' or (r->>'winnerSeat')::int<>1
+   or (r->'lastMove'->>'shifted')::boolean then
+   raise exception 'Registered player direct win failed: %',r;
+ end if;
+ select count(*) into v_count from public.drop_block_results
+ where room_id=v_room_id and user_id=v_registered and won=true;
+ if v_count<>1 then raise exception 'Registered winner result missing';end if;
+ select count(*) into v_count from public.drop_block_results where room_id=v_room_id;
+ if v_count<>1 then raise exception 'Guest erroneously received a ranked result';end if;
+
+ r:=public.drop_block_gravity_action('rematch',c,'{}');
+ if (r->'gravity'->>'drops')::integer<>0
+    or r->'gravity'->>'nextDirection'<>'left'
+    or r->>'status'<>'lobby' then
+   raise exception 'Gravity rematch did not reset: %',r;
+ end if;
+ perform set_config('request.jwt.claim.sub','',true);
+ r:=public.drop_block_guest_action('ready',c,'{"ready":true}',t);
+ perform set_config('request.jwt.claim.sub',v_registered::text,true);
+ r:=public.drop_block_gravity_action('start',c,'{}');
+ if r->>'status'<>'playing' or (r->'gravity'->>'drops')::integer<>0 then
+   raise exception 'Gravity rematch did not restart';end if;
+ raise notice 'Registered+guest rooms, ranked results and rematch reset passed; ROLLBACK';
+end $mixed_gravity$;
+
 select 'online_gravity_shift_smoke_passed' as status;
