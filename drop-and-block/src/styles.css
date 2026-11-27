@@ -1804,3 +1804,15 @@ img,video,canvas,svg{max-width:100%}
 .guest-status-note{padding:10px 13px;margin:12px 0;border-radius:11px;background:#152540;border:1px solid #7893bf;color:#e8f0ff;font-size:12px;line-height:1.55}
 .create-room-panel .create-room-signin-help{font-size:12px;line-height:1.5;color:#ffe0a2}
 @media(max-width:720px){.guest-name-field input{min-height:46px}.guest-status-note{padding:9px 11px}}
+
+
+/* PlayVolt circular-chip brand mark: no diamond, triangle, or square pieces. */
+.hero-game-logo{display:block;width:clamp(165px,25vw,238px);height:auto;margin:0 auto 8px;
+  filter:drop-shadow(0 8px 18px #08184a);border-radius:20px}
+.hero-logo-a11y{position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;border:0!important}
+.hero:has(.hero-game-logo){margin-top:12px;margin-bottom:22px}
+.hero:has(.hero-game-logo) .section-eyebrow{margin:2px 0 6px}
+@media(max-width:720px){.hero-game-logo{width:clamp(142px,42vw,192px);margin-bottom:6px}
+  .hero:has(.hero-game-logo){margin-top:7px;margin-bottom:16px}}
