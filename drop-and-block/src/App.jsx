@@ -281,24 +281,13 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
             : readOnly?'ALL PLAYERS CAN DROP NOW · FIRST CHIP GOES FIRST'
             : iSubmitted?'✓ CHIP LOCKED IN · WAITING FOR EVERYONE ELSE'
             : '⚡ DROP NOW · FIRST ACCEPTED CHIP LANDS FIRST!'
-          : showActiveTurn ? <span className="turn-announcement"><span className="turn-announcement-kicker">▶ NOW PLAYING</span><strong>{turnPlayer?.name||'Player '+game.turnSeat}</strong><span className="turn-announcement-instruction">{game.power?.doublePending?'Double Drop — chip '+(3-game.power.doublePending)+' of 2':myTurn?'Choose a column or power-up':'Waiting for their move'}</span></span> : 'Waiting for the next turn…'}
+          : showActiveTurn ? <span className="turn-announcement"><span className="turn-announcement-kicker">▶ NOW PLAYING</span><strong>{turnPlayer?.name||'Player '+game.turnSeat}</strong><span className="turn-announcement-instruction">{game.power?.doublePending?'Double Drop — chip '+(3-game.power.doublePending)+' of 2':myTurn?(game.mode==='power'?'Choose a column or power-up':game.mode==='chaos'?'Choose a column or a Chaos ability':'Tap a column above the board'):'Waiting for their move'}</span></span> : 'Waiting for the next turn…'}
     </div>
     <MatchSpotlight game={game}/>
-    <MatchScoreboard game={game}/>
     {game.rivalry?.lastCallout&&<div className="rivalry-callout" role="status">{game.rivalry.lastCallout}</div>}
     {game.sessionCallout&&game.status==='finished'&&<div className="rivalry-callout" role="status">{game.sessionCallout}</div>}
     {game.mode==='gravity'&&<div className="gravity-status" role="status"><strong>🌪 GRAVITY SHIFT{game.lastMove?.shifted?' · SHIFTED '+game.lastMove.shiftDirection.toUpperCase()+'!':''}</strong><span>{game.status==='playing'?'Every '+SHIFT_EVERY+' chips, the board shifts '+(game.gravity?.nextDirection?.toUpperCase()||'LEFT')+'. Next shift in '+(SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY))+' '+(SHIFT_EVERY-((game.gravity?.drops||0)%SHIFT_EVERY)===1?'drop':'drops')+'.':'Match finished · '+(game.gravity?.drops||0)+' chips placed.'}</span><small>Connections are checked both before and after shifting. Multiple simultaneous connections result in a draw.</small></div>}
     {game.mode==='power'&&game.power&&<div className="power-roster">{game.players.map(p=><div key={p.seat} className={'power-player'+(showActiveTurn&&game.turnSeat===p.seat?' active':'')}><b>{p.name}{showActiveTurn&&game.turnSeat===p.seat&&<small className="power-playing-label"> · PLAYING</small>}</b><span>{game.power.energy[p.seat-1]}/100 EP</span><div className="power-track"><i style={{width:(game.power.energy[p.seat-1]||0)+'%'}}/></div></div>)}</div>}
-    {game.mode==='power'&&game.power&&<section className="power-help" aria-label="How Power-Up Mode works">
-      <div className="power-help-head"><strong>⚡ HOW TO USE POWER-UPS</strong><span>Each ability costs energy (EP) · Each activation uses your turn except Double Drop</span></div>
-      <p className="power-help-flow"><b>1.</b> Drop chips to earn EP <b>2.</b> Select an unlocked power <b>3.</b> Tap its target column on the board</p>
-      <div className="power-help-grid">
-        <div><strong>⇊ Double · 100 EP</strong><span>Tap Double, then drop <b>two chips</b> one at a time in any available columns. Both happen on your turn.</span></div>
-        <div><strong>❄ Freeze · 80 EP</strong><span>Tap Freeze, then choose a column. <b>No one can drop there</b> until your next turn. Existing chips stay in place and appear icy.</span></div>
-        <div><strong>⬡ Shield · 70 EP</strong><span>Tap Shield, then tap a column where <b>your chip is on top</b>. Protects it from one Bomb hit.</span></div>
-        <div><strong>✹ Bomb · 100 EP</strong><span>Tap Bomb, then choose an occupied or frozen column. Hits its <b>topmost chip and neighboring chips</b> on that row. <b>Shatters ice</b> in the blast area and unlocks the frozen column.</span></div>
-      </div>
-    </section>}
     {game.mode==='power'&&game.power?.frozen&&<div className="frozen-alert" role="status">❄ COLUMN {game.power.frozen.column+1} IS FROZEN — locked until Player {game.power.frozen.owner}'s next turn. Chips in the column are not destroyed.</div>}
     {game.mode==='power'&&!readOnly&&onPowerChoice&&<div className="power-actions" role="group" aria-label="Power-up abilities">{[['drop','▼ Normal chip',0],['shield','⬡ Shield',70],['freeze','❄ Freeze',80],['bomb','✹ Bomb',100]].map(([kind,title,cost])=><button type="button" key={kind} aria-pressed={powerChoice===kind} className={'power-action'+(powerChoice===kind?' selected':'')} disabled={busy||!myTurn||cost>(game.power?.energy?.[game.turnSeat-1]||0)||game.power?.doublePending} onClick={()=>onPowerChoice(kind)}>{title}{cost?' · '+cost+' EP':''}</button>)}<button type="button" className={'power-action'+(game.power?.doublePending?' selected':'')} disabled={busy||!myTurn||game.power?.doublePending||(game.power?.energy?.[game.turnSeat-1]||0)<100} onClick={onDouble}>⇊ Double · 100 EP</button></div>}
     {game.mode==='power'&&!readOnly&&<div className={'power-instruction'+(game.power?.doublePending?' double-active':'')} role="status">{game.power?.doublePending?'⇊ DOUBLE DROP ACTIVE: place chip '+(3-game.power.doublePending)+' of 2. Tap a column. Your turn continues until both chips are placed.':powerChoice==='shield'?'⬡ SHIELD SELECTED: tap a column whose top chip belongs to you. It will survive one Bomb hit.':powerChoice==='bomb'?'✹ BOMB SELECTED: tap an occupied or frozen column. The blast removes unshielded chips in its row and SHATTERS any frozen column it touches.':powerChoice==='freeze'?'❄ FREEZE SELECTED: tap an available column to lock it for every player until your next turn.':'▼ NORMAL DROP: tap an available column. Placing chips earns EP. Select a power above to use it.'}</div>}
@@ -308,6 +297,9 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
       <button type="button" className={'chaos-power'+(moveKind==='blast'?' selected':'')} onClick={()=>setMoveKind('blast')} disabled={busy||!current||current.chaosBlastUsed||game.status!=='playing'}>✹ Blast {current?.chaosBlastUsed?'USED':'1×'}</button>
     </div>}
     {game.mode==='chaos' && <p className="chaos-tip">{readOnly?'Players use their limited Chaos powers from their phones.':moveKind==='blast'?'Blast removes the bottom chip of a column, dropping the chips above it. Select a column with chips.':moveKind==='block'?'Barrier places a neutral chip into a column to block connections.':'Normal Drop connects '+winLength+' to win. Choosing a power uses your turn.'}</p>}
+    {!readOnly&&game.status==='playing'&&<p className="board-play-hint">
+      {myTurn?'👇 Your turn! Tap a column above the board to drop your chip.':'Watch the board. You can play when your name appears above.'}
+    </p>}
     <Board board={game.board} width={game.width} height={game.height}
       turn={isSpeed?game.meSeat:game.turnSeat} me={game.meSeat} onDrop={selectColumn}
       disabled={busy || game.status!=='playing'||iSubmitted||eliminationReset.active||(isSpeed&&speedSignal.phase==='countdown')} readOnly={readOnly} moveKind={moveKind} power={game.mode==='power'?game.power:null} selectedPower={game.power?.doublePending?'double':powerChoice} teamMode={game.mode==='team'} players={game.players} boardTheme={boardTheme||game.hostBoardTheme}
@@ -317,6 +309,22 @@ export function GameArea({game, onDrop, busy, readOnly = false, boardTheme, powe
       soundEnabled={arcadeSound.enabled} winLength={winLength}
       eliminationReset={eliminationReset} eliminationGame={game}/>
     <div className="board-foot">{isSpeed?'ONE CHIP EACH PER ROUND · FASTEST ACCEPTED DROP GOES FIRST · CONNECT '+winLength+' TO WIN':game.mode==='territory'?'CONNECT '+winLength+' TO SCORE':game.mode==='elimination'?'CONNECT '+winLength+' · PREVIOUS ACTIVE PLAYER IS ELIMINATED':game.mode==='collapse'?'CONNECT '+winLength+' TO WIN · THE BOTTOM ROW DROPS WHEN THE STACK GETS HIGH':game.mode==='chaos'?'DROP, BLOCK OR BLAST · CONNECT '+winLength+' TO WIN':game.mode==='power'?'POWER-UP ARCADE · CONNECT '+winLength+' TO WIN':game.mode==='gravity'?'SHIFT EVERY '+SHIFT_EVERY+' DROPS · CONNECT '+winLength+' TO WIN':game.mode==='team'?'CONNECT 4 TEAM CHIPS TO WIN · TEAMMATES SHARE THE VICTORY':'CONNECT '+winLength+' TO WIN'} · {game.width} × {game.height}</div>
+    <details className="game-extra game-stats">
+      <summary>🏆 Match statistics <small>View the full scoreboard</small></summary>
+      <MatchScoreboard game={game}/>
+    </details>
+    {game.mode==='power'&&game.power&&<details className="power-help game-extra" aria-label="How Power-Up Mode works">
+      <summary>⚡ How do the power-ups work?</summary>
+      <div className="power-help-head"><strong>⚡ HOW TO USE POWER-UPS</strong><span>Each ability costs energy (EP) · Each activation uses your turn except Double Drop</span></div>
+      <p className="power-help-flow"><b>1.</b> Drop chips to earn EP <b>2.</b> Select an unlocked power <b>3.</b> Tap its target column on the board</p>
+      <div className="power-help-grid">
+        <div><strong>⇊ Double · 100 EP</strong><span>Tap Double, then drop <b>two chips</b> one at a time in any available columns. Both happen on your turn.</span></div>
+        <div><strong>❄ Freeze · 80 EP</strong><span>Tap Freeze, then choose a column. <b>No one can drop there</b> until your next turn. Existing chips stay in place and appear icy.</span></div>
+        <div><strong>⬡ Shield · 70 EP</strong><span>Tap Shield, then tap a column where <b>your chip is on top</b>. Protects it from one Bomb hit.</span></div>
+        <div><strong>✹ Bomb · 100 EP</strong><span>Tap Bomb, then choose an occupied or frozen column. Hits its <b>topmost chip and neighboring chips</b> on that row. <b>Shatters ice</b> in the blast area and unlocks the frozen column.</span></div>
+      </div>
+    </details>}
+
   </>;
 }
 
@@ -330,6 +338,8 @@ export default function App() {
   const [guestNickname,setGuestNickname] = useState('');
   const [maxPlayers,setMaxPlayers] = useState(4);
   const [mode,setMode] = useState('classic');
+  const [homeTab,setHomeTab] = useState(() => new URLSearchParams(location.search).has('room')?'join':'host');
+  const [modePickerOpen,setModePickerOpen] = useState(false);
   const [onlinePowerChoice,setOnlinePowerChoice]=useState('drop');
   const [joinCode,setJoinCode] = useState(() => new URLSearchParams(location.search).get('room')?.toUpperCase() || '');
   const [room,setRoom] = useState(null);
@@ -640,6 +650,9 @@ export default function App() {
              catch{setMessage('Still offline. Check your connection and try again.');}
           }}>Retry now</button>}
         </div>
+        <details className="room-tv-details">
+          <summary>📺 TV display &amp; replay <small>Optional — show this match on a TV</small></summary>
+          <div className="room-tv-details-content">
         <div className="tv-launch">
           <span><b>TV Party Mode</b><small>Live read-only display on a TV or Fire Stick · Everyone plays on their phone.</small></span>
           <div className="tv-launch-actions">
@@ -650,7 +663,10 @@ export default function App() {
         <TvPairHost room={room}/>
         {room.host&&['finished','lobby'].includes(room.status)&&
           <TvReplayControls room={room} onRefresh={()=>perform('get')}/>} 
+          </div>
+        </details>
         {room.status==='lobby' ? <>
+          <div className="lobby-howto"><b>1.</b> Invite friends with the room code <b>2.</b> Everyone taps Ready <b>3.</b> Host starts the game</div>
           <div className="roster">{room.players.map(p=><div key={p.seat} className={'player-chip seat-border-'+p.seat}>
             <AvatarBadge id={p.avatarStyle||'sentinel'} small/><span className={'tiny-disc seat-'+p.seat}>{icons[p.seat]}</span>
             <span>{p.name} {room.mode==='team'?'· Team '+(teamOfSeat(p.seat)===1?'Gold':'Blue'):''} {p.ready?'✓ Ready':'· Not ready'}
@@ -712,82 +728,145 @@ export default function App() {
           <button className="btn ghost" onClick={exitRoom}>← Back to menu</button>
         </div>
       </section> :
-      <div className="home-grid">
-        <section className="panel create-room-panel" id="drop-block-create-room">
-          <div className="section-eyebrow">HOST A MULTIPLAYER MATCH</div>
-          <h2>Create a room</h2>
-          <p className="sub create-room-intro">Pick a game mode and player count, then share your room code with friends.</p>
-          <div className="create-room-quickstart" aria-label="Create a multiplayer room">
-            <div className="create-room-selected">
-              <GameModeIcon mode={mode} size={32}/>
-              <span><strong>{modeName(mode)}</strong><small>{maxPlayers} player slots · Online room</small></span>
+      <div className="play-hub">
+        <div className="play-hub-heading">
+          <h2>Ready to play?</h2>
+          <p>Play with friends on their phones. No account needed to get started.</p>
+        </div>
+        <div className="play-tabs" role="tablist" aria-label="Choose how to play">
+          <button type="button" role="tab" aria-selected={homeTab==='host'} aria-controls="play-host-panel"
+            className={homeTab==='host'?'selected':''} onClick={()=>setHomeTab('host')}>
+            <strong>🎮 Create a game</strong><small>Pick a mode and invite friends</small>
+          </button>
+          <button type="button" role="tab" aria-selected={homeTab==='join'} aria-controls="play-join-panel"
+            className={homeTab==='join'?'selected':''} onClick={()=>setHomeTab('join')}>
+            <strong>🔑 Join a game</strong><small>Enter a friend's room code</small>
+          </button>
+          <button type="button" role="tab" aria-selected={homeTab==='help'} aria-controls="play-help-panel"
+            className={homeTab==='help'?'selected':''} onClick={()=>setHomeTab('help')}>
+            <strong>❔ How to play</strong><small>Learn the basics in seconds</small>
+          </button>
+        </div>
+        {homeTab==='host'&&<section className="panel play-flow-panel create-room-panel" id="play-host-panel" role="tabpanel" aria-label="Create a game">
+          <div className="setup-heading"><span className="setup-number">1</span><div>
+            <h3>Choose your game mode</h3><p>New to Drop &amp; Block? Start with Classic.</p>
+          </div></div>
+          <div className="selected-mode-help" role="status">
+            <div className="selected-mode-label"><GameModeIcon mode={mode} size={25}/>
+              <strong>{modeName(mode)}</strong>
+              <button type="button" className="mode-change-button" aria-expanded={modePickerOpen}
+                aria-controls="play-mode-choices" onClick={()=>setModePickerOpen(v=>!v)}>
+                {modePickerOpen?'Close choices':'Change mode'}
+              </button>
             </div>
-            {!user&&<label className="guest-name-field">Guest nickname (optional)
-              <input value={guestNickname} maxLength={17} autoComplete="off" placeholder="Your name"
-                onChange={e=>setGuestNickname(e.target.value)}/>
-            </label>}
-            <button className="btn primary full create-room-cta" type="button"
-              disabled={busy||user===undefined} onClick={()=>perform('create',{mode,maxPlayers})}>
-              {busy?'Preparing…':user?'＋ Create Room':'＋ Create Room as Guest'}
-            </button>
+            <p>{mode==='speed'
+              ? 'Everyone drops one chip at the same time. First accepted by the server goes first. A new round begins after everyone plays or time runs out.'
+              :mode==='elimination'?'Complete a line to eliminate the previous active player. Last player standing wins.'
+              :mode==='collapse'?'Play normally, but the bottom row disappears when a drop reaches the second row from the top.'
+              :mode==='power'?'Drop chips to earn energy. Spend it on Shield, Freeze, Bomb or Double Drop.'
+              :mode==='gravity'?'After every four valid drops, the chips shift LEFT then RIGHT and fall into place. A new line can win after a shift.'
+              :mode==='territory'?'Score a point for each completed line. The highest score when the board fills wins.'
+              :mode==='chaos'?'Each player gets one Barrier and one Blast. These abilities can block or remove chips.'
+              :mode==='team'?'Play on Gold or Blue team. Join with 4, 6 or 8 players and combine your team’s chips into a line of four.'
+              :'Take turns dropping chips. Be first to connect four (or three with 4+ players) across, down or diagonally.'}</p>
           </div>
-          {(!user||user.is_anonymous)&&<p className="create-room-signin-help">No signup required. Guests enjoy full multiplayer gameplay, but don't earn leaderboard points, trophies or unlockables.</p>}
-          <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
-            {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
-          </select></label>
-          <div className="mode-picker-label">CHOOSE GAME MODE</div>
-          <ModeChoiceGrid value={mode} onChange={next=>{setMode(next);if(next==='team')setMaxPlayers(old=>Math.max(4,old+(old%2)));}}/>
-          <p className="balanced-rule-hint">{mode==='team'
-            ? 'TEAM BATTLE · Always Connect 4 using teammates’ chips.'
-            : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
-          <p className="mode-explainer">{mode==='speed'
-            ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
-            :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Play online with server-verified Bomb, Shield, Freeze, and Double Drop. Gain energy from chip placement, threats and blocks.':mode==='gravity'?'Every four valid drops, the whole board slides LEFT, then RIGHT, alternating. Chips settle downward and new connections may appear. Available online for guests and signed-in players.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
-          <button className="btn primary full create-room-bottom-cta" type="button" disabled={busy||user===undefined}
-              onClick={()=>perform('create',{mode,maxPlayers})}>
-              {'＋ Create '+modeName(mode)+' Room'}
+          {modePickerOpen&&<div id="play-mode-choices" className="play-mode-choices">
+            <ModeChoiceGrid value={mode} onChange={next=>{
+              setMode(next);
+              if(next==='team')setMaxPlayers(old=>Math.max(4,old+(old%2)));
+              setModePickerOpen(false);
+            }}/>
+          </div>}
+          <div className="setup-heading"><span className="setup-number">2</span><div>
+            <h3>Choose the number of players</h3><p>You can start once at least two players have joined.</p>
+          </div></div>
+          <label className="setup-player-count">Room capacity
+            <select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
+              {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>
+                {mode==='team'?n/2+' vs '+n/2:n+' players'}
+              </option>)}
+            </select>
+          </label>
+          <p className="setup-win-tip">Most modes use <b>Connect 4</b> with 2–3 players and <b>Connect 3</b> with 4 or more. Team Battle always uses Connect 4. The exact target appears when the match starts.</p>
+          <div className="setup-heading"><span className="setup-number">3</span><div>
+            <h3>Create your room</h3><p>Share the code and have everyone join on their own phone.</p>
+          </div></div>
+          {!user&&<label className="guest-name-field">Your nickname (optional)
+            <input value={guestNickname} maxLength={17} autoComplete="off" placeholder="What should friends call you?"
+              onChange={e=>setGuestNickname(e.target.value)}/>
+          </label>}
+          <button className="btn primary full create-room-cta" type="button"
+            disabled={busy||user===undefined} onClick={()=>perform('create',{mode,maxPlayers})}>
+            {busy?'Creating room…':'＋ Create '+modeName(mode)+' room'}
           </button>
-          <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
-            {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
-          </button>
-          {user&&!user.is_anonymous&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>}
-        </section>
-        <section className="panel" id="drop-block-auth-panel">
-          <div className="section-eyebrow">JOIN WITH A CODE</div>
-          <h2>Join a room</h2>
-          <p className="sub">Already have a code? Enter it here. To host a game, use <a href="#drop-block-create-room">Create a room</a>.</p>
+          <p className="play-small-note">No signup required. Guest matches work normally; accounts save trophies and leaderboard results.</p>
+          <div className="play-secondary-actions">
+            <button type="button" className="btn ghost" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
+              {mode==='speed'?'Speed Round requires separate phones':'Try on one device'}
+            </button>
+            <button type="button" className="btn ghost" onClick={()=>setHomeTab('help')}>Read the rules</button>
+          </div>
+        </section>}
+        {homeTab==='join'&&<section className="panel play-flow-panel play-join-panel" id="play-join-panel" role="tabpanel" aria-label="Join a game">
+          <div className="section-eyebrow">JOIN A FRIEND</div>
+          <h2>Enter your room code</h2>
+          <p className="sub">Ask the host for their six-character room code. You don't need to create an account.</p>
           <form className="join-room-form" onSubmit={e=>{
             e.preventDefault();
             if(!busy&&user!==undefined&&joinCode.length===6)void perform('join',{},joinCode);
           }}>
-            <label htmlFor="drop-block-room-code">Six-character code</label>
-            <input id="drop-block-room-code" value={joinCode} maxLength={6} placeholder="A1B2C3"
-              autoCapitalize="characters" autoComplete="off" spellCheck={false}
-              inputMode="text" enterKeyHint="join"
-              onChange={e=>setJoinCode(e.target.value.toUpperCase().replace(/[^A-F0-9]/g,''))}/>
-            {!user&&<label className="guest-name-field">Guest nickname (optional)
+            <label htmlFor="drop-block-room-code">Room code
+              <input id="drop-block-room-code" value={joinCode} maxLength={6} placeholder="A1B2C3"
+                autoCapitalize="characters" autoComplete="off" spellCheck={false}
+                inputMode="text" enterKeyHint="join"
+                onChange={e=>setJoinCode(e.target.value.toUpperCase().replace(/[^A-F0-9]/g,''))}/>
+            </label>
+            {!user&&<label className="guest-name-field">Your nickname (optional)
               <input value={guestNickname} maxLength={17} autoComplete="off" placeholder="Your name"
                 onChange={e=>setGuestNickname(e.target.value)}/>
             </label>}
             <button type="submit" className="btn primary full" disabled={busy||user===undefined||joinCode.length!==6}>
-              {user?'Join game':'Join as guest'}
+              {busy?'Joining…':'Join game'}
             </button>
           </form>
-          {user===undefined ? <p className="sub">Checking your PlayVolt account…</p>
-           : user&&!user.is_anonymous ? <p className="sub">Signed in as <b>{profile?.nickname||user.email}</b> · Competitive rewards enabled</p>
-           : <div className="auth-area">
-            {user?.is_anonymous&&<p className="guest-status-note">Playing as <b>{profile?.nickname||user.user_metadata?.nickname||'Guest'}</b>. Guest results won't be saved to leaderboards or unlock rewards. Sign in below to earn future rewards.</p>}
-            <div className="tabbar"><button onClick={()=>{setAuthTab('sign-in');setMessage('');}} className={authTab==='sign-in'?'selected':''}>Sign in</button>
-            <button onClick={()=>{setAuthTab('sign-up');setMessage('');}} className={authTab==='sign-up'?'selected':''}>Sign up</button></div>
-            <form onSubmit={auth}>
-              {authTab==='sign-up' && <label>Player nickname<input required maxLength={24} minLength={2} value={nickname} onChange={e=>setNickname(e.target.value)}/></label>}
-              <label>Email<input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
-              <label>Password<input type="password" autoComplete={authTab==='sign-in'?'current-password':'new-password'} required value={password} onChange={e=>setPassword(e.target.value)}/></label>
-              <button disabled={busy} className="btn secondary full" type="submit">{authTab==='sign-in'?'Sign in with PlayVolt':'Create PlayVolt account'}</button>
-            </form>
-            <p className="sub">Sign-in is optional. Use your Dekabess or Pin & Spin account if you want leaderboard points, trophies and unlockables.</p>
-           </div>}
-        </section>
+          <p className="play-small-note">Once inside, tap <b>I'm ready!</b> and the host will start the match.</p>
+          <button className="btn ghost play-text-action" type="button" onClick={()=>setHomeTab('host')}>Want to host instead? Create a game</button>
+        </section>}
+        {homeTab==='help'&&<section className="panel play-flow-panel play-help-panel" id="play-help-panel" role="tabpanel" aria-label="How to play Drop and Block">
+          <div className="section-eyebrow">THE BASICS</div>
+          <h2>How to play Drop &amp; Block</h2>
+          <ol className="play-guide-steps">
+            <li><b>Host or join.</b> Choose a game mode and share a room code, or enter a code a friend sent you.</li>
+            <li><b>Get ready.</b> Everyone joins on their own phone. When all players are ready, the host starts.</li>
+            <li><b>Drop a chip.</b> On your turn, tap a column at the top of the board. Your chip falls into the lowest empty space.</li>
+            <li><b>Connect to win.</b> Make a line horizontally, vertically or diagonally. With 2–3 players the target is usually 4; with 4+ it is usually 3.</li>
+          </ol>
+          <div className="play-guide-tip"><strong>Don't worry about memorizing the modes.</strong>
+            <span>Choose Classic first. Every match shows the exact winning target and tells you whose turn it is. Special modes show their own instructions.</span>
+          </div>
+          <p className="play-small-note">Online turns last 60 seconds (except Speed Round). Guests can play without signing in; only registered accounts earn permanent rewards.</p>
+          <div className="play-secondary-actions">
+            <button className="btn primary" type="button" onClick={()=>{setMode('classic');setHomeTab('host');}}>Start with Classic</button>
+            <button className="btn secondary" type="button" onClick={()=>setHomeTab('join')}>I have a room code</button>
+          </div>
+        </section>}
+        {user&&!user.is_anonymous
+          ? <p className="play-account-indicator">✓ Signed in as <b>{profile?.nickname||user.email}</b> · Trophies and rankings are saved to your PlayVolt account.</p>
+          : <details className="play-account-details">
+              <summary>🏆 Have a PlayVolt account? Sign in for trophies and rankings <span>Optional</span></summary>
+              <div className="auth-area">
+                {user?.is_anonymous&&<p className="guest-status-note">Playing as <b>{user.user_metadata?.nickname||'Guest'}</b>. Sign in to save future results.</p>}
+                <div className="tabbar"><button onClick={()=>{setAuthTab('sign-in');setMessage('');}} className={authTab==='sign-in'?'selected':''}>Sign in</button>
+                  <button onClick={()=>{setAuthTab('sign-up');setMessage('');}} className={authTab==='sign-up'?'selected':''}>Sign up</button></div>
+                <form onSubmit={auth}>
+                  {authTab==='sign-up'&&<label>Player nickname<input required maxLength={24} minLength={2} value={nickname} onChange={e=>setNickname(e.target.value)}/></label>}
+                  <label>Email<input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
+                  <label>Password<input type="password" autoComplete={authTab==='sign-in'?'current-password':'new-password'} required value={password} onChange={e=>setPassword(e.target.value)}/></label>
+                  <button disabled={busy} className="btn secondary full" type="submit">{authTab==='sign-in'?'Sign in with PlayVolt':'Create PlayVolt account'}</button>
+                </form>
+                <p className="sub">Use your existing Dekabess or Pin &amp; Spin login. One PlayVolt account works for every game.</p>
+              </div>
+            </details>}
       </div>}
     </main>
     <footer>DROP & BLOCK <span>·</span> A PLAYVOLT GAME</footer>
