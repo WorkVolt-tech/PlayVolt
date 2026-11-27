@@ -9,6 +9,11 @@ alter table public.drop_block_rooms drop constraint if exists drop_block_rooms_m
 alter table public.drop_block_rooms add constraint drop_block_rooms_mode_check
   check (mode in ('classic','territory','elimination','collapse','chaos','team','speed','power'));
 
+-- Extend move history so its replay can record each new Power-Up action.
+alter table public.drop_block_moves drop constraint if exists drop_block_moves_move_kind_check;
+alter table public.drop_block_moves add constraint drop_block_moves_move_kind_check
+  check (move_kind in ('drop','block','blast','shield','freeze','bomb','double'));
+
 create table if not exists public.drop_block_power_state (
   room_id uuid primary key references public.drop_block_rooms(id) on delete cascade,
   match_number integer not null default 1,
