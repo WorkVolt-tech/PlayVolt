@@ -27,7 +27,7 @@ export function outcomeLabel(value) {
  return value==='win'?'Victory':value==='loss'?'Defeat':'Draw';
 }
 export const modeLabels={speed:'Speed Round',classic:'Classic',territory:'Territory',elimination:'Elimination',
- collapse:'Bottom Drop',chaos:'Chaos',team:'Team Battle'};
+ collapse:'Bottom Drop',chaos:'Chaos',gravity:'Gravity Shift',power:'Power-Up Arcade',team:'Team Battle'};
 
 // Highlight reel: prioritize earned lines, special powers, round transitions and
 // the deciding move. Include the preceding frame when possible for context.
