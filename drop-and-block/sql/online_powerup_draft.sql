@@ -4,6 +4,11 @@
 -- Existing Classic / Chaos / Team / Speed rules remain under drop_block_action.
 --
 -- The state table is not readable or writable directly by browser credentials.
+-- Extend the existing Drop & Block room-mode constraint without replacing the DB.
+alter table public.drop_block_rooms drop constraint if exists drop_block_rooms_mode_check;
+alter table public.drop_block_rooms add constraint drop_block_rooms_mode_check
+  check (mode in ('classic','territory','elimination','collapse','chaos','team','speed','power'));
+
 create table if not exists public.drop_block_power_state (
   room_id uuid primary key references public.drop_block_rooms(id) on delete cascade,
   match_number integer not null default 1,
@@ -65,11 +70,10 @@ declare
 begin
   for v_x in 0..p_width-1 loop
     v_y:=null;
-    for v_scan in select generate_series(p_height-1,0,-1) as y loop
-      if (p_board->>(v_scan.y*p_width+v_x))::integer=0 then
-        v_y:=v_scan.y;exit;
-      end if;
+    for v_y in reverse p_height-1..0 loop
+      exit when (p_board->>(v_y*p_width+v_x))::integer=0;
     end loop;
+    if (p_board->>(v_y*p_width+v_x))::integer<>0 then v_y:=null;end if;
     if v_y is null then continue; end if;
     v_test:=jsonb_set(p_board,array[(v_y*p_width+v_x)::text],to_jsonb(p_seat),false);
     if p_seat=any(public.drop_block_power_winners(v_test,p_width,p_height,p_count,p_length)) then
@@ -112,7 +116,7 @@ begin
       values(v_room_id,1) on conflict(room_id) do nothing;
     return (v_result||jsonb_build_object('mode','power',
       'power',jsonb_build_object('energy','[]'::jsonb,'shields','[]'::jsonb,
-                                'frozen',null,'doublePending',0)));
+                                'frozen',null,'doublePending',0,'pendingSeat',0)));
   end if;
 
   if p_code is null or upper(btrim(p_code)) !~ '^[A-F0-9]{6}$' then
@@ -136,11 +140,21 @@ begin
         set match_number=(select match_number from public.drop_block_rooms where id=v_room_id),
             state=jsonb_build_object(
               'energy',to_jsonb(array_fill(0,array[v_count])),
-              'shields','[]'::jsonb,'frozen',null,'doublePending',0),
+              'shields','[]'::jsonb,'frozen',null,'doublePending',0,'pendingSeat',0),
             updated_at=now()
         where room_id=v_room_id;
     end if;
     select state into v_power from public.drop_block_power_state where room_id=v_room_id;
+    -- If Double Drop's owner timed out, cancel the pending action; a
+    -- different player must never inherit someone else's purchased ability.
+    select turn_seat into v_next from public.drop_block_rooms where id=v_room_id;
+    if coalesce((v_power->>'doublePending')::integer,0)>0
+       and coalesce((v_power->>'pendingSeat')::integer,0) is distinct from v_next then
+      v_power:=jsonb_set(v_power,'{doublePending}','0'::jsonb);
+      v_power:=jsonb_set(v_power,'{pendingSeat}','0'::jsonb);
+      update public.drop_block_power_state set state=v_power,updated_at=now()
+        where room_id=v_room_id;
+    end if;
     -- Frozen lanes unlock as soon as their owner comes around again, including
     -- if a turn expired while the phone was offline.
     if p_action='get' and v_power->'frozen' is not null and v_power->'frozen'<>'null'::jsonb
@@ -187,7 +201,7 @@ begin
       where v_board[c]=0) then raise exception 'The board is full';end if;
     v_energy[v_seat]:=v_energy[v_seat]-100;
     v_power:=jsonb_build_object('energy',to_jsonb(v_energy),'shields',to_jsonb(v_shields),
-      'frozen',v_frozen,'doublePending',2);
+      'frozen',v_frozen,'doublePending',2,'pendingSeat',v_seat);
     update public.drop_block_power_state set state=v_power,updated_at=now() where room_id=v_room_id;
     update public.drop_block_rooms set last_event='⇊ DOUBLE DROP READY! Place chip 1 of 2.',
       updated_at=now() where id=v_room_id;
@@ -331,7 +345,7 @@ begin
     v_frozen:=null;
   end if;
   v_power:=jsonb_build_object('energy',to_jsonb(v_energy),'shields',to_jsonb(v_shields),
-     'frozen',v_frozen,'doublePending',v_pending);
+     'frozen',v_frozen,'doublePending',v_pending,'pendingSeat',case when v_pending>0 then v_seat else 0 end);
   update public.drop_block_power_state
     set state=v_power,updated_at=now() where room_id=v_room_id;
   v_total:=v_room.move_count+1;v_sequence:=v_room.total_moves+1;
