@@ -54,6 +54,7 @@ begin
  if (r->'power'->'frozen') <> 'null'::jsonb then
    raise exception 'Freeze did not thaw on owner turn: %',r->'power';
  end if;
+ perform set_config('request.jwt.claim.sub',bob::text,true);
  perform set_config('drop_block.power_write','off',true);
  begin
    perform public.drop_block_action('drop',v_code,'{"column":3,"kind":"drop"}'::jsonb);
