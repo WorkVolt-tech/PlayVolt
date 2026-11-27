@@ -7,7 +7,7 @@ import {AvatarBadge,ChipDisc} from './looks.jsx';
 import {TvReplayScreen} from './TvReplayScreen.jsx';
 import {watchRoomPulse,reconcileRoom,createRefreshCoordinator} from './roomRealtime.js';
 
-const modeNames = { speed: 'SPEED ROUND', classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP', chaos: 'CHAOS', team: 'TEAM BATTLE' };
+const modeNames = { speed: 'SPEED ROUND', classic: 'CLASSIC', territory: 'TERRITORY', elimination: 'ELIMINATION', collapse: 'BOTTOM DROP', chaos: 'CHAOS', gravity: 'GRAVITY SHIFT', power: 'POWER-UP ARCADE', team: 'TEAM BATTLE' };
 const icons = ['', '◆', '●', '▲', '■', '★', '⬡', '✦', '✳', '⬢'];
 
 export function TvApp() {

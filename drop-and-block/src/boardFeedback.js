@@ -5,18 +5,46 @@ function validBoard(board,width,height){
  return Array.isArray(board)&&Number.isInteger(width)&&Number.isInteger(height)&&
   width>0&&height>0&&board.length===width*height;
 }
+function isShifted(move){
+ return Boolean(move?.shifted ||
+   (typeof move?.event==='string'&&move.event.startsWith('🌪 GRAVITY SHIFT ')));
+}
 function validMove(move,width,height){
  return Boolean(move)&&Number.isInteger(move.column)&&move.column>=0&&move.column<width&&
   Number.isInteger(move.row)&&move.row>=0&&move.row<height;
 }
 export function lastMoveCell(board,width,height,move){
  if(!validBoard(board,width,height)||!validMove(move,width,height))return null;
+ // The post-shift board is authoritative: a chip might no longer occupy
+ // the coordinate where it originally landed.
+ if(isShifted(move))return null;
  if(move.kind!=='drop'&&move.kind!=='block')return null;
  const i=move.row*width+move.column;
  const expected=move.kind==='block'?9:move.seat;
  return board[i]===expected?i:null;
 }
 export function winningCells(board,width,height,winnerSeat,mode,lastMove,winLength=4){
+ // Gravity may give the win to someone other than the player who just
+ // dropped a chip; scan the final shifted board instead of anchoring at
+ // the old drop coordinate, which is no longer meaningful after a shift.
+ if(mode==='gravity'&&isShifted(lastMove)&&validBoard(board,width,height)&&
+    Number.isInteger(winnerSeat)&&winnerSeat>=1&&winnerSeat<=8){
+   const completed=new Set();
+   const targetLength=winLength===3?3:4;
+   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+     if(board[y*width+x]!==winnerSeat)continue;
+     for(const [dx,dy] of DIRECTIONS){
+       const indices=[];
+       for(let k=0;k<targetLength;k++){
+         const xx=x+k*dx,yy=y+k*dy;
+         if(xx<0||xx>=width||yy<0||yy>=height||board[yy*width+xx]!==winnerSeat)break;
+         indices.push(yy*width+xx);
+       }
+       if(indices.length===targetLength)indices.forEach(i=>completed.add(i));
+     }
+   }
+   return [...completed].sort((a,b)=>a-b);
+ }
  if(!validBoard(board,width,height)||!Number.isInteger(winnerSeat)||winnerSeat<1||
  winnerSeat>8||!validMove(lastMove,width,height)||lastMove.kind!=='drop'||
  lastMove.seat!==winnerSeat||mode==='territory')return [];

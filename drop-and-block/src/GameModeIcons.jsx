@@ -8,7 +8,7 @@ export const MODE_CHOICES=[
  {id:'elimination',name:'Elimination',subtitle:'Knock rivals out',tone:'red'},
  {id:'collapse',name:'Bottom Drop',subtitle:'The floor disappears',tone:'orange'},
  {id:'chaos',name:'Chaos',subtitle:'Barrier and Blast',tone:'violet'},
- {id:'gravity',name:'Gravity Shift',subtitle:'The board rearranges',tone:'mint',local:true},
+ {id:'gravity',name:'Gravity Shift',subtitle:'The board rearranges',tone:'mint'},
  {id:'power',name:'Power-Up Arcade',subtitle:'Charge special abilities',tone:'yellow'},
  {id:'team',name:'Team Battle',subtitle:'Combine team chips',tone:'blue'}
 ];

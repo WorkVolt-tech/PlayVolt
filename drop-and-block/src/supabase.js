@@ -66,13 +66,20 @@ export async function action(type,code='',data={}) {
     ? data?.mode==='power'
     : roomModes.get(normalized)==='power';
   if(type==='double'&&!isPower)throw new Error('Double Drop is only available in Power-Up Arcade');
-  const endpoint=isPower?'drop_block_power_action':'drop_block_action';
+  const isGravity = type==='create'
+    ? data?.mode==='gravity'
+    : roomModes.get(normalized)==='gravity';
+  const endpoint=isPower?'drop_block_power_action':
+    isGravity?'drop_block_gravity_action':'drop_block_action';
   let result=await callGameService(endpoint,type,normalized,data);
   if(result?.code&&result?.mode)roomModes.set(result.code,result.mode);
   // On a direct room link, 'join' happens before we know the room mode.
   // Join with the old endpoint, then fetch all Power-Up state through its RPC.
   if(type==='join'&&!isPower&&result?.mode==='power'){
     result=await callGameService('drop_block_power_action','get',result.code,{});
+  }
+  if(type==='join'&&!isGravity&&result?.mode==='gravity'){
+    result=await callGameService('drop_block_gravity_action','get',result.code,{});
   }
   return result;
 }
