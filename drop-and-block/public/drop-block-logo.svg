@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="logo-title">
+<title id="logo-title">Drop &amp; Block arcade logo</title>
+<defs>
+  <radialGradient id="bg"><stop offset="0" stop-color="#24114a"/><stop offset=".69" stop-color="#120b32"/><stop offset="1" stop-color="#08071e"/></radialGradient>
+  <radialGradient id="gold"><stop offset="0" stop-color="#fff09c"/><stop offset=".46" stop-color="#ffc616"/><stop offset="1" stop-color="#da5b00"/></radialGradient>
+  <linearGradient id="goldword" x2=".12" y2="1"><stop stop-color="#fffaa2"/><stop offset=".36" stop-color="#ffca1a"/><stop offset=".74" stop-color="#ff9b00"/><stop offset="1" stop-color="#c83c0c"/></linearGradient>
+  <linearGradient id="blueword" x2=".08" y2="1"><stop stop-color="#acffff"/><stop offset=".35" stop-color="#4bf1fc"/><stop offset=".72" stop-color="#069ef6"/><stop offset="1" stop-color="#0841c4"/></linearGradient>
+  <radialGradient id="red"><stop stop-color="#ff9999"/><stop offset=".47" stop-color="#ff262d"/><stop offset=".84" stop-color="#c00026"/><stop offset="1" stop-color="#690017"/></radialGradient>
+  <radialGradient id="blue"><stop stop-color="#9bfdff"/><stop offset=".5" stop-color="#028cff"/><stop offset="1" stop-color="#093aaf"/></radialGradient>
+  <radialGradient id="purple"><stop stop-color="#e59cff"/><stop offset=".52" stop-color="#8d2aff"/><stop offset="1" stop-color="#4908a2"/></radialGradient>
+  <radialGradient id="green"><stop stop-color="#c6ff9d"/><stop offset=".5" stop-color="#40dd17"/><stop offset="1" stop-color="#087c17"/></radialGradient>
+  <filter id="outer" x="-45%" y="-45%" width="190%" height="190%"><feGaussianBlur stdDeviation="15"/></filter>
+  <filter id="drop" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="15" stdDeviation="9" flood-color="#020518" flood-opacity=".96"/></filter>
+  <filter id="type" x="-35%" y="-45%" width="170%" height="185%"><feDropShadow dx="0" dy="15" stdDeviation="6" flood-color="#020820" flood-opacity=".9"/></filter>
+  <g id="chip"><circle r="61" fill="currentColor" stroke="#10194f" stroke-width="13"/><circle r="49" fill="none" stroke="#ffffff" stroke-opacity=".55" stroke-width="6"/><path d="M-32 -28 Q0 -55 33 -25" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="8" stroke-linecap="round"/></g>
+</defs>
+<rect width="1024" height="1024" rx="145" fill="url(#bg)"/>
+<ellipse cx="512" cy="533" rx="387" ry="370" fill="#5925b6" opacity=".3" filter="url(#outer)"/>
+<path d="M84 430 Q84 352 162 352 H862 Q940 352 940 430 V817 Q940 937 820 937 H204 Q84 937 84 817 Z"
+      fill="#070c2b" stroke="#00b8ff" stroke-width="39" opacity=".66" filter="url(#outer)"/>
+<path d="M84 430 Q84 352 162 352 H862 Q940 352 940 430 V817 Q940 937 820 937 H204 Q84 937 84 817 Z"
+      fill="#101b44" fill-opacity=".63" stroke="#43efff" stroke-width="14"/>
+<g stroke-linecap="round">
+ <path d="M501 33 V146" stroke="#ff66a8" stroke-width="14" filter="url(#outer)"/>
+ <path d="M465 21 V115 M538 24 V115" stroke="#ffa2dd" stroke-width="7"/>
+ <path d="M164 91 L229 176 M187 63 L249 152" stroke="#ffd44b" stroke-width="10"/>
+ <path d="M859 88 L802 170 M833 61 L779 147" stroke="#04aeff" stroke-width="10"/>
+</g>
+<g opacity=".85" fill="#ffd63d">
+ <path d="M374 295 L350 186 447 267Z"/><path d="M442 274 L469 168 503 264Z"/>
+ <path d="M573 270 L610 174 634 292Z"/><path d="M651 298 L734 222 704 326Z"/>
+</g>
+<g filter="url(#drop)">
+ <g transform="translate(232 190) rotate(-24)"><circle r="75" fill="#e59400" stroke="#ffd941" stroke-width="12"/><ellipse rx="69" ry="49" cy="-15" fill="url(#gold)" stroke="#fff292" stroke-width="7"/></g>
+ <g transform="translate(512 151) rotate(-14)"><circle r="91" fill="#9b0013" stroke="#ff4350" stroke-width="13"/><ellipse rx="84" ry="59" cy="-17" fill="url(#red)" stroke="#ffb6b2" stroke-width="7"/></g>
+ <g transform="translate(789 193) rotate(24)"><circle r="74" fill="#0240b8" stroke="#13bcff" stroke-width="11"/><ellipse rx="67" ry="48" cy="-13" fill="url(#blue)" stroke="#75efff" stroke-width="7"/></g>
+</g>
+<g filter="url(#drop)">
+ <g transform="translate(139 465)"><use href="#chip" style="color:url(#purple)"/></g>
+ <g transform="translate(141 586)"><use href="#chip" style="color:url(#purple)"/></g>
+ <g transform="translate(155 710)"><use href="#chip" style="color:url(#green)"/></g>
+ <g transform="translate(884 465)"><use href="#chip" style="color:url(#purple)"/></g>
+ <g transform="translate(881 586)"><use href="#chip" style="color:url(#purple)"/></g>
+ <g transform="translate(868 710)"><use href="#chip" style="color:url(#green)"/></g>
+</g>
+<text x="512" y="505" text-anchor="middle" font-family="Arial Black,DejaVu Sans,sans-serif" font-weight="1000" font-size="226" letter-spacing="-13"
+ paint-order="stroke" stroke="#08103b" stroke-width="31" stroke-linejoin="round" fill="url(#goldword)" filter="url(#type)">DROP</text>
+<text x="512" y="624" text-anchor="middle" font-family="Arial Black,DejaVu Sans,sans-serif" font-weight="1000" font-size="136"
+ paint-order="stroke" stroke="#03103a" stroke-width="25" stroke-linejoin="round" fill="#f9ffff" filter="url(#type)">&amp;</text>
+<text x="512" y="791" text-anchor="middle" font-family="Arial Black,DejaVu Sans,sans-serif" font-weight="1000" font-size="188" letter-spacing="-13"
+ paint-order="stroke" stroke="#041344" stroke-width="28" stroke-linejoin="round" fill="url(#blueword)" filter="url(#type)">BLOCK</text>
+<g filter="url(#drop)">
+ <g transform="translate(226 870) scale(.78)"><use href="#chip" style="color:url(#blue)"/></g>
+ <g transform="translate(364 870) scale(.78)"><use href="#chip" style="color:url(#gold)"/></g>
+ <g transform="translate(512 870) scale(.81)"><use href="#chip" style="color:url(#red)"/></g>
+ <g transform="translate(659 870) scale(.78)"><use href="#chip" style="color:url(#gold)"/></g>
+ <g transform="translate(797 870) scale(.78)"><use href="#chip" style="color:url(#green)"/></g>
+</g>
+</svg>
