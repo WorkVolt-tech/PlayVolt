@@ -12,7 +12,7 @@
   <filter id="outer" x="-45%" y="-45%" width="190%" height="190%"><feGaussianBlur stdDeviation="15"/></filter>
   <filter id="drop" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="15" stdDeviation="9" flood-color="#020518" flood-opacity=".96"/></filter>
   <filter id="type" x="-35%" y="-45%" width="170%" height="185%"><feDropShadow dx="0" dy="15" stdDeviation="6" flood-color="#020820" flood-opacity=".9"/></filter>
-  <g id="chip"><circle r="61" fill="currentColor" stroke="#10194f" stroke-width="13"/><circle r="49" fill="none" stroke="#ffffff" stroke-opacity=".55" stroke-width="6"/><path d="M-32 -28 Q0 -55 33 -25" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="8" stroke-linecap="round"/></g>
+  <g id="chip"><circle r="61" fill="var(--chip-fill)" stroke="#10194f" stroke-width="13"/><circle r="49" fill="none" stroke="#ffffff" stroke-opacity=".55" stroke-width="6"/><path d="M-32 -28 Q0 -55 33 -25" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="8" stroke-linecap="round"/></g>
 </defs>
 <rect width="1024" height="1024" rx="145" fill="url(#bg)"/>
 <ellipse cx="512" cy="533" rx="387" ry="370" fill="#5925b6" opacity=".3" filter="url(#outer)"/>
@@ -36,12 +36,12 @@
  <g transform="translate(789 193) rotate(24)"><circle r="74" fill="#0240b8" stroke="#13bcff" stroke-width="11"/><ellipse rx="67" ry="48" cy="-13" fill="url(#blue)" stroke="#75efff" stroke-width="7"/></g>
 </g>
 <g filter="url(#drop)">
- <g transform="translate(139 465)"><use href="#chip" style="color:url(#purple)"/></g>
- <g transform="translate(141 586)"><use href="#chip" style="color:url(#purple)"/></g>
- <g transform="translate(155 710)"><use href="#chip" style="color:url(#green)"/></g>
- <g transform="translate(884 465)"><use href="#chip" style="color:url(#purple)"/></g>
- <g transform="translate(881 586)"><use href="#chip" style="color:url(#purple)"/></g>
- <g transform="translate(868 710)"><use href="#chip" style="color:url(#green)"/></g>
+ <g transform="translate(139 465)"><use href="#chip" style="--chip-fill:url(#purple)"/></g>
+ <g transform="translate(141 586)"><use href="#chip" style="--chip-fill:url(#purple)"/></g>
+ <g transform="translate(155 710)"><use href="#chip" style="--chip-fill:url(#green)"/></g>
+ <g transform="translate(884 465)"><use href="#chip" style="--chip-fill:url(#purple)"/></g>
+ <g transform="translate(881 586)"><use href="#chip" style="--chip-fill:url(#purple)"/></g>
+ <g transform="translate(868 710)"><use href="#chip" style="--chip-fill:url(#green)"/></g>
 </g>
 <text x="512" y="505" text-anchor="middle" font-family="Arial Black,DejaVu Sans,sans-serif" font-weight="1000" font-size="226" letter-spacing="-13"
  paint-order="stroke" stroke="#08103b" stroke-width="31" stroke-linejoin="round" fill="url(#goldword)" filter="url(#type)">DROP</text>
@@ -50,10 +50,10 @@
 <text x="512" y="791" text-anchor="middle" font-family="Arial Black,DejaVu Sans,sans-serif" font-weight="1000" font-size="188" letter-spacing="-13"
  paint-order="stroke" stroke="#041344" stroke-width="28" stroke-linejoin="round" fill="url(#blueword)" filter="url(#type)">BLOCK</text>
 <g filter="url(#drop)">
- <g transform="translate(226 870) scale(.78)"><use href="#chip" style="color:url(#blue)"/></g>
- <g transform="translate(364 870) scale(.78)"><use href="#chip" style="color:url(#gold)"/></g>
- <g transform="translate(512 870) scale(.81)"><use href="#chip" style="color:url(#red)"/></g>
- <g transform="translate(659 870) scale(.78)"><use href="#chip" style="color:url(#gold)"/></g>
- <g transform="translate(797 870) scale(.78)"><use href="#chip" style="color:url(#green)"/></g>
+ <g transform="translate(226 870) scale(.78)"><use href="#chip" style="--chip-fill:url(#blue)"/></g>
+ <g transform="translate(364 870) scale(.78)"><use href="#chip" style="--chip-fill:url(#gold)"/></g>
+ <g transform="translate(512 870) scale(.81)"><use href="#chip" style="--chip-fill:url(#red)"/></g>
+ <g transform="translate(659 870) scale(.78)"><use href="#chip" style="--chip-fill:url(#gold)"/></g>
+ <g transform="translate(797 870) scale(.78)"><use href="#chip" style="--chip-fill:url(#green)"/></g>
 </g>
 </svg>
