@@ -710,8 +710,8 @@ export default function App() {
             : <span className="rematch-waiting">Waiting for the host to start the next match…</span>}
         </div>}
         <div className="actions">
-          {!user?.is_anonymous&&<button className="btn secondary" onClick={()=>{setShowCustomize(true);setShowProgress(false);setShowHistory(false);}}>🎨 Customize</button>
-          {!user?.is_anonymous&&<button className="btn secondary" onClick={()=>{setShowHistory(true);setShowProgress(false);setShowCustomize(false);}}>↺ Match History</button>
+          {!user?.is_anonymous&&<button className="btn secondary" onClick={()=>{setShowCustomize(true);setShowProgress(false);setShowHistory(false);}}>🎨 Customize</button>}
+          {!user?.is_anonymous&&<button className="btn secondary" onClick={()=>{setShowHistory(true);setShowProgress(false);setShowCustomize(false);}}>↺ Match History</button>}
           {!user?.is_anonymous&&<button className="btn secondary" onClick={()=>{setShowProgress(true);setShowCustomize(false);setShowHistory(false);}}>🏆 Trophies & Ranks</button>}
           <button className="btn ghost" onClick={exitRoom}>← Back to menu</button>
         </div>
