@@ -610,9 +610,9 @@ export default function App() {
     </header>
     <main className="content">
       {!room && !demo && !showProgress && !showCustomize && !showHistory && <div className="hero">
-        <div className="logo-art" aria-hidden="true"><div className="dot-1">◆</div><div className="dot-2">●</div><div className="dot-3">▲</div><div className="dot-4">■</div></div>
+        <h1 className="hero-logo-a11y">Drop &amp; Block</h1>
+        <img className="hero-game-logo" src="/drop-block-logo.svg" alt="" aria-hidden="true" />
         <div className="section-eyebrow">THE MULTIPLAYER STRATEGY SHOWDOWN</div>
-        <h1>DROP <span>&</span> BLOCK</h1>
         <p>Drop smart. Block hard.</p>
       </div>}
       {message && <div className="notification" role="status">{message}</div>}
