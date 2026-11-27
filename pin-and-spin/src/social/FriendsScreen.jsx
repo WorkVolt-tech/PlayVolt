@@ -2,16 +2,17 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { play } from '../sound/sfx.js';
 import { MODES } from '../game/constants.js';
 import { Peg } from '../components/Peg.jsx';
-import { addFriendByCode, friendLink, isOnline, myFriendCode, myFriends, respondFriend } from './friends.js';
+import { addFriendByCode, addFriendByUsername, friendLink, isOnline, myFriendCode, myFriends, respondFriend } from './friends.js';
 
-// The shared PlayVolt friends list (the same one as Dekabess): your friend code, add a
-// friend by code, answer requests, and see who's online.
+// The shared PlayVolt friends list: add by username, answer requests and see who is online.
 // onChallenge(friend, mode): create a room in that mode and invite the friend into it.
 export function FriendsScreen({ account, notify, onBack, onSignIn, onChallenge, startCode = '' }) {
   const [challenging, setChallenging] = useState(null);
   const [list, setList] = useState(null);
   const [code, setCode] = useState('');
-  const [add, setAdd] = useState(startCode);
+  const [add, setAdd] = useState('');
+  const [linkedCode, setLinkedCode] = useState(startCode);
+  const username = account.profile?.nickname || '';
   const [busy, setBusy] = useState(false);
   const [reply, setReply] = useState(null);
 
@@ -23,15 +24,15 @@ export function FriendsScreen({ account, notify, onBack, onSignIn, onChallenge, 
   }, [notify]);
   useEffect(() => { if (account.signedIn) void load(); }, [account.signedIn, load]);
 
-  async function submit(e) {
+  async function submit(e, fromLink = false) {
     e?.preventDefault();
-    const c = add.trim();
+    const c = fromLink ? linkedCode : add.trim();
     if (!c || busy) return;
     setBusy(true);
     try {
-      const r = await addFriendByCode(c);
+      const r = await (fromLink ? addFriendByCode(c) : addFriendByUsername(c));
       setReply(r); play(r.ok ? 'confirm-unlock' : 'invalid-thunk');
-      if (r.ok) { setAdd(''); void load(); }
+      if (r.ok) { if (fromLink) setLinkedCode(''); else setAdd(''); void load(); }
     } catch (err) { setReply({ ok: false, message: err.message }); }
     finally { setBusy(false); }
   }
@@ -44,16 +45,16 @@ export function FriendsScreen({ account, notify, onBack, onSignIn, onChallenge, 
     const url = friendLink(code);
     play('select-item');
     try {
-      if (navigator.share) await navigator.share({ title: 'Pin & Spin', text: `Add me as a friend on PlayVolt! My friend code is ${code}.`, url });
+      if (navigator.share) await navigator.share({ title: 'Pin & Spin', text: `Add me as a friend on PlayVolt! My username is ${username}.`, url });
       else { await navigator.clipboard.writeText(url); notify('Friend link copied!'); }
-    } catch (e) { if (e?.name !== 'AbortError') notify('Could not share. Your code is ' + code); }
+    } catch (e) { if (e?.name !== 'AbortError') notify('Could not share. Friends can add you by username: ' + username); }
   }
 
   if (!account.signedIn) return <section className="screen friends-screen">
     <button className="back-button" onClick={onBack}>← Back</button>
     <h1 className="page-title">👥 Friends</h1>
     <div className="surface lb-note"><p>Your friends list is shared across PlayVolt games like Dekabess. Sign in to add friends
-      and invite them to your games.{startCode ? ` Then we’ll send a friend request to ${startCode}.` : ''}</p>
+      and invite them to your games.{startCode ? ' Then you can send the request from your friend link.' : ''}</p>
       <button type="button" className="primary-btn" onClick={onSignIn}>Sign in / Create account <span>→</span></button></div>
   </section>;
 
@@ -66,16 +67,22 @@ export function FriendsScreen({ account, notify, onBack, onSignIn, onChallenge, 
     <p className="lb-sub">The same friends list as Dekabess and every PlayVolt game.</p>
 
     <div className="surface friend-code-card">
-      <span className="field-label">YOUR FRIEND CODE</span>
-      <strong className="friend-code">{code || '…'}</strong>
+      <span className="field-label">YOUR USERNAME</span>
+      <strong className="friend-username">{username || '…'}</strong>
+      <p className="field-help">Friends can add you using this username.</p>
       <button type="button" className="outline-btn full" disabled={!code} onClick={() => void share()}>↗ Share my friend link</button>
     </div>
 
+    {linkedCode && <div className="surface">
+      <p className="field-help">You opened a friend invitation link.</p>
+      <button type="button" className="outline-btn full" disabled={busy} onClick={() => void submit(null, true)}>Send request from this link</button>
+    </div>}
+
     <form className="surface friend-add" onSubmit={submit}>
-      <label className="field-label" htmlFor="friendCode">ADD A FRIEND</label>
+      <label className="field-label" htmlFor="friendUsername">ADD A FRIEND BY USERNAME</label>
       <div className="friend-add-row">
-        <input id="friendCode" type="text" value={add} autoCapitalize="characters" autoComplete="off" spellCheck={false}
-          placeholder="Their friend code" onChange={(e) => { setAdd(e.target.value.toUpperCase()); setReply(null); }} />
+        <input id="friendUsername" type="text" value={add} autoCapitalize="none" autoComplete="off" spellCheck={false}
+          placeholder="Their username" onChange={(e) => { setAdd(e.target.value); setReply(null); }} />
         <button type="submit" className="primary-btn" disabled={!add.trim() || busy}>{busy ? '…' : 'Add'}</button>
       </div>
       {reply && <p className={reply.ok ? 'tv-pair-ok' : 'tv-pair-error'} role="status">{reply.message}</p>}
@@ -94,7 +101,7 @@ export function FriendsScreen({ account, notify, onBack, onSignIn, onChallenge, 
     <div className="surface">
       <div className="panel-title"><h2>MY FRIENDS</h2><span>{friends.length}</span></div>
       {!list && <p className="field-help">Loading…</p>}
-      {list && !friends.length && <p className="field-help">No friends yet. Share your friend link, or add someone’s code above.</p>}
+      {list && !friends.length && <p className="field-help">No friends yet. Share your friend link, or add someone’s username above.</p>}
       {friends.map((f) => <div className="friend-row" key={f.user_id}>
         <span className="friend-avatar">{f.nickname?.[0]?.toUpperCase() || '?'}</span>
         <strong>{f.nickname}</strong>

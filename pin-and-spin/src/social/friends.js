@@ -28,6 +28,18 @@ export async function addFriendByCode(code) {
   const [ok, message] = FRIEND_REPLIES[reply] || [false, 'Could not send the request. Try again.'];
   return { ok, message };
 }
+// Account usernames are stored as profile nicknames in the shared PlayVolt system.
+export async function addFriendByUsername(username, request = rpc) {
+  const name = username.trim();
+  if (!name) return { ok: false, message: 'Enter their username.' };
+  const reply = String(await request('friend_request_by_nickname', { p_nickname: name }) || '');
+  const [ok, message] = {
+    ...FRIEND_REPLIES,
+    'no such player': [false, 'No player has that username. Check the spelling and try again.'],
+    "that's you": [false, 'That’s your own username!'],
+  }[reply] || [false, 'Could not send the request. Try again.'];
+  return { ok, message };
+}
 // "Online" = seen in a PlayVolt game in the last 3 minutes.
 export const isOnline = (f) => Boolean(f.last_seen) && Date.now() - new Date(f.last_seen).getTime() < 3 * 60 * 1000;
 export const friendLink = (code) => `${location.origin}/?friend=${encodeURIComponent(code)}`;
