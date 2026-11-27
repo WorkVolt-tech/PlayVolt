@@ -1929,3 +1929,15 @@ img,video,canvas,svg{max-width:100%}
  .room-tv-details summary small{display:block;margin:2px 0 0}
  .game-extra,.room-tv-details{padding:11px}
 }
+
+/* Keep Create Room visible quickly: reveal the nine choices only when asked. */
+.mode-change-button{margin-left:auto;border:1px solid #f4ce82;border-radius:9px;
+  background:#344363;color:#ffdf9e;font-size:12px;font-weight:900;
+  padding:8px 10px;min-height:38px}
+.mode-change-button:focus-visible{outline:3px solid #ffe297;outline-offset:3px}
+.play-mode-choices{margin:10px 0 18px;border:1px solid #7486af70;
+  background:#0d1833;padding:14px;border-radius:14px}
+@media(max-width:600px){
+ .mode-change-button{font-size:11px;padding:7px 9px}
+ .play-mode-choices{padding:9px}
+}
