@@ -698,30 +698,49 @@ export default function App() {
         </div>
       </section> :
       <div className="home-grid">
-        <section className="panel">
-          <div className="section-eyebrow">START A MATCH</div>
-          <h2>Choose your battle</h2>
-          <div className="mode-picker-label">SELECT GAME MODE</div>
+        <section className="panel create-room-panel" id="drop-block-create-room">
+          <div className="section-eyebrow">HOST A MULTIPLAYER MATCH</div>
+          <h2>Create a room</h2>
+          <p className="sub create-room-intro">Pick a game mode and player count, then share your room code with friends.</p>
+          <div className="create-room-quickstart" aria-label="Create a multiplayer room">
+            <div className="create-room-selected">
+              <GameModeIcon mode={mode} size={32}/>
+              <span><strong>{modeName(mode)}</strong><small>{maxPlayers} player slots · Online room</small></span>
+            </div>
+            {user ? <button className="btn primary full create-room-cta" type="button"
+                disabled={busy||mode==='gravity'} onClick={()=>perform('create',{mode,maxPlayers})}>
+                {mode==='gravity'?'Online Gravity Shift coming soon':'＋ Create Room'}
+              </button>
+              : <button className="btn secondary full create-room-cta" type="button"
+                onClick={()=>document.getElementById('drop-block-auth-panel')?.scrollIntoView({behavior:'smooth',block:'start'})}>
+                {user===undefined?'Checking login…':'Sign in to create a room'}
+              </button>}
+          </div>
+          {!user&&user!==undefined&&<p className="create-room-signin-help">Use your existing PlayVolt account below to host or join a room.</p>}
+          <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
+            {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
+          </select></label>
+          <div className="mode-picker-label">CHOOSE GAME MODE</div>
           <ModeChoiceGrid value={mode} onChange={next=>{setMode(next);if(next==='team')setMaxPlayers(old=>Math.max(4,old+(old%2)));}}/>
-          <div className="mode-selected-banner"><GameModeIcon mode={mode} size={26}/><span><strong>{modeName(mode)}</strong><small>SELECTED MODE</small></span></div>
           <p className="balanced-rule-hint">{mode==='team'
             ? 'TEAM BATTLE · Always Connect 4 using teammates’ chips.'
             : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
           <p className="mode-explainer">{mode==='speed'
             ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
             :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Play online with server-verified Bomb, Shield, Freeze, and Double Drop. Gain energy from chip placement, threats and blocks.':mode==='gravity'?'Every four valid drops, the whole board slides LEFT, then RIGHT, alternating. Chips settle downward and new connections may appear. Local preview; online support requires server rules.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
-          <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
-            {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
-          </select></label>
-          <button className="btn primary full" disabled={busy||!user||mode==='gravity'} onClick={()=>perform('create',{mode,maxPlayers})}>{mode==='gravity'?'Online mode requires server rules':'Create online room'}</button>
+          {user&&<button className="btn primary full create-room-bottom-cta" type="button" disabled={busy||mode==='gravity'}
+              onClick={()=>perform('create',{mode,maxPlayers})}>
+              {mode==='gravity'?'Online Gravity Shift coming soon':'＋ Create '+modeName(mode)+' Room'}
+          </button>}
           <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
             {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
           </button>
           {user&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>}
         </section>
-        <section className="panel">
-          <div className="section-eyebrow">PLAY WITH FRIENDS</div>
+        <section className="panel" id="drop-block-auth-panel">
+          <div className="section-eyebrow">JOIN WITH A CODE</div>
           <h2>Join a room</h2>
+          <p className="sub">Already have a code? Enter it here. To host a game, use <a href="#drop-block-create-room">Create a room</a>.</p>
           <form className="join-room-form" onSubmit={e=>{
             e.preventDefault();
             if(!busy&&user&&joinCode.length===6)void perform('join',{},joinCode);
@@ -746,7 +765,7 @@ export default function App() {
               <label>Password<input type="password" autoComplete={authTab==='sign-in'?'current-password':'new-password'} required value={password} onChange={e=>setPassword(e.target.value)}/></label>
               <button disabled={busy} className="btn secondary full" type="submit">{authTab==='sign-in'?'Sign in with PlayVolt':'Create PlayVolt account'}</button>
             </form>
-            <p className="sub">Have a Dekabess or Pin & Spin account? Use those same credentials here.</p>
+            <p className="sub">Sign in here to create or join a multiplayer room. Have a Dekabess or Pin & Spin account? Use those same credentials.</p>
            </div>}
         </section>
       </div>}
