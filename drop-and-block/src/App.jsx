@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db, action } from './supabase.js';
+import { db, action, readGuestSession, asGuestUser, ensureGuestSession, clearGuestSession } from './supabase.js';
 import { emptyBoard, dimensions, playLocalTurn, playChaosTurn, playTeamTurn, teamOfSeat, balancedWinLength } from './rules.js';
 import { VersionAlert } from './VersionAlert.jsx';
 import { ProgressHub, TrophyUnlockNotice } from './ProgressHub.jsx';
@@ -327,6 +327,7 @@ export default function App() {
   const [email,setEmail] = useState('');
   const [password,setPassword] = useState('');
   const [nickname,setNickname] = useState('');
+  const [guestNickname,setGuestNickname] = useState('');
   const [maxPlayers,setMaxPlayers] = useState(4);
   const [mode,setMode] = useState('classic');
   const [onlinePowerChoice,setOnlinePowerChoice]=useState('drop');
@@ -349,22 +350,23 @@ export default function App() {
 
   useEffect(() => {
     let alive = true;
-    db.auth.getSession().then(({data}) => {if(alive)setUser(data.session?.user??null);})
-      .catch(()=>{if(alive)setUser(null);});
+    db.auth.getSession().then(({data}) => {
+      if(alive)setUser(data.session?.user??asGuestUser(readGuestSession()));
+    }).catch(()=>{if(alive)setUser(asGuestUser(readGuestSession()));});
     const {data:{subscription}} = db.auth.onAuthStateChange((_event,session)=>{
-      if(alive)setUser(session?.user??null);
+      if(alive)setUser(session?.user??asGuestUser(readGuestSession()));
     });
     return ()=>{alive=false;subscription.unsubscribe();};
   },[]);
   useEffect(()=>{
-    if(!user?.id) { setProfile(null); return; }
+    if(!user?.id||user.is_anonymous) { setProfile(null); return; }
     let active=true;
     db.from('profiles').select('nickname').eq('id',user.id).maybeSingle()
       .then(({data})=>{if(active)setProfile(data);}).catch(()=>{if(active)setProfile(null);});
     return ()=>{active=false;};
   },[user?.id]);
   useEffect(()=>{
-    if(!user?.id){setMyLoadout(null);return;}
+    if(!user?.id||user.is_anonymous){setMyLoadout(null);return;}
     let alive=true;
     db.rpc('drop_block_customization',{p_action:'get',p_category:'',p_item:''})
      .then(({data,error})=>{if(alive&&!error)setMyLoadout(data.equipped);})
@@ -384,7 +386,7 @@ export default function App() {
   // Remember previously earned trophies when signing in, to avoid announcing
   // historical trophies as if they were new on a fresh device.
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id||user.is_anonymous) return;
     let active = true;
     db.rpc('drop_block_progress', { p_mode:'all', p_period:'all', p_limit:25 })
       .then(({data,error}) => {
@@ -402,7 +404,7 @@ export default function App() {
   // Trophy unlocks are awarded on the server when the match finishes. Fetch
   // only once per finished match; 2-second room polling won't repeat notices.
   useEffect(() => {
-    if (!user?.id || room?.status !== 'finished') return;
+    if (!user?.id||user.is_anonymous||room?.status !== 'finished') return;
     let active=true;
     const key='drop_block_trophies_seen_' + user.id;
     db.rpc('drop_block_progress', {p_mode:'all',p_period:'all',p_limit:25})
@@ -501,17 +503,28 @@ export default function App() {
       if(authTab==='sign-in') {
         const {error}=await db.auth.signInWithPassword({email,password});
         if(error)throw error;
+        clearGuestSession();
       } else {
         const {data,error}=await db.auth.signUp({email,password,options:{data:{nickname:nickname.trim()}}});
         if(error)throw error;
+        if(data.session)clearGuestSession();
         setMessage(data.session?'Account created. Welcome!':'Check your email to confirm your existing PlayVolt account sign-up.');
       }
       setPassword('');
     } catch(err){setMessage(err.message);} finally{setBusy(false);}
   }
+  async function ensurePlaySession(){
+    const {data:{session},error}=await db.auth.getSession();
+    if(error)throw error;
+    if(session?.user)return session.user;
+    const guest=await ensureGuestSession(guestNickname);
+    setUser(guest);
+    return guest;
+  }
   async function perform(type, data={}, code=room?.code||'') {
     setBusy(true);setMessage('');
     try {
+      if(type==='create'||type==='join')await ensurePlaySession();
       const next=await action(type,code,data);
       setRoom(current=>current?.code===next.code?reconcileRoom(current,next):next);
       setJoinCode(next.code);setSyncStatus('connected');
@@ -566,7 +579,8 @@ export default function App() {
     catch(err){if(err.name!=='AbortError')setMessage('Room code: '+room.code);}
   }
   async function signOut() {
-    await db.auth.signOut();setUser(null);setRoom(null);setMessage('');setRoomTransport('connecting');setShowProgress(false);setShowCustomize(false);setShowHistory(false);setMenuOpen(false);setMyLoadout(null);setFreshTrophies([]);
+    if(!user?.is_anonymous)await db.auth.signOut();
+    clearGuestSession();setUser(null);setRoom(null);setMessage('');setRoomTransport('connecting');setShowProgress(false);setShowCustomize(false);setShowHistory(false);setMenuOpen(false);setMyLoadout(null);setFreshTrophies([]);
     history.replaceState(null,'',location.pathname);
   }
   return <div className="shell">
@@ -574,10 +588,10 @@ export default function App() {
       <span className="mini-brand">DROP <b>&</b> BLOCK</span>
       <span className="header-right">{user && <>
         <nav className="desktop-game-nav" aria-label="PlayVolt game navigation">
-          {!demo&&<button className="text-btn custom-nav" onClick={()=>openSection(showCustomize?'game':'customize')}>{showCustomize?'← Game':'🎨 Customize'}</button>}
-          {!demo&&<button className="text-btn history-nav" onClick={()=>openSection(showHistory?'game':'history')}>{showHistory?'← Game':'↺ Match History'}</button>}
-          {!demo&&<button className="text-btn trophies-nav" onClick={()=>openSection(showProgress?'game':'progress')}>{showProgress?'← Game':'🏆 Trophies & Ranks'}</button>}
-          <button className="text-btn" onClick={signOut}>Sign out</button>
+          {!demo&&!user?.is_anonymous&&<button className="text-btn custom-nav" onClick={()=>openSection(showCustomize?'game':'customize')}>{showCustomize?'← Game':'🎨 Customize'}</button>}
+          {!demo&&!user?.is_anonymous&&<button className="text-btn history-nav" onClick={()=>openSection(showHistory?'game':'history')}>{showHistory?'← Game':'↺ Match History'}</button>}
+          {!demo&&!user?.is_anonymous&&<button className="text-btn trophies-nav" onClick={()=>openSection(showProgress?'game':'progress')}>{showProgress?'← Game':'🏆 Trophies & Ranks'}</button>}
+          <button className="text-btn" onClick={signOut}>{user?.is_anonymous?'Leave guest session':'Sign out'}</button>
         </nav>
         <div className="mobile-nav">
           <button type="button" className="mobile-menu-toggle" aria-expanded={menuOpen}
@@ -586,10 +600,10 @@ export default function App() {
           </button>
           {menuOpen&&<nav id="drop-block-mobile-menu" className="mobile-menu-panel" aria-label="Mobile game navigation">
             <button type="button" onClick={()=>{setDemo(false);openSection('game');}}>🎮 Back to game</button>
-            <button type="button" onClick={()=>openSection('customize')}>🎨 Customize</button>
-            <button type="button" onClick={()=>openSection('history')}>↺ Match History</button>
-            <button type="button" onClick={()=>openSection('progress')}>🏆 Trophies & Ranks</button>
-            <button type="button" className="mobile-signout" onClick={signOut}>Sign out</button>
+            {!user?.is_anonymous&&<button type="button" onClick={()=>openSection('customize')}>🎨 Customize</button>}
+            {!user?.is_anonymous&&<button type="button" onClick={()=>openSection('history')}>↺ Match History</button>}
+            {!user?.is_anonymous&&<button type="button" onClick={()=>openSection('progress')}>🏆 Trophies & Ranks</button>}
+            <button type="button" className="mobile-signout" onClick={signOut}>{user?.is_anonymous?'Leave guest session':'Sign out'}</button>
           </nav>}
         </div>
       </>}</span>
@@ -616,6 +630,7 @@ export default function App() {
           <button type="button" className="btn ghost" onClick={copyRoomCode}>Copy code</button>
           <button type="button" className="btn secondary" onClick={shareRoom}>Invite friends</button>
         </div></div>
+        {user?.is_anonymous&&<p className="guest-status-note">Guest mode: every game mode is playable, but your results won't earn unlockables, trophies or leaderboard points.</p>}
         {room.status==='lobby'&&<WinRuleBanner mode={room.mode} playerCount={room.players.length} lobby/>}
         <div className={'room-sync '+(syncStatus==='connected'?'is-connected':'is-reconnecting')} role="status">
           <span aria-hidden="true">{syncStatus==='connected'?'●':'◌'}</span>
@@ -691,53 +706,77 @@ export default function App() {
             : <span className="rematch-waiting">Waiting for the host to start the next match…</span>}
         </div>}
         <div className="actions">
-          <button className="btn secondary" onClick={()=>{setShowCustomize(true);setShowProgress(false);setShowHistory(false);}}>🎨 Customize</button>
-          <button className="btn secondary" onClick={()=>{setShowHistory(true);setShowProgress(false);setShowCustomize(false);}}>↺ Match History</button>
-          <button className="btn secondary" onClick={()=>{setShowProgress(true);setShowCustomize(false);setShowHistory(false);}}>🏆 Trophies & Ranks</button>
+          {!user?.is_anonymous&&<button className="btn secondary" onClick={()=>{setShowCustomize(true);setShowProgress(false);setShowHistory(false);}}>🎨 Customize</button>}
+          {!user?.is_anonymous&&<button className="btn secondary" onClick={()=>{setShowHistory(true);setShowProgress(false);setShowCustomize(false);}}>↺ Match History</button>}
+          {!user?.is_anonymous&&<button className="btn secondary" onClick={()=>{setShowProgress(true);setShowCustomize(false);setShowHistory(false);}}>🏆 Trophies & Ranks</button>}
           <button className="btn ghost" onClick={exitRoom}>← Back to menu</button>
         </div>
       </section> :
       <div className="home-grid">
-        <section className="panel">
-          <div className="section-eyebrow">START A MATCH</div>
-          <h2>Choose your battle</h2>
-          <div className="mode-picker-label">SELECT GAME MODE</div>
+        <section className="panel create-room-panel" id="drop-block-create-room">
+          <div className="section-eyebrow">HOST A MULTIPLAYER MATCH</div>
+          <h2>Create a room</h2>
+          <p className="sub create-room-intro">Pick a game mode and player count, then share your room code with friends.</p>
+          <div className="create-room-quickstart" aria-label="Create a multiplayer room">
+            <div className="create-room-selected">
+              <GameModeIcon mode={mode} size={32}/>
+              <span><strong>{modeName(mode)}</strong><small>{maxPlayers} player slots · Online room</small></span>
+            </div>
+            {!user&&<label className="guest-name-field">Guest nickname (optional)
+              <input value={guestNickname} maxLength={17} autoComplete="off" placeholder="Your name"
+                onChange={e=>setGuestNickname(e.target.value)}/>
+            </label>}
+            <button className="btn primary full create-room-cta" type="button"
+              disabled={busy||user===undefined||mode==='gravity'} onClick={()=>perform('create',{mode,maxPlayers})}>
+              {mode==='gravity'?'Online Gravity Shift coming soon':busy?'Preparing…':user?'＋ Create Room':'＋ Create Room as Guest'}
+            </button>
+          </div>
+          {(!user||user.is_anonymous)&&<p className="create-room-signin-help">No signup required. Guests enjoy full multiplayer gameplay, but don't earn leaderboard points, trophies or unlockables.</p>}
+          <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
+            {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
+          </select></label>
+          <div className="mode-picker-label">CHOOSE GAME MODE</div>
           <ModeChoiceGrid value={mode} onChange={next=>{setMode(next);if(next==='team')setMaxPlayers(old=>Math.max(4,old+(old%2)));}}/>
-          <div className="mode-selected-banner"><GameModeIcon mode={mode} size={26}/><span><strong>{modeName(mode)}</strong><small>SELECTED MODE</small></span></div>
           <p className="balanced-rule-hint">{mode==='team'
             ? 'TEAM BATTLE · Always Connect 4 using teammates’ chips.'
             : 'BALANCED · 2–3 starters: Connect 4 · 4–8 starters: Connect 3. Counts the players who actually start.'}</p>
           <p className="mode-explainer">{mode==='speed'
             ? '⚡ No turn order! Every player drops one chip as fast as possible. The first accepted drop lands first if players choose the same column. Wait until everyone has played, then race again. One minute per round; missing players are skipped.'
             :mode==='elimination'?'Connect 3 with 4+ players or Connect 4 with 2–3. The PREVIOUS active player is eliminated for failing to block. The arena resets with a countdown; last survivor wins.':mode==='collapse'?'When a newly dropped piece reaches the second row from the top, the bottom row vanishes and the rest fall down. Balanced connections determine the winner.':mode==='power'?'Play online with server-verified Bomb, Shield, Freeze, and Double Drop. Gain energy from chip placement, threats and blocks.':mode==='gravity'?'Every four valid drops, the whole board slides LEFT, then RIGHT, alternating. Chips settle downward and new connections may appear. Local preview; online support requires server rules.':mode==='territory'?'Every line completed earns a point. Highest score on a full board wins.':mode==='chaos'?'Each player has one Barrier and one Blast per match. Both take a turn. The first normal drop to complete the balanced connection wins.':mode==='team'?'Team Gold versus Team Blue. Teammates alternate turns and may combine their own differently colored chips into one line of four. Both teammates earn the win.':'Be the first to connect 4 with 2–3 players or 3 with 4–8 players, in any direction.'}</p>
-          <label>Maximum players<select value={maxPlayers} onChange={e=>setMaxPlayers(Number(e.target.value))}>
-            {(mode==='team'?[4,6,8]:[2,3,4,5,6,7,8]).map(n=><option key={n} value={n}>{mode==='team'?n/2+'v'+n/2:n+' players'}</option>)}
-          </select></label>
-          <button className="btn primary full" disabled={busy||!user||mode==='gravity'} onClick={()=>perform('create',{mode,maxPlayers})}>{mode==='gravity'?'Online mode requires server rules':'Create online room'}</button>
+          <button className="btn primary full create-room-bottom-cta" type="button" disabled={busy||user===undefined||mode==='gravity'}
+              onClick={()=>perform('create',{mode,maxPlayers})}>
+              {mode==='gravity'?'Online Gravity Shift coming soon':'＋ Create '+modeName(mode)+' Room'}
+          </button>
           <button className="btn secondary full" disabled={mode==='speed'} onClick={()=>setDemo(true)}>
             {mode==='speed'?'Speed Round needs separate devices':'Try local demo'}
           </button>
-          {user&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>}
+          {user&&!user.is_anonymous&&<button className="btn ghost full" onClick={()=>setShowCustomize(true)}>🎨 My board, chips & avatars</button>}
         </section>
-        <section className="panel">
-          <div className="section-eyebrow">PLAY WITH FRIENDS</div>
+        <section className="panel" id="drop-block-auth-panel">
+          <div className="section-eyebrow">JOIN WITH A CODE</div>
           <h2>Join a room</h2>
+          <p className="sub">Already have a code? Enter it here. To host a game, use <a href="#drop-block-create-room">Create a room</a>.</p>
           <form className="join-room-form" onSubmit={e=>{
             e.preventDefault();
-            if(!busy&&user&&joinCode.length===6)void perform('join',{},joinCode);
+            if(!busy&&user!==undefined&&joinCode.length===6)void perform('join',{},joinCode);
           }}>
             <label htmlFor="drop-block-room-code">Six-character code</label>
             <input id="drop-block-room-code" value={joinCode} maxLength={6} placeholder="A1B2C3"
               autoCapitalize="characters" autoComplete="off" spellCheck={false}
               inputMode="text" enterKeyHint="join"
               onChange={e=>setJoinCode(e.target.value.toUpperCase().replace(/[^A-F0-9]/g,''))}/>
-            <button type="submit" className="btn primary full" disabled={busy||!user||joinCode.length!==6}>
-              Join game
+            {!user&&<label className="guest-name-field">Guest nickname (optional)
+              <input value={guestNickname} maxLength={17} autoComplete="off" placeholder="Your name"
+                onChange={e=>setGuestNickname(e.target.value)}/>
+            </label>}
+            <button type="submit" className="btn primary full" disabled={busy||user===undefined||joinCode.length!==6}>
+              {user?'Join game':'Join as guest'}
             </button>
           </form>
           {user===undefined ? <p className="sub">Checking your PlayVolt account…</p>
-           : user ? <p className="sub">Signed in as <b>{profile?.nickname||user.email}</b> · Shared PlayVolt account</p>
+           : user&&!user.is_anonymous ? <p className="sub">Signed in as <b>{profile?.nickname||user.email}</b> · Competitive rewards enabled</p>
            : <div className="auth-area">
+            {user?.is_anonymous&&<p className="guest-status-note">Playing as <b>{profile?.nickname||user.user_metadata?.nickname||'Guest'}</b>. Guest results won't be saved to leaderboards or unlock rewards. Sign in below to earn future rewards.</p>}
             <div className="tabbar"><button onClick={()=>{setAuthTab('sign-in');setMessage('');}} className={authTab==='sign-in'?'selected':''}>Sign in</button>
             <button onClick={()=>{setAuthTab('sign-up');setMessage('');}} className={authTab==='sign-up'?'selected':''}>Sign up</button></div>
             <form onSubmit={auth}>
@@ -746,14 +785,14 @@ export default function App() {
               <label>Password<input type="password" autoComplete={authTab==='sign-in'?'current-password':'new-password'} required value={password} onChange={e=>setPassword(e.target.value)}/></label>
               <button disabled={busy} className="btn secondary full" type="submit">{authTab==='sign-in'?'Sign in with PlayVolt':'Create PlayVolt account'}</button>
             </form>
-            <p className="sub">Have a Dekabess or Pin & Spin account? Use those same credentials here.</p>
+            <p className="sub">Sign-in is optional. Use your Dekabess or Pin & Spin account if you want leaderboard points, trophies and unlockables.</p>
            </div>}
         </section>
       </div>}
     </main>
     <footer>DROP & BLOCK <span>·</span> A PLAYVOLT GAME</footer>
     <VersionAlert />
-    <TrophyUnlockNotice codes={freshTrophies} onClose={()=>setFreshTrophies([])}
-      onView={()=>{setFreshTrophies([]);setShowProgress(true);}} />
+    {!user?.is_anonymous&&<TrophyUnlockNotice codes={freshTrophies} onClose={()=>setFreshTrophies([])}
+      onView={()=>{setFreshTrophies([]);setShowProgress(true);}} />}
   </div>;
 }
