@@ -614,7 +614,7 @@ begin
    ),'[]'::jsonb)
  );
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.drop_block_power_action(p_action text, p_code text DEFAULT ''::text, p_data jsonb DEFAULT '{}'::jsonb)
@@ -914,7 +914,7 @@ begin
       on conflict(room_id,match_number,user_id) do nothing;
   end if;
   return public.drop_block_power_action('get',p_code,'{}'::jsonb);
-end $function$
+end $function$;
 
 
 -- Identity registration and every guest move go through this secure RPC.
