@@ -49,11 +49,14 @@ function Board({ board, width, height, turn, me, onDrop, disabled, readOnly = fa
     speedOrder,speedPreviousOrder
   });
   useArcadeLandingSounds(flights,soundEnabled);
-  return <div className="board-wrap">
+  return <div className="board-wrap" style={{
+    '--db-desktop-fit-width':(Math.round(50*width/height*100)/100)+'dvh',
+    '--db-desktop-compact-width':(Math.round(46*width/height*100)/100)+'dvh'
+  }}>
     <div className={'board-scroll'+(minWidth?' is-wide':'')}
       role={minWidth?'region':undefined} aria-label={minWidth?'Game board. On small phones, swipe horizontally to reach additional columns.':undefined}
       tabIndex={minWidth?0:undefined}>
-      <div className="board-inner" style={minWidth?{minWidth:minWidth+'px'}:undefined}>
+      <div className="board-inner" style={minWidth?{'--db-touch-min-width':minWidth+'px'}:undefined}>
         {!readOnly&&<div className="board-controls" style={grid}>
           {columns.map(col=><button type="button" key={col} className={'drop-arrow'+(lastMove?.column===col?' recently-used':'')+(power?.frozen?.column===col?' frozen-drop-arrow':'')}
             aria-label={actionLabel+' in column '+(col+1)}
